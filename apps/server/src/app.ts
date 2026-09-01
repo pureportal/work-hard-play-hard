@@ -112,7 +112,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
 
   app.get("/v1/health/live", async () => ({ status: "ok" }));
   app.get("/v1/health/ready", async () => ({ status: "ready", checkpoint: checkpointEnabled }));
-  app.get("/v1/version", async () => ({ version: "0.1.0", protocol: 5 }));
+  app.get("/v1/version", async () => ({ version: "1.0.0", protocol: 5 }));
 
   app.get("/v1/auth/session", async (request) => {
     const user = getAuthenticatedUser(auth, request);
