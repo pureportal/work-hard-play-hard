@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import cors from "@fastify/cors";
 import websocket from "@fastify/websocket";
 import type { AuthUser, ClientCommand, MemberRole, ServerEvent } from "@workhard/shared";
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
@@ -36,7 +37,8 @@ interface ApplicationOptions {
   authPath?: string;
   authPersistenceEnabled?: boolean;
   chatImagePath?: string;
-  appOrigin?: string;
+  clientUrl?: string;
+  clientOrigins?: string[];
   exposeMagicLinks?: boolean;
   deliverMagicLink?: (email: string, link: string) => Promise<void>;
   logger?: boolean;
@@ -60,6 +62,8 @@ const defaultChatImagePath = fileURLToPath(
 );
 
 export async function createApplication(options: ApplicationOptions = {}): Promise<ApplicationContext> {
+  const clientUrl = normalizeClientUrl(options.clientUrl ?? process.env.CLIENT_URL ?? "http://127.0.0.1:5173");
+  const clientOrigins = resolveClientOrigins(clientUrl, options.clientOrigins ?? parseClientOrigins(process.env.CLIENT_ORIGINS));
   const app = Fastify({ logger: options.logger ?? false });
   const store = new DemoStore();
   const checkpoint = new CheckpointStore(options.checkpointPath ?? defaultCheckpointPath);
@@ -79,14 +83,25 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     runtime.restorePlayers(savedState.players);
   }
   const authRateLimiter = new AuthRateLimiter();
-  const appOrigin = options.appOrigin ?? process.env.APP_ORIGIN ?? "http://127.0.0.1:5173";
   const exposeMagicLinks = options.exposeMagicLinks ?? process.env.NODE_ENV !== "production";
+
+  await app.register(cors, {
+    origin: [...clientOrigins],
+    credentials: true,
+  });
 
   await app.register(websocket, {
     options: {
       maxPayload: 64 * 1024,
       perMessageDeflate: false,
     },
+  });
+
+  app.addHook("onRequest", async (request, reply) => {
+    const origin = request.headers.origin;
+    if (origin && !clientOrigins.has(origin)) {
+      return reply.code(403).send({ code: "ORIGIN_FORBIDDEN", message: "Request origin is not allowed." });
+    }
   });
 
   for (const mimeType of ["image/png", "image/jpeg", "image/gif", "image/webp"] as const) {
@@ -99,7 +114,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
   app.get("/v1/health/ready", async () => ({ status: "ready", checkpoint: checkpointEnabled }));
   app.get("/v1/version", async () => ({ version: "0.1.0", protocol: 5 }));
 
-  app.get("/v1/auth/session", async (request, reply) => {
+  app.get("/v1/auth/session", async (request) => {
     const user = getAuthenticatedUser(auth, request);
     if (!user) {
       return { user: null };
@@ -179,7 +194,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     let link: string | undefined;
     if (magicLink) {
       const fragment = new URLSearchParams({ magic: magicLink.token });
-      const magicUrl = new URL("/auth/magic", appOrigin);
+      const magicUrl = new URL("/auth/magic", clientUrl);
       magicUrl.hash = fragment.toString();
       link = magicUrl.toString();
       if (options.deliverMagicLink) {
@@ -488,13 +503,13 @@ function getSessionToken(cookieHeader: string | undefined): string | undefined {
 }
 
 function setSessionCookie(reply: FastifyReply, token: string): void {
-  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
-  reply.header("set-cookie", `${SESSION_COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_MAX_AGE_SECONDS}; Priority=High${secure}`);
+  const security = process.env.NODE_ENV === "production" ? "; SameSite=None; Secure" : "; SameSite=Lax";
+  reply.header("set-cookie", `${SESSION_COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; HttpOnly; Max-Age=${SESSION_MAX_AGE_SECONDS}; Priority=High${security}`);
 }
 
 function clearSessionCookie(reply: FastifyReply): void {
-  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
-  reply.header("set-cookie", `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Priority=High${secure}`);
+  const security = process.env.NODE_ENV === "production" ? "; SameSite=None; Secure" : "; SameSite=Lax";
+  reply.header("set-cookie", `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; Max-Age=0; Priority=High${security}`);
 }
 
 function sendRateLimit(reply: FastifyReply, retryAfter: number): FastifyReply {
@@ -520,4 +535,40 @@ function decodeFileName(header: string | string[] | undefined): string | undefin
   } catch {
     return undefined;
   }
+}
+
+function parseClientOrigins(value: string | undefined): string[] {
+  return value?.split(",").map((origin) => origin.trim()).filter(Boolean) ?? [];
+}
+
+function normalizeClientUrl(value: string): string {
+  const url = new URL(value);
+  if (
+    !["http:", "https:"].includes(url.protocol)
+    || url.username
+    || url.password
+    || url.search
+    || url.hash
+  ) {
+    throw new Error("CLIENT_URL must be an HTTP or HTTPS URL without credentials, a query, or a fragment.");
+  }
+  return url.toString();
+}
+
+function resolveClientOrigins(clientUrl: string, configuredOrigins: string[]): Set<string> {
+  const clientOrigin = new URL(clientUrl).origin;
+  const origins = configuredOrigins.map((origin) => {
+    const url = new URL(origin);
+    if (!["http:", "https:"].includes(url.protocol) || url.origin !== origin) {
+      throw new Error("CLIENT_ORIGINS must contain HTTP or HTTPS origins.");
+    }
+    return url.origin;
+  });
+  return new Set([
+    clientOrigin,
+    "http://tauri.localhost",
+    "https://tauri.localhost",
+    "tauri://localhost",
+    ...origins,
+  ]);
 }

@@ -5,27 +5,27 @@ import puppeteer, { type HTTPRequest, type Page } from "puppeteer";
 import { DemoStore } from "../apps/server/src/store.js";
 
 const workspaceDirectory = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const distributionDirectory = resolve(workspaceDirectory, "apps/web/dist");
+const distributionDirectory = resolve(workspaceDirectory, "apps/client/dist");
 const artifactDirectory = resolve(workspaceDirectory, "artifacts");
 const bootstrap = new DemoStore().getBootstrap("user-maya");
 bootstrap.conversations = bootstrap.conversations.filter((conversation) => conversation.id !== "conversation-jonas");
 bootstrap.messages = bootstrap.messages.filter((message) => message.conversationId !== "conversation-jonas");
 
-const browser = await puppeteer.launch({ headless: true });
-const page = await browser.newPage();
-const browserIssues: string[] = [];
-page.setDefaultTimeout(15_000);
-page.on("console", (message) => {
-  if (message.type() === "error") {
-    browserIssues.push(`Browser console: ${message.text()}`);
-  }
-});
-page.on("pageerror", (error) => browserIssues.push(`Browser error: ${error.message}`));
-page.on("requestfailed", (request) => browserIssues.push(`Request failed: ${request.url()} ${request.failure()?.errorText ?? "unknown"}`));
-await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
-await installApplicationTransport(page);
-
+const browser = await puppeteer.launch({ headless: true, args: ["--disable-gpu"] });
 try {
+  const page = await browser.newPage();
+  const browserIssues: string[] = [];
+  page.setDefaultTimeout(15_000);
+  page.on("console", (message) => {
+    if (message.type() === "error") {
+      browserIssues.push(`Browser console: ${message.text()}`);
+    }
+  });
+  page.on("pageerror", (error) => browserIssues.push(`Browser error: ${error.message}`));
+  page.on("requestfailed", (request) => browserIssues.push(`Request failed: ${request.url()} ${request.failure()?.errorText ?? "unknown"}`));
+  await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
+  await installApplicationTransport(page);
+
   await page.goto("http://localhost/", { waitUntil: "domcontentloaded" });
   await page.waitForSelector(".world-canvas canvas", { visible: true });
   await page.waitForFunction(() => document.querySelector(".connection-state")?.classList.contains("online"));
@@ -318,6 +318,17 @@ async function installApplicationTransport(targetPage: Page): Promise<void> {
 
 async function respondToRequest(request: HTTPRequest): Promise<void> {
   const url = new URL(request.url());
+  if (request.method() === "OPTIONS" && url.pathname.startsWith("/v1/")) {
+    await request.respond({
+      status: 204,
+      headers: {
+        ...corsHeaders(request),
+        "access-control-allow-headers": request.headers()["access-control-request-headers"] ?? "content-type",
+        "access-control-allow-methods": request.headers()["access-control-request-method"] ?? "GET, POST",
+      },
+    });
+    return;
+  }
   if (url.pathname === "/v1/auth/session") {
     await jsonResponse(request, { user: { id: bootstrap.currentUserId, username: "maya", email: "maya@northstar.studio" } });
     return;
@@ -358,8 +369,19 @@ async function jsonResponse(request: HTTPRequest, value: unknown, status = 200):
   await request.respond({
     status,
     contentType: "application/json",
+    headers: corsHeaders(request),
     body: JSON.stringify(value),
   });
+}
+
+function corsHeaders(request: HTTPRequest): Record<string, string> {
+  const origin = request.headers().origin;
+  return origin
+    ? {
+      "access-control-allow-credentials": "true",
+      "access-control-allow-origin": origin,
+    }
+    : {};
 }
 
 function contentType(filePath: string): string {

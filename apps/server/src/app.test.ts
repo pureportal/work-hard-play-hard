@@ -157,6 +157,46 @@ describe("authentication API", () => {
 });
 
 describe("application API", () => {
+  it("rejects invalid client URLs and origins", async () => {
+    await expect(createApplication({
+      checkpointEnabled: false,
+      clientUrl: "file:///northstar/index.html",
+    })).rejects.toThrow("CLIENT_URL must be an HTTP or HTTPS URL");
+    await expect(createApplication({
+      checkpointEnabled: false,
+      clientOrigins: ["https://northstar.example/preview"],
+    })).rejects.toThrow("CLIENT_ORIGINS must contain HTTP or HTTPS origins");
+  });
+
+  it("accepts configured browser clients and rejects unknown origins", async () => {
+    const context = await createApplication({
+      checkpointEnabled: false,
+      clientUrl: "https://northstar.example",
+      clientOrigins: ["https://preview.northstar.example"],
+    });
+    applications.push(context);
+
+    const preflight = await context.app.inject({
+      method: "OPTIONS",
+      url: "/v1/auth/session",
+      headers: {
+        origin: "https://preview.northstar.example",
+        "access-control-request-method": "GET",
+      },
+    });
+    const rejected = await context.app.inject({
+      method: "GET",
+      url: "/v1/auth/session",
+      headers: { origin: "https://untrusted.example" },
+    });
+
+    expect(preflight.statusCode).toBe(204);
+    expect(preflight.headers["access-control-allow-origin"]).toBe("https://preview.northstar.example");
+    expect(preflight.headers["access-control-allow-credentials"]).toBe("true");
+    expect(rejected.statusCode).toBe(403);
+    expect(rejected.json()).toMatchObject({ code: "ORIGIN_FORBIDDEN" });
+  });
+
   it("serves the complete seeded workspace only to an authenticated member", async () => {
     const context = await application();
     const anonymous = await context.app.inject({ method: "GET", url: "/v1/bootstrap" });

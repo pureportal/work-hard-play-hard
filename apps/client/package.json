@@ -1,0 +1,36 @@
+{
+  "name": "@workhard/client",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run",
+    "tauri": "tauri",
+    "desktop:dev": "tauri dev",
+    "desktop:build": "tauri build",
+    "android:init": "tauri android init --ci --skip-targets-install && node scripts/configure-android.mjs",
+    "android:dev": "tauri android dev",
+    "android:build": "tauri android build --apk"
+  },
+  "dependencies": {
+    "@workhard/shared": "workspace:*",
+    "lucide-react": "^0.542.0",
+    "pixi.js": "^8.20.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.0",
+    "@tauri-apps/cli": "^2.11.4",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^6.0.0",
+    "jsdom": "^26.1.0",
+    "typescript": "^5.9.2",
+    "vite": "^8.0.0",
+    "vitest": "^4.1.11"
+  }
+}

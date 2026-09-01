@@ -703,7 +703,7 @@ export class WorldRuntime {
           this.cancelApproach(userId, movement, "PERSON_UNAVAILABLE");
         }
       }
-      for (const call of [...this.calls.values()]) {
+      for (const call of this.calls.values()) {
         if (call.state === "ringing" && call.targetUserId === peer.userId) {
           this.finishCall(call, "declined");
         }
@@ -853,7 +853,7 @@ export class WorldRuntime {
     }
     this.broadcastToFloor(layout.floorId, { type: "area.access_revoked", areaId });
     if (area && !area.locked) {
-      for (const activeKnock of [...this.areaKnocks.values()]) {
+      for (const activeKnock of this.areaKnocks.values()) {
         if (activeKnock.knock.areaId === areaId) {
           this.finishAreaKnock(activeKnock, "accepted", peer.userId);
         }
@@ -871,7 +871,7 @@ export class WorldRuntime {
       }
       this.evictPlayerFromArea(player, area);
     }
-    for (const [userId, active] of [...this.activeMeetings]) {
+    for (const [userId, active] of this.activeMeetings) {
       const meeting = this.store.getMeeting(active.meetingId);
       if (
         meeting?.location.type === "room"
@@ -1019,7 +1019,7 @@ export class WorldRuntime {
   }
 
   private handleKnockDisconnect(userId: string): void {
-    for (const activeKnock of [...this.areaKnocks.values()]) {
+    for (const activeKnock of this.areaKnocks.values()) {
       if (activeKnock.knock.requesterUserId === userId) {
         this.finishAreaKnock(activeKnock, "expired");
         continue;
@@ -1032,7 +1032,7 @@ export class WorldRuntime {
   }
 
   private removeKnockRecipient(userId: string, areaId: string): void {
-    for (const activeKnock of [...this.areaKnocks.values()]) {
+    for (const activeKnock of this.areaKnocks.values()) {
       if (activeKnock.knock.areaId !== areaId || !activeKnock.recipientUserIds.delete(userId)) {
         continue;
       }
@@ -1054,7 +1054,7 @@ export class WorldRuntime {
   }
 
   private validateAreaKnocks(): void {
-    for (const activeKnock of [...this.areaKnocks.values()]) {
+    for (const activeKnock of this.areaKnocks.values()) {
       const requester = this.players.get(activeKnock.knock.requesterUserId);
       const area = this.store.getArea(activeKnock.knock.areaId);
       if (
@@ -1407,7 +1407,7 @@ export class WorldRuntime {
   }
 
   private endCallsForUser(userId: string): void {
-    for (const call of [...this.calls.values()]) {
+    for (const call of this.calls.values()) {
       if (call.callerUserId === userId || call.targetUserId === userId) {
         this.finishCall(call, "ended");
       }
@@ -1415,7 +1415,7 @@ export class WorldRuntime {
   }
 
   private validateCalls(): void {
-    for (const call of [...this.calls.values()]) {
+    for (const call of this.calls.values()) {
       const caller = this.players.get(call.callerUserId);
       const target = this.players.get(call.targetUserId);
       if (

@@ -55,7 +55,13 @@ export function detectChatImageMimeType(source: Buffer): ChatImageMimeType | und
 }
 
 export function normalizeChatImageName(source: string | undefined, mimeType: ChatImageMimeType): string {
-  const name = source?.split(/[\\/]/).at(-1)?.replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 120);
+  const sourceName = source?.split(/[\\/]/).at(-1);
+  const name = sourceName
+    ? [...sourceName]
+      .filter((character) => character.charCodeAt(0) >= 32 && character.charCodeAt(0) !== 127)
+      .join("")
+      .trim()
+      .slice(0, 120)
+    : undefined;
   return name || `image.${extensions[mimeType]}`;
 }
-

@@ -6,8 +6,15 @@ coverage/
 artifacts/
 .artifacts/
 .machdoch/
+apps/client/src-tauri/gen/
+apps/client/src-tauri/target/
+**/android/.tauri/
 *.tsbuildinfo
 *.log
+*.jks
+*.keystore
+*.p12
+*.pfx
 .env
 .env.*
 !.env.example

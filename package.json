@@ -4,18 +4,34 @@
   "version": "0.1.0",
   "type": "module",
   "packageManager": "pnpm@10.33.2",
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
-    "dev": "concurrently --kill-others --names server,web --prefix-colors blue,magenta \"pnpm --filter @workhard/server dev\" \"pnpm --filter @workhard/web dev\"",
+    "dev": "concurrently --kill-others --names server,client --prefix-colors blue,magenta \"pnpm --filter @workhard/server dev\" \"pnpm --filter @workhard/client dev\"",
+    "dev:client": "pnpm --filter @workhard/client dev",
+    "dev:desktop": "concurrently --kill-others --names server,desktop --prefix-colors blue,magenta \"pnpm --filter @workhard/server dev\" \"pnpm --filter @workhard/client desktop:dev\"",
+    "dev:landing": "pnpm --filter @workhard/landing dev",
+    "dev:server": "pnpm --filter @workhard/server dev",
     "seed": "pnpm --filter @workhard/server seed",
     "build": "pnpm -r --if-present build",
+    "build:client": "pnpm --filter @workhard/client build",
+    "build:desktop": "pnpm --filter @workhard/client desktop:build",
+    "build:landing": "pnpm --filter @workhard/landing build",
+    "build:server": "pnpm --filter @workhard/server build",
+    "build:android": "pnpm --filter @workhard/client android:build",
+    "android:init": "pnpm --filter @workhard/client android:init",
+    "lint": "oxlint --deny-warnings .",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
-    "check": "pnpm typecheck && pnpm test && pnpm build",
+    "test:ui": "pnpm --filter @workhard/server exec tsx ../../scripts/static-ui-check.ts && node scripts/static-landing-check.mjs",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:ui",
     "e2e": "node scripts/puppeteer-check.mjs",
-    "ui:check": "pnpm build && pnpm --filter @workhard/server exec tsx ../../scripts/static-ui-check.ts"
+    "ui:check": "pnpm build && pnpm test:ui"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
+    "oxlint": "^1.75.0",
     "puppeteer": "^24.17.1",
     "typescript": "^5.9.2"
   }
