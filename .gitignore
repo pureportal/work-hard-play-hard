@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.data/
+.vite/
+coverage/
+artifacts/
+.artifacts/
+.machdoch/
+*.tsbuildinfo
+*.log
+.env
+.env.*
+!.env.example

@@ -1,0 +1,22 @@
+{
+  "name": "work-hard-play-hard",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@10.33.2",
+  "scripts": {
+    "dev": "concurrently --kill-others --names server,web --prefix-colors blue,magenta \"pnpm --filter @workhard/server dev\" \"pnpm --filter @workhard/web dev\"",
+    "seed": "pnpm --filter @workhard/server seed",
+    "build": "pnpm -r --if-present build",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+    "check": "pnpm typecheck && pnpm test && pnpm build",
+    "e2e": "node scripts/puppeteer-check.mjs",
+    "ui:check": "pnpm build && pnpm --filter @workhard/server exec tsx ../../scripts/static-ui-check.ts"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "puppeteer": "^24.17.1",
+    "typescript": "^5.9.2"
+  }
+}
