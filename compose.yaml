@@ -1,0 +1,97 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    init: true
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB_NAME:-workHardPlayHard}
+      POSTGRES_USER: ${POSTGRES_DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_DB_PASSWORD:?Set POSTGRES_DB_PASSWORD in .env}
+    volumes:
+      - northstar-postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+    stop_grace_period: 30s
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${POSTGRES_DB_USERNAME:-postgres} -d ${POSTGRES_DB_NAME:-workHardPlayHard}
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  server:
+    image: ${NORTHSTAR_SERVER_IMAGE:-ghcr.io/pureportal/work-hard-play-hard-server}:${NORTHSTAR_VERSION:-latest}
+    init: true
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3001
+      CLIENT_URL: ${NORTHSTAR_PUBLIC_URL:-http://localhost:8080}
+      CLIENT_ORIGINS: ${CLIENT_ORIGINS:-}
+      POSTGRES_DB_HOST: postgres
+      POSTGRES_DB_PORT: 5432
+      POSTGRES_DB_NAME: ${POSTGRES_DB_NAME:-workHardPlayHard}
+      POSTGRES_DB_USERNAME: ${POSTGRES_DB_USERNAME:-postgres}
+      POSTGRES_DB_PASSWORD: ${POSTGRES_DB_PASSWORD:?Set POSTGRES_DB_PASSWORD in .env}
+    volumes:
+      - northstar-images:/workspace/.data
+    restart: unless-stopped
+    stop_grace_period: 20s
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --output-document=/dev/null
+        - http://127.0.0.1:3001/v1/health/ready
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  client:
+    image: ${NORTHSTAR_CLIENT_IMAGE:-ghcr.io/pureportal/work-hard-play-hard-client}:${NORTHSTAR_VERSION:-latest}
+    init: true
+    build:
+      context: .
+      dockerfile: apps/client/Dockerfile
+    depends_on:
+      server:
+        condition: service_healthy
+    ports:
+      - "${NORTHSTAR_PORT:-8080}:8080"
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --output-document=/dev/null
+        - http://127.0.0.1:8080/v1/health/ready
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+
+  landing:
+    profiles:
+      - landing
+    image: ${NORTHSTAR_LANDING_IMAGE:-ghcr.io/pureportal/work-hard-play-hard-landing}:${NORTHSTAR_VERSION:-latest}
+    init: true
+    build:
+      context: .
+      dockerfile: apps/landing/Dockerfile
+      args:
+        VITE_CLIENT_URL: ${NORTHSTAR_PUBLIC_URL:-http://localhost:8080}
+    ports:
+      - "${NORTHSTAR_LANDING_PORT:-8081}:8080"
+    restart: unless-stopped
+
+volumes:
+  northstar-images:
+  northstar-postgres:

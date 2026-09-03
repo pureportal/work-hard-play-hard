@@ -10,10 +10,13 @@ RUN npm install --global corepack@0.34.6 && corepack enable
 WORKDIR /workspace
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
-COPY apps/server apps/server
-COPY packages/shared packages/shared
+COPY apps/server/package.json apps/server/package.json
+COPY packages/shared/package.json packages/shared/package.json
 
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --filter @workhard/server...
+
+COPY apps/server apps/server
+COPY packages/shared packages/shared
 
 RUN pnpm --filter @workhard/server build
 RUN pnpm --filter @workhard/server --prod deploy /opt/server
