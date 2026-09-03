@@ -13,7 +13,9 @@
     "desktop:build": "tauri build",
     "android:init": "tauri android init --ci --skip-targets-install && node scripts/configure-android.mjs",
     "android:dev": "tauri android dev",
-    "android:build": "tauri android build --apk"
+    "android:build": "tauri android build --apk --target aarch64 armv7 x86_64 --ci",
+    "android:sign": "node scripts/sign-android-apk.mjs",
+    "android:release": "pnpm android:build && pnpm android:sign"
   },
   "dependencies": {
     "@workhard/shared": "workspace:*",

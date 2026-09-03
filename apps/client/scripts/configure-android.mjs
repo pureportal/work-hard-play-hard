@@ -1,9 +1,11 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { cp, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 const manifestPath = fileURLToPath(
   new URL("../src-tauri/gen/android/app/src/main/AndroidManifest.xml", import.meta.url),
 );
+const iconSourcePath = fileURLToPath(new URL("../src-tauri/icons/android", import.meta.url));
+const resourcePath = fileURLToPath(new URL("../src-tauri/gen/android/app/src/main/res", import.meta.url));
 const internetPermission = '<uses-permission android:name="android.permission.INTERNET" />';
 const requiredPermissions = [
   '<uses-permission android:name="android.permission.CAMERA" />',
@@ -17,10 +19,27 @@ if (!manifest.includes(internetPermission)) {
 }
 
 const missingPermissions = requiredPermissions.filter((permission) => !manifest.includes(permission));
+let configuredManifest = manifest.replace(
+  /\s*<uses-feature android:name="android\.software\.leanback" android:required="false" \/>/,
+  "",
+).replace(
+  /\s*<category android:name="android\.intent\.category\.LEANBACK_LAUNCHER" \/>/,
+  "",
+);
 if (missingPermissions.length > 0) {
-  const configuredManifest = manifest.replace(
+  configuredManifest = configuredManifest.replace(
     internetPermission,
     [internetPermission, ...missingPermissions].join("\n    "),
   );
-  await writeFile(manifestPath, configuredManifest);
 }
+if (!configuredManifest.includes('android:roundIcon="@mipmap/ic_launcher_round"')) {
+  configuredManifest = configuredManifest.replace(
+    'android:icon="@mipmap/ic_launcher"',
+    'android:icon="@mipmap/ic_launcher"\n        android:roundIcon="@mipmap/ic_launcher_round"',
+  );
+}
+if (configuredManifest.includes("leanback")) {
+  throw new Error("Generated Android manifest still declares Android TV support.");
+}
+await writeFile(manifestPath, configuredManifest);
+await cp(iconSourcePath, resourcePath, { recursive: true, force: true });

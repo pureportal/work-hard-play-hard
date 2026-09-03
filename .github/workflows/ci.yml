@@ -1,13 +1,18 @@
 name: CI
 
+run-name: CI / ${{ github.head_ref || github.ref_name }}
+
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      delivery_gate:
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -16,15 +21,33 @@ defaults:
   run:
     shell: bash
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ inputs.delivery_gate && github.sha || github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ !inputs.delivery_gate }}
+
 env:
   NODE_VERSION: "24"
   PNPM_VERSION: 10.33.2
 
 jobs:
+  workflow-lint:
+    name: Validate workflows
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+
+      - name: Run actionlint
+        uses: docker://rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
+        with:
+          args: -color
+
   quality:
     name: Lint, test, and build
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 35
 
     steps:
       - name: Checkout repository
@@ -73,23 +96,47 @@ jobs:
       - name: Check Tauri
         run: cargo clippy --locked --manifest-path apps/client/src-tauri/Cargo.toml --all-targets -- -D warnings
 
-  containers:
-    name: Build ${{ matrix.name }} container
-    needs: quality
+  deployment:
+    name: Validate self-hosted deployment
+    needs:
+      - quality
+      - workflow-lint
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: server
-            dockerfile: apps/server/Dockerfile
-            tag: northstar-server:ci
-            build_args: ""
-          - name: landing
-            dockerfile: apps/landing/Dockerfile
-            tag: northstar-landing:ci
-            build_args: VITE_CLIENT_URL=https://app.example.com
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+
+      - name: Validate Compose configuration
+        run: |
+          docker compose --env-file .env.example config --quiet
+          docker compose --env-file .env.example --profile landing config --quiet
+
+      - name: Build deployment images
+        run: docker compose --env-file .env.example build server client
+
+      - name: Start deployment
+        run: docker compose --env-file .env.example up --detach --no-build --wait --wait-timeout 180
+
+      - name: Verify client and API health
+        run: curl --fail --silent --show-error --output /dev/null http://127.0.0.1:8080/v1/health/ready
+
+      - name: Show deployment logs
+        if: failure()
+        run: docker compose --env-file .env.example logs --no-color
+
+      - name: Stop deployment
+        if: always()
+        run: docker compose --env-file .env.example down --volumes --remove-orphans
+
+  landing-container:
+    name: Build landing container
+    needs:
+      - quality
+      - workflow-lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
@@ -98,17 +145,17 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c
 
-      - name: Build image
+      - name: Build landing image
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a
         env:
           DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: .
-          file: ${{ matrix.dockerfile }}
-          build-args: ${{ matrix.build_args }}
+          file: apps/landing/Dockerfile
+          build-args: VITE_CLIENT_URL=https://app.example.com
           load: true
           pull: true
           push: false
-          tags: ${{ matrix.tag }}
-          cache-from: type=gha,scope=northstar-${{ matrix.name }}
-          cache-to: type=gha,mode=max,scope=northstar-${{ matrix.name }}
+          tags: northstar-landing:ci
+          cache-from: type=gha,scope=northstar-landing
+          cache-to: type=gha,mode=max,scope=northstar-landing

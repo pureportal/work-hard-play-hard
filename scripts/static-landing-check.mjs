@@ -6,10 +6,19 @@ import puppeteer from "puppeteer";
 const workspaceDirectory = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distributionDirectory = resolve(workspaceDirectory, "apps/landing/dist");
 const artifactDirectory = resolve(workspaceDirectory, "artifacts");
-const browser = await puppeteer.launch({ headless: true, args: ["--disable-gpu"] });
+const browser = await puppeteer.launch({
+  headless: "shell",
+  timeout: 120_000,
+  protocolTimeout: 120_000,
+  args: ["--disable-dev-shm-usage", "--no-first-run"],
+});
 try {
-  const page = await browser.newPage();
+  const [page] = await browser.pages();
+  if (!page) {
+    throw new Error("Chromium did not create an initial page.");
+  }
   const browserIssues = [];
+  page.setDefaultNavigationTimeout(120_000);
   page.on("console", (message) => {
     if (message.type() === "error") {
       browserIssues.push(`Browser console: ${message.text()}`);

@@ -20,13 +20,17 @@
     "build:landing": "pnpm --filter @workhard/landing build",
     "build:server": "pnpm --filter @workhard/server build",
     "build:android": "pnpm --filter @workhard/client android:build",
+    "build:android:signed": "pnpm --filter @workhard/client android:release",
     "android:init": "pnpm --filter @workhard/client android:init",
+    "release:validate": "node scripts/validate-release.mjs",
     "lint": "oxlint --deny-warnings .",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
     "test:ui": "pnpm --filter @workhard/server exec tsx ../../scripts/static-ui-check.ts && node scripts/static-landing-check.mjs",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:ui",
+    "check": "pnpm release:validate && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:ui",
     "e2e": "node scripts/puppeteer-check.mjs",
+    "e2e:building": "node scripts/building-puppeteer-check.mjs",
+    "e2e:auth": "pnpm build:client && pnpm --filter @workhard/server exec tsx ../../scripts/auth-invite-e2e.ts",
     "ui:check": "pnpm build && pnpm test:ui"
   },
   "devDependencies": {
