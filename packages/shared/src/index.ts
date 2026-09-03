@@ -1,4 +1,32 @@
+import type { AssetRotation } from "./assets.js";
+import type { FloorLayout, LayoutEdit, RoomSettings } from "./building.js";
+import type { CoinTransaction, GameCoinReward, GameSettings, PlayerEconomy } from "./economy.js";
+import type { Position } from "./geometry.js";
+import type { TetrominoType, TetrisCellPosition, TetrisCommand } from "./tetris.js";
+import type {
+  GlobalKidnappingSettings,
+  KidnappingConfiguration,
+  PlayerKidnappingSettings,
+} from "./kidnapping.js";
+
+export * from "./building.js";
+export * from "./assets.js";
+export * from "./asset-placement.js";
+export * from "./layout-placement.js";
+export * from "./geometry.js";
+export * from "./floor-portals.js";
+export * from "./room-detection.js";
+export * from "./economy.js";
+export * from "./player-asset-placement.js";
+export * from "./kidnapping.js";
+export * from "./tetris.js";
+
 export type Availability = "available" | "busy" | "dnd" | "away";
+
+export const PROXIMITY_INTERACTION_RADIUS = 80;
+export const PROXIMITY_GROUP_REACH_RADIUS = 96;
+export const GONG_INTERACTION_RANGE = 72;
+export const GONG_COOLDOWN_MS = 30_000;
 
 export const REACTION_KINDS = ["wave", "heart", "celebrate", "thumbs_up", "laugh", "clap"] as const;
 
@@ -8,32 +36,65 @@ export type ReactionScope =
   | { type: "floor"; floorId: string }
   | { type: "meeting"; meetingId: string };
 
+export interface GongRing {
+  id: string;
+  objectId: string;
+  userId: string;
+  floorId: string;
+  rungAt: number;
+  cooldownUntil: number;
+}
+
 export type MemberRole = "owner" | "admin" | "member" | "guest";
 
-export type AreaType =
-  | "meeting"
-  | "lounge"
-  | "desk"
-  | "private"
-  | "arcade"
-  | "kitchen";
+export interface RegistrationSettings {
+  enabled: boolean;
+  invitationRequired: boolean;
+  whitelistedDomains: string[];
+  defaultRole: Exclude<MemberRole, "owner">;
+}
 
-export type AreaVisibility = "public" | "members";
+export interface RegistrationAvailability {
+  enabled: boolean;
+  invitationRequired: boolean;
+}
 
-export type AreaDoorSide = "top" | "right" | "bottom" | "left";
+const EMAIL_DOMAIN_PATTERN = /^(?=.{1,253}$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$/;
 
-export type ObjectType =
-  | "desk"
-  | "table"
-  | "sofa"
-  | "plant"
-  | "arcade"
-  | "whiteboard"
-  | "portal";
+export function normalizeEmailDomain(domain: string): string {
+  return domain.normalize("NFC").trim().toLowerCase();
+}
 
-export interface Position {
-  x: number;
-  y: number;
+export function isValidEmailDomain(domain: string): boolean {
+  return EMAIL_DOMAIN_PATTERN.test(normalizeEmailDomain(domain));
+}
+
+export function getEmailDomain(email: string): string {
+  const separator = email.lastIndexOf("@");
+  return separator < 0 ? "" : normalizeEmailDomain(email.slice(separator + 1));
+}
+
+export const MEMBER_PERMISSIONS = ["manage_members", "build"] as const;
+export const ASSIGNABLE_MEMBER_PERMISSIONS = ["build"] as const;
+
+export type MemberPermission = typeof MEMBER_PERMISSIONS[number];
+export type AssignableMemberPermission = typeof ASSIGNABLE_MEMBER_PERMISSIONS[number];
+
+export function permissionsForMemberRole(
+  role: MemberRole,
+  assigned: readonly AssignableMemberPermission[] = [],
+): MemberPermission[] {
+  if (role === "owner" || role === "admin") {
+    return [...MEMBER_PERMISSIONS];
+  }
+  if (role === "member") {
+    return ASSIGNABLE_MEMBER_PERMISSIONS.filter((permission) => assigned.includes(permission));
+  }
+  return [];
+}
+
+export function hasMemberPermission(member: Pick<Member, "permissions">, permission: MemberPermission): boolean {
+  return member.permissions.includes(permission);
 }
 
 export interface Team {
@@ -64,9 +125,11 @@ export interface Member {
   id: string;
   name: string;
   initials: string;
+  avatarUrl?: string;
   email: string;
   title: string;
   role: MemberRole;
+  permissions: MemberPermission[];
   color: string;
   availability: Availability;
   online: boolean;
@@ -81,76 +144,14 @@ export interface AuthUser {
   email: string;
 }
 
-export interface Wall {
-  id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-export interface FloorTile {
-  id: string;
-  x: number;
-  y: number;
-  color: string;
-}
-
-export interface WorldObject {
-  id: string;
-  floorId: string;
-  type: ObjectType;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  color: string;
-  label?: string;
-  solid: boolean;
-  interactive: boolean;
-}
-
-export interface Area {
-  id: string;
-  floorId: string;
-  name: string;
-  type: AreaType;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  color: string;
-  capacity: number;
-  locked: boolean;
-  visibility: AreaVisibility;
-  memberIds?: string[];
-  doors: AreaDoor[];
-}
-
-export interface AreaDoor {
-  id: string;
-  side: AreaDoorSide;
-  offset: number;
-  width: number;
-}
-
-export interface FloorLayout {
-  floorId: string;
-  revision: number;
-  walls: Wall[];
-  tiles: FloorTile[];
-  objects: WorldObject[];
-  areas: Area[];
-}
-
-export type ConversationType = "team" | "area" | "direct" | "meeting";
+export type ConversationType = "team" | "room" | "direct" | "meeting";
 
 export interface Conversation {
   id: string;
   name: string;
   type: ConversationType;
   participantIds?: string[];
-  areaId?: string;
+  roomId?: string;
   meetingId?: string;
   unread: number;
 }
@@ -179,6 +180,7 @@ export interface Invitation {
   teamId: string;
   email: string;
   role: Exclude<MemberRole, "owner">;
+  permissions: AssignableMemberPermission[];
   status: "pending" | "accepted" | "revoked";
   expiresAt: string;
 }
@@ -193,7 +195,7 @@ interface MeetingDetails {
 }
 
 export type Meeting = MeetingDetails & (
-  | { location: { type: "room"; areaId: string } }
+  | { location: { type: "room"; roomId: string } }
   | { location: { type: "public"; floorId: string; x: number; y: number; radius: number } }
 );
 
@@ -204,13 +206,61 @@ export interface MiniGameDefinition {
   objectId: string;
 }
 
+export const TETRIS_DEFINITION_ID = "game-tetris" as const;
+
 export interface GameScore {
   id: string;
+  roundId: string;
   definitionId: string;
   userId: string;
   score: number;
   lines: number;
+  level: number;
+  mode: "solo" | "multiplayer";
+  playerCount: number;
+  placement: number;
+  won: boolean;
   playedAt: string;
+}
+
+export interface PlayerGameStatistics {
+  definitionId: string;
+  userId: string;
+  gamesPlayed: number;
+  multiplayerGamesPlayed: number;
+  multiplayerWins: number;
+  highestScore: number;
+  highestLines: number;
+  totalScore: number;
+  totalLines: number;
+}
+
+export interface GameLobbyState {
+  definitionId: string;
+  objectId: string;
+  floorId: string;
+  participantIds: string[];
+  capacity: number;
+}
+
+export interface GameRoundParticipantState {
+  userId: string;
+  score: number;
+  lines: number;
+  level: number;
+  status: "playing" | "finished";
+  placement?: number;
+}
+
+export interface GameRoundState {
+  id: string;
+  definitionId: string;
+  floorId: string;
+  startedAt: string;
+  status: "playing" | "completed";
+  participants: GameRoundParticipantState[];
+  completedAt?: string;
+  winnerUserId?: string;
 }
 
 export interface WorkspaceAccessData {
@@ -229,6 +279,11 @@ export interface BootstrapData extends WorkspaceAccessData {
   layouts: FloorLayout[];
   miniGames: MiniGameDefinition[];
   scores: GameScore[];
+  gameStatistics: PlayerGameStatistics[];
+  economy: PlayerEconomy;
+  gameSettings: GameSettings;
+  kidnapping: KidnappingConfiguration;
+  registrationSettings?: RegistrationSettings;
 }
 
 export interface WorldPlayer {
@@ -238,9 +293,19 @@ export interface WorldPlayer {
   y: number;
   facing: "up" | "down" | "left" | "right";
   availability: Availability;
-  areaId?: string;
+  roomId?: string;
   connected: boolean;
+  seat?: {
+    objectId: string;
+    interactionId: string;
+  };
   wavingUntil?: number;
+  carriedByUserId?: string;
+  proximity?: {
+    microphone: boolean;
+    camera: boolean;
+    callId?: string;
+  };
 }
 
 export interface WorldSnapshot {
@@ -252,27 +317,20 @@ export interface WorldSnapshot {
 }
 
 export type CallDirection = "incoming" | "outgoing";
-export type CallState = "ringing" | "connected" | "ended" | "declined" | "missed";
+export type CallState = "ringing" | "accepted" | "ended" | "declined" | "missed";
 
-export interface AreaKnock {
+export interface RoomKnock {
   id: string;
-  areaId: string;
+  roomId: string;
   requesterUserId: string;
   expiresAt: string;
 }
 
-export type AreaKnockState = "pending" | "accepted" | "declined" | "expired";
-
-export type LayoutTool = "wall" | "door" | "desk" | "sofa" | "plant" | "erase";
-
-export interface AreaSettings {
-  type: "meeting" | "private";
-  locked: boolean;
-  visibility: AreaVisibility;
-}
+export type RoomKnockState = "pending" | "accepted" | "declined" | "expired";
 
 export interface GameState {
   type: "game.state";
+  roundId: string;
   definitionId: string;
   grid: number[][];
   score: number;
@@ -280,149 +338,92 @@ export interface GameState {
   level: number;
   running: boolean;
   paused: boolean;
+  activePiece: TetrominoType | null;
+  activeCells: TetrisCellPosition[];
+  ghostCells: TetrisCellPosition[];
+  heldPiece: TetrominoType | null;
+  nextPieces: TetrominoType[];
+  canHold: boolean;
 }
 
 export type ServerEvent =
   | WorldSnapshot
   | { type: "session.ready"; userId: string; floorId: string }
+  | { type: "session.synced" }
   | { type: "workspace.snapshot"; data: BootstrapData }
   | { type: "presence.changed"; member: Member }
   | { type: "conversation.created"; conversation: Conversation }
   | { type: "chat.message_created"; message: ChatMessage }
   | { type: "chat.ack"; requestId: string; messageId: string }
-  | { type: "layout.updated"; layout: FloorLayout }
+  | { type: "layout.updated"; layout: FloorLayout; requestId?: string }
   | { type: "workspace.access_updated"; access: WorkspaceAccessData }
-  | { type: "layout.conflict"; revision: number }
-  | { type: "area.knock_requested"; knock: AreaKnock }
-  | { type: "area.knock_state"; knock: AreaKnock; state: AreaKnockState; responderUserId?: string }
-  | { type: "area.access_snapshot"; areaIds: string[] }
-  | { type: "area.access_revoked"; areaId: string }
+  | { type: "layout.conflict"; requestId: string; revision: number }
+  | { type: "room.knock_requested"; knock: RoomKnock }
+  | { type: "room.knock_state"; knock: RoomKnock; state: RoomKnockState; responderUserId?: string }
+  | { type: "room.access_snapshot"; roomIds: string[] }
+  | { type: "room.access_revoked"; roomId: string }
   | { type: "interaction.wave"; fromUserId: string; toUserId: string; floorId: string }
   | { type: "interaction.reaction"; id: string; userId: string; reaction: ReactionKind; scope: ReactionScope }
   | { type: "interaction.high_five"; id: string; userIds: [string, string]; floorId: string }
+  | { type: "interaction.gong_rang"; ring: GongRing }
+  | { type: "interaction.gong_cooldown"; objectId: string; floorId: string; cooldownUntil: number }
   | { type: "call.state"; callId: string; peerUserId: string; direction: CallDirection; state: CallState }
   | { type: "meeting.updated"; meeting: Meeting }
   | { type: "meeting.joined"; meeting: Meeting }
   | { type: "meeting.left"; meetingId: string }
+  | { type: "game.lobby_updated"; lobby: GameLobbyState }
+  | { type: "game.round_started"; round: GameRoundState }
+  | { type: "game.round_updated"; round: GameRoundState }
+  | {
+    type: "game.round_completed";
+    round: GameRoundState;
+    scores: GameScore[];
+    statistics: PlayerGameStatistics[];
+    coinRewards: GameCoinReward[];
+  }
+  | { type: "economy.updated"; economy: PlayerEconomy; requestId?: string; transaction?: CoinTransaction }
+  | { type: "game.settings_updated"; settings: GameSettings }
+  | { type: "kidnapping.global_settings_updated"; settings: GlobalKidnappingSettings }
+  | { type: "kidnapping.player_settings_updated"; settings: PlayerKidnappingSettings }
+  | { type: "kidnapping.started"; carrierUserId: string; carriedUserId: string }
+  | { type: "kidnapping.ended"; carrierUserId: string; carriedUserId: string; reason: KidnappingEndReason }
   | GameState
-  | { type: "game.completed"; score: GameScore }
   | { type: "command.error"; requestId?: string; code: string; message: string };
 
 export type ClientCommand =
   | { type: "movement.input"; sequence: number; dx: number; dy: number }
-  | { type: "movement.set_destination"; requestId: string; x: number; y: number }
+  | { type: "movement.set_destination"; requestId: string; floorId: string; x: number; y: number }
+  | { type: "movement.stop"; requestId: string }
   | { type: "movement.approach_user"; requestId: string; targetUserId: string }
-  | { type: "floor.change"; requestId: string; floorId: string }
+  | { type: "kidnapping.start"; requestId: string; targetUserId: string }
+  | { type: "kidnapping.stop"; requestId: string }
+  | { type: "kidnapping.global_settings_update"; requestId: string; settings: GlobalKidnappingSettings }
+  | { type: "kidnapping.player_settings_update"; requestId: string; settings: PlayerKidnappingSettings }
   | { type: "presence.set_availability"; requestId: string; availability: Availability }
+  | { type: "proximity.set_media"; requestId: string; microphone: boolean; camera: boolean }
   | { type: "chat.send"; requestId: string; conversationId: string; body: string }
-  | { type: "layout.apply"; requestId: string; baseRevision: number; tool: LayoutTool; x: number; y: number }
-  | { type: "area.update_settings"; requestId: string; areaId: string; settings: AreaSettings }
-  | { type: "area.knock"; requestId: string; areaId: string }
-  | { type: "area.knock_respond"; requestId: string; knockId: string; accept: boolean }
+  | { type: "layout.apply"; requestId: string; baseRevision: number; edit: LayoutEdit }
+  | { type: "player_asset.place"; requestId: string; baseRevision: number; ownedAssetId: string; position: Position; variantId: string; rotation: AssetRotation }
+  | { type: "player_asset.move"; requestId: string; baseRevision: number; objectId: string; position: Position; variantId: string; rotation: AssetRotation }
+  | { type: "player_asset.remove"; requestId: string; baseRevision: number; objectId: string }
+  | { type: "economy.claim_daily"; requestId: string }
+  | { type: "economy.purchase_asset"; requestId: string; assetId: string }
+  | { type: "game.settings_update"; requestId: string; settings: GameSettings }
+  | { type: "asset.interact"; requestId: string; objectId: string; interactionId: string }
+  | { type: "seat.leave"; requestId: string }
+  | { type: "room.update_settings"; requestId: string; baseRevision: number; roomId: string; settings: RoomSettings }
+  | { type: "room.knock"; requestId: string; roomId: string }
+  | { type: "room.knock_respond"; requestId: string; knockId: string; accept: boolean }
   | { type: "interaction.wave"; requestId: string; targetUserId: string }
   | { type: "interaction.react"; requestId: string; reaction: ReactionKind }
+  | { type: "interaction.ring_gong"; requestId: string; objectId: string }
   | { type: "call.request"; requestId: string; targetUserId: string }
   | { type: "call.respond"; requestId: string; callId: string; accept: boolean }
   | { type: "call.end"; requestId: string; callId: string }
   | { type: "meeting.join"; requestId: string; meetingId: string }
   | { type: "meeting.leave"; requestId: string; meetingId: string }
-  | { type: "game.start"; requestId: string; definitionId: string }
+  | { type: "game.start"; requestId: string; definitionId: typeof TETRIS_DEFINITION_ID }
   | { type: "game.end"; requestId: string }
-  | { type: "game.command"; requestId: string; command: "left" | "right" | "rotate" | "down" | "drop" | "pause" };
+  | { type: "game.command"; requestId: string; command: TetrisCommand };
 
-export interface Rect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-export const ROOM_WALL_THICKNESS = 12;
-
-export function isEnclosedArea(area: Area): boolean {
-  return area.type === "meeting" || area.type === "private";
-}
-
-export function getAreaDoorRect(area: Area, door: AreaDoor, thickness = ROOM_WALL_THICKNESS): Rect {
-  const halfThickness = thickness / 2;
-  if (door.side === "top" || door.side === "bottom") {
-    return {
-      x: area.x + door.offset,
-      y: (door.side === "top" ? area.y : area.y + area.height) - halfThickness,
-      width: door.width,
-      height: thickness,
-    };
-  }
-  return {
-    x: (door.side === "left" ? area.x : area.x + area.width) - halfThickness,
-    y: area.y + door.offset,
-    width: thickness,
-    height: door.width,
-  };
-}
-
-export function getAreaDoorPosition(
-  area: Area,
-  door: AreaDoor,
-  position: "center" | "inside" | "outside" = "center",
-  distance = 36,
-): Position {
-  const direction = position === "center" ? 0 : position === "inside" ? 1 : -1;
-  if (door.side === "top") {
-    return { x: area.x + door.offset + door.width / 2, y: area.y + direction * distance };
-  }
-  if (door.side === "bottom") {
-    return { x: area.x + door.offset + door.width / 2, y: area.y + area.height - direction * distance };
-  }
-  if (door.side === "left") {
-    return { x: area.x + direction * distance, y: area.y + door.offset + door.width / 2 };
-  }
-  return { x: area.x + area.width - direction * distance, y: area.y + door.offset + door.width / 2 };
-}
-
-export function getAreaBoundaryWalls(area: Area, thickness = ROOM_WALL_THICKNESS): Rect[] {
-  const walls: Rect[] = [];
-  for (const side of ["top", "right", "bottom", "left"] as const) {
-    const length = side === "top" || side === "bottom" ? area.width : area.height;
-    const doors = area.doors
-      .filter((door) => door.side === side)
-      .map((door) => ({ start: Math.max(0, door.offset), end: Math.min(length, door.offset + door.width) }))
-      .filter((door) => door.end > door.start)
-      .sort((left, right) => left.start - right.start);
-    let cursor = 0;
-    for (const door of doors) {
-      if (door.start > cursor) {
-        walls.push(areaBoundarySegment(area, side, cursor, door.start - cursor, thickness));
-      }
-      cursor = Math.max(cursor, door.end);
-    }
-    if (cursor < length) {
-      walls.push(areaBoundarySegment(area, side, cursor, length - cursor, thickness));
-    }
-  }
-  return walls;
-}
-
-function areaBoundarySegment(
-  area: Area,
-  side: AreaDoorSide,
-  offset: number,
-  length: number,
-  thickness: number,
-): Rect {
-  const halfThickness = thickness / 2;
-  if (side === "top" || side === "bottom") {
-    return {
-      x: area.x + offset,
-      y: (side === "top" ? area.y : area.y + area.height) - halfThickness,
-      width: length,
-      height: thickness,
-    };
-  }
-  return {
-    x: (side === "left" ? area.x : area.x + area.width) - halfThickness,
-    y: area.y + offset,
-    width: thickness,
-    height: length,
-  };
-}
+export type KidnappingEndReason = "cancelled" | "interrupted" | "access_revoked";

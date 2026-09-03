@@ -1,6 +1,7 @@
 import { Phone, PhoneOff } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { CallDirection, CallState, Member } from "@workhard/shared";
+import { Avatar } from "./Avatar";
 
 export interface ActiveCall {
   callId: string;
@@ -36,10 +37,10 @@ export function CallNotice({ call, peer, onRespond, onEnd }: CallNoticeProps) {
 
   return (
     <div className={`call-pill ${call.state} ${call.direction}`} aria-live="polite" aria-busy={responding}>
-      <span className="person-avatar" style={{ background: peer?.color }}>{peer?.initials}</span>
+      <Avatar member={peer} className="person-avatar" />
       <div className="call-copy">
         <strong>{peerName}</strong>
-        <span>{call.state === "connected" ? "Connected" : call.direction === "incoming" ? "Incoming call" : "Calling…"}</span>
+        <span>{call.state === "accepted" ? "Accepted" : call.direction === "incoming" ? "Incoming call" : "Calling…"}</span>
       </div>
       {call.state === "ringing" && call.direction === "incoming" ? (
         <div className="call-actions">
@@ -61,7 +62,7 @@ export function CallNotice({ call, peer, onRespond, onEnd }: CallNoticeProps) {
         </div>
       ) : (
         <button
-          aria-label={call.state === "connected" ? `End call with ${peerName}` : `Cancel call to ${peerName}`}
+          aria-label={call.state === "accepted" ? `End call with ${peerName}` : `Cancel call to ${peerName}`}
           disabled={responding}
           onClick={end}
         >

@@ -1,7 +1,8 @@
-import { Hash, ImagePlus, LoaderCircle, MessageCircle, Send, UserRound, Video, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent } from "react";
+import { ArrowDown, Hash, ImagePlus, LoaderCircle, MessageCircle, Send, UserRound, Video, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent, type KeyboardEvent } from "react";
 import type { ChatMessage, Conversation, Member } from "@workhard/shared";
 import { resolveServerUrl } from "../server-url";
+import { Avatar } from "./Avatar";
 import { IconButton } from "./IconButton";
 
 interface ChatPanelProps {
@@ -18,7 +19,7 @@ interface ChatPanelProps {
 
 const conversationIcons = {
   team: Hash,
-  area: Hash,
+  room: Hash,
   direct: UserRound,
   meeting: Video,
 };
@@ -38,6 +39,7 @@ export function ChatPanel({
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [imageError, setImageError] = useState<string>();
+  const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
@@ -61,6 +63,7 @@ export function ChatPanel({
     const conversationChanged = previousConversationIdRef.current !== selected.id;
     if (conversationChanged || stickToBottomRef.current) {
       list.scrollTop = list.scrollHeight;
+      setShowJumpToLatest(false);
     }
     previousConversationIdRef.current = selected.id;
     if (conversationChanged) {
@@ -68,6 +71,32 @@ export function ChatPanel({
       setImageError(undefined);
     }
   }, [selected?.id, visibleMessages.length]);
+
+  const jumpToLatest = () => {
+    const list = messageListRef.current;
+    if (!list) {
+      return;
+    }
+    stickToBottomRef.current = true;
+    setShowJumpToLatest(false);
+    list.scrollTop = list.scrollHeight;
+  };
+
+  const navigateConversationTabs = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const lastIndex = conversations.length - 1;
+    const nextIndex = event.key === "ArrowRight"
+      ? (index + 1) % conversations.length
+      : event.key === "ArrowLeft"
+        ? (index - 1 + conversations.length) % conversations.length
+        : event.key === "Home" ? 0 : event.key === "End" ? lastIndex : undefined;
+    if (nextIndex === undefined) {
+      return;
+    }
+    event.preventDefault();
+    const nextTab = conversationTabsRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[nextIndex];
+    nextTab?.focus();
+    onConversationChange(conversations[nextIndex]!.id);
+  };
 
   useEffect(() => {
     const tabs = conversationTabsRef.current;
@@ -93,13 +122,14 @@ export function ChatPanel({
     if (!onSend(selected.id, value)) {
       return;
     }
+    jumpToLatest();
     setBody("");
     inputRef.current?.focus();
   };
 
   const sendImages = async (source: FileList | File[]) => {
     const files = Array.from(source);
-    if (!selected || files.length === 0 || uploading) {
+    if (!selected || files.length === 0) {
       return;
     }
     if (files.length > 4) {
@@ -115,8 +145,13 @@ export function ChatPanel({
       setImageError("Each image must be 5 MB or smaller.");
       return;
     }
+    if (uploading) {
+      setImageError("Wait for the current upload to finish.");
+      return;
+    }
     setImageError(undefined);
     setUploading(true);
+    jumpToLatest();
     try {
       for (const file of files) {
         await onSendImage(selected.id, file);
@@ -177,7 +212,7 @@ export function ChatPanel({
       </div>
 
       <div ref={conversationTabsRef} className="conversation-tabs" role="tablist" aria-label="Conversations">
-        {conversations.map((conversation) => {
+        {conversations.map((conversation, index) => {
           const Icon = conversationIcons[conversation.type];
           return (
             <button
@@ -185,61 +220,71 @@ export function ChatPanel({
               ref={conversation.id === selected.id ? activeConversationTabRef : undefined}
               role="tab"
               aria-selected={conversation.id === selected.id}
+              tabIndex={conversation.id === selected.id ? 0 : -1}
               className={conversation.id === selected.id ? "active" : ""}
               onClick={() => onConversationChange(conversation.id)}
+              onKeyDown={(event) => navigateConversationTabs(event, index)}
             >
               <Icon size={15} />
               <span>{getConversationName(conversation, members, currentUserId)}</span>
-              {conversation.unread > 0 && <b>{conversation.unread}</b>}
+              {conversation.unread > 0 && <b aria-label={`${conversation.unread} unread`}>{conversation.unread}</b>}
             </button>
           );
         })}
       </div>
 
-      <div
-        ref={messageListRef}
-        className="message-list panel-scroll"
-        aria-live="polite"
-        onScroll={(event) => {
-          const list = event.currentTarget;
-          stickToBottomRef.current = list.scrollHeight - list.scrollTop - list.clientHeight <= 48;
-        }}
-      >
-        {visibleMessages.length === 0 && (
-          <div className="empty-symbol" aria-label="No messages">
-            <MessageCircle size={24} />
-          </div>
-        )}
-        {visibleMessages.map((message, index) => {
-          const member = members.find((item) => item.id === message.userId);
-          const previous = visibleMessages[index - 1];
-          const grouped = previous?.userId === message.userId;
-          const mine = message.userId === currentUserId;
-          const hasImage = Boolean(message.attachments?.length);
-          return (
-            <div className={`chat-message ${mine ? "mine" : ""} ${grouped ? "grouped" : ""} ${hasImage ? "has-image" : ""}`} key={message.id}>
-              {!grouped && !mine && (
-                <span className="message-avatar" style={{ background: member?.color }}>
-                  {member?.initials ?? "?"}
-                </span>
-              )}
-              <div>
-                {!grouped && (
-                  <span className="message-meta">
-                    <strong>{mine ? "You" : member?.name ?? "Unknown"}</strong>
-                    <time>{new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(message.createdAt))}</time>
-                  </span>
-                )}
-                {message.attachments?.map((attachment) => (
-                  <a className="chat-image" href={resolveServerUrl(attachment.url)} target="_blank" rel="noreferrer" aria-label={`Open ${attachment.name}`} key={attachment.id}>
-                    <img src={resolveServerUrl(attachment.url)} alt={attachment.name} loading="lazy" crossOrigin="use-credentials" />
-                  </a>
-                ))}
-                {message.body && <p>{message.body}</p>}
-              </div>
+      <div className="message-list-shell">
+        <div
+          ref={messageListRef}
+          className="message-list panel-scroll"
+          aria-live="polite"
+          onScroll={(event) => {
+            const list = event.currentTarget;
+            const atLatest = list.scrollHeight - list.scrollTop - list.clientHeight <= 48;
+            stickToBottomRef.current = atLatest;
+            setShowJumpToLatest(!atLatest);
+          }}
+        >
+          {visibleMessages.length === 0 && (
+            <div className="empty-symbol" aria-label="No messages">
+              <MessageCircle size={24} />
             </div>
-          );
-        })}
+          )}
+          {visibleMessages.map((message, index) => {
+            const member = members.find((item) => item.id === message.userId);
+            const previous = visibleMessages[index - 1];
+            const grouped = previous?.userId === message.userId;
+            const mine = message.userId === currentUserId;
+            const hasImage = Boolean(message.attachments?.length);
+            return (
+              <div className={`chat-message ${mine ? "mine" : ""} ${grouped ? "grouped" : ""} ${hasImage ? "has-image" : ""}`} key={message.id}>
+                {!grouped && !mine && (
+                  <Avatar member={member} className="message-avatar" />
+                )}
+                <div>
+                  {!grouped && (
+                    <span className="message-meta">
+                      <strong>{mine ? "You" : member?.name ?? "Unknown"}</strong>
+                      <time>{new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(message.createdAt))}</time>
+                    </span>
+                  )}
+                  {message.attachments?.map((attachment) => (
+                    <a className="chat-image" href={resolveServerUrl(attachment.url)} target="_blank" rel="noreferrer" aria-label={`Open ${attachment.name}`} key={attachment.id}>
+                      <img src={resolveServerUrl(attachment.url)} alt={attachment.name} loading="lazy" crossOrigin="use-credentials" />
+                    </a>
+                  ))}
+                  {message.body && <p>{message.body}</p>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {showJumpToLatest && (
+          <button className="jump-to-latest" onClick={jumpToLatest}>
+            <ArrowDown size={15} aria-hidden="true" />
+            Jump to latest
+          </button>
+        )}
       </div>
 
       <div className="message-composer-shell">
@@ -249,7 +294,7 @@ export function ChatPanel({
             value={body}
             maxLength={500}
             aria-label={`Message ${selectedName}`}
-            placeholder={`Message ${selected.type === "team" || selected.type === "area" ? "#" : ""}${selectedName}`}
+            placeholder={`Message ${selected.type === "team" || selected.type === "room" ? "#" : ""}${selectedName}`}
             onChange={(event) => setBody(event.target.value)}
           />
           <input

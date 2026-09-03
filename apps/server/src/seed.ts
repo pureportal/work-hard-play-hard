@@ -1,19 +1,25 @@
 import type {
-  Area,
   BootstrapData,
   ChatMessage,
   Conversation,
-  Floor,
-  FloorLayout,
   GameScore,
   Invitation,
   Meeting,
   Member,
   MiniGameDefinition,
   Office,
+  PlayerGameStatistics,
   Team,
-  WorldObject,
 } from "@workhard/shared";
+import {
+  DEFAULT_GAME_SETTINGS,
+  DEFAULT_GLOBAL_KIDNAPPING_SETTINGS,
+  DEFAULT_PLAYER_KIDNAPPING_SETTINGS,
+  TETRIS_DEFINITION_ID,
+  WELCOME_COIN_REWARD,
+  getDailyRewardStatus,
+} from "@workhard/shared";
+import { createSeedWorld } from "./seed-world.js";
 
 const team: Team = {
   id: "team-northstar",
@@ -28,28 +34,7 @@ const office: Office = {
   name: "Northstar HQ",
 };
 
-const floors: Floor[] = [
-  {
-    id: "floor-studio",
-    officeId: office.id,
-    name: "Studio",
-    level: 1,
-    width: 1600,
-    height: 1000,
-    spawn: { x: 770, y: 890 },
-    background: "#e7e0d3",
-  },
-  {
-    id: "floor-rooftop",
-    officeId: office.id,
-    name: "Rooftop",
-    level: 2,
-    width: 1280,
-    height: 820,
-    spawn: { x: 640, y: 710 },
-    background: "#dce7dd",
-  },
-];
+const { floors, layouts } = createSeedWorld(office.id);
 
 const members: Member[] = [
   {
@@ -59,6 +44,7 @@ const members: Member[] = [
     email: "maya@northstar.studio",
     title: "Product Lead",
     role: "owner",
+    permissions: ["manage_members", "build"],
     color: "#ff7a66",
     availability: "available",
     online: true,
@@ -73,6 +59,7 @@ const members: Member[] = [
     email: "leo@northstar.studio",
     title: "Design Engineer",
     role: "admin",
+    permissions: ["manage_members", "build"],
     color: "#5b8def",
     availability: "available",
     online: true,
@@ -87,6 +74,7 @@ const members: Member[] = [
     email: "amara@northstar.studio",
     title: "Engineering Lead",
     role: "admin",
+    permissions: ["manage_members", "build"],
     color: "#25b99a",
     availability: "busy",
     online: true,
@@ -101,6 +89,7 @@ const members: Member[] = [
     email: "jonas@northstar.studio",
     title: "Frontend Engineer",
     role: "member",
+    permissions: [],
     color: "#f4b942",
     availability: "available",
     online: true,
@@ -115,6 +104,7 @@ const members: Member[] = [
     email: "priya@northstar.studio",
     title: "Product Designer",
     role: "member",
+    permissions: [],
     color: "#b26fe8",
     availability: "dnd",
     online: true,
@@ -129,6 +119,7 @@ const members: Member[] = [
     email: "noah@northstar.studio",
     title: "Community",
     role: "member",
+    permissions: [],
     color: "#e36d9e",
     availability: "available",
     online: true,
@@ -143,6 +134,7 @@ const members: Member[] = [
     email: "elena@northstar.studio",
     title: "Backend Engineer",
     role: "member",
+    permissions: [],
     color: "#ef8354",
     availability: "available",
     online: true,
@@ -157,6 +149,7 @@ const members: Member[] = [
     email: "theo@northstar.studio",
     title: "QA Engineer",
     role: "member",
+    permissions: [],
     color: "#3b82a0",
     availability: "available",
     online: true,
@@ -171,6 +164,7 @@ const members: Member[] = [
     email: "aisha@northstar.studio",
     title: "User Researcher",
     role: "member",
+    permissions: [],
     color: "#ca6f9d",
     availability: "busy",
     online: true,
@@ -185,6 +179,7 @@ const members: Member[] = [
     email: "sam@northstar.studio",
     title: "Operations",
     role: "member",
+    permissions: [],
     color: "#7d8b99",
     availability: "away",
     online: false,
@@ -196,236 +191,17 @@ const members: Member[] = [
     email: "owen@northstar.studio",
     title: "Client Partner",
     role: "guest",
+    permissions: [],
     color: "#8c7a6b",
     availability: "away",
     online: false,
   },
 ];
 
-const studioAreas: Area[] = [
-  {
-    id: "area-commons",
-    floorId: "floor-studio",
-    name: "Commons",
-    type: "lounge",
-    x: 100,
-    y: 100,
-    width: 430,
-    height: 310,
-    color: "#f6c9a8",
-    capacity: 8,
-    locked: false,
-    visibility: "public",
-    doors: [],
-  },
-  {
-    id: "area-daily",
-    floorId: "floor-studio",
-    name: "Daily Room",
-    type: "meeting",
-    x: 570,
-    y: 100,
-    width: 360,
-    height: 310,
-    color: "#c6d7f5",
-    capacity: 8,
-    locked: false,
-    visibility: "public",
-    doors: [{ id: "door-daily-south", side: "bottom", offset: 120, width: 90 }],
-  },
-  {
-    id: "area-focus",
-    floorId: "floor-studio",
-    name: "Focus Suite",
-    type: "private",
-    x: 970,
-    y: 100,
-    width: 490,
-    height: 310,
-    color: "#d9cdf4",
-    capacity: 5,
-    locked: true,
-    visibility: "public",
-    memberIds: ["user-priya", "user-maya"],
-    doors: [{ id: "door-focus-south", side: "bottom", offset: 250, width: 90 }],
-  },
-  {
-    id: "area-product",
-    floorId: "floor-studio",
-    name: "Product Studio",
-    type: "desk",
-    x: 100,
-    y: 460,
-    width: 850,
-    height: 390,
-    color: "#cce6d8",
-    capacity: 12,
-    locked: false,
-    visibility: "public",
-    doors: [],
-  },
-  {
-    id: "area-arcade",
-    floorId: "floor-studio",
-    name: "Arcade",
-    type: "arcade",
-    x: 990,
-    y: 460,
-    width: 470,
-    height: 390,
-    color: "#f2cfdf",
-    capacity: 8,
-    locked: false,
-    visibility: "public",
-    doors: [],
-  },
-];
-
-const rooftopAreas: Area[] = [
-  {
-    id: "area-garden",
-    floorId: "floor-rooftop",
-    name: "Garden",
-    type: "lounge",
-    x: 90,
-    y: 90,
-    width: 560,
-    height: 430,
-    color: "#bcd9bc",
-    capacity: 10,
-    locked: false,
-    visibility: "public",
-    doors: [],
-  },
-  {
-    id: "area-workshop",
-    floorId: "floor-rooftop",
-    name: "Workshop",
-    type: "meeting",
-    x: 700,
-    y: 90,
-    width: 490,
-    height: 280,
-    color: "#f0d5aa",
-    capacity: 10,
-    locked: false,
-    visibility: "public",
-    doors: [{ id: "door-workshop-west", side: "left", offset: 158, width: 82 }],
-  },
-  {
-    id: "area-quiet",
-    floorId: "floor-rooftop",
-    name: "Quiet Corner",
-    type: "private",
-    x: 700,
-    y: 420,
-    width: 230,
-    height: 250,
-    color: "#cbd3ed",
-    capacity: 4,
-    locked: false,
-    visibility: "members",
-    memberIds: ["user-aisha", "user-noah"],
-    doors: [{ id: "door-quiet-east", side: "right", offset: 86, width: 84 }],
-  },
-  {
-    id: "area-cafe",
-    floorId: "floor-rooftop",
-    name: "Cafe",
-    type: "kitchen",
-    x: 960,
-    y: 420,
-    width: 230,
-    height: 250,
-    color: "#ead4c2",
-    capacity: 6,
-    locked: false,
-    visibility: "public",
-    doors: [],
-  },
-];
-
-const studioObjects: WorldObject[] = [
-  { id: "object-commons-table", floorId: "floor-studio", type: "table", x: 250, y: 220, width: 130, height: 70, color: "#ae795d", solid: true, interactive: false },
-  { id: "object-commons-sofa-a", floorId: "floor-studio", type: "sofa", x: 135, y: 135, width: 120, height: 48, color: "#df8f72", solid: true, interactive: false },
-  { id: "object-commons-sofa-b", floorId: "floor-studio", type: "sofa", x: 370, y: 320, width: 120, height: 48, color: "#df8f72", solid: true, interactive: false },
-  { id: "object-daily-table", floorId: "floor-studio", type: "table", x: 655, y: 205, width: 190, height: 85, color: "#7893bd", solid: true, interactive: false },
-  { id: "object-daily-board", floorId: "floor-studio", type: "whiteboard", x: 680, y: 125, width: 140, height: 24, color: "#f7f8f5", label: "Roadmap", solid: true, interactive: true },
-  { id: "object-focus-desk-a", floorId: "floor-studio", type: "desk", x: 1030, y: 170, width: 110, height: 54, color: "#796ca6", solid: true, interactive: true },
-  { id: "object-focus-desk-b", floorId: "floor-studio", type: "desk", x: 1240, y: 170, width: 110, height: 54, color: "#796ca6", solid: true, interactive: true },
-  { id: "object-desk-maya", floorId: "floor-studio", type: "desk", x: 280, y: 590, width: 115, height: 58, color: "#6c9b83", label: "Maya", solid: true, interactive: true },
-  { id: "object-desk-leo", floorId: "floor-studio", type: "desk", x: 520, y: 590, width: 115, height: 58, color: "#6c9b83", label: "Leo", solid: true, interactive: true },
-  { id: "object-desk-amara", floorId: "floor-studio", type: "desk", x: 750, y: 590, width: 115, height: 58, color: "#6c9b83", label: "Amara", solid: true, interactive: true },
-  { id: "object-product-board", floorId: "floor-studio", type: "whiteboard", x: 480, y: 495, width: 170, height: 24, color: "#f7f8f5", label: "Sprint", solid: true, interactive: true },
-  { id: "object-stack", floorId: "floor-studio", type: "arcade", x: 1110, y: 580, width: 70, height: 100, color: "#34314a", label: "Stack", solid: true, interactive: true },
-  { id: "object-arcade-b", floorId: "floor-studio", type: "arcade", x: 1300, y: 580, width: 70, height: 100, color: "#5a365f", label: "Dash", solid: true, interactive: true },
-  { id: "object-portal-up", floorId: "floor-studio", type: "portal", x: 1450, y: 875, width: 54, height: 54, color: "#6c5ce7", label: "2", solid: false, interactive: true },
-  { id: "object-plant-a", floorId: "floor-studio", type: "plant", x: 120, y: 760, width: 34, height: 34, color: "#4e8b68", solid: true, interactive: false },
-  { id: "object-plant-b", floorId: "floor-studio", type: "plant", x: 900, y: 780, width: 34, height: 34, color: "#4e8b68", solid: true, interactive: false },
-];
-
-const rooftopObjects: WorldObject[] = [
-  { id: "object-garden-table", floorId: "floor-rooftop", type: "table", x: 280, y: 260, width: 150, height: 80, color: "#8b6b4e", solid: true, interactive: false },
-  { id: "object-garden-sofa", floorId: "floor-rooftop", type: "sofa", x: 150, y: 130, width: 150, height: 50, color: "#6e9d72", solid: true, interactive: false },
-  { id: "object-workshop-table", floorId: "floor-rooftop", type: "table", x: 830, y: 180, width: 220, height: 85, color: "#aa8051", solid: true, interactive: false },
-  { id: "object-rooftop-board", floorId: "floor-rooftop", type: "whiteboard", x: 865, y: 115, width: 160, height: 24, color: "#f7f8f5", label: "Ideas", solid: true, interactive: true },
-  { id: "object-quiet-sofa", floorId: "floor-rooftop", type: "sofa", x: 735, y: 520, width: 140, height: 56, color: "#7c87b7", solid: true, interactive: false },
-  { id: "object-cafe-table", floorId: "floor-rooftop", type: "table", x: 1030, y: 500, width: 130, height: 70, color: "#b98163", solid: true, interactive: false },
-  { id: "object-cafe-plant", floorId: "floor-rooftop", type: "plant", x: 1130, y: 610, width: 36, height: 36, color: "#4e8b68", solid: true, interactive: false },
-  { id: "object-portal-down", floorId: "floor-rooftop", type: "portal", x: 1130, y: 690, width: 54, height: 54, color: "#6c5ce7", label: "1", solid: false, interactive: true },
-  { id: "object-plant-c", floorId: "floor-rooftop", type: "plant", x: 500, y: 400, width: 40, height: 40, color: "#39744d", solid: true, interactive: false },
-];
-
-const layouts: FloorLayout[] = [
-  {
-    floorId: "floor-studio",
-    revision: 12,
-    walls: [
-      { id: "wall-studio-top", x: 60, y: 60, width: 1480, height: 20 },
-      { id: "wall-studio-left", x: 60, y: 60, width: 20, height: 880 },
-      { id: "wall-studio-right", x: 1520, y: 60, width: 20, height: 880 },
-      { id: "wall-studio-bottom-a", x: 60, y: 920, width: 690, height: 20 },
-      { id: "wall-studio-bottom-b", x: 820, y: 920, width: 720, height: 20 },
-      { id: "wall-row-one-a", x: 80, y: 420, width: 160, height: 14 },
-      { id: "wall-row-one-b", x: 330, y: 420, width: 360, height: 14 },
-      { id: "wall-row-one-c", x: 780, y: 420, width: 440, height: 14 },
-      { id: "wall-row-one-d", x: 1310, y: 420, width: 210, height: 14 },
-      { id: "wall-col-a", x: 540, y: 80, width: 14, height: 260 },
-      { id: "wall-col-b", x: 540, y: 380, width: 14, height: 40 },
-      { id: "wall-col-c", x: 940, y: 80, width: 14, height: 150 },
-      { id: "wall-col-d", x: 940, y: 320, width: 14, height: 100 },
-      { id: "wall-col-e", x: 960, y: 430, width: 14, height: 170 },
-      { id: "wall-col-f", x: 960, y: 690, width: 14, height: 230 },
-    ],
-    tiles: [],
-    objects: studioObjects,
-    areas: studioAreas,
-  },
-  {
-    floorId: "floor-rooftop",
-    revision: 8,
-    walls: [
-      { id: "wall-roof-top", x: 50, y: 50, width: 1180, height: 18 },
-      { id: "wall-roof-left", x: 50, y: 50, width: 18, height: 700 },
-      { id: "wall-roof-right", x: 1212, y: 50, width: 18, height: 700 },
-      { id: "wall-roof-bottom-a", x: 50, y: 732, width: 560, height: 18 },
-      { id: "wall-roof-bottom-b", x: 680, y: 732, width: 550, height: 18 },
-      { id: "wall-roof-col-a", x: 670, y: 68, width: 16, height: 180 },
-      { id: "wall-roof-col-b", x: 670, y: 330, width: 16, height: 330 },
-      { id: "wall-roof-row", x: 686, y: 390, width: 526, height: 16 },
-      { id: "wall-roof-lower-a", x: 940, y: 406, width: 16, height: 100 },
-      { id: "wall-roof-lower-b", x: 940, y: 590, width: 16, height: 70 },
-    ],
-    tiles: [],
-    objects: rooftopObjects,
-    areas: rooftopAreas,
-  },
-];
-
 const conversations: Conversation[] = [
   { id: "conversation-team", name: "Northstar", type: "team", unread: 3 },
-  { id: "conversation-product", name: "Product Studio", type: "area", areaId: "area-product", unread: 0 },
-  { id: "conversation-garden", name: "Garden", type: "area", areaId: "area-garden", unread: 1 },
+  { id: "conversation-product", name: "Product Studio", type: "room", roomId: "room-product", unread: 0 },
+  { id: "conversation-garden", name: "Garden", type: "room", roomId: "room-garden", unread: 1 },
   { id: "conversation-daily", name: "Daily Room", type: "meeting", meetingId: "meeting-product-crit", unread: 2 },
   { id: "conversation-open-huddle", name: "Open huddle", type: "meeting", meetingId: "meeting-open-huddle", unread: 0 },
   { id: "conversation-planning", name: "September planning", type: "meeting", meetingId: "meeting-planning", unread: 0 },
@@ -446,7 +222,7 @@ function createMessages(now: Date): ChatMessage[] {
     { id: "message-team-1", conversationId: "conversation-team", userId: "user-amara", body: "API contract is ready for review.", createdAt: shiftedIso(now, -150), sequence: 1 },
     { id: "message-team-2", conversationId: "conversation-team", userId: "user-leo", body: "Nice. I left the latest flow on the board.", createdAt: shiftedIso(now, -145), sequence: 2 },
     { id: "message-team-3", conversationId: "conversation-team", userId: "user-elena", body: "The preview environment is stable again.", createdAt: shiftedIso(now, -138), sequence: 3 },
-    { id: "message-team-4", conversationId: "conversation-team", userId: "user-jonas", body: "Stack score to beat: 4,820.", createdAt: shiftedIso(now, -126), sequence: 4 },
+    { id: "message-team-4", conversationId: "conversation-team", userId: "user-jonas", body: "Tetris score to beat: 4,820.", createdAt: shiftedIso(now, -126), sequence: 4 },
     { id: "message-team-5", conversationId: "conversation-team", userId: "user-maya", body: "Open huddle is live in the Product Studio.", createdAt: shiftedIso(now, -115), sequence: 5 },
     { id: "message-team-6", conversationId: "conversation-team", userId: "user-theo", body: "I will run the entry checks from there.", createdAt: shiftedIso(now, -112), sequence: 6 },
     { id: "message-product-1", conversationId: "conversation-product", userId: "user-maya", body: "Product crit starts in ten.", createdAt: shiftedIso(now, -92), sequence: 1 },
@@ -485,34 +261,51 @@ function createMessages(now: Date): ChatMessage[] {
 
 function createInvitations(now: Date): Invitation[] {
   return [
-    { id: "invite-ana", teamId: team.id, email: "ana@example.com", role: "member", status: "pending", expiresAt: shiftedIso(now, 7 * 24 * 60) },
-    { id: "invite-guest", teamId: team.id, email: "guest@example.com", role: "guest", status: "pending", expiresAt: shiftedIso(now, 3 * 24 * 60) },
-    { id: "invite-revoked", teamId: team.id, email: "former@example.com", role: "member", status: "revoked", expiresAt: shiftedIso(now, 2 * 24 * 60) },
+    { id: "invite-ana", teamId: team.id, email: "ana@example.com", role: "member", permissions: [], status: "pending", expiresAt: shiftedIso(now, 7 * 24 * 60) },
+    { id: "invite-guest", teamId: team.id, email: "guest@example.com", role: "guest", permissions: [], status: "pending", expiresAt: shiftedIso(now, 3 * 24 * 60) },
+    { id: "invite-revoked", teamId: team.id, email: "former@example.com", role: "member", permissions: [], status: "revoked", expiresAt: shiftedIso(now, 2 * 24 * 60) },
   ];
 }
 
 function createMeetings(now: Date): Meeting[] {
   return [
-    { id: "meeting-product-crit", title: "Product crit", location: { type: "room", areaId: "area-daily" }, startsAt: shiftedIso(now, -12), durationMinutes: 30, status: "live", participantIds: ["user-amara", "user-leo"] },
+    { id: "meeting-product-crit", title: "Product crit", location: { type: "room", roomId: "room-daily" }, startsAt: shiftedIso(now, -12), durationMinutes: 30, status: "live", participantIds: ["user-amara", "user-leo"] },
     { id: "meeting-open-huddle", title: "Open huddle", location: { type: "public", floorId: "floor-studio", x: 800, y: 760, radius: 82 }, startsAt: shiftedIso(now, -4), durationMinutes: 30, status: "live", participantIds: ["user-theo"] },
-    { id: "meeting-planning", title: "September planning", location: { type: "room", areaId: "area-workshop" }, startsAt: shiftedIso(now, 50), durationMinutes: 45, status: "scheduled", participantIds: ["user-maya", "user-noah", "user-aisha"] },
-    { id: "meeting-retro", title: "Sprint retro", location: { type: "room", areaId: "area-workshop" }, startsAt: shiftedIso(now, -100), durationMinutes: 45, status: "ended", participantIds: ["user-maya", "user-leo", "user-priya"] },
+    { id: "meeting-planning", title: "September planning", location: { type: "room", roomId: "room-workshop" }, startsAt: shiftedIso(now, 50), durationMinutes: 45, status: "scheduled", participantIds: ["user-maya", "user-noah", "user-aisha"] },
+    { id: "meeting-retro", title: "Sprint retro", location: { type: "room", roomId: "room-workshop" }, startsAt: shiftedIso(now, -100), durationMinutes: 45, status: "ended", participantIds: ["user-maya", "user-leo", "user-priya"] },
   ];
 }
 
 const miniGames: MiniGameDefinition[] = [
-  { id: "game-stack", name: "Stack", accent: "#ff7a66", objectId: "object-stack" },
+  { id: TETRIS_DEFINITION_ID, name: "Tetris", accent: "#ff7a66", objectId: "object-tetris" },
 ];
 
 function createScores(now: Date): GameScore[] {
   return [
-    { id: "score-jonas", definitionId: "game-stack", userId: "user-jonas", score: 4820, lines: 21, playedAt: shiftedIso(now, -24 * 60) },
-    { id: "score-priya", definitionId: "game-stack", userId: "user-priya", score: 3640, lines: 17, playedAt: shiftedIso(now, -2 * 24 * 60) },
-    { id: "score-leo", definitionId: "game-stack", userId: "user-leo", score: 2910, lines: 14, playedAt: shiftedIso(now, -80) },
-    { id: "score-elena", definitionId: "game-stack", userId: "user-elena", score: 2540, lines: 13, playedAt: shiftedIso(now, -3 * 24 * 60) },
-    { id: "score-theo", definitionId: "game-stack", userId: "user-theo", score: 2100, lines: 11, playedAt: shiftedIso(now, -4 * 24 * 60) },
-    { id: "score-noah", definitionId: "game-stack", userId: "user-noah", score: 1760, lines: 9, playedAt: shiftedIso(now, -5 * 24 * 60) },
+    { id: "score-jonas", roundId: "round-seed-jonas", definitionId: TETRIS_DEFINITION_ID, userId: "user-jonas", score: 4820, lines: 21, level: 3, mode: "solo", playerCount: 1, placement: 1, won: false, playedAt: shiftedIso(now, -24 * 60) },
+    { id: "score-priya", roundId: "round-seed-priya-leo", definitionId: TETRIS_DEFINITION_ID, userId: "user-priya", score: 3640, lines: 17, level: 3, mode: "multiplayer", playerCount: 2, placement: 1, won: true, playedAt: shiftedIso(now, -2 * 24 * 60) },
+    { id: "score-leo", roundId: "round-seed-priya-leo", definitionId: TETRIS_DEFINITION_ID, userId: "user-leo", score: 2910, lines: 14, level: 2, mode: "multiplayer", playerCount: 2, placement: 2, won: false, playedAt: shiftedIso(now, -2 * 24 * 60) },
+    { id: "score-elena", roundId: "round-seed-elena-theo", definitionId: TETRIS_DEFINITION_ID, userId: "user-elena", score: 2540, lines: 13, level: 2, mode: "multiplayer", playerCount: 2, placement: 1, won: true, playedAt: shiftedIso(now, -3 * 24 * 60) },
+    { id: "score-theo", roundId: "round-seed-elena-theo", definitionId: TETRIS_DEFINITION_ID, userId: "user-theo", score: 2100, lines: 11, level: 2, mode: "multiplayer", playerCount: 2, placement: 2, won: false, playedAt: shiftedIso(now, -3 * 24 * 60) },
+    { id: "score-noah", roundId: "round-seed-noah", definitionId: TETRIS_DEFINITION_ID, userId: "user-noah", score: 1760, lines: 9, level: 2, mode: "solo", playerCount: 1, placement: 1, won: false, playedAt: shiftedIso(now, -5 * 24 * 60) },
   ];
+}
+
+function createGameStatistics(scores: GameScore[]): PlayerGameStatistics[] {
+  return members.map((member) => {
+    const playerScores = scores.filter((score) => score.userId === member.id);
+    return {
+      definitionId: TETRIS_DEFINITION_ID,
+      userId: member.id,
+      gamesPlayed: playerScores.length,
+      multiplayerGamesPlayed: playerScores.filter((score) => score.mode === "multiplayer").length,
+      multiplayerWins: playerScores.filter((score) => score.won).length,
+      highestScore: Math.max(0, ...playerScores.map((score) => score.score)),
+      highestLines: Math.max(0, ...playerScores.map((score) => score.lines)),
+      totalScore: playerScores.reduce((total, score) => total + score.score, 0),
+      totalLines: playerScores.reduce((total, score) => total + score.lines, 0),
+    };
+  });
 }
 
 function shiftedIso(now: Date, minutes: number): string {
@@ -520,6 +313,7 @@ function shiftedIso(now: Date, minutes: number): string {
 }
 
 export function createSeedData(currentUserId = "user-maya", now = new Date()): BootstrapData {
+  const scores = createScores(now);
   return structuredClone({
     currentUserId,
     team,
@@ -532,6 +326,50 @@ export function createSeedData(currentUserId = "user-maya", now = new Date()): B
     invitations: createInvitations(now),
     meetings: createMeetings(now),
     miniGames,
-    scores: createScores(now),
+    scores,
+    gameStatistics: createGameStatistics(scores),
+    economy: {
+      coinBalance: WELCOME_COIN_REWARD,
+      lifetimeEarned: WELCOME_COIN_REWARD,
+      lifetimeSpent: 0,
+      dailyReward: getDailyRewardStatus({ streak: 0 }, now),
+      inventory: [],
+      recentTransactions: [],
+    },
+    gameSettings: DEFAULT_GAME_SETTINGS,
+    kidnapping: {
+      global: DEFAULT_GLOBAL_KIDNAPPING_SETTINGS,
+      player: DEFAULT_PLAYER_KIDNAPPING_SETTINGS,
+    },
   });
+}
+
+export function createInitialData(now = new Date()): BootstrapData {
+  const data = createSeedData("", now);
+  return {
+    ...data,
+    members: [],
+    layouts: data.layouts.map((layout) => ({
+      ...layout,
+      objects: layout.objects.map((object) => {
+        if (!["object-desk-maya", "object-desk-leo", "object-desk-amara"].includes(object.id)) {
+          return object;
+        }
+        const { label: _label, ...unassignedObject } = object;
+        return unassignedObject;
+      }),
+      rooms: layout.rooms.map((room) => ({
+        ...room,
+        access: { mode: "open", assignedPersonIds: [], knockable: false },
+      })),
+    })),
+    conversations: data.conversations
+      .filter((conversation) => conversation.type === "team" || conversation.type === "room")
+      .map((conversation) => ({ ...conversation, unread: 0 })),
+    messages: [],
+    invitations: [],
+    meetings: [],
+    scores: [],
+    gameStatistics: [],
+  };
 }

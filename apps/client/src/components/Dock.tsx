@@ -1,5 +1,6 @@
 import { Camera, CameraOff, Mic, MicOff } from "lucide-react";
 import type { Availability, Member, ReactionKind } from "@workhard/shared";
+import { Avatar } from "./Avatar";
 import { IconButton } from "./IconButton";
 import { ReactionPicker } from "./ReactionPicker";
 
@@ -53,9 +54,7 @@ export function Dock({
           <option value="away">Away</option>
         </select>
       </label>
-      <span className="dock-avatar" style={{ background: currentUser.color }}>
-        {currentUser.initials}
-      </span>
+      <Avatar member={currentUser} className="dock-avatar" />
     </div>
   );
 }

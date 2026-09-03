@@ -10,6 +10,7 @@ const peer: Member = {
   email: "leo@example.com",
   title: "Engineer",
   role: "member",
+  permissions: [],
   color: "#5b8def",
   availability: "available",
   online: true,
@@ -39,7 +40,9 @@ describe("CallNotice", () => {
     expect(accept.disabled).toBe(true);
     expect(decline.disabled).toBe(true);
 
-    rerender(<CallNotice call={{ ...incomingCall, state: "connected" }} peer={peer} onRespond={onRespond} onEnd={vi.fn(() => true)} />);
+    rerender(<CallNotice call={{ ...incomingCall, state: "accepted" }} peer={peer} onRespond={onRespond} onEnd={vi.fn(() => true)} />);
+    expect(screen.getByText("Accepted")).toBeTruthy();
+    expect(screen.queryByText("Call active")).toBeNull();
     expect((screen.getByRole("button", { name: "End call with Leo Martins" }) as HTMLButtonElement).disabled).toBe(false);
   });
 

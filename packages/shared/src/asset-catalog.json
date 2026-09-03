@@ -1,0 +1,500 @@
+{
+  "rasterSize": 16,
+  "themeSets": [
+    {
+      "id": "workspace",
+      "variants": [
+        { "id": "sage", "name": "Sage", "color": "#6c9b83", "secondaryColor": "#d9e7df", "accentColor": "#3f6f59" },
+        { "id": "oak", "name": "Oak", "color": "#b98455", "secondaryColor": "#ead3b8", "accentColor": "#744b2d" },
+        { "id": "navy", "name": "Navy", "color": "#496a8a", "secondaryColor": "#cad8e5", "accentColor": "#29465f" }
+      ]
+    },
+    {
+      "id": "seating",
+      "variants": [
+        { "id": "white", "name": "White", "color": "#ecebe7", "secondaryColor": "#ffffff", "accentColor": "#b9b7b1" },
+        { "id": "gray", "name": "Gray", "color": "#78818c", "secondaryColor": "#aeb5bd", "accentColor": "#4a515a" },
+        { "id": "blue", "name": "Blue", "color": "#4d78ad", "secondaryColor": "#8eadd1", "accentColor": "#2f527d" }
+      ]
+    },
+    {
+      "id": "tables",
+      "variants": [
+        { "id": "oak", "name": "Oak", "color": "#b98557", "secondaryColor": "#e8c9a7", "accentColor": "#775034" },
+        { "id": "walnut", "name": "Walnut", "color": "#76533f", "secondaryColor": "#ac8062", "accentColor": "#463126" },
+        { "id": "white", "name": "White", "color": "#e8e7e2", "secondaryColor": "#ffffff", "accentColor": "#9da2a6" }
+      ]
+    },
+    {
+      "id": "botanical",
+      "variants": [
+        { "id": "forest", "name": "Forest", "color": "#397653", "secondaryColor": "#79ad75", "accentColor": "#244f39" },
+        { "id": "sage", "name": "Sage", "color": "#6f9775", "secondaryColor": "#b2c8a9", "accentColor": "#4f6f52" },
+        { "id": "autumn", "name": "Autumn", "color": "#9a6b3f", "secondaryColor": "#d6a15d", "accentColor": "#694329" }
+      ]
+    },
+    {
+      "id": "outdoor",
+      "variants": [
+        { "id": "coastal", "name": "Coastal", "color": "#61b8d6", "secondaryColor": "#a8e2ef", "accentColor": "#367f9c" },
+        { "id": "sand", "name": "Sand", "color": "#c6a77c", "secondaryColor": "#ead7b9", "accentColor": "#866c4b" },
+        { "id": "slate", "name": "Slate", "color": "#657785", "secondaryColor": "#aebbc3", "accentColor": "#3d4c57" }
+      ]
+    },
+    {
+      "id": "decor",
+      "variants": [
+        { "id": "graphite", "name": "Graphite", "color": "#4b5364", "secondaryColor": "#99a4b4", "accentColor": "#252b35" },
+        { "id": "ivory", "name": "Ivory", "color": "#dedbd1", "secondaryColor": "#fffdf5", "accentColor": "#9c9688" },
+        { "id": "coral", "name": "Coral", "color": "#c96f62", "secondaryColor": "#efaaa0", "accentColor": "#85433c" }
+      ]
+    },
+    {
+      "id": "equipment",
+      "variants": [
+        { "id": "graphite", "name": "Graphite", "color": "#454653", "secondaryColor": "#8b8e9d", "accentColor": "#252630" },
+        { "id": "white", "name": "White", "color": "#e5e5e1", "secondaryColor": "#ffffff", "accentColor": "#92959c" },
+        { "id": "violet", "name": "Violet", "color": "#665a9a", "secondaryColor": "#a99fd2", "accentColor": "#3e356a" }
+      ]
+    },
+    {
+      "id": "surfaces",
+      "variants": [
+        { "id": "wood", "name": "Wood", "color": "#b88455", "secondaryColor": "#d9ad7a", "accentColor": "#7b5334", "pattern": "wood" },
+        { "id": "stone", "name": "Stone", "color": "#92999c", "secondaryColor": "#b9bec0", "accentColor": "#656c70", "pattern": "stone" },
+        { "id": "grass", "name": "Grass", "color": "#5d9358", "secondaryColor": "#8db87d", "accentColor": "#37643a", "pattern": "grass" }
+      ]
+    },
+    {
+      "id": "infrastructure",
+      "variants": [
+        { "id": "violet", "name": "Violet", "color": "#6c5ce7", "secondaryColor": "#a99eff", "accentColor": "#4031a7" },
+        { "id": "blue", "name": "Blue", "color": "#3e83c7", "secondaryColor": "#90c4ec", "accentColor": "#24598c" },
+        { "id": "amber", "name": "Amber", "color": "#d29a38", "secondaryColor": "#f1cb79", "accentColor": "#8b5e20" }
+      ]
+    }
+  ],
+  "categories": [
+    { "id": "desks", "name": "Desks", "buildable": true },
+    { "id": "seating", "name": "Seating", "buildable": true },
+    { "id": "tables", "name": "Tables", "buildable": true },
+    { "id": "plants", "name": "Plants", "buildable": true },
+    { "id": "outdoor", "name": "Outdoor", "buildable": true },
+    { "id": "decor", "name": "Decor", "buildable": true },
+    { "id": "equipment", "name": "Equipment", "buildable": true },
+    { "id": "surfaces", "name": "Surfaces", "buildable": true },
+    { "id": "infrastructure", "name": "Infrastructure", "buildable": false }
+  ],
+  "assets": [
+    {
+      "id": "desk-straight",
+      "name": "Straight desk",
+      "category": "desks",
+      "kind": "desk",
+      "themeSetId": "workspace",
+      "buildable": true,
+      "shop": { "price": 180, "available": true },
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 6, "height": 3 }, "type": "body", "solid": true },
+        { "range": { "x": 0, "y": 0, "width": 6, "height": 2 }, "type": "surface", "solid": true, "allows": ["decoration"] },
+        { "cells": [{ "x": 0, "y": 2 }, { "x": 5, "y": 2 }], "type": "support", "solid": true }
+      ]
+    },
+    {
+      "id": "desk-corner",
+      "name": "Corner desk",
+      "category": "desks",
+      "kind": "desk",
+      "themeSetId": "workspace",
+      "buildable": true,
+      "shop": { "price": 240, "available": true },
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 6, "height": 2 }, "type": "surface", "solid": true, "allows": ["decoration"] },
+        { "range": { "x": 0, "y": 2, "width": 2, "height": 4 }, "type": "surface", "solid": true, "allows": ["decoration"] }
+      ]
+    },
+    {
+      "id": "chair-office",
+      "name": "Office chair",
+      "category": "seating",
+      "kind": "chair",
+      "themeSetId": "seating",
+      "buildable": true,
+      "shop": { "price": 70, "available": true },
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 2, "height": 2 }, "type": "seat", "solid": true }
+      ],
+      "interactions": [
+        { "id": "seat", "name": "Sit", "type": "seat", "range": { "x": 0, "y": 0, "width": 2, "height": 2 }, "direction": "down" }
+      ]
+    },
+    {
+      "id": "sofa-straight",
+      "name": "Three-seat sofa",
+      "category": "seating",
+      "kind": "sofa",
+      "themeSetId": "seating",
+      "buildable": true,
+      "shop": { "price": 260, "available": true },
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 6, "height": 2 }, "type": "seat", "solid": true }
+      ],
+      "interactions": [
+        { "id": "seat-left", "name": "Sit", "type": "seat", "range": { "x": 0, "y": 0, "width": 2, "height": 2 }, "direction": "down" },
+        { "id": "seat-middle", "name": "Sit", "type": "seat", "range": { "x": 2, "y": 0, "width": 2, "height": 2 }, "direction": "down" },
+        { "id": "seat-right", "name": "Sit", "type": "seat", "range": { "x": 4, "y": 0, "width": 2, "height": 2 }, "direction": "down" }
+      ]
+    },
+    {
+      "id": "sofa-corner",
+      "name": "Corner sofa",
+      "category": "seating",
+      "kind": "sofa",
+      "themeSetId": "seating",
+      "buildable": true,
+      "shop": { "price": 340, "available": true },
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 6, "height": 2 }, "type": "seat", "solid": true },
+        { "range": { "x": 4, "y": 2, "width": 2, "height": 4 }, "type": "seat", "solid": true }
+      ],
+      "interactions": [
+        { "id": "seat-left", "name": "Sit", "type": "seat", "range": { "x": 0, "y": 0, "width": 2, "height": 2 }, "direction": "down" },
+        { "id": "seat-top", "name": "Sit", "type": "seat", "range": { "x": 2, "y": 0, "width": 2, "height": 2 }, "direction": "down" },
+        { "id": "seat-corner", "name": "Sit", "type": "seat", "range": { "x": 4, "y": 0, "width": 2, "height": 2 }, "direction": "left" },
+        { "id": "seat-middle", "name": "Sit", "type": "seat", "range": { "x": 4, "y": 2, "width": 2, "height": 2 }, "direction": "left" },
+        { "id": "seat-bottom", "name": "Sit", "type": "seat", "range": { "x": 4, "y": 4, "width": 2, "height": 2 }, "direction": "left" }
+      ]
+    },
+    {
+      "id": "table-meeting",
+      "name": "Meeting table",
+      "category": "tables",
+      "kind": "table",
+      "themeSetId": "tables",
+      "buildable": true,
+      "shop": { "price": 280, "available": true },
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 8, "height": 4 }, "type": "surface", "solid": true, "allows": ["decoration"] },
+        { "cells": [{ "x": 0, "y": 3 }, { "x": 7, "y": 3 }], "type": "support", "solid": true }
+      ]
+    },
+    {
+      "id": "table-workbench",
+      "name": "Workbench",
+      "category": "tables",
+      "kind": "table",
+      "themeSetId": "tables",
+      "buildable": true,
+      "shop": { "price": 320, "available": true },
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 12, "height": 4 }, "type": "surface", "solid": true, "allows": ["decoration"] },
+        { "cells": [{ "x": 0, "y": 3 }, { "x": 5, "y": 3 }, { "x": 6, "y": 3 }, { "x": 11, "y": 3 }], "type": "support", "solid": true }
+      ]
+    },
+    {
+      "id": "table-cafe",
+      "name": "Cafe table",
+      "category": "tables",
+      "kind": "table",
+      "themeSetId": "tables",
+      "buildable": true,
+      "shop": { "price": 140, "available": true },
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 4, "height": 4 }, "type": "surface", "solid": true, "allows": ["decoration"] }
+      ]
+    },
+    {
+      "id": "plant-floor",
+      "name": "Floor plant",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "botanical",
+      "buildable": true,
+      "shop": { "price": 60, "available": true },
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "cells": [{ "x": 0, "y": 0 }, { "x": 1, "y": 0 }, { "x": 0, "y": 1 }, { "x": 1, "y": 1 }], "type": "foliage", "solid": true }
+      ]
+    },
+    {
+      "id": "plant-planter-row",
+      "name": "Planter row",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "botanical",
+      "buildable": true,
+      "shop": { "price": 90, "available": true },
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 1, "height": 5 }, "type": "foliage", "solid": true }
+      ]
+    },
+    {
+      "id": "outdoor-garden-bed",
+      "name": "Garden bed",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "botanical",
+      "buildable": true,
+      "shop": { "price": 140, "available": true },
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 8, "height": 5 }, "type": "foliage", "solid": true }
+      ]
+    },
+    {
+      "id": "outdoor-pool",
+      "name": "Pool",
+      "category": "outdoor",
+      "kind": "pool",
+      "themeSetId": "outdoor",
+      "buildable": true,
+      "shop": { "price": 500, "available": true },
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 12, "height": 8 }, "type": "body", "solid": true }
+      ]
+    },
+    {
+      "id": "decor-desk-plant",
+      "name": "Desk plant",
+      "category": "decor",
+      "kind": "plant",
+      "themeSetId": "botanical",
+      "buildable": true,
+      "shop": { "price": 35, "available": true },
+      "placement": { "layer": "surface", "requires": "decoration" },
+      "footprint": [
+        { "cells": [{ "x": 0, "y": 0 }], "type": "decoration", "solid": false }
+      ]
+    },
+    {
+      "id": "decor-laptop",
+      "name": "Laptop",
+      "category": "decor",
+      "kind": "laptop",
+      "themeSetId": "decor",
+      "buildable": true,
+      "shop": { "price": 85, "available": true },
+      "placement": { "layer": "surface", "requires": "decoration" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 2, "height": 1 }, "type": "decoration", "solid": false }
+      ]
+    },
+    {
+      "id": "decor-lamp",
+      "name": "Table lamp",
+      "category": "decor",
+      "kind": "lamp",
+      "themeSetId": "decor",
+      "buildable": true,
+      "shop": { "price": 45, "available": true },
+      "placement": { "layer": "surface", "requires": "decoration" },
+      "footprint": [
+        { "cells": [{ "x": 0, "y": 0 }], "type": "decoration", "solid": false }
+      ]
+    },
+    {
+      "id": "equipment-whiteboard",
+      "name": "Whiteboard",
+      "category": "equipment",
+      "kind": "whiteboard",
+      "themeSetId": "equipment",
+      "buildable": true,
+      "shop": { "price": 160, "available": true },
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 8, "height": 1 }, "type": "body", "solid": true }
+      ]
+    },
+    {
+      "id": "equipment-arcade",
+      "name": "Arcade cabinet",
+      "category": "equipment",
+      "kind": "arcade",
+      "themeSetId": "equipment",
+      "buildable": true,
+      "shop": { "price": 420, "available": true },
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 4, "height": 6 }, "type": "body", "solid": true }
+      ]
+    },
+    {
+      "id": "equipment-gong",
+      "name": "Celebration gong",
+      "category": "equipment",
+      "kind": "gong",
+      "themeSetId": "equipment",
+      "buildable": true,
+      "shop": { "price": 300, "available": true },
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 5, "height": 5 }, "type": "body", "solid": true }
+      ]
+    },
+    {
+      "id": "equipment-tetris",
+      "name": "Tetris table",
+      "category": "equipment",
+      "kind": "game",
+      "themeSetId": "equipment",
+      "buildable": true,
+      "radius": 124,
+      "shop": { "price": 500, "available": false },
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 6, "height": 7 }, "type": "body", "solid": true }
+      ]
+    },
+    {
+      "id": "desk-standing",
+      "name": "Standing desk",
+      "category": "desks",
+      "kind": "desk",
+      "themeSetId": "workspace",
+      "buildable": true,
+      "shop": { "price": 220, "available": true },
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 5, "height": 3 }, "type": "body", "solid": true },
+        { "range": { "x": 0, "y": 0, "width": 5, "height": 2 }, "type": "surface", "solid": true, "allows": ["decoration"] },
+        { "cells": [{ "x": 0, "y": 2 }, { "x": 4, "y": 2 }], "type": "support", "solid": true }
+      ]
+    },
+    {
+      "id": "chair-lounge",
+      "name": "Lounge chair",
+      "category": "seating",
+      "kind": "chair",
+      "themeSetId": "seating",
+      "buildable": true,
+      "shop": { "price": 130, "available": true },
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 3, "height": 3 }, "type": "seat", "solid": true }
+      ],
+      "interactions": [
+        { "id": "seat", "name": "Sit", "type": "seat", "range": { "x": 0, "y": 0, "width": 3, "height": 3 }, "direction": "down" }
+      ]
+    },
+    {
+      "id": "table-round",
+      "name": "Round table",
+      "category": "tables",
+      "kind": "table",
+      "themeSetId": "tables",
+      "buildable": true,
+      "shop": { "price": 190, "available": true },
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 1, "y": 0, "width": 3, "height": 5 }, "type": "surface", "solid": true, "allows": ["decoration"] },
+        { "range": { "x": 0, "y": 1, "width": 5, "height": 3 }, "type": "surface", "solid": true, "allows": ["decoration"] }
+      ]
+    },
+    {
+      "id": "plant-palm",
+      "name": "Potted palm",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "botanical",
+      "buildable": true,
+      "shop": { "price": 95, "available": true },
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 1, "y": 0, "width": 1, "height": 3 }, "type": "foliage", "solid": true },
+        { "range": { "x": 0, "y": 1, "width": 3, "height": 1 }, "type": "foliage", "solid": true }
+      ]
+    },
+    {
+      "id": "outdoor-bench",
+      "name": "Garden bench",
+      "category": "outdoor",
+      "kind": "sofa",
+      "themeSetId": "seating",
+      "buildable": true,
+      "shop": { "price": 175, "available": true },
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 6, "height": 2 }, "type": "seat", "solid": true }
+      ],
+      "interactions": [
+        { "id": "seat-left", "name": "Sit", "type": "seat", "range": { "x": 0, "y": 0, "width": 2, "height": 2 }, "direction": "down" },
+        { "id": "seat-middle", "name": "Sit", "type": "seat", "range": { "x": 2, "y": 0, "width": 2, "height": 2 }, "direction": "down" },
+        { "id": "seat-right", "name": "Sit", "type": "seat", "range": { "x": 4, "y": 0, "width": 2, "height": 2 }, "direction": "down" }
+      ]
+    },
+    {
+      "id": "decor-monitor",
+      "name": "Desktop monitor",
+      "category": "decor",
+      "kind": "monitor",
+      "themeSetId": "decor",
+      "buildable": true,
+      "shop": { "price": 110, "available": true },
+      "placement": { "layer": "surface", "requires": "decoration" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 2, "height": 1 }, "type": "decoration", "solid": false }
+      ]
+    },
+    {
+      "id": "decor-coffee",
+      "name": "Coffee cup",
+      "category": "decor",
+      "kind": "coffee",
+      "themeSetId": "decor",
+      "buildable": true,
+      "shop": { "price": 25, "available": true },
+      "placement": { "layer": "surface", "requires": "decoration" },
+      "footprint": [
+        { "cells": [{ "x": 0, "y": 0 }], "type": "decoration", "solid": false }
+      ]
+    },
+    {
+      "id": "equipment-bookshelf",
+      "name": "Bookshelf",
+      "category": "equipment",
+      "kind": "bookshelf",
+      "themeSetId": "equipment",
+      "buildable": true,
+      "shop": { "price": 210, "available": true },
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 5, "height": 2 }, "type": "body", "solid": true }
+      ]
+    },
+    {
+      "id": "floor-tile",
+      "name": "Floor Tile",
+      "category": "surfaces",
+      "kind": "floor-tile",
+      "themeSetId": "surfaces",
+      "buildable": true,
+      "shop": { "price": 30, "available": true },
+      "placement": { "layer": "ground", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 4, "height": 4 }, "type": "flooring", "solid": false }
+      ]
+    },
+    {
+      "id": "infrastructure-portal",
+      "name": "Floor portal",
+      "category": "infrastructure",
+      "kind": "portal",
+      "themeSetId": "infrastructure",
+      "buildable": false,
+      "placement": { "layer": "floor", "requires": "floor" },
+      "footprint": [
+        { "range": { "x": 0, "y": 0, "width": 4, "height": 4 }, "type": "passage", "solid": false }
+      ]
+    }
+  ]
+}

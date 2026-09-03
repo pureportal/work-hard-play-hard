@@ -9,12 +9,15 @@ const focusableSelector = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
 
-export function useModalFocus<T extends HTMLElement>(onClose: () => void) {
+export function useModalFocus<T extends HTMLElement>(onClose: () => void, active = true) {
   const dialogRef = useRef<T>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
   useEffect(() => {
+    if (!active) {
+      return;
+    }
     const dialog = dialogRef.current;
     if (!dialog) {
       return;
@@ -59,7 +62,7 @@ export function useModalFocus<T extends HTMLElement>(onClose: () => void) {
         previousFocus.focus();
       }
     };
-  }, []);
+  }, [active]);
 
   return dialogRef;
 }

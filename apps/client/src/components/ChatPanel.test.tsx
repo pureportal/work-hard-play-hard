@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ChatMessage, Conversation, Member } from "@workhard/shared";
 import { ChatPanel } from "./ChatPanel";
@@ -10,6 +10,7 @@ const member: Member = {
   email: "maya@example.com",
   title: "Product Lead",
   role: "owner",
+  permissions: ["manage_members", "build"],
   color: "#ff7a66",
   availability: "available",
   online: true,
@@ -88,6 +89,7 @@ describe("ChatPanel", () => {
       initials: "LM",
       email: "leo@example.com",
       role: "member",
+      permissions: [],
     };
     const direct: Conversation = {
       id: "conversation-direct",
@@ -115,8 +117,73 @@ describe("ChatPanel", () => {
     expect(screen.queryByText("Direct message")).toBeNull();
   });
 
+  it("moves between conversation tabs with the keyboard", () => {
+    const roomConversation: Conversation = {
+      id: "conversation-room",
+      name: "Studio",
+      type: "room",
+      roomId: "room-studio",
+      unread: 1,
+    };
+    const onConversationChange = vi.fn();
+    render(
+      <ChatPanel
+        conversations={[conversation, roomConversation]}
+        messages={[message]}
+        members={[member]}
+        currentUserId={member.id}
+        selectedConversationId={conversation.id}
+        onConversationChange={onConversationChange}
+        onSend={vi.fn()}
+        onSendImage={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    const activeTab = screen.getByRole("tab", { name: "Northstar" });
+    const nextTab = screen.getByRole("tab", { name: /Studio/ });
+    expect(activeTab.getAttribute("tabindex")).toBe("0");
+    expect(nextTab.getAttribute("tabindex")).toBe("-1");
+
+    fireEvent.keyDown(activeTab, { key: "ArrowRight" });
+
+    expect(onConversationChange).toHaveBeenCalledWith(roomConversation.id);
+    expect(document.activeElement).toBe(nextTab);
+  });
+
+  it("offers a quick return when reading older messages", () => {
+    const view = render(
+      <ChatPanel
+        conversations={[conversation]}
+        messages={[message]}
+        members={[member]}
+        currentUserId={member.id}
+        selectedConversationId={conversation.id}
+        onConversationChange={vi.fn()}
+        onSend={vi.fn()}
+        onSendImage={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    const messageList = view.container.querySelector(".message-list") as HTMLDivElement;
+    Object.defineProperties(messageList, {
+      clientHeight: { configurable: true, value: 300 },
+      scrollHeight: { configurable: true, value: 800 },
+    });
+    messageList.scrollTop = 100;
+
+    fireEvent.scroll(messageList);
+    fireEvent.click(screen.getByRole("button", { name: "Jump to latest" }));
+
+    expect(messageList.scrollTop).toBe(800);
+    expect(screen.queryByRole("button", { name: "Jump to latest" })).toBeNull();
+  });
+
   it("sends dropped images and rejects oversized files", async () => {
-    const onSendImage = vi.fn().mockResolvedValue(undefined);
+    let finishUpload: () => void = () => undefined;
+    const onSendImage = vi.fn().mockImplementation(() => new Promise<void>((resolve) => {
+      finishUpload = resolve;
+    }));
     const view = render(
       <ChatPanel
         conversations={[conversation]}
@@ -139,5 +206,6 @@ describe("ChatPanel", () => {
     const oversized = new File([new Uint8Array(5 * 1024 * 1024 + 1)], "large.png", { type: "image/png" });
     fireEvent.drop(panel, { dataTransfer: { files: [oversized], types: ["Files"] } });
     expect((await screen.findByRole("alert")).textContent).toContain("5 MB or smaller");
+    await act(async () => finishUpload());
   });
 });

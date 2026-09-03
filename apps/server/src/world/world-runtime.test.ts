@@ -1,4 +1,4 @@
-import type { ClientCommand, ServerEvent } from "@workhard/shared";
+import { getOutdoorBounds, getOutdoorWindowLights, type ClientCommand, type ServerEvent } from "@workhard/shared";
 import { describe, expect, it, vi } from "vitest";
 import { DemoStore } from "../store.js";
 import { WorldRuntime } from "./world-runtime.js";
@@ -16,23 +16,45 @@ function latestCall(events: ServerEvent[]) {
 }
 
 function requestedKnock(events: ServerEvent[]) {
-  return events.find((event) => event.type === "area.knock_requested");
+  return events.find((event) => event.type === "room.knock_requested");
 }
 
 function walkToFocusDoor(runtime: WorldRuntime, peerId: string): void {
-  send(runtime, peerId, { type: "movement.set_destination", requestId: "approach-focus", x: 1265, y: 452 });
+  send(runtime, peerId, { type: "movement.set_destination", requestId: "approach-focus", floorId: "floor-studio", x: 1216, y: 480 });
   for (let tick = 0; tick < 180; tick += 1) {
     runtime.runTickForTest();
   }
 }
 
+function travelToFloor(runtime: WorldRuntime, peerId: string, events: ServerEvent[], userId: string, floorId: string): void {
+  const destination = floorId === "floor-rooftop" ? { x: 640, y: 710 } : { x: 770, y: 890 };
+  const readyCount = events.filter((event) => event.type === "session.ready" && event.floorId === floorId).length;
+  send(runtime, peerId, {
+    type: "movement.set_destination",
+    requestId: `travel-${floorId}-${readyCount}`,
+    floorId,
+    ...destination,
+  });
+  for (let tick = 0; tick < 500; tick += 1) {
+    runtime.runTickForTest();
+    const player = runtime.serializePlayers().find((candidate) => candidate.userId === userId);
+    if (
+      player?.floorId === floorId
+      && Math.hypot(player.x - destination.x, player.y - destination.y) < 0.01
+    ) {
+      return;
+    }
+  }
+  throw new Error(`Travel to ${floorId} did not complete`);
+}
+
 describe("WorldRuntime calls", () => {
-  it("walks to a coworker on the public floor and connects automatically", () => {
+  it("walks to a coworker and rings until the recipient accepts", () => {
     const runtime = new WorldRuntime(new DemoStore());
     const mayaEvents: ServerEvent[] = [];
     const leoEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
-    connect(runtime, "user-leo", leoEvents);
+    const leoPeer = connect(runtime, "user-leo", leoEvents);
 
     send(runtime, mayaPeer, {
       type: "movement.approach_user",
@@ -43,8 +65,22 @@ describe("WorldRuntime calls", () => {
       runtime.runTickForTest();
     }
 
-    expect(latestCall(mayaEvents)).toMatchObject({ state: "connected", direction: "outgoing", peerUserId: "user-leo" });
-    expect(latestCall(leoEvents)).toMatchObject({ state: "connected", direction: "incoming", peerUserId: "user-maya" });
+    const incoming = latestCall(leoEvents);
+    expect(latestCall(mayaEvents)).toMatchObject({ state: "ringing", direction: "outgoing", peerUserId: "user-leo" });
+    expect(incoming).toMatchObject({ state: "ringing", direction: "incoming", peerUserId: "user-maya" });
+    if (incoming?.type !== "call.state") {
+      throw new Error("Call did not ring");
+    }
+
+    send(runtime, leoPeer, {
+      type: "call.respond",
+      requestId: "accept-walk-up",
+      callId: incoming.callId,
+      accept: true,
+    });
+
+    expect(latestCall(mayaEvents)).toMatchObject({ state: "accepted", direction: "outgoing" });
+    expect(latestCall(leoEvents)).toMatchObject({ state: "accepted", direction: "incoming" });
     runtime.stop();
   });
 
@@ -62,6 +98,7 @@ describe("WorldRuntime calls", () => {
     send(runtime, leoPeer, {
       type: "movement.set_destination",
       requestId: "move-leo",
+      floorId: "floor-studio",
       x: 650,
       y: 500,
     });
@@ -69,12 +106,41 @@ describe("WorldRuntime calls", () => {
       runtime.runTickForTest();
     }
 
-    expect(latestCall(mayaEvents)).toMatchObject({ state: "connected", peerUserId: "user-leo" });
+    expect(latestCall(mayaEvents)).toMatchObject({ state: "ringing", peerUserId: "user-leo" });
     expect(mayaEvents.some((event) => event.type === "command.error" && event.requestId === "approach-moving-leo")).toBe(false);
     runtime.stop();
   });
 
-  it("rings nearby coworkers and connects only after the recipient accepts", () => {
+  it("does not ring someone who is already in a meeting", () => {
+    const runtime = new WorldRuntime(new DemoStore());
+    const mayaEvents: ServerEvent[] = [];
+    const leoEvents: ServerEvent[] = [];
+    const mayaPeer = connect(runtime, "user-maya", mayaEvents);
+    const leoPeer = connect(runtime, "user-leo", leoEvents);
+
+    send(runtime, leoPeer, {
+      type: "meeting.join",
+      requestId: "join-remote-meeting",
+      meetingId: "meeting-open-huddle",
+    });
+    mayaEvents.length = 0;
+    leoEvents.length = 0;
+    send(runtime, mayaPeer, {
+      type: "call.request",
+      requestId: "call-meeting-participant",
+      targetUserId: "user-leo",
+    });
+
+    expect(mayaEvents.at(-1)).toMatchObject({
+      type: "command.error",
+      requestId: "call-meeting-participant",
+      code: "PERSON_IN_MEETING",
+    });
+    expect(leoEvents.some((event) => event.type === "call.state")).toBe(false);
+    runtime.stop();
+  });
+
+  it("rings nearby coworkers and changes state only after the recipient accepts", () => {
     const runtime = new WorldRuntime(new DemoStore());
     const mayaEvents: ServerEvent[] = [];
     const leoEvents: ServerEvent[] = [];
@@ -102,8 +168,8 @@ describe("WorldRuntime calls", () => {
       accept: true,
     });
 
-    expect(latestCall(mayaEvents)).toMatchObject({ state: "connected", direction: "outgoing" });
-    expect(latestCall(leoEvents)).toMatchObject({ state: "connected", direction: "incoming" });
+    expect(latestCall(mayaEvents)).toMatchObject({ state: "accepted", direction: "outgoing" });
+    expect(latestCall(leoEvents)).toMatchObject({ state: "accepted", direction: "incoming" });
 
     send(runtime, mayaPeer, {
       type: "call.end",
@@ -143,7 +209,7 @@ describe("WorldRuntime calls", () => {
     runtime.stop();
   });
 
-  it("ends a connected call when either person changes floors", () => {
+  it("ends an accepted call when either person changes floors", () => {
     const runtime = new WorldRuntime(new DemoStore());
     const mayaEvents: ServerEvent[] = [];
     const leoEvents: ServerEvent[] = [];
@@ -165,14 +231,106 @@ describe("WorldRuntime calls", () => {
       callId: incoming.callId,
       accept: true,
     });
-    send(runtime, leoPeer, {
-      type: "floor.change",
-      requestId: "floor-change",
-      floorId: "floor-rooftop",
-    });
+    travelToFloor(runtime, leoPeer, leoEvents, "user-leo", "floor-rooftop");
 
     expect(latestCall(mayaEvents)).toMatchObject({ state: "ended" });
     expect(latestCall(leoEvents)).toMatchObject({ state: "ended" });
+    runtime.stop();
+  });
+
+  it("keeps an accepted call active when someone enters a meeting area without opening it", () => {
+    const runtime = new WorldRuntime(new DemoStore());
+    runtime.restorePlayers(runtime.serializePlayers().map((player) => {
+      if (player.userId === "user-maya") {
+        return { ...player, x: 690, y: 760 };
+      }
+      if (player.userId === "user-leo") {
+        return { ...player, x: 650, y: 760 };
+      }
+      return player;
+    }));
+    const mayaEvents: ServerEvent[] = [];
+    const leoEvents: ServerEvent[] = [];
+    const mayaPeer = connect(runtime, "user-maya", mayaEvents);
+    const leoPeer = connect(runtime, "user-leo", leoEvents);
+
+    send(runtime, mayaPeer, { type: "call.request", requestId: "call-leo", targetUserId: "user-leo" });
+    const incoming = latestCall(leoEvents);
+    if (incoming?.type !== "call.state") {
+      throw new Error("Call did not ring");
+    }
+    send(runtime, leoPeer, { type: "call.respond", requestId: "accept", callId: incoming.callId, accept: true });
+    send(runtime, mayaPeer, { type: "movement.set_destination", requestId: "enter-huddle", floorId: "floor-studio", x: 800, y: 760 });
+    for (let tick = 0; tick < 30; tick += 1) {
+      runtime.runTickForTest();
+    }
+
+    expect(latestCall(mayaEvents)).toMatchObject({ state: "accepted", callId: incoming.callId });
+    expect(mayaEvents.some((event) => event.type === "meeting.joined")).toBe(false);
+    runtime.stop();
+  });
+
+  it("keeps an accepted call active when someone enters an open meeting room", () => {
+    const runtime = new WorldRuntime(new DemoStore());
+    runtime.restorePlayers(runtime.serializePlayers().map((player) => {
+      if (player.userId === "user-maya") {
+        return { ...player, x: 690, y: 500 };
+      }
+      if (player.userId === "user-leo") {
+        return { ...player, x: 650, y: 500 };
+      }
+      return player;
+    }));
+    const mayaEvents: ServerEvent[] = [];
+    const leoEvents: ServerEvent[] = [];
+    const mayaPeer = connect(runtime, "user-maya", mayaEvents);
+    const leoPeer = connect(runtime, "user-leo", leoEvents);
+
+    send(runtime, mayaPeer, { type: "call.request", requestId: "call-leo", targetUserId: "user-leo" });
+    const incoming = latestCall(leoEvents);
+    if (incoming?.type !== "call.state") {
+      throw new Error("Call did not ring");
+    }
+    send(runtime, leoPeer, { type: "call.respond", requestId: "accept", callId: incoming.callId, accept: true });
+    send(runtime, mayaPeer, {
+      type: "movement.set_destination",
+      requestId: "enter-daily-room",
+      floorId: "floor-studio",
+      x: 735,
+      y: 350,
+    });
+    for (let tick = 0; tick < 30; tick += 1) {
+      runtime.runTickForTest();
+    }
+
+    expect(runtime.serializePlayers().find((player) => player.userId === "user-maya")?.roomId).toBe("room-daily");
+    expect(latestCall(mayaEvents)).toMatchObject({ state: "accepted", callId: incoming.callId });
+    expect(mayaEvents.some((event) => event.type === "meeting.joined")).toBe(false);
+    runtime.stop();
+  });
+
+  it("keeps an accepted call active when a meeting join is rejected", () => {
+    const runtime = new WorldRuntime(new DemoStore());
+    const mayaEvents: ServerEvent[] = [];
+    const leoEvents: ServerEvent[] = [];
+    const mayaPeer = connect(runtime, "user-maya", mayaEvents);
+    const leoPeer = connect(runtime, "user-leo", leoEvents);
+
+    send(runtime, mayaPeer, { type: "call.request", requestId: "call-leo", targetUserId: "user-leo" });
+    const incoming = latestCall(leoEvents);
+    if (incoming?.type !== "call.state") {
+      throw new Error("Call did not ring");
+    }
+    send(runtime, leoPeer, { type: "call.respond", requestId: "accept", callId: incoming.callId, accept: true });
+    send(runtime, mayaPeer, { type: "meeting.join", requestId: "missing-meeting", meetingId: "missing" });
+
+    expect(mayaEvents.at(-1)).toMatchObject({
+      type: "command.error",
+      requestId: "missing-meeting",
+      code: "MEETING_NOT_FOUND",
+    });
+    expect(latestCall(mayaEvents)).toMatchObject({ state: "accepted", callId: incoming.callId });
+    expect(latestCall(leoEvents)).toMatchObject({ state: "accepted", callId: incoming.callId });
     runtime.stop();
   });
 
@@ -331,22 +489,6 @@ describe("WorldRuntime interactions", () => {
     runtime.stop();
   });
 
-  it("does not reveal reactions from a hidden room", () => {
-    const store = new DemoStore();
-    store.updateAreaSettings("area-focus", { type: "private", locked: true, visibility: "members" });
-    const runtime = new WorldRuntime(store);
-    const priyaEvents: ServerEvent[] = [];
-    const jonasEvents: ServerEvent[] = [];
-    const priyaPeer = connect(runtime, "user-priya", priyaEvents);
-    connect(runtime, "user-jonas", jonasEvents);
-
-    send(runtime, priyaPeer, { type: "interaction.react", requestId: "private-reaction", reaction: "thumbs_up" });
-
-    expect(priyaEvents.at(-1)).toMatchObject({ type: "interaction.reaction", reaction: "thumbs_up" });
-    expect(jonasEvents.some((event) => event.type === "interaction.reaction")).toBe(false);
-    runtime.stop();
-  });
-
   it("turns nearby reciprocal waves into a high five", () => {
     const runtime = new WorldRuntime(new DemoStore());
     runtime.restorePlayers(runtime.serializePlayers().map((player) => {
@@ -430,62 +572,39 @@ describe("WorldRuntime interactions", () => {
   });
 });
 
-describe("WorldRuntime spatial meetings", () => {
-  it("joins and leaves a public meeting at its circular floor area", () => {
-    const runtime = new WorldRuntime(new DemoStore());
-    const mayaEvents: ServerEvent[] = [];
-    const mayaPeer = connect(runtime, "user-maya", mayaEvents);
-
-    send(runtime, mayaPeer, { type: "movement.set_destination", requestId: "enter-huddle", x: 800, y: 760 });
-    for (let tick = 0; tick < 250; tick += 1) {
-      runtime.runTickForTest();
-    }
-    expect(mayaEvents.find((event) => event.type === "meeting.joined" && event.meeting.id === "meeting-open-huddle"))
-      .toMatchObject({ type: "meeting.joined", meeting: { status: "live" } });
-
-    send(runtime, mayaPeer, { type: "movement.set_destination", requestId: "leave-huddle", x: 590, y: 760 });
-    for (let tick = 0; tick < 100; tick += 1) {
-      runtime.runTickForTest();
-    }
-    expect(mayaEvents.find((event) => event.type === "meeting.left" && event.meetingId === "meeting-open-huddle"))
-      .toBeDefined();
-    runtime.stop();
-  });
-
-  it("does not rejoin a spatial meeting after disconnecting inside it", () => {
+describe("WorldRuntime meeting entry", () => {
+  it("does not join a public meeting when a player enters its area", () => {
     const store = new DemoStore();
     const runtime = new WorldRuntime(store);
     const mayaEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
 
-    send(runtime, mayaPeer, { type: "movement.set_destination", requestId: "enter-huddle", x: 800, y: 760 });
+    send(runtime, mayaPeer, { type: "movement.set_destination", requestId: "enter-huddle", floorId: "floor-studio", x: 800, y: 760 });
     for (let tick = 0; tick < 250; tick += 1) {
       runtime.runTickForTest();
     }
-    expect(store.getMeeting("meeting-open-huddle")?.participantIds).toContain("user-maya");
 
-    runtime.disconnect(mayaPeer);
-    runtime.runTickForTest();
-
+    expect(mayaEvents.some((event) => event.type === "meeting.joined")).toBe(false);
     expect(store.getMeeting("meeting-open-huddle")?.participantIds).not.toContain("user-maya");
-    expect(runtime.serializePlayers().find((player) => player.userId === "user-maya")?.connected).toBe(false);
     runtime.stop();
   });
 
-  it("automatically joins the meeting assigned to an entered room", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+  it("does not join the meeting assigned to an entered room", () => {
+    const store = new DemoStore();
+    const runtime = new WorldRuntime(store);
     const jonasEvents: ServerEvent[] = [];
     const jonasPeer = connect(runtime, "user-jonas", jonasEvents);
 
-    send(runtime, jonasPeer, { type: "floor.change", requestId: "reset-floor", floorId: "floor-rooftop" });
-    send(runtime, jonasPeer, { type: "floor.change", requestId: "return-floor", floorId: "floor-studio" });
-    send(runtime, jonasPeer, { type: "movement.set_destination", requestId: "enter-daily", x: 735, y: 360 });
+    travelToFloor(runtime, jonasPeer, jonasEvents, "user-jonas", "floor-rooftop");
+    travelToFloor(runtime, jonasPeer, jonasEvents, "user-jonas", "floor-studio");
+    send(runtime, jonasPeer, { type: "movement.set_destination", requestId: "enter-daily", floorId: "floor-studio", x: 735, y: 360 });
     for (let tick = 0; tick < 250; tick += 1) {
       runtime.runTickForTest();
     }
 
-    expect(jonasEvents.find((event) => event.type === "meeting.joined" && event.meeting.id === "meeting-product-crit"))
-      .toBeDefined();
+    expect(runtime.serializePlayers().find((player) => player.userId === "user-jonas")?.roomId).toBe("room-daily");
+    expect(jonasEvents.some((event) => event.type === "meeting.joined")).toBe(false);
+    expect(store.getMeeting("meeting-product-crit")?.participantIds).not.toContain("user-jonas");
     runtime.stop();
   });
 
@@ -495,85 +614,68 @@ describe("WorldRuntime spatial meetings", () => {
     const jonasEvents: ServerEvent[] = [];
     const jonasPeer = connect(runtime, "user-jonas", jonasEvents);
 
-    send(runtime, jonasPeer, { type: "floor.change", requestId: "go-rooftop", floorId: "floor-rooftop" });
-    send(runtime, jonasPeer, { type: "movement.set_destination", requestId: "enter-workshop", x: 760, y: 290 });
+    travelToFloor(runtime, jonasPeer, jonasEvents, "user-jonas", "floor-rooftop");
+    send(runtime, jonasPeer, { type: "movement.set_destination", requestId: "enter-workshop", floorId: "floor-rooftop", x: 760, y: 290 });
     for (let tick = 0; tick < 400; tick += 1) {
       runtime.runTickForTest();
     }
 
-    expect(runtime.serializePlayers().find((player) => player.userId === "user-jonas")?.areaId).toBe("area-workshop");
+    expect(runtime.serializePlayers().find((player) => player.userId === "user-jonas")?.roomId).toBe("room-workshop");
     expect(jonasEvents.some((event) => event.type === "meeting.joined" && event.meeting.id === "meeting-planning")).toBe(false);
     expect(store.getMeeting("meeting-planning")?.status).toBe("scheduled");
     runtime.stop();
   });
 
-  it("removes a remote participant when their meeting room becomes hidden", () => {
+  it("joins only after an explicit request and does not rejoin after leaving", () => {
     const store = new DemoStore();
     const runtime = new WorldRuntime(store);
-    const mayaPeer = connect(runtime, "user-maya", []);
-    const jonasEvents: ServerEvent[] = [];
-    const jonasPeer = connect(runtime, "user-jonas", jonasEvents);
-
-    send(runtime, jonasPeer, { type: "meeting.join", requestId: "join-product-crit", meetingId: "meeting-product-crit" });
-    expect(store.getMeeting("meeting-product-crit")?.participantIds).toContain("user-jonas");
-    jonasEvents.length = 0;
-
-    send(runtime, mayaPeer, {
-      type: "area.update_settings",
-      requestId: "hide-daily-room",
-      areaId: "area-daily",
-      settings: { type: "meeting", locked: false, visibility: "members" },
-    });
-
-    expect(store.getMeeting("meeting-product-crit")?.participantIds).not.toContain("user-jonas");
-    expect(jonasEvents).toContainEqual({ type: "meeting.left", meetingId: "meeting-product-crit" });
-    expect(jonasEvents.some((event) => event.type === "meeting.updated")).toBe(false);
-    runtime.stop();
-  });
-
-  it("keeps an explicit spatial-meeting leave suppressed across manual meetings", () => {
-    const runtime = new WorldRuntime(new DemoStore());
     const mayaEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
 
-    send(runtime, mayaPeer, { type: "movement.set_destination", requestId: "enter-huddle", x: 800, y: 760 });
+    send(runtime, mayaPeer, { type: "movement.set_destination", requestId: "enter-huddle", floorId: "floor-studio", x: 800, y: 760 });
     for (let tick = 0; tick < 250; tick += 1) {
       runtime.runTickForTest();
     }
-    send(runtime, mayaPeer, { type: "meeting.leave", requestId: "leave-spatial", meetingId: "meeting-open-huddle" });
-    const huddleJoinsAfterLeave = mayaEvents.filter((event) => event.type === "meeting.joined" && event.meeting.id === "meeting-open-huddle").length;
-    send(runtime, mayaPeer, { type: "meeting.join", requestId: "join-planning", meetingId: "meeting-planning" });
-    send(runtime, mayaPeer, { type: "meeting.leave", requestId: "leave-planning", meetingId: "meeting-planning" });
+    expect(mayaEvents.some((event) => event.type === "meeting.joined")).toBe(false);
+
+    send(runtime, mayaPeer, { type: "meeting.join", requestId: "open-meeting", meetingId: "meeting-open-huddle" });
+    expect(mayaEvents).toContainEqual(expect.objectContaining({
+      type: "meeting.joined",
+      meeting: expect.objectContaining({ id: "meeting-open-huddle" }),
+    }));
+    expect(store.getMeeting("meeting-open-huddle")?.participantIds).toContain("user-maya");
+
+    send(runtime, mayaPeer, { type: "meeting.leave", requestId: "leave-meeting", meetingId: "meeting-open-huddle" });
+    const joinsAfterLeave = mayaEvents.filter((event) => event.type === "meeting.joined").length;
+
     runtime.runTickForTest();
-    expect(mayaEvents.filter((event) => event.type === "meeting.joined" && event.meeting.id === "meeting-open-huddle")).toHaveLength(huddleJoinsAfterLeave);
 
-    send(runtime, mayaPeer, { type: "meeting.join", requestId: "join-manually", meetingId: "meeting-open-huddle" });
-    send(runtime, mayaPeer, { type: "meeting.leave", requestId: "leave-manual", meetingId: "meeting-open-huddle" });
-    const joinedBeforeTick = mayaEvents.filter((event) => event.type === "meeting.joined" && event.meeting.id === "meeting-open-huddle").length;
-
-    runtime.runTickForTest();
-
-    expect(mayaEvents.filter((event) => event.type === "meeting.joined" && event.meeting.id === "meeting-open-huddle")).toHaveLength(joinedBeforeTick);
+    expect(mayaEvents.filter((event) => event.type === "meeting.joined")).toHaveLength(joinsAfterLeave);
+    expect(store.getMeeting("meeting-open-huddle")?.participantIds).not.toContain("user-maya");
     runtime.stop();
   });
 });
 
 describe("WorldRuntime navigation boundaries", () => {
-  it("keeps manual movement inside the floor", () => {
-    const runtime = new WorldRuntime(new DemoStore());
-    const mayaPeer = connect(runtime, "user-maya", []);
+  it("keeps manual movement inside the navigable outdoor bounds", () => {
+    const store = new DemoStore();
+    const runtime = new WorldRuntime(store);
+    const mayaEvents: ServerEvent[] = [];
+    const mayaPeer = connect(runtime, "user-maya", mayaEvents);
 
-    send(runtime, mayaPeer, { type: "floor.change", requestId: "reset-rooftop", floorId: "floor-rooftop" });
-    send(runtime, mayaPeer, { type: "floor.change", requestId: "reset-studio", floorId: "floor-studio" });
+    travelToFloor(runtime, mayaPeer, mayaEvents, "user-maya", "floor-rooftop");
+    travelToFloor(runtime, mayaPeer, mayaEvents, "user-maya", "floor-studio");
     send(runtime, mayaPeer, { type: "movement.input", sequence: 1, dx: 0, dy: 1 });
-    for (let tick = 0; tick < 100; tick += 1) {
+    for (let tick = 0; tick < 200; tick += 1) {
       runtime.runTickForTest();
     }
     send(runtime, mayaPeer, { type: "movement.input", sequence: 2, dx: 0, dy: 0 });
 
     const player = runtime.serializePlayers().find((candidate) => candidate.userId === "user-maya");
-    expect(player?.y).toBeLessThanOrEqual(987);
-    expect(player?.y).toBeGreaterThan(970);
+    const floor = store.getFloor("floor-studio")!;
+    const bounds = getOutdoorBounds(floor);
+    expect(player?.y).toBeLessThanOrEqual(bounds.y + bounds.height - 13);
+    expect(player?.y).toBeGreaterThan(floor.height);
     runtime.stop();
   });
 
@@ -586,7 +688,7 @@ describe("WorldRuntime navigation boundaries", () => {
     firstEvents.length = 0;
     secondEvents.length = 0;
 
-    send(runtime, firstPeer, { type: "floor.change", requestId: "change-floor", floorId: "floor-rooftop" });
+    travelToFloor(runtime, firstPeer, firstEvents, "user-maya", "floor-rooftop");
 
     expect(firstEvents).toContainEqual(expect.objectContaining({ type: "session.ready", floorId: "floor-rooftop" }));
     expect(secondEvents).toContainEqual(expect.objectContaining({ type: "session.ready", floorId: "floor-rooftop" }));
@@ -600,6 +702,9 @@ describe("WorldRuntime navigation boundaries", () => {
     const movedLeft = runtime.serializePlayers().find((player) => player.userId === "user-maya")?.x ?? 0;
 
     expect(movedLeft).toBeLessThan(movedRight);
+    runtime.disconnect(secondPeer);
+    runtime.runTickForTest();
+    expect(runtime.serializePlayers().find((player) => player.userId === "user-maya")?.x).toBe(movedLeft);
     runtime.stop();
   });
 
@@ -617,6 +722,7 @@ describe("WorldRuntime navigation boundaries", () => {
       floorId: "floor-studio",
       players: expect.arrayContaining([expect.objectContaining({ userId: "user-maya", floorId: "floor-studio" })]),
     }));
+    expect(events.at(-1)).toEqual({ type: "session.synced" });
     expect(runtime.serializePlayers().find((player) => player.userId === "user-maya")?.floorId).toBe("floor-studio");
     runtime.stop();
   });
@@ -629,8 +735,10 @@ describe("WorldRuntime navigation boundaries", () => {
     runtime.disconnect(firstPeer);
 
     store.addMessage("conversation-team", "user-leo", "Sent while disconnected.");
-    store.addScore({ definitionId: "game-stack", userId: "user-leo", score: 7200, lines: 12 });
-    store.updateRole("user-jonas", "admin");
+    store.recordGameRound("round-reconnect", "game-tetris", [
+      { userId: "user-leo", score: 7200, lines: 12, level: 2, order: 0 },
+    ]);
+    store.updateMemberAccess("user-jonas", "admin", []);
 
     const reconnectEvents: ServerEvent[] = [];
     connect(runtime, "user-jonas", reconnectEvents);
@@ -645,8 +753,8 @@ describe("WorldRuntime navigation boundaries", () => {
     expect(snapshot?.type === "workspace.snapshot" && snapshot.data.members).toContainEqual(
       expect.objectContaining({ id: "user-jonas", role: "admin", online: true }),
     );
-    expect(snapshot?.type === "workspace.snapshot" && snapshot.data.layouts.flatMap((layout) => layout.areas)).toContainEqual(
-      expect.objectContaining({ id: "area-quiet" }),
+    expect(snapshot?.type === "workspace.snapshot" && snapshot.data.layouts.flatMap((layout) => layout.rooms)).toContainEqual(
+      expect.objectContaining({ id: "room-quiet" }),
     );
     runtime.stop();
   });
@@ -670,7 +778,7 @@ describe("WorldRuntime navigation boundaries", () => {
       direction: "outgoing",
       peerUserId: "user-leo",
     });
-    expect(callSessionEvents).toContainEqual({ type: "area.access_snapshot", areaIds: [] });
+    expect(callSessionEvents).toContainEqual({ type: "room.access_snapshot", roomIds: [] });
 
     const activeCall = latestCall(mayaEvents);
     if (activeCall?.type !== "call.state") {
@@ -698,7 +806,50 @@ describe("WorldRuntime navigation boundaries", () => {
 });
 
 describe("WorldRuntime layout safety", () => {
-  it("prevents erasing the final door from an enclosed room", () => {
+  it("rejects stale room settings without overwriting the accepted update", () => {
+    const store = new DemoStore();
+    const runtime = new WorldRuntime(store);
+    const events: ServerEvent[] = [];
+    const peer = connect(runtime, "user-maya", events);
+    const baseRevision = store.getLayout("floor-studio")!.revision;
+
+    send(runtime, peer, {
+      type: "room.update_settings",
+      requestId: "rename-room",
+      baseRevision,
+      roomId: "room-focus",
+      settings: {
+        name: "Focus One",
+        color: "#d9cdf4",
+        access: { mode: "open", assignedPersonIds: [], knockable: false },
+      },
+    });
+    send(runtime, peer, {
+      type: "room.update_settings",
+      requestId: "stale-room-update",
+      baseRevision,
+      roomId: "room-focus",
+      settings: {
+        name: "Focus Two",
+        color: "#d9cdf4",
+        access: { mode: "open", assignedPersonIds: [], knockable: false },
+      },
+    });
+
+    expect(store.getRoom("room-focus")?.name).toBe("Focus One");
+    expect(events).toContainEqual(expect.objectContaining({
+      type: "layout.updated",
+      requestId: "rename-room",
+    }));
+    expect(events.at(-1)).toEqual({
+      type: "layout.conflict",
+      requestId: "stale-room-update",
+      revision: baseRevision + 1,
+    });
+    runtime.stop();
+  });
+
+  it("opens a private room when its final door is removed", () => {
     const store = new DemoStore();
     const runtime = new WorldRuntime(store);
     const mayaEvents: ServerEvent[] = [];
@@ -709,18 +860,63 @@ describe("WorldRuntime layout safety", () => {
       type: "layout.apply",
       requestId: "erase-final-door",
       baseRevision: revision,
-      tool: "erase",
-      x: 735,
-      y: 410,
+      edit: { tool: "erase", position: { x: 1216, y: 448 } },
     });
 
-    expect(mayaEvents.at(-1)).toMatchObject({ type: "command.error", code: "ROOM_REQUIRES_DOOR" });
-    expect(store.getArea("area-daily")?.doors).toHaveLength(1);
-    expect(store.getLayout("floor-studio")?.revision).toBe(revision);
+    expect(mayaEvents.some((event) => event.type === "command.error")).toBe(false);
+    expect(store.getRoom("room-focus")).toMatchObject({
+      privateEligible: false,
+      doorIds: [],
+      access: { mode: "open", knockable: false },
+    });
+    expect(mayaEvents).toContainEqual({ type: "room.access_revoked", roomId: "room-focus" });
+    expect(store.getLayout("floor-studio")?.revision).toBe(revision + 1);
+
+    send(runtime, mayaPeer, {
+      type: "room.update_settings",
+      requestId: "make-private-without-door",
+      baseRevision: store.getLayout("floor-studio")!.revision,
+      roomId: "room-focus",
+      settings: {
+        name: "Focus Suite",
+        color: "#d9cdf4",
+        access: { mode: "assigned", assignedPersonIds: ["user-maya", "user-priya"], knockable: true },
+      },
+    });
+    expect(mayaEvents.at(-1)).toMatchObject({ type: "command.error", code: "ROOM_NOT_PRIVATE_ELIGIBLE" });
     runtime.stop();
   });
 
-  it("prevents placing a solid object across a room doorway", () => {
+  it("places thin wall runs and detects the resulting room live", () => {
+    const store = new DemoStore();
+    const runtime = new WorldRuntime(store);
+    const mayaEvents: ServerEvent[] = [];
+    const mayaPeer = connect(runtime, "user-maya", mayaEvents);
+    const before = store.getLayout("floor-studio")!;
+
+    send(runtime, mayaPeer, {
+      type: "layout.apply",
+      requestId: "split-arcade",
+      baseRevision: before.revision,
+      edit: { tool: "wall", start: { x: 1408, y: 448 }, end: { x: 1408, y: 928 } },
+    });
+
+    const divided = store.getLayout("floor-studio")!;
+    expect(divided.walls.at(-1)).toMatchObject({ start: { x: 1408, y: 448 }, end: { x: 1408, y: 928 } });
+    expect(divided.rooms).toHaveLength(before.rooms.length + 1);
+    expect(divided.rooms.find((room) => room.bounds.x === 1408)).toMatchObject({ privateEligible: false });
+
+    send(runtime, mayaPeer, {
+      type: "layout.apply",
+      requestId: "add-small-room-door",
+      baseRevision: divided.revision,
+      edit: { tool: "door", position: { x: 1408, y: 704 } },
+    });
+    expect(store.getLayout("floor-studio")?.rooms.find((room) => room.bounds.x === 1408)).toMatchObject({ privateEligible: true });
+    runtime.stop();
+  });
+
+  it("keeps doors and windows clear of wall junctions", () => {
     const store = new DemoStore();
     const runtime = new WorldRuntime(store);
     const mayaEvents: ServerEvent[] = [];
@@ -728,57 +924,40 @@ describe("WorldRuntime layout safety", () => {
 
     send(runtime, mayaPeer, {
       type: "layout.apply",
-      requestId: "block-door",
-      baseRevision: store.getLayout("floor-studio")?.revision ?? 0,
-      tool: "wall",
-      x: 735,
-      y: 420,
+      requestId: "door-at-junction",
+      baseRevision: store.getLayout("floor-studio")!.revision,
+      edit: { tool: "door", position: { x: 960, y: 448 } },
     });
 
-    expect(mayaEvents.at(-1)).toMatchObject({ type: "command.error", code: "SPACE_OCCUPIED" });
+    expect(mayaEvents.at(-1)).toMatchObject({
+      type: "command.error",
+      requestId: "door-at-junction",
+      code: "OPENING_AT_WALL_INTERSECTION",
+    });
     runtime.stop();
   });
 
-  it("sends filtered layout updates to people on other floors", () => {
-    const runtime = new WorldRuntime(new DemoStore());
-    const mayaPeer = connect(runtime, "user-maya", []);
-    const jonasEvents: ServerEvent[] = [];
-    const jonasPeer = connect(runtime, "user-jonas", jonasEvents);
-    send(runtime, jonasPeer, { type: "floor.change", requestId: "go-rooftop", floorId: "floor-rooftop" });
-    jonasEvents.length = 0;
+  it("adds an outdoor window with a floor-light source", () => {
+    const store = new DemoStore();
+    const runtime = new WorldRuntime(store);
+    const mayaEvents: ServerEvent[] = [];
+    const mayaPeer = connect(runtime, "user-maya", mayaEvents);
+    const layout = store.getLayout("floor-studio")!;
 
     send(runtime, mayaPeer, {
-      type: "area.update_settings",
-      requestId: "hide-focus",
-      areaId: "area-focus",
-      settings: { type: "private", locked: true, visibility: "members" },
+      type: "layout.apply",
+      requestId: "add-window",
+      baseRevision: layout.revision,
+      edit: { tool: "window", position: { x: 1100, y: 928 } },
     });
 
-    const update = jonasEvents.find((event) => event.type === "layout.updated" && event.layout.floorId === "floor-studio");
-    expect(update).toBeDefined();
-    expect(update?.type === "layout.updated" && update.layout.areas.some((area) => area.id === "area-focus")).toBe(false);
-    runtime.stop();
-  });
-
-  it("refreshes meetings and conversations when room visibility changes", () => {
-    const runtime = new WorldRuntime(new DemoStore());
-    const mayaPeer = connect(runtime, "user-maya", []);
-    const jonasEvents: ServerEvent[] = [];
-    connect(runtime, "user-jonas", jonasEvents);
-    jonasEvents.length = 0;
-
-    send(runtime, mayaPeer, {
-      type: "area.update_settings",
-      requestId: "hide-daily",
-      areaId: "area-daily",
-      settings: { type: "meeting", locked: false, visibility: "members" },
-    });
-
-    const hiddenAccess = jonasEvents.find((event) => event.type === "workspace.access_updated");
-    expect(hiddenAccess?.type === "workspace.access_updated" && hiddenAccess.access.meetings.some((meeting) => meeting.id === "meeting-product-crit")).toBe(false);
-    expect(hiddenAccess?.type === "workspace.access_updated" && hiddenAccess.access.conversations.some((conversation) => conversation.id === "conversation-daily")).toBe(false);
-    expect(hiddenAccess?.type === "workspace.access_updated" && hiddenAccess.access.messages.some((message) => message.conversationId === "conversation-daily")).toBe(false);
-
+    const saved = store.getLayout("floor-studio")!;
+    const window = saved.openings.find((opening) => opening.type === "window" && opening.wallId === "wall-studio-bottom" && opening.offset === 992);
+    expect(window).toBeDefined();
+    expect(getOutdoorWindowLights(saved, store.getFloor("floor-studio")!)).toContainEqual(expect.objectContaining({
+      windowId: window?.id,
+      roomId: "room-arcade",
+    }));
     runtime.stop();
   });
 
@@ -794,49 +973,88 @@ describe("WorldRuntime layout safety", () => {
       type: "layout.apply",
       requestId: "place-after-disconnect",
       baseRevision: store.getLayout("floor-studio")?.revision ?? 0,
-      tool: "plant",
-      x: 410,
-      y: 650,
+      edit: { tool: "asset", assetId: "plant-floor", variantId: "forest", rotation: 0, position: { x: 410, y: 650 } },
     });
 
     expect(leoEvents.some((event) => event.type === "command.error" && event.requestId === "place-after-disconnect")).toBe(false);
-    expect(store.getLayout("floor-studio")?.objects).toContainEqual(expect.objectContaining({ type: "plant", x: 416, y: 640 }));
+    expect(store.getLayout("floor-studio")?.objects).toContainEqual(expect.objectContaining({ assetId: "plant-floor", x: 416, y: 656 }));
 
     runtime.connect("user-maya", "floor-studio", () => undefined);
     expect(runtime.serializePlayers().find((player) => player.userId === "user-maya")).toMatchObject({ x: 770, y: 890 });
     runtime.stop();
   });
+
+  it("enforces build permission for every layout command", () => {
+    const store = new DemoStore();
+    const runtime = new WorldRuntime(store);
+    const events: ServerEvent[] = [];
+    const peer = connect(runtime, "user-jonas", events);
+    const initialRevision = store.getLayout("floor-studio")!.revision;
+    const edit = { tool: "wall" as const, start: { x: 1408, y: 448 }, end: { x: 1408, y: 928 } };
+
+    send(runtime, peer, { type: "layout.apply", requestId: "denied", baseRevision: initialRevision, edit });
+    expect(events.at(-1)).toMatchObject({ type: "command.error", requestId: "denied", code: "EDIT_FORBIDDEN" });
+    expect(store.getLayout("floor-studio")!.revision).toBe(initialRevision);
+
+    store.updateMemberAccess("user-jonas", "member", ["build"]);
+    events.length = 0;
+    send(runtime, peer, { type: "layout.apply", requestId: "allowed", baseRevision: initialRevision, edit });
+    expect(events.some((event) => event.type === "command.error" && event.requestId === "allowed")).toBe(false);
+    expect(store.getLayout("floor-studio")!.revision).toBe(initialRevision + 1);
+
+    store.updateMemberAccess("user-jonas", "member", []);
+    events.length = 0;
+    send(runtime, peer, {
+      type: "layout.apply",
+      requestId: "revoked",
+      baseRevision: initialRevision + 1,
+      edit: { tool: "erase", position: { x: 1408, y: 700 } },
+    });
+    expect(events.at(-1)).toMatchObject({ type: "command.error", requestId: "revoked", code: "EDIT_FORBIDDEN" });
+    runtime.stop();
+  });
 });
 
 describe("WorldRuntime workspace access", () => {
-  it("refreshes live access and removes a demoted member from a hidden room", () => {
+  it("evicts a person when they are removed from a private room", () => {
     const store = new DemoStore();
-    store.updateRole("user-jonas", "admin");
+    store.updateRoomSettings("room-quiet", {
+      name: "Quiet Corner",
+      color: "#cbd3ed",
+      access: { mode: "assigned", assignedPersonIds: ["user-aisha", "user-noah", "user-jonas"], knockable: true },
+    });
     const runtime = new WorldRuntime(store);
+    const mayaPeer = connect(runtime, "user-maya", []);
     const jonasEvents: ServerEvent[] = [];
     const jonasPeer = connect(runtime, "user-jonas", jonasEvents);
 
-    send(runtime, jonasPeer, { type: "floor.change", requestId: "go-rooftop", floorId: "floor-rooftop" });
-    send(runtime, jonasPeer, { type: "movement.set_destination", requestId: "enter-quiet", x: 720, y: 480 });
+    travelToFloor(runtime, jonasPeer, jonasEvents, "user-jonas", "floor-rooftop");
+    send(runtime, jonasPeer, { type: "movement.set_destination", requestId: "enter-quiet", floorId: "floor-rooftop", x: 720, y: 480 });
     for (let tick = 0; tick < 500; tick += 1) {
       runtime.runTickForTest();
     }
-    expect(runtime.serializePlayers().find((player) => player.userId === "user-jonas")?.areaId).toBe("area-quiet");
+    expect(runtime.serializePlayers().find((player) => player.userId === "user-jonas")?.roomId).toBe("room-quiet");
     jonasEvents.length = 0;
 
-    runtime.publishRoleChange(store.updateRole("user-jonas", "member"));
+    send(runtime, mayaPeer, {
+      type: "room.update_settings",
+      requestId: "remove-jonas",
+      baseRevision: store.getLayout("floor-rooftop")!.revision,
+      roomId: "room-quiet",
+      settings: {
+        name: "Quiet Corner",
+        color: "#cbd3ed",
+        access: { mode: "assigned", assignedPersonIds: ["user-aisha", "user-noah"], knockable: true },
+      },
+    });
 
-    expect(runtime.serializePlayers().find((player) => player.userId === "user-jonas")?.areaId).toBeUndefined();
+    expect(runtime.serializePlayers().find((player) => player.userId === "user-jonas")?.roomId).toBeUndefined();
     expect(jonasEvents).toContainEqual(expect.objectContaining({
-      type: "presence.changed",
-      member: expect.objectContaining({ id: "user-jonas", role: "member" }),
-    }));
-    expect(jonasEvents).toContainEqual(expect.objectContaining({
-      type: "workspace.access_updated",
-      access: expect.objectContaining({ invitations: [] }),
+      type: "room.access_revoked",
+      roomId: "room-quiet",
     }));
     const rooftopLayout = jonasEvents.find((event) => event.type === "layout.updated" && event.layout.floorId === "floor-rooftop");
-    expect(rooftopLayout?.type === "layout.updated" && rooftopLayout.layout.areas.some((area) => area.id === "area-quiet")).toBe(false);
+    expect(rooftopLayout?.type === "layout.updated" && rooftopLayout.layout.rooms.some((room) => room.id === "room-quiet")).toBe(true);
     runtime.stop();
   });
 
@@ -850,7 +1068,7 @@ describe("WorldRuntime workspace access", () => {
     mayaEvents.length = 0;
     leoEvents.length = 0;
 
-    const invitation = store.addInvitation("new-person@example.com", "member");
+    const { invitation } = store.issueInvitation("new-person@example.com", "member", []);
     runtime.publishWorkspaceAccess();
 
     for (const events of [mayaEvents, leoEvents]) {
@@ -865,7 +1083,7 @@ describe("WorldRuntime workspace access", () => {
   });
 });
 
-describe("WorldRuntime private-area access", () => {
+describe("WorldRuntime private-room access", () => {
   it("blocks manual movement through a locked door", () => {
     const runtime = new WorldRuntime(new DemoStore());
     const jonasEvents: ServerEvent[] = [];
@@ -879,32 +1097,38 @@ describe("WorldRuntime private-area access", () => {
     send(runtime, jonasPeer, { type: "movement.input", sequence: 2, dx: 0, dy: 0 });
 
     const player = runtime.serializePlayers().find((candidate) => candidate.userId === "user-jonas");
-    expect(player?.areaId).not.toBe("area-focus");
+    expect(player?.roomId).not.toBe("room-focus");
     expect(player?.y).toBeGreaterThan(410);
     runtime.stop();
   });
 
   it("cancels click-to-move when a room locks during the walk", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const store = new DemoStore();
+    const runtime = new WorldRuntime(store);
     const jonasEvents: ServerEvent[] = [];
     const jonasPeer = connect(runtime, "user-jonas", jonasEvents);
     const mayaPeer = connect(runtime, "user-maya", []);
 
-    send(runtime, jonasPeer, { type: "movement.set_destination", requestId: "enter-daily", x: 735, y: 350 });
+    send(runtime, jonasPeer, { type: "movement.set_destination", requestId: "enter-daily", floorId: "floor-studio", x: 735, y: 350 });
     for (let tick = 0; tick < 20; tick += 1) {
       runtime.runTickForTest();
     }
     send(runtime, mayaPeer, {
-      type: "area.update_settings",
+      type: "room.update_settings",
       requestId: "lock-daily",
-      areaId: "area-daily",
-      settings: { type: "meeting", locked: true, visibility: "public" },
+      baseRevision: store.getLayout("floor-studio")!.revision,
+      roomId: "room-daily",
+      settings: {
+        name: "Daily Room",
+        color: "#c6d7f5",
+        access: { mode: "assigned", assignedPersonIds: ["user-amara"], knockable: true },
+      },
     });
     for (let tick = 0; tick < 220; tick += 1) {
       runtime.runTickForTest();
     }
 
-    expect(runtime.serializePlayers().find((player) => player.userId === "user-jonas")?.areaId).not.toBe("area-daily");
+    expect(runtime.serializePlayers().find((player) => player.userId === "user-jonas")?.roomId).not.toBe("room-daily");
     expect(jonasEvents).toContainEqual(expect.objectContaining({
       type: "command.error",
       requestId: "enter-daily",
@@ -923,30 +1147,30 @@ describe("WorldRuntime private-area access", () => {
     const leoPeer = connect(runtime, "user-leo", leoEvents);
 
     walkToFocusDoor(runtime, jonasPeer);
-    send(runtime, jonasPeer, { type: "area.knock", requestId: "knock", areaId: "area-focus" });
+    send(runtime, jonasPeer, { type: "room.knock", requestId: "knock", roomId: "room-focus" });
 
     const request = requestedKnock(priyaEvents);
     expect(request).toMatchObject({
-      type: "area.knock_requested",
-      knock: { areaId: "area-focus", requesterUserId: "user-jonas" },
+      type: "room.knock_requested",
+      knock: { roomId: "room-focus", requesterUserId: "user-jonas" },
     });
-    expect(jonasEvents.at(-1)).toMatchObject({ type: "area.knock_state", state: "pending" });
-    if (request?.type !== "area.knock_requested") {
+    expect(jonasEvents.at(-1)).toMatchObject({ type: "room.knock_state", state: "pending" });
+    if (request?.type !== "room.knock_requested") {
       throw new Error("Knock was not delivered");
     }
 
-    send(runtime, leoPeer, { type: "area.knock_respond", requestId: "outsider-response", knockId: request.knock.id, accept: true });
+    send(runtime, leoPeer, { type: "room.knock_respond", requestId: "outsider-response", knockId: request.knock.id, accept: true });
     expect(leoEvents.at(-1)).toMatchObject({ type: "command.error", code: "KNOCK_NOT_FOUND" });
 
-    send(runtime, priyaPeer, { type: "area.knock_respond", requestId: "admit", knockId: request.knock.id, accept: true });
-    expect(jonasEvents.at(-1)).toMatchObject({ type: "area.knock_state", state: "accepted", responderUserId: "user-priya" });
-    expect(priyaEvents.at(-1)).toMatchObject({ type: "area.knock_state", state: "accepted" });
+    send(runtime, priyaPeer, { type: "room.knock_respond", requestId: "admit", knockId: request.knock.id, accept: true });
+    expect(jonasEvents.at(-1)).toMatchObject({ type: "room.knock_state", state: "accepted", responderUserId: "user-priya" });
+    expect(priyaEvents.at(-1)).toMatchObject({ type: "room.knock_state", state: "accepted" });
 
-    send(runtime, jonasPeer, { type: "movement.set_destination", requestId: "enter", x: 1216, y: 256 });
+    send(runtime, jonasPeer, { type: "movement.set_destination", requestId: "enter", floorId: "floor-studio", x: 1216, y: 256 });
     for (let tick = 0; tick < 100; tick += 1) {
       runtime.runTickForTest();
     }
-    expect(runtime.serializePlayers().find((player) => player.userId === "user-jonas")?.areaId).toBe("area-focus");
+    expect(runtime.serializePlayers().find((player) => player.userId === "user-jonas")?.roomId).toBe("room-focus");
     runtime.stop();
   });
 
@@ -963,25 +1187,25 @@ describe("WorldRuntime private-area access", () => {
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
 
     walkToFocusDoor(runtime, jonasPeer);
-    send(runtime, jonasPeer, { type: "area.knock", requestId: "knock", areaId: "area-focus" });
+    send(runtime, jonasPeer, { type: "room.knock", requestId: "knock", roomId: "room-focus" });
     const request = requestedKnock(priyaEvents);
-    expect(requestedKnock(mayaEvents)).toMatchObject({ type: "area.knock_requested" });
-    if (request?.type !== "area.knock_requested") {
+    expect(requestedKnock(mayaEvents)).toMatchObject({ type: "room.knock_requested" });
+    if (request?.type !== "room.knock_requested") {
       throw new Error("Knock was not delivered");
     }
 
-    send(runtime, mayaPeer, { type: "movement.set_destination", requestId: "leave-focus", x: 900, y: 450 });
+    send(runtime, mayaPeer, { type: "movement.set_destination", requestId: "leave-focus", floorId: "floor-studio", x: 900, y: 520 });
     for (let tick = 0; tick < 300; tick += 1) {
       runtime.runTickForTest();
     }
 
     expect(mayaEvents).toContainEqual(expect.objectContaining({
-      type: "area.knock_state",
+      type: "room.knock_state",
       state: "expired",
       knock: expect.objectContaining({ id: request.knock.id }),
     }));
-    send(runtime, priyaPeer, { type: "area.knock_respond", requestId: "admit", knockId: request.knock.id, accept: true });
-    expect(jonasEvents.at(-1)).toMatchObject({ type: "area.knock_state", state: "accepted" });
+    send(runtime, priyaPeer, { type: "room.knock_respond", requestId: "admit", knockId: request.knock.id, accept: true });
+    expect(jonasEvents.at(-1)).toMatchObject({ type: "room.knock_state", state: "accepted" });
     runtime.stop();
   });
 
@@ -993,16 +1217,19 @@ describe("WorldRuntime private-area access", () => {
     const priyaPeer = connect(runtime, "user-priya", priyaEvents);
 
     walkToFocusDoor(runtime, jonasPeer);
-    send(runtime, jonasPeer, { type: "area.knock", requestId: "knock", areaId: "area-focus" });
+    send(runtime, jonasPeer, { type: "room.knock", requestId: "knock", roomId: "room-focus" });
     const request = requestedKnock(priyaEvents);
-    if (request?.type !== "area.knock_requested") {
+    if (request?.type !== "room.knock_requested") {
       throw new Error("Knock was not delivered");
     }
-    send(runtime, priyaPeer, { type: "area.knock_respond", requestId: "decline", knockId: request.knock.id, accept: false });
-    expect(jonasEvents.at(-1)).toMatchObject({ type: "area.knock_state", state: "declined" });
+    send(runtime, priyaPeer, { type: "room.knock_respond", requestId: "decline", knockId: request.knock.id, accept: false });
+    expect(jonasEvents.at(-1)).toMatchObject({ type: "room.knock_state", state: "declined" });
 
-    send(runtime, jonasPeer, { type: "movement.set_destination", requestId: "enter", x: 1216, y: 256 });
-    expect(jonasEvents.at(-1)).toMatchObject({ type: "command.error", code: "DESTINATION_BLOCKED" });
+    send(runtime, jonasPeer, { type: "movement.set_destination", requestId: "enter", floorId: "floor-studio", x: 1216, y: 256 });
+    for (let tick = 0; tick < 180; tick += 1) {
+      runtime.runTickForTest();
+    }
+    expect(runtime.serializePlayers().find((player) => player.userId === "user-jonas")?.roomId).not.toBe("room-focus");
     runtime.stop();
   });
 
@@ -1012,7 +1239,7 @@ describe("WorldRuntime private-area access", () => {
     const jonasPeer = connect(runtime, "user-jonas", jonasEvents);
 
     walkToFocusDoor(runtime, jonasPeer);
-    send(runtime, jonasPeer, { type: "area.knock", requestId: "knock", areaId: "area-focus" });
+    send(runtime, jonasPeer, { type: "room.knock", requestId: "knock", roomId: "room-focus" });
 
     expect(jonasEvents.at(-1)).toMatchObject({ type: "command.error", code: "KNOCK_NO_OCCUPANTS" });
     runtime.stop();
@@ -1028,11 +1255,11 @@ describe("WorldRuntime private-area access", () => {
       connect(runtime, "user-priya", priyaEvents);
 
       walkToFocusDoor(runtime, jonasPeer);
-      send(runtime, jonasPeer, { type: "area.knock", requestId: "knock", areaId: "area-focus" });
+      send(runtime, jonasPeer, { type: "room.knock", requestId: "knock", roomId: "room-focus" });
       vi.advanceTimersByTime(20_000);
 
-      expect(jonasEvents.at(-1)).toMatchObject({ type: "area.knock_state", state: "expired" });
-      expect(priyaEvents.at(-1)).toMatchObject({ type: "area.knock_state", state: "expired" });
+      expect(jonasEvents.at(-1)).toMatchObject({ type: "room.knock_state", state: "expired" });
+      expect(priyaEvents.at(-1)).toMatchObject({ type: "room.knock_state", state: "expired" });
     } finally {
       runtime.stop();
       vi.useRealTimers();
@@ -1046,18 +1273,19 @@ describe("WorldRuntime private-area access", () => {
     connect(runtime, "user-priya", []);
 
     walkToFocusDoor(runtime, jonasPeer);
-    send(runtime, jonasPeer, { type: "area.knock", requestId: "knock", areaId: "area-focus" });
-    send(runtime, jonasPeer, { type: "movement.set_destination", requestId: "walk-away", x: 1230, y: 650 });
+    send(runtime, jonasPeer, { type: "room.knock", requestId: "knock", roomId: "room-focus" });
+    send(runtime, jonasPeer, { type: "movement.set_destination", requestId: "walk-away", floorId: "floor-studio", x: 1230, y: 650 });
     for (let tick = 0; tick < 120; tick += 1) {
       runtime.runTickForTest();
     }
 
-    expect(jonasEvents).toContainEqual(expect.objectContaining({ type: "area.knock_state", state: "expired" }));
+    expect(jonasEvents).toContainEqual(expect.objectContaining({ type: "room.knock_state", state: "expired" }));
     runtime.stop();
   });
 
   it("expires a pending knock when the requester loses room visibility", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const store = new DemoStore();
+    const runtime = new WorldRuntime(store);
     const jonasEvents: ServerEvent[] = [];
     const priyaEvents: ServerEvent[] = [];
     const jonasPeer = connect(runtime, "user-jonas", jonasEvents);
@@ -1065,26 +1293,31 @@ describe("WorldRuntime private-area access", () => {
     const mayaPeer = connect(runtime, "user-maya", []);
 
     walkToFocusDoor(runtime, jonasPeer);
-    send(runtime, jonasPeer, { type: "area.knock", requestId: "knock", areaId: "area-focus" });
+    send(runtime, jonasPeer, { type: "room.knock", requestId: "knock", roomId: "room-focus" });
     const request = requestedKnock(priyaEvents);
-    if (request?.type !== "area.knock_requested") {
+    if (request?.type !== "room.knock_requested") {
       throw new Error("Knock was not delivered");
     }
 
     send(runtime, mayaPeer, {
-      type: "area.update_settings",
-      requestId: "hide-focus",
-      areaId: "area-focus",
-      settings: { type: "private", locked: true, visibility: "members" },
+      type: "room.update_settings",
+      requestId: "disable-focus-knocks",
+      baseRevision: store.getLayout("floor-studio")!.revision,
+      roomId: "room-focus",
+      settings: {
+        name: "Focus Suite",
+        color: "#d9cdf4",
+        access: { mode: "assigned", assignedPersonIds: ["user-priya", "user-maya"], knockable: false },
+      },
     });
 
     expect(jonasEvents).toContainEqual(expect.objectContaining({
-      type: "area.knock_state",
+      type: "room.knock_state",
       state: "expired",
       knock: expect.objectContaining({ id: request.knock.id }),
     }));
     send(runtime, priyaPeer, {
-      type: "area.knock_respond",
+      type: "room.knock_respond",
       requestId: "stale-response",
       knockId: request.knock.id,
       accept: true,
@@ -1105,9 +1338,9 @@ describe("WorldRuntime private-area access", () => {
     const priyaPeer = connect(runtime, "user-priya", priyaEvents);
 
     walkToFocusDoor(runtime, jonasPeer);
-    send(runtime, jonasPeer, { type: "area.knock", requestId: "knock", areaId: "area-focus" });
+    send(runtime, jonasPeer, { type: "room.knock", requestId: "knock", roomId: "room-focus" });
     const request = requestedKnock(priyaEvents);
-    if (request?.type !== "area.knock_requested") {
+    if (request?.type !== "room.knock_requested") {
       throw new Error("Knock was not delivered");
     }
 
@@ -1116,17 +1349,17 @@ describe("WorldRuntime private-area access", () => {
     connect(runtime, "user-jonas", requesterSessionEvents);
     connect(runtime, "user-priya", recipientSessionEvents);
     expect(requesterSessionEvents).toContainEqual(expect.objectContaining({
-      type: "area.knock_state",
+      type: "room.knock_state",
       state: "pending",
       knock: expect.objectContaining({ id: request.knock.id }),
     }));
     expect(recipientSessionEvents).toContainEqual(expect.objectContaining({
-      type: "area.knock_requested",
+      type: "room.knock_requested",
       knock: expect.objectContaining({ id: request.knock.id }),
     }));
 
     send(runtime, priyaPeer, {
-      type: "area.knock_respond",
+      type: "room.knock_respond",
       requestId: "admit",
       knockId: request.knock.id,
       accept: true,
@@ -1134,8 +1367,8 @@ describe("WorldRuntime private-area access", () => {
     const grantedSessionEvents: ServerEvent[] = [];
     connect(runtime, "user-jonas", grantedSessionEvents);
     expect(grantedSessionEvents).toContainEqual({
-      type: "area.access_snapshot",
-      areaIds: ["area-focus"],
+      type: "room.access_snapshot",
+      roomIds: ["room-focus"],
     });
     runtime.stop();
   });
@@ -1184,10 +1417,17 @@ describe("WorldRuntime chat privacy", () => {
 describe("WorldRuntime game lifecycle", () => {
   it("stops a game when its player closes it", () => {
     const runtime = new WorldRuntime(new DemoStore());
+    runtime.restorePlayers(runtime.serializePlayers().map((player) => player.userId === "user-maya"
+      ? { ...player, x: 1060, y: 700 }
+      : player));
     const mayaEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
 
-    send(runtime, mayaPeer, { type: "game.start", requestId: "start-game", definitionId: "game-stack" });
+    send(runtime, mayaPeer, { type: "movement.set_destination", requestId: "gather", floorId: "floor-studio", x: 1_050, y: 620 });
+    for (let tick = 0; tick < 500; tick += 1) {
+      runtime.runTickForTest();
+    }
+    send(runtime, mayaPeer, { type: "game.start", requestId: "start-game", definitionId: "game-tetris" });
     expect(mayaEvents).toContainEqual(expect.objectContaining({ type: "game.state" }));
     send(runtime, mayaPeer, { type: "game.end", requestId: "end-game" });
     send(runtime, mayaPeer, { type: "game.command", requestId: "move-after-close", command: "left" });

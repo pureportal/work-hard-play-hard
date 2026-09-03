@@ -1,21 +1,41 @@
-import { ArrowLeft, Building2, Mail } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Mail, ServerCog } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { login, registerAccount, requestMagicLink } from "../api";
+import officePreview from "../assets/northstar-office.svg";
+import { getServerOrigin, setServerOrigin } from "../server-url";
+import { NorthstarMark } from "./NorthstarMark";
 
 type AuthMode = "login" | "register" | "magic";
 
 interface AuthScreenProps {
   initialError?: string | undefined;
-  onAuthenticated: () => Promise<void>;
+  invitationToken?: string | undefined;
+  registrationsEnabled: boolean;
+  invitationRequired: boolean;
+  setupRequired: boolean;
+  onAuthenticated: (invitationAccepted?: boolean) => Promise<void>;
+  onServerChanged?: (() => void) | undefined;
 }
 
-export function AuthScreen({ initialError, onAuthenticated }: AuthScreenProps) {
-  const [mode, setMode] = useState<AuthMode>("login");
+export function AuthScreen({
+  initialError,
+  invitationToken,
+  registrationsEnabled,
+  invitationRequired,
+  setupRequired,
+  onAuthenticated,
+  onServerChanged,
+}: AuthScreenProps) {
+  const [mode, setMode] = useState<AuthMode>(
+    setupRequired || (registrationsEnabled && invitationToken) ? "register" : "login",
+  );
   const [error, setError] = useState(initialError);
   const [loading, setLoading] = useState(false);
   const [magicLink, setMagicLink] = useState<string>();
   const [magicEmail, setMagicEmail] = useState("");
   const [magicSent, setMagicSent] = useState(false);
+  const [server, setServer] = useState(getServerOrigin);
+  const [showServer, setShowServer] = useState(Boolean(initialError));
 
   const switchMode = (nextMode: AuthMode) => {
     setMode(nextMode);
@@ -28,6 +48,7 @@ export function AuthScreen({ initialError, onAuthenticated }: AuthScreenProps) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     await perform(async () => {
+      setServerOrigin(server);
       await login(String(form.get("identifier")), String(form.get("password")));
       await onAuthenticated();
     });
@@ -37,12 +58,16 @@ export function AuthScreen({ initialError, onAuthenticated }: AuthScreenProps) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     await perform(async () => {
+      setServerOrigin(server);
+      const enteredInvitationCode = String(form.get("invitationCode") ?? "").trim();
+      const registrationInvitationToken = (invitationToken ?? enteredInvitationCode) || undefined;
       await registerAccount(
         String(form.get("username")),
         String(form.get("email")),
         String(form.get("password")),
+        registrationInvitationToken,
       );
-      await onAuthenticated();
+      await onAuthenticated(Boolean(registrationInvitationToken));
     });
   };
 
@@ -51,10 +76,19 @@ export function AuthScreen({ initialError, onAuthenticated }: AuthScreenProps) {
     const form = new FormData(event.currentTarget);
     const email = String(form.get("email"));
     await perform(async () => {
-      const response = await requestMagicLink(email);
+      setServerOrigin(server);
+      const response = await requestMagicLink(email, invitationToken);
       setMagicEmail(email);
       setMagicLink(response.magicLink);
       setMagicSent(true);
+    });
+  };
+
+  const submitServer = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    await perform(async () => {
+      setServerOrigin(server);
+      onServerChanged?.();
     });
   };
 
@@ -72,15 +106,35 @@ export function AuthScreen({ initialError, onAuthenticated }: AuthScreenProps) {
 
   return (
     <main className="auth-shell">
-      <section className="auth-card" aria-labelledby="auth-title">
-        <header className="auth-brand">
-          <span><Building2 size={24} /></span>
-          <h1 id="auth-title">Northstar</h1>
-        </header>
+      <div className="auth-layout">
+        <div className="auth-visual" aria-hidden="true">
+          <img src={officePreview} alt="" />
+        </div>
+        <section className="auth-card" aria-labelledby="auth-title">
+          <header className="auth-brand">
+            <span><NorthstarMark size={27} /></span>
+            <h1 id="auth-title">{setupRequired ? "Set up Northstar" : "Northstar"}</h1>
+          </header>
 
-        {mode !== "magic" && (
+        {showServer && (
+          <form className="auth-form auth-server-form" onSubmit={submitServer}>
+            <label>
+              <span>Server URL</span>
+              <input
+                type="url"
+                value={server}
+                onChange={(event) => setServer(event.target.value)}
+                required
+              />
+            </label>
+            <button type="submit" className="auth-submit" disabled={loading}>Connect</button>
+          </form>
+        )}
+
+        {mode !== "magic" && !setupRequired && registrationsEnabled && (
           <div className="auth-tabs" role="tablist" aria-label="Account">
             <button
+              type="button"
               role="tab"
               aria-selected={mode === "login"}
               className={mode === "login" ? "active" : ""}
@@ -89,6 +143,7 @@ export function AuthScreen({ initialError, onAuthenticated }: AuthScreenProps) {
               Sign in
             </button>
             <button
+              type="button"
               role="tab"
               aria-selected={mode === "register"}
               className={mode === "register" ? "active" : ""}
@@ -106,10 +161,7 @@ export function AuthScreen({ initialError, onAuthenticated }: AuthScreenProps) {
                 <span>Username or email</span>
                 <input name="identifier" autoComplete="username" required autoFocus />
               </label>
-              <label>
-                <span>Password</span>
-                <input name="password" type="password" autoComplete="current-password" minLength={8} required />
-              </label>
+              <PasswordField id="login-password" autoComplete="current-password" />
               {error && <output className="auth-error" role="alert">{error}</output>}
               <button type="submit" className="auth-submit" disabled={loading}>{loading ? "Signing in…" : "Sign in"}</button>
             </form>
@@ -138,10 +190,19 @@ export function AuthScreen({ initialError, onAuthenticated }: AuthScreenProps) {
               <span>Email</span>
               <input name="email" type="email" autoComplete="email" required />
             </label>
-            <label>
-              <span>Password</span>
-              <input name="password" type="password" autoComplete="new-password" minLength={8} maxLength={128} required />
-            </label>
+            <PasswordField id="registration-password" autoComplete="new-password" maxLength={128} />
+            {!setupRequired && invitationRequired && !invitationToken && (
+              <label>
+                <span>Invitation code</span>
+                <input
+                  name="invitationCode"
+                  autoComplete="off"
+                  minLength={43}
+                  maxLength={43}
+                  pattern="[A-Za-z0-9_-]{43}"
+                />
+              </label>
+            )}
             {error && <output className="auth-error" role="alert">{error}</output>}
             <button type="submit" className="auth-submit" disabled={loading}>{loading ? "Creating account…" : "Create account"}</button>
           </form>
@@ -173,7 +234,50 @@ export function AuthScreen({ initialError, onAuthenticated }: AuthScreenProps) {
             <button className="auth-link-button" onClick={() => switchMode("login")}>Back to sign in</button>
           </div>
         )}
-      </section>
+        {!magicSent && (
+          <button type="button" className="auth-link-button" onClick={() => setShowServer((current) => !current)}>
+            <ServerCog size={16} />
+            Server
+          </button>
+        )}
+        </section>
+      </div>
     </main>
+  );
+}
+
+interface PasswordFieldProps {
+  id: string;
+  autoComplete: "current-password" | "new-password";
+  maxLength?: number | undefined;
+}
+
+function PasswordField({ id, autoComplete, maxLength }: PasswordFieldProps) {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <div className="auth-field">
+      <label htmlFor={id}>Password</label>
+      <div className="auth-password-field">
+        <input
+          id={id}
+          name="password"
+          type={visible ? "text" : "password"}
+          autoComplete={autoComplete}
+          minLength={8}
+          maxLength={maxLength}
+          required
+        />
+        <button
+          type="button"
+          className="auth-password-toggle"
+          aria-label={visible ? "Hide password" : "Show password"}
+          aria-pressed={visible}
+          onClick={() => setVisible((current) => !current)}
+        >
+          {visible ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+        </button>
+      </div>
+    </div>
   );
 }

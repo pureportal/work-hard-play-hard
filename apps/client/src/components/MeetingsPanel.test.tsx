@@ -21,6 +21,7 @@ const member: Member = {
   email: "maya@example.com",
   title: "Product Lead",
   role: "owner",
+  permissions: ["manage_members", "build"],
   color: "#ff7a66",
   availability: "available",
   online: true,
@@ -47,7 +48,7 @@ describe("MeetingsPanel", () => {
           meeting("scheduled", "Planning", "scheduled", "2026-08-30T10:00:00.000Z"),
           meeting("live", "Daily", "live", "2026-08-30T09:00:00.000Z"),
         ]}
-        areas={[]}
+        rooms={[]}
         floors={[floor]}
         members={[member]}
         onJoin={vi.fn()}

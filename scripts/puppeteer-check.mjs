@@ -37,6 +37,20 @@ async function screenshot(page, name) {
   });
 }
 
+async function assertNoOverlap(page, firstSelector, secondSelector, message) {
+  const overlap = await page.evaluate((first, second) => {
+    const firstElement = document.querySelector(first);
+    const secondElement = document.querySelector(second);
+    if (!firstElement || !secondElement) {
+      return false;
+    }
+    const a = firstElement.getBoundingClientRect();
+    const b = secondElement.getBoundingClientRect();
+    return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+  }, firstSelector, secondSelector);
+  assert(!overlap, message);
+}
+
 async function inspectVisibleUi(page, name, regions) {
   const metrics = await page.evaluate((regionSelectors) => {
     const visibleControls = [...document.querySelectorAll("button, input, select, a[href], [tabindex]")]
@@ -83,7 +97,7 @@ async function waitForAuth(page) {
 
 async function waitForOffice(page) {
   await page.waitForSelector(".world-canvas canvas", { visible: true });
-  await page.waitForFunction(() => document.querySelector(".connection-state")?.classList.contains("online"));
+  await page.waitForFunction(() => document.querySelector('.top-bar [role="status"]')?.textContent === "Connected");
 }
 
 async function signIn(page, identifier, password = seededPassword) {
@@ -122,17 +136,25 @@ async function sendCommand(page, command) {
 }
 
 async function resetToStudio(page, userId) {
-  await sendCommand(page, { type: "floor.change", requestId: crypto.randomUUID(), floorId: "floor-rooftop" });
-  await page.waitForFunction((id) => globalThis.puppeteerObserver.players.some((player) => player.userId === id && player.floorId === "floor-rooftop"), {}, userId);
-  await sendCommand(page, { type: "floor.change", requestId: crypto.randomUUID(), floorId: "floor-studio" });
+  await sendCommand(page, {
+    type: "movement.set_destination",
+    requestId: crypto.randomUUID(),
+    floorId: "floor-studio",
+    x: 770,
+    y: 890,
+  });
   await page.waitForFunction((id) => {
     const player = globalThis.puppeteerObserver.players.find((candidate) => candidate.userId === id);
-    return player?.floorId === "floor-studio" && Math.hypot(player.x - 770, player.y - 890) < 3;
-  }, {}, userId);
+    return player?.floorId === "floor-studio" && Math.hypot(player.x - 770, player.y - 890) < 24;
+  }, { timeout: 30_000 }, userId);
 }
 
 async function moveObserver(page, userId, x, y) {
-  await sendCommand(page, { type: "movement.set_destination", requestId: crypto.randomUUID(), x, y });
+  const floorId = await page.evaluate((id) => (
+    globalThis.puppeteerObserver.players.find((candidate) => candidate.userId === id)?.floorId
+  ), userId);
+  assert(floorId, `Could not find ${userId} before moving`);
+  await sendCommand(page, { type: "movement.set_destination", requestId: crypto.randomUUID(), floorId, x, y });
   await page.waitForFunction((id, targetX, targetY) => {
     const player = globalThis.puppeteerObserver.players.find((candidate) => candidate.userId === id);
     return player && Math.hypot(player.x - targetX, player.y - targetY) < 24;
@@ -140,7 +162,7 @@ async function moveObserver(page, userId, x, y) {
 }
 
 await mkdir(artifactDirectory, { recursive: true });
-const browser = await puppeteer.launch({ headless: true, protocolTimeout: 120_000 });
+const browser = await puppeteer.launch({ headless: true, timeout: 120_000, protocolTimeout: 120_000, args: ["--disable-gpu"] });
 const issues = [];
 const contexts = [];
 
@@ -151,45 +173,33 @@ try {
   contexts.push(leoContext);
   const leoPage = await leoContext.newPage();
   leoPage.setDefaultTimeout(12_000);
+  leoPage.setDefaultNavigationTimeout(120_000);
   await leoPage.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
   trackIssues(leoPage, "leo", issues);
   mainPage.setDefaultTimeout(12_000);
+  mainPage.setDefaultNavigationTimeout(120_000);
   trackIssues(mainPage, "main", issues);
   await mainPage.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
   await mainPage.goto(baseUrl, { waitUntil: "domcontentloaded" });
   await waitForAuth(mainPage);
   const authDesktop = await inspectVisibleUi(mainPage, "auth desktop", [".auth-card"]);
-  assert(authDesktop.bodyText.includes("Sign in") && authDesktop.bodyText.includes("Create account"), "auth desktop: account choices are missing");
+  assert(
+    authDesktop.bodyText.includes("Sign in")
+      && authDesktop.bodyText.includes("Email me a sign-in link")
+      && !authDesktop.bodyText.includes("Create account"),
+    "auth desktop: invite-only sign-in state is incorrect",
+  );
   await screenshot(mainPage, "auth-sign-in");
 
   await mainPage.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
   const authCompact = await inspectVisibleUi(mainPage, "auth compact", [".auth-card"]);
   await screenshot(mainPage, "auth-compact");
+  await mainPage.click('button[aria-label="Show password"]');
+  assert(await mainPage.$eval('input[name="password"]', (input) => input.type === "text"), "auth compact: password was not revealed");
+  await mainPage.click('button[aria-label="Hide password"]');
+  assert(await mainPage.$eval('input[name="password"]', (input) => input.type === "password"), "auth compact: password was not hidden");
   await mainPage.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
   report("authentication shell ready");
-
-  await mainPage.click('button[role="tab"]:nth-child(2)');
-  const registrationId = "browser-check";
-  assert(await mainPage.$('input[name="username"]') && await mainPage.$('input[name="email"]'), "registration: account fields are missing");
-  await screenshot(mainPage, "auth-create-account");
-  await mainPage.click('button[role="tab"]:first-child');
-  await mainPage.type('input[name="identifier"]', registrationId);
-  await mainPage.type('input[name="password"]', "browser-password");
-  await mainPage.click('button[type="submit"]');
-  await mainPage.waitForFunction(() => Boolean(document.querySelector(".world-canvas canvas, .auth-error")));
-  if (await mainPage.$(".auth-error")) {
-    await mainPage.click('button[role="tab"]:nth-child(2)');
-    await mainPage.type('input[name="username"]', registrationId);
-    await mainPage.type('input[name="email"]', `${registrationId}@example.com`);
-    await mainPage.type('input[name="password"]', "browser-password");
-    await mainPage.click('button[type="submit"]');
-  }
-  await waitForOffice(mainPage);
-  assert(await mainPage.$eval("body", (body, username) => body.innerText.includes(username), registrationId), "registration: new member did not enter the office");
-  await screenshot(mainPage, "auth-registration-complete");
-  await mainPage.click('button[aria-label="Sign out"]');
-  await waitForAuth(mainPage);
-  report("registration ready");
 
   await mainPage.type('input[name="identifier"]', "maya");
   await mainPage.type('input[name="password"]', "wrong-password");
@@ -220,6 +230,46 @@ try {
   await magic.page.click('a.auth-submit');
   await waitForOffice(magic.page);
   report("magic-link login ready");
+
+  if (!(await mainPage.$(".people-panel"))) {
+    await mainPage.click('button[aria-label="People"]');
+    await mainPage.waitForSelector(".people-panel", { visible: true });
+  }
+  const invitedUsername = `invite-${Date.now().toString(36)}`;
+  const invitedEmail = `${invitedUsername}@example.com`;
+  await mainPage.click('button[aria-label="Invite member"]');
+  await mainPage.type('.invite-form input[type="email"]', invitedEmail);
+  const invitationResponse = mainPage.waitForResponse((response) =>
+    response.request().method() === "POST" && response.url().includes("/v1/teams/team-northstar/invitations"),
+  );
+  await mainPage.click('.invite-form button[type="submit"]');
+  const invitationPayload = await (await invitationResponse).json();
+  assert(typeof invitationPayload.inviteLink === "string", "invitation: delivery link is missing");
+
+  const invitedPage = magic.page;
+  await invitedPage.click('button[aria-label="Sign out"]');
+  await waitForAuth(invitedPage);
+  await invitedPage.goto(invitationPayload.inviteLink, { waitUntil: "domcontentloaded" });
+  await waitForAuth(invitedPage);
+  assert(await invitedPage.evaluate(() => location.hash === ""), "invitation: token remained in the browser URL");
+  await invitedPage.click('button[role="tab"]:nth-child(2)');
+  await invitedPage.type('input[name="username"]', invitedUsername);
+  await invitedPage.type('input[name="email"]', invitedEmail);
+  await invitedPage.type('input[name="password"]', "browser-password");
+  await invitedPage.click('button[type="submit"]');
+  await waitForOffice(invitedPage);
+  const invitedSession = await invitedPage.evaluate(async () => {
+    const response = await fetch("/v1/auth/session", { credentials: "include", cache: "no-store" });
+    return response.json();
+  });
+  assert(invitedSession.user?.email === invitedEmail, "invitation: accepted account session is missing");
+  await invitedPage.reload({ waitUntil: "domcontentloaded" });
+  await waitForOffice(invitedPage);
+  await mainPage.waitForFunction((username) => document.body.innerText.includes(username), {}, invitedUsername);
+  await invitedPage.click('button[aria-label="Sign out"]');
+  await waitForAuth(invitedPage);
+  await signIn(invitedPage, "leo");
+  report("team invitation ready");
 
   const desktop = await inspectVisibleUi(mainPage, "desktop office", [".top-bar", ".nav-rail", ".side-panel", ".control-dock"]);
   assert(desktop.bodyText.includes("Northstar HQ"), "desktop: office did not render");
@@ -262,9 +312,14 @@ try {
     };
   });
   await mainPage.mouse.click(approach.x, approach.y);
-  await mainPage.waitForFunction(() => document.querySelector(".call-pill.connected")?.textContent?.includes("Leo Martins"), { timeout: 15_000 });
-  await leo.page.waitForFunction(() => document.querySelector(".call-pill.connected")?.textContent?.includes("Maya Chen"), { timeout: 15_000 });
-  await screenshot(mainPage, "walk-up-call-connected");
+  await mainPage.waitForSelector('button[aria-label="Call Leo Martins"]', { visible: true });
+  assert(!(await leo.page.$('button[aria-label="Accept call from Maya Chen"]')), "avatar selection rang without a call action");
+  await mainPage.click('button[aria-label="Call Leo Martins"]');
+  await leo.page.waitForSelector('button[aria-label="Accept call from Maya Chen"]', { visible: true, timeout: 15_000 });
+  await leo.page.click('button[aria-label="Accept call from Maya Chen"]');
+  await mainPage.waitForFunction(() => document.querySelector(".call-pill.accepted")?.textContent?.includes("Leo Martins"), { timeout: 15_000 });
+  await leo.page.waitForFunction(() => document.querySelector(".call-pill.accepted")?.textContent?.includes("Maya Chen"), { timeout: 15_000 });
+  await screenshot(mainPage, "walk-up-call-accepted");
   await mainPage.click('button[aria-label="End call with Leo Martins"]');
   await mainPage.waitForSelector(".call-pill", { hidden: true });
   await leo.page.waitForSelector(".call-pill", { hidden: true });
@@ -279,26 +334,35 @@ try {
   await mainPage.click('button[aria-label="Call Leo Martins"]');
   await leo.page.waitForSelector('button[aria-label="Accept call from Maya Chen"]', { visible: true });
   await leo.page.click('button[aria-label="Accept call from Maya Chen"]');
-  await mainPage.waitForFunction(() => document.querySelector(".call-pill.connected")?.textContent?.includes("Leo Martins"));
+  await mainPage.waitForFunction(() => document.querySelector(".call-pill.accepted")?.textContent?.includes("Leo Martins"));
   await mainPage.click('button[aria-label="End call with Leo Martins"]');
   await mainPage.waitForSelector(".call-pill", { hidden: true });
   report("ringing direct call preserved");
 
   await resetToStudio(mainPage, "user-maya");
-  await moveObserver(mainPage, "user-maya", 1265, 452);
+  await sendCommand(mainPage, {
+    type: "movement.set_destination",
+    requestId: crypto.randomUUID(),
+    floorId: "floor-studio",
+    x: 1216,
+    y: 500,
+  });
   await mainPage.waitForFunction(() => document.querySelector(".door-interaction")?.textContent?.includes("Focus Suite"));
   await screenshot(mainPage, "locked-room-door");
   await mainPage.evaluate(() => {
     const enter = [...document.querySelectorAll(".door-interaction button")].find((button) => button.textContent?.includes("Enter"));
     enter?.click();
   });
-  await mainPage.waitForFunction(() => globalThis.puppeteerObserver.players.find((player) => player.userId === "user-maya")?.areaId === "area-focus", { timeout: 15_000 });
+  await mainPage.waitForFunction(() => globalThis.puppeteerObserver.players.find((player) => player.userId === "user-maya")?.roomId === "room-focus", { timeout: 15_000 });
   report("locked-room door interaction ready");
 
   await resetToStudio(mainPage, "user-maya");
   await new Promise((resolve) => setTimeout(resolve, 700));
   await screenshot(mainPage, "public-meeting-circle");
   await moveObserver(mainPage, "user-maya", 800, 760);
+  await mainPage.waitForFunction(() => document.querySelector(".meeting-entry-action")?.textContent?.includes("Open huddle"), { timeout: 15_000 });
+  assert(!(await mainPage.$(".meeting-overlay")), "public meeting opened without a user action");
+  await mainPage.click(".meeting-entry-action .primary-button");
   await mainPage.waitForFunction(() => document.querySelector("#meeting-title")?.textContent === "Open huddle", { timeout: 15_000 });
   await screenshot(mainPage, "public-meeting-joined");
   await mainPage.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
@@ -310,17 +374,29 @@ try {
   await mainPage.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
   await mainPage.click('button[aria-label="Leave meeting"]');
   await mainPage.waitForSelector(".meeting-overlay", { hidden: true });
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  assert(!(await mainPage.$(".meeting-overlay")), "public meeting reopened before the user left its circle");
-  report("public meeting entry ready");
+  await mainPage.waitForFunction(() => document.querySelector(".meeting-entry-action")?.textContent?.includes("Open Small"), { timeout: 15_000 });
+  await mainPage.evaluate(() => {
+    const openSmall = [...document.querySelectorAll(".meeting-entry-action button")]
+      .find((button) => button.textContent?.trim() === "Open Small");
+    openSmall?.click();
+  });
+  await mainPage.waitForSelector(".meeting-overlay-small", { visible: true });
+  assert(!(await mainPage.$(".meeting-backdrop")), "small meeting opened with a modal backdrop");
+  await screenshot(mainPage, "public-meeting-small");
+  await mainPage.click('button[aria-label="Leave meeting"]');
+  await mainPage.waitForSelector(".meeting-overlay-small", { hidden: true });
+  report("public meeting actions ready");
 
   await resetToStudio(mainPage, "user-maya");
   await moveObserver(mainPage, "user-maya", 735, 360);
+  await mainPage.waitForFunction(() => document.querySelector(".meeting-entry-action")?.textContent?.includes("Product crit"), { timeout: 15_000 });
+  assert(!(await mainPage.$(".meeting-overlay")), "meeting room opened without a user action");
+  await mainPage.click(".meeting-entry-action .primary-button");
   await mainPage.waitForFunction(() => document.querySelector("#meeting-title")?.textContent === "Product crit", { timeout: 15_000 });
   await screenshot(mainPage, "meeting-room-joined");
   await mainPage.click('button[aria-label="Leave meeting"]');
   await mainPage.waitForSelector(".meeting-overlay", { hidden: true });
-  report("meeting-room entry ready");
+  report("meeting-room actions ready");
 
   await mainPage.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
   const closePanel = await mainPage.$('.side-panel .panel-header button[aria-label^="Close"]');
@@ -330,11 +406,38 @@ try {
   }
   const compactOffice = await inspectVisibleUi(mainPage, "compact office", [".top-bar", ".nav-rail", ".control-dock", ".world-zoom-controls"]);
   assert(await mainPage.$eval(".world-canvas canvas", (element) => element.getBoundingClientRect().width > 200), "compact office: map is not reachable");
+  const compactLocation = await mainPage.evaluate(() => {
+    const office = document.querySelector(".office-name");
+    const room = document.querySelector(".current-room");
+    return {
+      officeVisible: office ? getComputedStyle(office).display !== "none" : false,
+      roomVisible: room ? getComputedStyle(room).display !== "none" : false,
+      roomName: room?.textContent?.trim(),
+    };
+  });
+  assert(
+    compactLocation.roomName
+      ? compactLocation.roomVisible && !compactLocation.officeVisible
+      : compactLocation.officeVisible,
+    "compact office: the most specific available location was not shown",
+  );
+  await assertNoOverlap(mainPage, ".world-actions:not(.contextual)", ".world-zoom-controls", "compact office: actions overlap zoom controls");
   await screenshot(mainPage, "compact-office");
   await mainPage.click('button[aria-label="Messages"]');
   await mainPage.waitForSelector(".chat-panel", { visible: true });
   await inspectVisibleUi(mainPage, "compact messages", [".nav-rail", ".chat-panel", ".message-composer"]);
   await screenshot(mainPage, "compact-messages");
+  await mainPage.$eval(".message-list", (list) => {
+    list.scrollTop = 0;
+    list.dispatchEvent(new Event("scroll", { bubbles: true }));
+  });
+  await mainPage.waitForSelector(".jump-to-latest", { visible: true });
+  await screenshot(mainPage, "compact-messages-history");
+  await mainPage.click(".jump-to-latest");
+  await mainPage.waitForFunction(() => {
+    const list = document.querySelector(".message-list");
+    return list && list.scrollHeight - list.scrollTop - list.clientHeight <= 1;
+  });
   report("compact office ready");
 
   await mainPage.evaluate(() => globalThis.puppeteerObserver.socket.close());
@@ -342,6 +445,12 @@ try {
   assert(issues.length === 0, issues.join("\n"));
   process.stdout.write(`${JSON.stringify({ authDesktop, authCompact, desktop, compactOffice }, null, 2)}\n`);
 } catch (error) {
+  const pageStates = await Promise.all((await browser.pages()).map(async (page) => page.evaluate(() => ({
+    path: location.pathname,
+    readyState: document.readyState,
+    body: document.body.innerText.slice(0, 500),
+  })).catch((reason) => ({ error: reason instanceof Error ? reason.message : String(reason) }))));
+  process.stderr.write(`${JSON.stringify({ pageStates, issues }, null, 2)}\n`);
   process.stderr.write(`${error instanceof Error ? error.stack : String(error)}\n`);
   throw error;
 } finally {

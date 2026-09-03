@@ -1,39 +1,20 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
 import type { AuthUser, Member } from "@workhard/shared";
+import type {
+  ApplicationDatabase,
+  AuthPersistenceState,
+  PersistedAuthAccount,
+} from "../persistence/application-database.js";
 import { DUMMY_PASSWORD_HASH, SEEDED_PASSWORD_HASH, hashPassword, verifyPassword } from "./passwords.js";
 
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1_000;
 const MAGIC_LINK_TTL_MS = 15 * 60 * 1_000;
 
-interface Account extends AuthUser {
-  passwordHash: string;
-  createdAt: string;
-}
-
-interface Session {
-  tokenHash: string;
-  userId: string;
-  expiresAt: string;
-}
-
-interface MagicLinkRequest {
-  tokenHash: string;
-  userId: string;
-  expiresAt: string;
-}
-
-interface AuthState {
-  schemaVersion: 1;
-  accounts: Account[];
-  sessions: Session[];
-  magicLinks: MagicLinkRequest[];
-}
+type Account = PersistedAuthAccount;
+type AuthState = AuthPersistenceState;
 
 interface AuthStoreOptions {
-  filePath: string;
-  persistenceEnabled: boolean;
+  database: ApplicationDatabase;
   members: Member[];
 }
 
@@ -58,8 +39,12 @@ export class AuthStore {
   }
 
   static async create(options: AuthStoreOptions): Promise<AuthStore> {
-    const saved = options.persistenceEnabled ? await loadState(options.filePath) : undefined;
-    return new AuthStore(options, saved ?? createSeedState(options.members));
+    const saved = await options.database.loadAuthState();
+    const state = saved ?? createSeedState(options.members);
+    if (!saved && state.accounts.length > 0) {
+      await options.database.saveAuthState(state);
+    }
+    return new AuthStore(options, state);
   }
 
   getUserFromSession(token: string | undefined): AuthUser | undefined {
@@ -189,11 +174,8 @@ export class AuthStore {
   }
 
   private persist(): Promise<void> {
-    if (!this.options.persistenceEnabled) {
-      return Promise.resolve();
-    }
     const snapshot = structuredClone(this.state);
-    const operation = this.saveQueue.then(() => saveState(this.options.filePath, snapshot));
+    const operation = this.saveQueue.then(() => this.options.database.saveAuthState(snapshot));
     this.saveQueue = operation.catch(() => undefined);
     return operation;
   }
@@ -214,7 +196,6 @@ function hashToken(token: string): string {
 function createSeedState(members: Member[]): AuthState {
   const createdAt = new Date().toISOString();
   return {
-    schemaVersion: 1,
     accounts: members.map((member) => ({
       id: member.id,
       username: member.email.split("@")[0]!.toLowerCase(),
@@ -225,28 +206,4 @@ function createSeedState(members: Member[]): AuthState {
     sessions: [],
     magicLinks: [],
   };
-}
-
-async function loadState(filePath: string): Promise<AuthState | undefined> {
-  let source: string;
-  try {
-    source = await readFile(filePath, "utf8");
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return undefined;
-    }
-    throw error;
-  }
-  const state = JSON.parse(source) as Partial<AuthState>;
-  if (state.schemaVersion !== 1 || !Array.isArray(state.accounts) || !Array.isArray(state.sessions) || !Array.isArray(state.magicLinks)) {
-    throw new Error("AUTH_STATE_INVALID");
-  }
-  return state as AuthState;
-}
-
-async function saveState(filePath: string, state: AuthState): Promise<void> {
-  await mkdir(dirname(filePath), { recursive: true });
-  const temporaryPath = `${filePath}.${randomUUID()}.tmp`;
-  await writeFile(temporaryPath, JSON.stringify(state), "utf8");
-  await rename(temporaryPath, filePath);
 }

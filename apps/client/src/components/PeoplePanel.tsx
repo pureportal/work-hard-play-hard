@@ -1,6 +1,7 @@
-import { LocateFixed, Mail, Phone, Plus, Search, Send, UserRoundPlus, Waves, X } from "lucide-react";
+import { Copy, LocateFixed, Mail, Phone, Plus, Search, Send, UserRoundPlus, Waves, X } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
-import type { Invitation, Member, MemberRole } from "@workhard/shared";
+import type { AssignableMemberPermission, Invitation, Member, MemberRole } from "@workhard/shared";
+import { Avatar } from "./Avatar";
 import { IconButton } from "./IconButton";
 
 const availabilityLabels: Record<Member["availability"], string> = {
@@ -13,23 +14,34 @@ const availabilityLabels: Record<Member["availability"], string> = {
 interface PeoplePanelProps {
   members: Member[];
   invitations: Invitation[];
+  invitationLinks: Readonly<Record<string, string>>;
   currentUser: Member;
-  canEdit: boolean;
+  canManageMembers: boolean;
   onClose: () => void;
   onWave: (userId: string) => void;
   onMessage: (userId: string) => void;
   onCall: (userId: string) => void;
   onLocate: (userId: string) => void;
-  onInvite: (email: string) => Promise<boolean>;
+  onInvite: (
+    email: string,
+    role: Exclude<MemberRole, "owner">,
+    permissions: AssignableMemberPermission[],
+  ) => Promise<boolean>;
   onRevokeInvite: (invitationId: string) => Promise<void>;
-  onRoleChange: (userId: string, role: Exclude<MemberRole, "owner">) => Promise<void>;
+  onCopyInvite: (invitationId: string) => Promise<void>;
+  onAccessChange: (
+    userId: string,
+    role: Exclude<MemberRole, "owner">,
+    permissions: AssignableMemberPermission[],
+  ) => Promise<void>;
 }
 
 export function PeoplePanel({
   members,
   invitations,
+  invitationLinks,
   currentUser,
-  canEdit,
+  canManageMembers,
   onClose,
   onWave,
   onMessage,
@@ -37,14 +49,17 @@ export function PeoplePanel({
   onLocate,
   onInvite,
   onRevokeInvite,
-  onRoleChange,
+  onCopyInvite,
+  onAccessChange,
 }: PeoplePanelProps) {
   const [query, setQuery] = useState("");
   const [inviting, setInviting] = useState(false);
   const [email, setEmail] = useState("");
+  const [invitationRole, setInvitationRole] = useState<Exclude<MemberRole, "owner">>("member");
+  const [invitationCanBuild, setInvitationCanBuild] = useState(false);
   const [selectedId, setSelectedId] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
-  const [updatingRoleIds, setUpdatingRoleIds] = useState<Set<string>>(() => new Set());
+  const [updatingAccessIds, setUpdatingAccessIds] = useState<Set<string>>(() => new Set());
   const normalizedQuery = query.trim().toLowerCase();
   const filtered = useMemo(
     () => members.filter((member) => `${member.name} ${member.title}`.toLowerCase().includes(normalizedQuery)),
@@ -60,8 +75,11 @@ export function PeoplePanel({
     }
     setSubmitting(true);
     try {
-      if (await onInvite(email)) {
+      const permissions: AssignableMemberPermission[] = invitationRole === "member" && invitationCanBuild ? ["build"] : [];
+      if (await onInvite(email, invitationRole, permissions)) {
         setEmail("");
+        setInvitationRole("member");
+        setInvitationCanBuild(false);
         setInviting(false);
       }
     } finally {
@@ -69,12 +87,16 @@ export function PeoplePanel({
     }
   };
 
-  const updateRole = async (userId: string, role: Exclude<MemberRole, "owner">) => {
-    setUpdatingRoleIds((current) => new Set(current).add(userId));
+  const updateAccess = async (
+    userId: string,
+    role: Exclude<MemberRole, "owner">,
+    permissions: AssignableMemberPermission[],
+  ) => {
+    setUpdatingAccessIds((current) => new Set(current).add(userId));
     try {
-      await onRoleChange(userId, role);
+      await onAccessChange(userId, role, permissions);
     } finally {
-      setUpdatingRoleIds((current) => {
+      setUpdatingAccessIds((current) => {
         const next = new Set(current);
         next.delete(userId);
         return next;
@@ -90,27 +112,49 @@ export function PeoplePanel({
           <span>{online.length} online</span>
         </div>
         <div className="panel-header-actions">
-          {canEdit && <IconButton label="Invite member" icon={UserRoundPlus} onClick={() => setInviting(!inviting)} />}
+          {canManageMembers && <IconButton label="Invite member" icon={UserRoundPlus} onClick={() => setInviting(!inviting)} />}
           <IconButton label="Close people" icon={X} onClick={onClose} />
         </div>
       </div>
 
       {inviting && (
-        <form className="inline-form" onSubmit={submitInvite}>
-          <label>
-            <span className="sr-only">Email</span>
-            <Mail size={16} aria-hidden="true" />
+        <form className="invite-form" onSubmit={submitInvite}>
+          <label className="invite-email">
+            <span>Email</span>
             <input
               type="email"
               value={email}
               autoFocus
               required
-              placeholder="name@company.com"
               onChange={(event) => setEmail(event.target.value)}
             />
           </label>
-          <button className="primary-icon-button" aria-label="Send invitation" disabled={submitting}>
-            <Send size={17} />
+          <label>
+            <span>Role</span>
+            <select
+              value={invitationRole}
+              onChange={(event) => {
+                const role = event.target.value as Exclude<MemberRole, "owner">;
+                setInvitationRole(role);
+                if (role !== "member") {
+                  setInvitationCanBuild(false);
+                }
+              }}
+            >
+              {currentUser.role === "owner" && <option value="admin">Admin</option>}
+              <option value="member">Member</option>
+              <option value="guest">Guest</option>
+            </select>
+          </label>
+          {invitationRole === "member" && (
+            <label className="permission-toggle">
+              <input type="checkbox" checked={invitationCanBuild} onChange={(event) => setInvitationCanBuild(event.target.checked)} />
+              <span>Build office</span>
+            </label>
+          )}
+          <button type="submit" className="auth-submit" disabled={submitting}>
+            <Send size={16} />
+            Invite
           </button>
         </form>
       )}
@@ -133,14 +177,13 @@ export function PeoplePanel({
               member={member}
               currentUser={currentUser}
               expanded={selectedId === member.id}
-              canEdit={canEdit}
-              roleUpdating={updatingRoleIds.has(member.id)}
+              accessUpdating={updatingAccessIds.has(member.id)}
               onToggle={() => setSelectedId(selectedId === member.id ? undefined : member.id)}
               onWave={onWave}
               onMessage={onMessage}
               onCall={onCall}
               onLocate={onLocate}
-              onRoleChange={updateRole}
+              onAccessChange={updateAccess}
             />
           ))}
         </section>
@@ -157,26 +200,34 @@ export function PeoplePanel({
                 member={member}
                 currentUser={currentUser}
                 expanded={selectedId === member.id}
-                canEdit={canEdit}
-                roleUpdating={updatingRoleIds.has(member.id)}
+                accessUpdating={updatingAccessIds.has(member.id)}
                 onToggle={() => setSelectedId(selectedId === member.id ? undefined : member.id)}
                 onWave={onWave}
                 onMessage={onMessage}
                 onCall={onCall}
                 onLocate={onLocate}
-                onRoleChange={updateRole}
+                onAccessChange={updateAccess}
               />
             ))}
           </section>
         )}
 
-        {canEdit && invitations.some((invitation) => invitation.status === "pending") && (
+        {canManageMembers && invitations.some((invitation) => invitation.status === "pending") && (
           <section className="people-section pending-section">
             <div className="section-heading"><span>Invited</span></div>
             {invitations.filter((invitation) => invitation.status === "pending").map((invitation) => (
-              <div className="pending-row" key={invitation.id}>
+              <div className={`pending-row ${invitationLinks[invitation.id] ? "has-link" : ""}`} key={invitation.id}>
                 <span className="pending-icon"><Plus size={15} /></span>
-                <span>{invitation.email}</span>
+                <span className="pending-copy">
+                  <span>{invitation.email}</span>
+                  <small>
+                    {invitation.role === "admin" ? "Admin" : invitation.role === "guest" ? "Guest" : "Member"}
+                    {invitation.permissions.includes("build") ? " · Build" : ""}
+                  </small>
+                </span>
+                {invitationLinks[invitation.id] && (
+                  <IconButton label={`Copy invite link for ${invitation.email}`} icon={Copy} onClick={() => void onCopyInvite(invitation.id)} />
+                )}
                 <IconButton label={`Revoke ${invitation.email}`} icon={X} onClick={() => void onRevokeInvite(invitation.id)} />
               </div>
             ))}
@@ -191,27 +242,33 @@ interface PersonRowProps {
   member: Member;
   currentUser: Member;
   expanded: boolean;
-  canEdit: boolean;
-  roleUpdating: boolean;
+  accessUpdating: boolean;
   onToggle: () => void;
   onWave: (userId: string) => void;
   onMessage: (userId: string) => void;
   onCall: (userId: string) => void;
   onLocate: (userId: string) => void;
-  onRoleChange: (userId: string, role: Exclude<MemberRole, "owner">) => Promise<void>;
+  onAccessChange: (
+    userId: string,
+    role: Exclude<MemberRole, "owner">,
+    permissions: AssignableMemberPermission[],
+  ) => Promise<void>;
 }
 
-function PersonRow({ member, currentUser, expanded, canEdit, roleUpdating, onToggle, onWave, onMessage, onCall, onLocate, onRoleChange }: PersonRowProps) {
+function PersonRow({ member, currentUser, expanded, accessUpdating, onToggle, onWave, onMessage, onCall, onLocate, onAccessChange }: PersonRowProps) {
   const isCurrentUser = member.id === currentUser.id;
+  const canManageAccess = !isCurrentUser
+    && member.role !== "owner"
+    && (currentUser.role === "owner" || (currentUser.role === "admin" && member.role !== "admin"));
+  const canBuild = member.permissions.includes("build");
   return (
     <div className={`person-row-wrap ${expanded ? "expanded" : ""}`}>
       <div className="person-row">
         <button className="person-main" aria-label={`${member.name}${isCurrentUser ? " (you)" : ""}`} onClick={onToggle} aria-expanded={expanded}>
-          <span className="person-avatar" style={{ background: member.color }}>
-            {member.initials}
+          <Avatar member={member} className="person-avatar" decorative={false}>
             <span className={`status-dot ${member.online ? member.availability : "offline"}`} />
             <span className="sr-only">{member.online ? availabilityLabels[member.availability] : "Offline"}</span>
-          </span>
+          </Avatar>
           <span className="person-copy">
             <strong>{member.name}{isCurrentUser ? " (you)" : ""}</strong>
             <span>{member.online ? member.activity ?? member.title : member.title}</span>
@@ -234,15 +291,39 @@ function PersonRow({ member, currentUser, expanded, canEdit, roleUpdating, onTog
               <button aria-label={`Call ${member.name}`} disabled={member.availability === "dnd"} onClick={() => onCall(member.id)}><Phone size={15} />Call</button>
             </div>
           )}
-          {canEdit && !isCurrentUser && member.role !== "owner" && (
-            <label className="role-picker">
-              <span>Role</span>
-              <select disabled={roleUpdating} value={member.role} onChange={(event) => void onRoleChange(member.id, event.target.value as Exclude<MemberRole, "owner">)}>
-                <option value="admin">Admin</option>
-                <option value="member">Member</option>
-                <option value="guest">Guest</option>
-              </select>
-            </label>
+          {canManageAccess && (
+            <div className="access-controls">
+              <label className="role-picker">
+                <span>Role</span>
+                <select
+                  disabled={accessUpdating}
+                  value={member.role}
+                  onChange={(event) => {
+                    const role = event.target.value as Exclude<MemberRole, "owner">;
+                    void onAccessChange(
+                      member.id,
+                      role,
+                      role === "member" && member.role === "member" && canBuild ? ["build"] : [],
+                    );
+                  }}
+                >
+                  {currentUser.role === "owner" && <option value="admin">Admin</option>}
+                  <option value="member">Member</option>
+                  <option value="guest">Guest</option>
+                </select>
+              </label>
+              {member.role === "member" && (
+                <label className="permission-toggle">
+                  <input
+                    type="checkbox"
+                    checked={canBuild}
+                    disabled={accessUpdating}
+                    onChange={(event) => void onAccessChange(member.id, "member", event.target.checked ? ["build"] : [])}
+                  />
+                  <span>Build office</span>
+                </label>
+              )}
+            </div>
           )}
         </div>
       )}

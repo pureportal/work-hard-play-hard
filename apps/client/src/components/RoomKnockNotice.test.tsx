@@ -1,27 +1,26 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import type { Member, Room, RoomKnock } from "@workhard/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { Area, AreaKnock, Member } from "@workhard/shared";
-import { AreaKnockNotice } from "./AreaKnockNotice";
+import { RoomKnockNotice } from "./RoomKnockNotice";
 
-const area: Area = {
+const room: Room = {
   id: "focus",
   floorId: "studio",
   name: "Focus Suite",
-  type: "private",
-  x: 100,
-  y: 100,
-  width: 300,
-  height: 200,
   color: "#d9cdf4",
   capacity: 5,
-  locked: true,
-  visibility: "public",
-  doors: [],
+  bounds: { x: 100, y: 100, width: 300, height: 200 },
+  footprint: [{ x: 100, y: 100, width: 300, height: 200 }],
+  boundary: [],
+  doorIds: [],
+  windowIds: [],
+  privateEligible: true,
+  access: { mode: "assigned", assignedPersonIds: ["maya"], knockable: true },
 };
 
-const knock: AreaKnock = {
+const knock: RoomKnock = {
   id: "knock",
-  areaId: area.id,
+  roomId: room.id,
   requesterUserId: "jonas",
   expiresAt: new Date(Date.now() + 20_000).toISOString(),
 };
@@ -33,6 +32,7 @@ const requester: Member = {
   email: "jonas@example.com",
   title: "Engineer",
   role: "member",
+  permissions: [],
   color: "#f4b942",
   availability: "available",
   online: true,
@@ -40,10 +40,10 @@ const requester: Member = {
 
 afterEach(cleanup);
 
-describe("AreaKnockNotice", () => {
+describe("RoomKnockNotice", () => {
   it("locks both responses after one is sent", () => {
     const onRespond = vi.fn(() => true);
-    render(<AreaKnockNotice knock={knock} area={area} requester={requester} onRespond={onRespond} />);
+    render(<RoomKnockNotice knock={knock} room={room} requester={requester} onRespond={onRespond} />);
 
     const accept = screen.getByRole("button", { name: "Let Jonas Berg into Focus Suite" }) as HTMLButtonElement;
     const decline = screen.getByRole("button", { name: "Decline Jonas Berg's request for Focus Suite" }) as HTMLButtonElement;
@@ -59,7 +59,7 @@ describe("AreaKnockNotice", () => {
 
   it("keeps responses available when the command cannot be sent", () => {
     const onRespond = vi.fn(() => false);
-    render(<AreaKnockNotice knock={knock} area={area} requester={requester} onRespond={onRespond} />);
+    render(<RoomKnockNotice knock={knock} room={room} requester={requester} onRespond={onRespond} />);
 
     const accept = screen.getByRole("button", { name: "Let Jonas Berg into Focus Suite" }) as HTMLButtonElement;
     fireEvent.click(accept);

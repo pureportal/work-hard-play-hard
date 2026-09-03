@@ -3,10 +3,16 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "seed": "tsx src/seed-development.ts",
+    "migration:create": "mikro-orm migration:create --config mikro-orm.config.ts",
+    "migration:check": "mikro-orm migration:check --config mikro-orm.config.ts",
+    "migration:up": "mikro-orm migration:up --config mikro-orm.config.ts",
+    "migration:down": "mikro-orm migration:down --config mikro-orm.config.ts",
     "build": "tsup",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
@@ -15,15 +21,20 @@
   "dependencies": {
     "@fastify/cors": "^11.2.0",
     "@fastify/websocket": "^11.2.0",
+    "@mikro-orm/core": "7.1.14",
+    "@mikro-orm/migrations": "7.1.14",
+    "@mikro-orm/postgresql": "7.1.14",
     "@workhard/shared": "workspace:*",
     "fastify": "^5.6.0",
+    "sharp": "^0.35.4",
     "zod": "^4.1.5"
   },
   "devDependencies": {
+    "@mikro-orm/cli": "7.1.14",
     "@types/node": "^24.3.0",
     "@types/ws": "^8.18.1",
-    "tsx": "^4.20.5",
     "tsup": "^8.5.0",
+    "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "vitest": "^4.1.11",
     "ws": "^8.18.3"

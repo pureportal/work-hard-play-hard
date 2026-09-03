@@ -10,6 +10,7 @@ const member: Member = {
   email: "maya@example.com",
   title: "Product Lead",
   role: "owner",
+  permissions: ["manage_members", "build"],
   color: "#ff7a66",
   availability: "available",
   online: true,
@@ -39,16 +40,19 @@ describe("MeetingOverlay media", () => {
       value: { getUserMedia },
     });
     const commonProps = {
+      small: false,
       meeting,
       members: [member],
       currentUserId: member.id,
       messages: [],
       cameraOn: false,
+      leaving: false,
       reactions: [],
       onMutedChange: vi.fn(),
       onCameraChange: vi.fn(),
       onReact: vi.fn(),
       onSendMessage: vi.fn(),
+      onViewChange: vi.fn(),
       onLeave: vi.fn(),
     };
     const view = render(<MeetingOverlay {...commonProps} muted />);
@@ -70,17 +74,20 @@ describe("MeetingOverlay media", () => {
 
     const view = render(
       <MeetingOverlay
+        small={false}
         meeting={meeting}
         members={[member]}
         currentUserId={member.id}
         messages={[]}
         muted={false}
         cameraOn
+        leaving={false}
         reactions={[]}
         onMutedChange={onMutedChange}
         onCameraChange={onCameraChange}
         onReact={vi.fn()}
         onSendMessage={vi.fn()}
+        onViewChange={vi.fn()}
         onLeave={vi.fn()}
       />,
     );
@@ -90,6 +97,40 @@ describe("MeetingOverlay media", () => {
     expect(onCameraChange).toHaveBeenCalledWith(false);
   });
 
+  it("renders the small meeting as a floating non-modal window", () => {
+    const trigger = document.createElement("button");
+    document.body.appendChild(trigger);
+    trigger.focus();
+
+    const view = render(
+      <MeetingOverlay
+        small
+        meeting={meeting}
+        members={[member]}
+        currentUserId={member.id}
+        messages={[]}
+        muted
+        cameraOn={false}
+        leaving={false}
+        reactions={[]}
+        onMutedChange={vi.fn()}
+        onCameraChange={vi.fn()}
+        onReact={vi.fn()}
+        onSendMessage={vi.fn()}
+        onViewChange={vi.fn()}
+        onLeave={vi.fn()}
+      />,
+    );
+
+    const dialog = view.getByRole("dialog");
+    expect(dialog.classList.contains("meeting-overlay-small")).toBe(true);
+    expect(dialog.getAttribute("aria-modal")).toBeNull();
+    expect(view.queryByLabelText("Meeting chat")).toBeNull();
+    expect(view.container.querySelector(".modal-backdrop")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+    trigger.remove();
+  });
+
   it("contains keyboard focus and restores it after closing", () => {
     const trigger = document.createElement("button");
     document.body.appendChild(trigger);
@@ -97,17 +138,20 @@ describe("MeetingOverlay media", () => {
     const onLeave = vi.fn();
     const view = render(
       <MeetingOverlay
+        small={false}
         meeting={meeting}
         members={[member]}
         currentUserId={member.id}
         messages={[]}
         muted
         cameraOn={false}
+        leaving={false}
         reactions={[]}
         onMutedChange={vi.fn()}
         onCameraChange={vi.fn()}
         onReact={vi.fn()}
         onSendMessage={vi.fn()}
+        onViewChange={vi.fn()}
         onLeave={onLeave}
       />,
     );
@@ -136,17 +180,20 @@ describe("MeetingOverlay media", () => {
     const onLeave = vi.fn();
     const view = render(
       <MeetingOverlay
+        small={false}
         meeting={meeting}
         members={[member]}
         currentUserId={member.id}
         messages={[]}
         muted
         cameraOn={false}
+        leaving={false}
         reactions={[]}
         onMutedChange={vi.fn()}
         onCameraChange={vi.fn()}
         onReact={vi.fn()}
         onSendMessage={vi.fn()}
+        onViewChange={vi.fn()}
         onLeave={onLeave}
       />,
     );
@@ -157,5 +204,33 @@ describe("MeetingOverlay media", () => {
 
     expect(view.queryByRole("group", { name: "Reactions" })).toBeNull();
     expect(onLeave).not.toHaveBeenCalled();
+  });
+
+  it("switches between small and full meeting views without leaving", () => {
+    const onViewChange = vi.fn();
+    const commonProps = {
+      meeting,
+      members: [member],
+      currentUserId: member.id,
+      messages: [],
+      muted: true,
+      cameraOn: false,
+      leaving: false,
+      reactions: [],
+      onMutedChange: vi.fn(),
+      onCameraChange: vi.fn(),
+      onReact: vi.fn(),
+      onSendMessage: vi.fn(),
+      onViewChange,
+      onLeave: vi.fn(),
+    };
+    const view = render(<MeetingOverlay {...commonProps} small />);
+
+    fireEvent.click(view.getByRole("button", { name: "Expand meeting" }));
+    expect(onViewChange).toHaveBeenCalledWith(false);
+
+    view.rerender(<MeetingOverlay {...commonProps} small={false} />);
+    fireEvent.click(view.getByRole("button", { name: "Minimize meeting" }));
+    expect(onViewChange).toHaveBeenLastCalledWith(true);
   });
 });

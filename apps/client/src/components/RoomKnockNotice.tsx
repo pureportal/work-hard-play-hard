@@ -1,15 +1,16 @@
 import { DoorOpen, X } from "lucide-react";
 import { useState } from "react";
-import type { Area, AreaKnock, Member } from "@workhard/shared";
+import type { Member, Room, RoomKnock } from "@workhard/shared";
+import { Avatar } from "./Avatar";
 
-interface AreaKnockNoticeProps {
-  knock: AreaKnock;
-  area: Area;
+interface RoomKnockNoticeProps {
+  knock: RoomKnock;
+  room: Room;
   requester: Member;
   onRespond: (knockId: string, accept: boolean) => boolean;
 }
 
-export function AreaKnockNotice({ knock, area, requester, onRespond }: AreaKnockNoticeProps) {
+export function RoomKnockNotice({ knock, room, requester, onRespond }: RoomKnockNoticeProps) {
   const [responding, setResponding] = useState(false);
 
   const respond = (accept: boolean) => {
@@ -20,22 +21,22 @@ export function AreaKnockNotice({ knock, area, requester, onRespond }: AreaKnock
 
   return (
     <div className="knock-pill" role="status" aria-atomic="true" aria-busy={responding}>
-      <span className="person-avatar" style={{ background: requester.color }}>{requester.initials}</span>
+      <Avatar member={requester} className="person-avatar" />
       <div className="knock-copy">
         <strong>{requester.name}</strong>
-        <span>Knocking at {area.name}</span>
+        <span>Knocking at {room.name}</span>
       </div>
       <div className="knock-actions">
         <button
           className="accept-knock"
-          aria-label={`Let ${requester.name} into ${area.name}`}
+          aria-label={`Let ${requester.name} into ${room.name}`}
           disabled={responding}
           onClick={() => respond(true)}
         >
           <DoorOpen size={17} />
         </button>
         <button
-          aria-label={`Decline ${requester.name}'s request for ${area.name}`}
+          aria-label={`Decline ${requester.name}'s request for ${room.name}`}
           disabled={responding}
           onClick={() => respond(false)}
         >

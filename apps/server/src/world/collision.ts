@@ -1,9 +1,13 @@
-import { getAreaBoundaryWalls, isEnclosedArea, type FloorLayout, type Rect } from "@workhard/shared";
+import { getAssetCollisionRects, getWallSolidRects, isPointInRoom, type FloorLayout, type Rect, type Room } from "@workhard/shared";
 
 export interface WorldBounds {
+  x?: number;
+  y?: number;
   width: number;
   height: number;
 }
+
+const colliderCache = new WeakMap<FloorLayout, { revision: number; rects: Rect[] }>();
 
 export function circleIntersectsRect(x: number, y: number, radius: number, rect: Rect): boolean {
   const closestX = Math.max(rect.x, Math.min(x, rect.x + rect.width));
@@ -22,28 +26,41 @@ export function canOccupy(
   nextX: number,
   nextY: number,
   radius = 13,
-  areaAccessIds: ReadonlySet<string> = new Set(),
-  blockedAreaIds: ReadonlySet<string> = new Set(),
+  roomAccessIds: ReadonlySet<string> = new Set(),
+  blockedRoomIds: ReadonlySet<string> = new Set(),
 ): boolean {
-  if (nextX - radius < 0 || nextY - radius < 0 || nextX + radius > bounds.width || nextY + radius > bounds.height) {
+  const left = bounds.x ?? 0;
+  const top = bounds.y ?? 0;
+  if (
+    nextX - radius < left
+    || nextY - radius < top
+    || nextX + radius > left + bounds.width
+    || nextY + radius > top + bounds.height
+  ) {
     return false;
   }
 
-  const colliders = [
-    ...layout.walls,
-    ...layout.objects.filter((object) => object.solid),
-    ...layout.areas.filter(isEnclosedArea).flatMap((area) => getAreaBoundaryWalls(area)),
-  ];
+  const cached = colliderCache.get(layout);
+  const colliders = cached?.revision === layout.revision
+    ? cached.rects
+    : [
+      ...layout.walls.flatMap((wall) => getWallSolidRects(wall, layout.openings)),
+      ...getAssetCollisionRects(layout),
+    ];
+  if (cached?.revision !== layout.revision) {
+    colliderCache.set(layout, { revision: layout.revision, rects: colliders });
+  }
 
   if (colliders.some((rect) => circleIntersectsRect(nextX, nextY, radius, rect))) {
     return false;
   }
 
-  for (const area of layout.areas) {
-    const wasInside = pointInRect(currentX, currentY, area);
-    const requiresAccess = area.locked || area.visibility === "members";
-    const lacksAccess = requiresAccess && !area.memberIds?.includes(userId) && !areaAccessIds.has(area.id);
-    if (!wasInside && (lacksAccess || blockedAreaIds.has(area.id)) && circleIntersectsRect(nextX, nextY, radius, area)) {
+  for (const room of layout.rooms) {
+    const wasInside = isPointInRoom(currentX, currentY, room);
+    const lacksAccess = room.access.mode === "assigned"
+      && !room.access.assignedPersonIds.includes(userId)
+      && !roomAccessIds.has(room.id);
+    if (!wasInside && (lacksAccess || blockedRoomIds.has(room.id)) && circleIntersectsRoom(nextX, nextY, radius, room)) {
       return false;
     }
   }
@@ -51,6 +68,6 @@ export function canOccupy(
   return true;
 }
 
-export function pointInRect(x: number, y: number, rect: Rect): boolean {
-  return x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height;
+function circleIntersectsRoom(x: number, y: number, radius: number, room: Room): boolean {
+  return room.footprint.some((rect) => circleIntersectsRect(x, y, radius, rect));
 }

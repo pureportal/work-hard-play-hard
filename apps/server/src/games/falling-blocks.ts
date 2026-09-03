@@ -1,8 +1,16 @@
-import type { GameState } from "@workhard/shared";
-
-type GameCommand = "left" | "right" | "rotate" | "down" | "drop" | "pause";
+import {
+  TETRIS_DEFINITION_ID,
+  TETROMINO_COLOR_IDS,
+  TETROMINO_SHAPES,
+  TETROMINO_TYPES,
+  type GameState,
+  type TetrominoType,
+  type TetrisCellPosition,
+  type TetrisCommand,
+} from "@workhard/shared";
 
 interface Piece {
+  type: TetrominoType;
   color: number;
   cells: number[][];
   x: number;
@@ -11,49 +19,61 @@ interface Piece {
 
 const WIDTH = 10;
 const HEIGHT = 20;
-const pieceDefinitions: number[][][] = [
-  [[1, 1, 1, 1]],
-  [[1, 1], [1, 1]],
-  [[0, 1, 0], [1, 1, 1]],
-  [[1, 0, 0], [1, 1, 1]],
-  [[0, 0, 1], [1, 1, 1]],
-  [[0, 1, 1], [1, 1, 0]],
-  [[1, 1, 0], [0, 1, 1]],
-];
+const NEXT_PREVIEW_COUNT = 5;
+const LOCK_DELAY_MS = 500;
+const MAX_LOCK_RESETS = 15;
 
 export class FallingBlocksGame {
   private board = Array.from({ length: HEIGHT }, () => Array<number>(WIDTH).fill(0));
   private piece: Piece | undefined;
-  private pieceIndex = 0;
+  private readonly pieceQueue: TetrominoType[] = [];
+  private readonly random: () => number;
+  private heldPiece: TetrominoType | undefined;
+  private holdAvailable = true;
   private accumulatedMs = 0;
+  private groundedMs = 0;
+  private lockResetCount = 0;
   private score = 0;
   private lines = 0;
   private running = true;
   private paused = false;
   private changed = true;
 
-  constructor() {
+  constructor(private readonly roundId: string) {
+    this.random = createSeededRandom(roundId);
     this.spawnPiece();
   }
 
   update(deltaMs: number): boolean {
-    if (!this.running || this.paused) {
+    if (!this.running || this.paused || !this.piece) {
       return false;
     }
+
+    if (this.isGrounded()) {
+      this.groundedMs += deltaMs;
+      if (this.groundedMs >= LOCK_DELAY_MS) {
+        this.lockPiece();
+        this.changed = true;
+        return true;
+      }
+      return false;
+    }
+
+    this.groundedMs = 0;
     this.accumulatedMs += deltaMs;
     const fallInterval = Math.max(140, 720 - this.level * 55);
-    if (this.accumulatedMs < fallInterval) {
-      return false;
+    let moved = false;
+    while (this.accumulatedMs >= fallInterval && this.piece && !this.isGrounded()) {
+      this.accumulatedMs -= fallInterval;
+      moved = this.tryMove(0, 1) || moved;
     }
-    this.accumulatedMs %= fallInterval;
-    if (!this.tryMove(0, 1)) {
-      this.lockPiece();
+    if (moved) {
+      this.changed = true;
     }
-    this.changed = true;
-    return true;
+    return moved;
   }
 
-  command(command: GameCommand): boolean {
+  command(command: TetrisCommand): boolean {
     if (!this.running) {
       return false;
     }
@@ -66,18 +86,19 @@ export class FallingBlocksGame {
       return false;
     }
 
+    let didChange = false;
     if (command === "left") {
-      this.tryMove(-1, 0);
+      didChange = this.tryPlayerMove(-1);
     } else if (command === "right") {
-      this.tryMove(1, 0);
+      didChange = this.tryPlayerMove(1);
     } else if (command === "down") {
-      if (this.tryMove(0, 1)) {
+      didChange = this.tryMove(0, 1);
+      if (didChange) {
         this.score += 1;
-      } else {
-        this.lockPiece();
+        this.groundedMs = 0;
       }
     } else if (command === "rotate") {
-      this.tryRotate();
+      didChange = this.tryPlayerRotate();
     } else if (command === "drop") {
       let dropped = 0;
       while (this.tryMove(0, 1)) {
@@ -85,34 +106,45 @@ export class FallingBlocksGame {
       }
       this.score += dropped * 2;
       this.lockPiece();
+      didChange = true;
+    } else if (command === "hold") {
+      didChange = this.tryHold();
     }
 
-    this.changed = true;
-    return true;
+    if (didChange) {
+      this.changed = true;
+    }
+    return didChange;
   }
 
   get state(): GameState {
     const grid = this.board.map((row) => [...row]);
+    const activeCells = this.piece ? this.cellPositions(this.piece) : [];
     if (this.piece) {
-      this.piece.cells.forEach((row, rowIndex) => {
-        row.forEach((value, columnIndex) => {
-          const boardY = this.piece ? this.piece.y + rowIndex : 0;
-          const boardX = this.piece ? this.piece.x + columnIndex : 0;
-          if (value && boardY >= 0 && boardY < HEIGHT && boardX >= 0 && boardX < WIDTH) {
-            grid[boardY]![boardX] = this.piece?.color ?? 0;
-          }
-        });
-      });
+      for (const { row, column } of activeCells) {
+        if (row >= 0 && row < HEIGHT && column >= 0 && column < WIDTH) {
+          grid[row]![column] = this.piece.color;
+        }
+      }
     }
     return {
       type: "game.state",
-      definitionId: "game-stack",
+      roundId: this.roundId,
+      definitionId: TETRIS_DEFINITION_ID,
       grid,
       score: this.score,
       lines: this.lines,
       level: this.level,
       running: this.running,
       paused: this.paused,
+      activePiece: this.piece?.type ?? null,
+      activeCells: activeCells.filter(({ row }) => row >= 0 && row < HEIGHT),
+      ghostCells: this.piece
+        ? this.cellPositions(this.getGhostPiece(this.piece)).filter(({ row }) => row >= 0 && row < HEIGHT)
+        : [],
+      heldPiece: this.heldPiece ?? null,
+      nextPieces: this.pieceQueue.slice(0, NEXT_PREVIEW_COUNT),
+      canHold: this.holdAvailable && this.running,
     };
   }
 
@@ -120,8 +152,17 @@ export class FallingBlocksGame {
     return !this.running;
   }
 
-  get result(): { score: number; lines: number } {
-    return { score: this.score, lines: this.lines };
+  get result(): { score: number; lines: number; level: number } {
+    return { score: this.score, lines: this.lines, level: this.level };
+  }
+
+  end(): void {
+    if (!this.running) {
+      return;
+    }
+    this.running = false;
+    this.paused = false;
+    this.changed = true;
   }
 
   consumeChanged(): boolean {
@@ -134,24 +175,67 @@ export class FallingBlocksGame {
     return Math.floor(this.lines / 8) + 1;
   }
 
-  private spawnPiece(): void {
-    const definition = pieceDefinitions[this.pieceIndex % pieceDefinitions.length];
-    if (!definition) {
-      return;
-    }
-    this.pieceIndex += 1;
+  private spawnPiece(type = this.takeNextPiece()): void {
+    const definition = TETROMINO_SHAPES[type];
     const piece: Piece = {
-      color: ((this.pieceIndex - 1) % pieceDefinitions.length) + 1,
+      type,
+      color: TETROMINO_COLOR_IDS[type],
       cells: definition.map((row) => [...row]),
       x: Math.floor((WIDTH - definition[0]!.length) / 2),
       y: 0,
     };
+    this.accumulatedMs = 0;
+    this.groundedMs = 0;
+    this.lockResetCount = 0;
     if (this.collides(piece)) {
       this.running = false;
       this.piece = undefined;
       return;
     }
     this.piece = piece;
+  }
+
+  private takeNextPiece(): TetrominoType {
+    this.fillPieceQueue(NEXT_PREVIEW_COUNT + 1);
+    const type = this.pieceQueue.shift()!;
+    this.fillPieceQueue(NEXT_PREVIEW_COUNT);
+    return type;
+  }
+
+  private fillPieceQueue(minimumLength: number): void {
+    while (this.pieceQueue.length < minimumLength) {
+      const bag = [...TETROMINO_TYPES];
+      for (let index = bag.length - 1; index > 0; index -= 1) {
+        const swapIndex = Math.floor(this.random() * (index + 1));
+        [bag[index], bag[swapIndex]] = [bag[swapIndex]!, bag[index]!];
+      }
+      this.pieceQueue.push(...bag);
+    }
+  }
+
+  private tryHold(): boolean {
+    if (!this.piece || !this.holdAvailable) {
+      return false;
+    }
+    const outgoingType = this.piece.type;
+    const incomingType = this.heldPiece;
+    this.heldPiece = outgoingType;
+    this.holdAvailable = false;
+    if (incomingType) {
+      this.spawnPiece(incomingType);
+    } else {
+      this.spawnPiece();
+    }
+    return true;
+  }
+
+  private tryPlayerMove(deltaX: number): boolean {
+    const wasGrounded = this.isGrounded();
+    const moved = this.tryMove(deltaX, 0);
+    if (moved) {
+      this.resetLockDelay(wasGrounded);
+    }
+    return moved;
   }
 
   private tryMove(deltaX: number, deltaY: number): boolean {
@@ -166,21 +250,35 @@ export class FallingBlocksGame {
     return true;
   }
 
-  private tryRotate(): void {
-    if (!this.piece || this.piece.cells.length === 1 && this.piece.cells[0]?.length === 1) {
-      return;
+  private tryPlayerRotate(): boolean {
+    if (!this.piece) {
+      return false;
     }
+    const wasGrounded = this.isGrounded();
     const rotatedCells = this.piece.cells[0]?.map((_, columnIndex) =>
       this.piece?.cells.map((row) => row[columnIndex] ?? 0).reverse() ?? [],
     ) ?? [];
-    const offsets = [0, -1, 1, -2, 2];
-    for (const offset of offsets) {
+    for (const offset of [0, -1, 1, -2, 2]) {
       const rotated = { ...this.piece, cells: rotatedCells, x: this.piece.x + offset };
       if (!this.collides(rotated)) {
         this.piece = rotated;
-        return;
+        this.resetLockDelay(wasGrounded);
+        return true;
       }
     }
+    return false;
+  }
+
+  private resetLockDelay(wasGrounded: boolean): void {
+    if (!wasGrounded || this.lockResetCount >= MAX_LOCK_RESETS) {
+      return;
+    }
+    this.groundedMs = 0;
+    this.lockResetCount += 1;
+  }
+
+  private isGrounded(): boolean {
+    return Boolean(this.piece && this.collides({ ...this.piece, y: this.piece.y + 1 }));
   }
 
   private collides(piece: Piece): boolean {
@@ -196,22 +294,35 @@ export class FallingBlocksGame {
     );
   }
 
+  private getGhostPiece(piece: Piece): Piece {
+    let ghost = { ...piece };
+    while (!this.collides({ ...ghost, y: ghost.y + 1 })) {
+      ghost = { ...ghost, y: ghost.y + 1 };
+    }
+    return ghost;
+  }
+
+  private cellPositions(piece: Piece): TetrisCellPosition[] {
+    const positions: TetrisCellPosition[] = [];
+    piece.cells.forEach((row, rowIndex) => {
+      row.forEach((value, columnIndex) => {
+        if (value) {
+          positions.push({ row: piece.y + rowIndex, column: piece.x + columnIndex });
+        }
+      });
+    });
+    return positions;
+  }
+
   private lockPiece(): void {
     if (!this.piece) {
       return;
     }
-    this.piece.cells.forEach((row, rowIndex) => {
-      row.forEach((value, columnIndex) => {
-        if (!value || !this.piece) {
-          return;
-        }
-        const y = this.piece.y + rowIndex;
-        const x = this.piece.x + columnIndex;
-        if (y >= 0 && y < HEIGHT && x >= 0 && x < WIDTH) {
-          this.board[y]![x] = this.piece.color;
-        }
-      });
-    });
+    for (const { row, column } of this.cellPositions(this.piece)) {
+      if (row >= 0 && row < HEIGHT && column >= 0 && column < WIDTH) {
+        this.board[row]![column] = this.piece.color;
+      }
+    }
 
     const remainingRows = this.board.filter((row) => row.some((value) => value === 0));
     const cleared = HEIGHT - remainingRows.length;
@@ -223,6 +334,21 @@ export class FallingBlocksGame {
       this.lines += cleared;
       this.score += [0, 100, 300, 500, 800][cleared]! * this.level;
     }
+    this.holdAvailable = true;
     this.spawnPiece();
   }
+}
+
+function createSeededRandom(seed: string): () => number {
+  let state = 2_166_136_261;
+  for (let index = 0; index < seed.length; index += 1) {
+    state = Math.imul(state ^ seed.charCodeAt(index), 16_777_619);
+  }
+  return () => {
+    state += 0x6d2b79f5;
+    let value = state;
+    value = Math.imul(value ^ value >>> 15, value | 1);
+    value ^= value + Math.imul(value ^ value >>> 7, value | 61);
+    return ((value ^ value >>> 14) >>> 0) / 4_294_967_296;
+  };
 }

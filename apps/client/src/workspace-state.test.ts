@@ -1,6 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { TETRIS_DEFINITION_ID } from "@workhard/shared";
 import type { BootstrapData, ChatMessage, Conversation } from "@workhard/shared";
+import { describe, expect, it } from "vitest";
 import { mergeWorkspaceSnapshot } from "./workspace-state";
+import { createTestEconomy, createTestGameSettings, createTestKidnappingConfiguration } from "./test-fixtures";
 
 function message(id: string, conversationId: string, userId: string, sequence: number): ChatMessage {
   return {
@@ -23,6 +25,10 @@ function data(conversations: Conversation[], messages: ChatMessage[]): Bootstrap
     layouts: [],
     miniGames: [],
     scores: [],
+    gameStatistics: [],
+    economy: createTestEconomy(),
+    gameSettings: createTestGameSettings(),
+    kidnapping: createTestKidnappingConfiguration(),
     invitations: [],
     meetings: [],
     conversations,
@@ -52,11 +58,25 @@ describe("mergeWorkspaceSnapshot", () => {
         email: "leo@example.com",
         title: "Engineer",
         role: "member" as const,
+        permissions: [],
         color: "#123",
         availability: "busy" as const,
         online: true,
       }],
-      scores: [{ id: "score", definitionId: "game-stack", userId: "leo", score: 120, lines: 2, playedAt: "2026-09-01T00:00:00.000Z" }],
+      scores: [{
+        id: "score",
+        roundId: "round",
+        definitionId: TETRIS_DEFINITION_ID,
+        userId: "leo",
+        score: 120,
+        lines: 2,
+        level: 1,
+        mode: "solo" as const,
+        playerCount: 1,
+        placement: 1,
+        won: false,
+        playedAt: "2026-09-01T00:00:00.000Z",
+      }],
     };
 
     const merged = mergeWorkspaceSnapshot(current, snapshot);
@@ -75,7 +95,7 @@ describe("mergeWorkspaceSnapshot", () => {
     const snapshot = data(
       [
         { id: "open", name: "Open", type: "team", unread: 8 },
-        { id: "new", name: "New", type: "area", areaId: "area", unread: 0 },
+        { id: "new", name: "New", type: "room", roomId: "room", unread: 0 },
       ],
       [
         message("known", "open", "leo", 1),
