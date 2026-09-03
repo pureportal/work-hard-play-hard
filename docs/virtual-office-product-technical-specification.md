@@ -40,7 +40,7 @@ A successful daily experience looks like this:
 3. They can work with the office in a compact/background mode or move around the full world.
 4. They click a destination or use directional controls. The client feels immediate, while the server determines the legal path and final position.
 5. Walking into a talking lounge enables an ambient conversation. Walking near a coworker also exposes a lightweight wave or direct-call action.
-6. Entering a meeting room opens a focused camera-and-chat meeting after access checks.
+6. Entering a meeting area offers full and small call actions; the call opens only after the member chooses one.
 7. At a desk, lounge, office, or arcade object, the available action is clear from context.
 8. An authorized editor can extend the office in any direction, draw walls, place objects, and define the behavior of an area while coworkers remain online.
 9. A member can start the falling-block mini-game without leaving the office, then return to the same place.
@@ -569,7 +569,7 @@ Use latest compatible stable patch versions and commit an exact lockfile. The re
 | Realtime/game server | Colyseus 0.18 core plus default `ws` transport, attached to the Fastify HTTP server | Authoritative rooms, fixed timesteps, typed input, reconnection, delta state sync, prediction/reconciliation, and a future room-scaling boundary are a direct fit ([Colyseus overview](https://docs.colyseus.io/), [room game loop](https://docs.colyseus.io/room), [netcode](https://docs.colyseus.io/netcode)). It introduces framework state-schema coupling, so durable domain models stay independent of Colyseus classes. |
 | Wire formats | Colyseus binary schema patches for continuous state; typed small messages for commands; JSON REST | Avoid inventing snapshot/delta encoding. JSON remains inspectable for low-frequency business APIs. Layout chunks may use MessagePack only after measurement proves JSON to be material. |
 | Database | PostgreSQL 18 | Transactions, constraints, relational team/access data, cursor queries, and JSONB for bounded object properties in one operational datastore. PostgreSQL cautions that large JSONB document updates lock the whole row, supporting the proposed per-chunk rather than whole-map documents ([PostgreSQL JSON types](https://www.postgresql.org/docs/18/datatype-json.html)). |
-| Data access | Drizzle ORM with checked-in SQL migrations and the `pg` driver | Type-safe schema/query construction while retaining visible SQL and normal transactions ([Drizzle PostgreSQL](https://orm.drizzle.team/docs/get-started-postgresql), [transactions](https://orm.drizzle.team/docs/transactions)). Complex checkpoint upserts and locks may use explicit SQL. |
+| Data access | MikroORM with its PostgreSQL driver and checked-in migrations | Typed entities, transactional repositories, and an explicit migration history ([MikroORM PostgreSQL](https://mikro-orm.io/docs/usage-with-sql), [migrations](https://mikro-orm.io/docs/migrations)). |
 | Media | LiveKit Cloud for MVP; `MediaProvider` adapter compatible with self-hosted LiveKit | An SFU is necessary beyond tiny calls. LiveKit supports WebRTC rooms, selective subscription, adaptive stream, server administration, web and Android SDKs, and identical core APIs for cloud/self-hosting ([LiveKit architecture](https://docs.livekit.io/reference/internals/livekit-sfu/), [self-hosting](https://docs.livekit.io/transport/self-hosting/)). Managed media removes TURN/SFU operations from the first application release. |
 | Windows | Tauri 2 with WebView2 and a narrow capability allowlist | Reuses the web client, produces a small native package, supports system tray/notifications/updating, and preserves an Android option ([Tauri 2](https://tauri.app/)). The trade-off is WebView and WebRTC variability; an early AV/background/screen-capture test gate is mandatory. |
 | Tests | Vitest for domain/component tests; Playwright for web end-to-end; deterministic simulation harnesses; Windows native smoke tests | The simulation clock and random source are injected for reproducibility. Playwright covers Chromium, Firefox, and WebKit browser behavior ([Playwright browsers](https://playwright.dev/docs/browsers)). Tauri-native behavior needs Rust tests and signed Windows smoke builds rather than pretending browser automation covers it. |
@@ -657,7 +657,7 @@ Mobile likely prioritizes chat, presence, direct calls, and meeting join before 
 
 - Pin exact dependencies in the lockfile and use supported LTS runtime/container images.
 - Renovate dependencies through reviewed, tested updates; do not auto-deploy major versions.
-- Keep protocol and checkpoint schema versions independent of package versions.
+- Keep protocol versions and database migrations independent of package versions.
 - Generate and compare REST OpenAPI plus WebSocket message schemas in CI.
 - Avoid beta/experimental runtime dependencies in the critical path. In particular, do not depend on Pixi WebGPU or experimental large-collection streaming for MVP.
 
@@ -692,7 +692,7 @@ Mobile likely prioritizes chat, presence, direct calls, and meeting join before 
 | `AreaInvitation` | `area_id`, invited user/email, inviter, expiry/revocation, optional meeting scope. |
 | `AreaAccessGrant` | `area_id`, `user_id` or guest identity, source, issued/expiry time, revoked time. Short-lived grants may remain in memory; durable grants are rows. |
 | `DeskAssignment` | `area_id` or desk object ID, unique member, assigned time, optional home position. |
-| `AvatarCheckpoint` | `user_id`, `floor_id`, fixed-point position/facing, layout revision, saved timestamp, checkpoint generation. Availability connection state is not stored here. |
+| `WorldPlayerState` | `user_id`, `floor_id`, position/facing, availability, room, connection state, and transient interaction expiry. |
 | `Conversation` | `id`, `team_id`, type (`TEAM`, `AREA`, `DM`, `MEETING`, `GAME`), resource reference, title where needed, state. |
 | `ConversationParticipant` | conversation/user relationship, join/leave, read cursor, notification preference. DM uniqueness is constrained by normalized participant set. |
 | `ChatMessage` | `conversation_id`, sequence, sender, client request ID, plain-text body, created/edited/deleted timestamps. Attachments are absent in MVP. |
@@ -702,20 +702,20 @@ Mobile likely prioritizes chat, presence, direct calls, and meeting join before 
 | `MiniGameInstance` | `id`, team/floor/object, definition ID/version, state, seed, created/finished times. |
 | `MiniGameParticipant` | instance/user, role, joined/left, final result. |
 | `MiniGameResult` | instance, user/team, verified score, duration, ruleset version, completed time. |
-| `WorldCheckpoint` | world/floor or game instance, checkpoint schema version, generation, server tick, layout/rules revision, serialized bounded payload, checksum, saved time. Retain a small rolling history. |
+| `WorkspaceSettings` | singleton key, typed game settings, updated time. Schema changes are handled by database migrations. |
 
 ### 7.3 In-memory entities
 
 The runtime holds optimized representations rather than ORM objects:
 
-- `FloorRuntime`: clock, current layout/navigation revision, players, object runtimes, chunk index, area spatial index, proximity manager, dirty checkpoint state.
+- `FloorRuntime`: clock, current layout/navigation revision, players, object runtimes, chunk index, area spatial index, proximity manager, dirty persistence state.
 - `PlayerRuntime`: connection set, fixed-point position/velocity, current authoritative input, route, current area, status, media state, last applied sequence.
 - `NavigationChunk`: walkable/collision bitsets, boundary entrances, revision, neighbor costs.
 - `PathSearch`: destination, navigation revision, open/closed sets, per-tick budget, cancellation state.
 - `ProximityGroup`: public member set, entry/exit thresholds, media subscription plan.
-- `GameRuntime`: definition adapter, deterministic clock/random source, participants, state, checkpoint dirtiness.
+- `GameRuntime`: definition adapter, deterministic clock/random source, participants, state, persistence dirtiness.
 
-These objects never leak directly into REST responses or database serialization. Checkpoint codecs use explicit versioned data-transfer types.
+These objects never leak directly into REST responses or database records. Repositories map domain state to typed entities.
 
 ### 7.4 REST API responsibilities
 
@@ -747,7 +747,7 @@ Colyseus supplies the transport handshake, room lifecycle, state patches, heartb
 | Message | Purpose and validation |
 |---|---|
 | `movement.input` | Sequenced directional vector and buttons. Clamp values; reject impossible rate/sequence. |
-| `movement.set_destination` | Fixed-point target and request ID. Server checks interest/access and computes path. |
+| `movement.set_destination` | Floor, fixed-point target, and request ID. Server computes a route through connected stairs. |
 | `movement.cancel` | Cancel current path without changing position. |
 | `presence.set_availability` | Set allowed explicit state and optional expiry. Offline cannot be set directly. |
 | `chat.send` | Conversation ID, request ID, bounded plain text. Server reauthorizes conversation membership and persists before ack. |
@@ -791,7 +791,7 @@ Colyseus supplies the transport handshake, room lifecycle, state patches, heartb
 - The client sends supported protocol major/minor in REST and room join.
 - A major mismatch rejects with an upgrade-required result. A server supports one current protocol major; it does not retain indefinite legacy handlers.
 - Additive optional fields use minor versions. Removed/renamed semantics require a major version and coordinated client/server release.
-- Checkpoint, database migration, REST API, and realtime protocol versions are separate.
+- Database migrations, REST API versions, and realtime protocol versions are separate.
 - Community-host manifests later publish compatible client/protocol versions, media endpoint type, and server identity; they do not make arbitrary hosts trusted automatically.
 
 ## 8. Game-world model: movement, collision/pathfinding, floors, editable layouts, and server authority
@@ -1017,7 +1017,7 @@ Messages render as text, never raw HTML. Safe URL detection is presentation only
 
 ### 9.4 Public proximity conversations
 
-Public-floor ambient media uses one LiveKit room per floor to avoid a new WebRTC negotiation every time two avatars pass. Clients connect with `autoSubscribe: false` and publish only after opting into microphone/camera use.
+Public-floor ambient media uses one LiveKit room per floor to avoid a new WebRTC negotiation every time two avatars pass. Clients connect with `autoSubscribe: false` and publish only after opting in by unmuting their microphone or enabling their camera. Meeting-room participants remain on the focused meeting path and are excluded from ambient groups.
 
 The application server computes an authorized subscription plan from:
 
@@ -1028,7 +1028,9 @@ The application server computes an authorized subscription plan from:
 - Blocks/moderation rules.
 - Maximum group/media capacity.
 
-Proposed hallway thresholds are enter at 5 tiles and exit at 6 tiles. The different thresholds provide hysteresis and prevent rapid connect/disconnect at the boundary. Within a talking lounge, all authorized occupants may form one group regardless of exact seat distance up to the area's capacity. Walls and closed doors divide acoustic zones; a short server-side line/adjacency check prevents hearing directly through them.
+A ready solo player has a visible 2.5-tile interaction circle. When two solo circles touch, they create a temporary call at 5 tiles. Call members then use a visible 3-tile group-reach circle, so an existing call remains connected through pairwise links up to 6 tiles. The server recomputes connected components from those moving circles: a solo player can join any member's group zone, groups merge when their zones meet, separated components become independent calls, and isolated ready players return to solo state. Existing call IDs follow the component with the greatest membership overlap, avoiding unnecessary media-session churn during joins and splits.
+
+The 5-tile entry and 6-tile group threshold provide hysteresis at the boundary. Group reach is the union of the current members' circles rather than an area fixed at the call's original location, allowing a conversation to move and remain connected through a chain of nearby members. This combines Gather's explicit device readiness and walk-up behavior with the visible range cues used by Kumospace, while retaining acoustic-room separation ([Gather spatial audio/video](https://support.gather.town/articles/4624155403-overview-of-spatial-audio-video), [Gather walk-up conversations](https://support.gather.town/articles/4772337318-start-conversations-wave-ring-and-walk-over), [Kumospace spatial and room audio](https://www.kumospace.com/help/spatial-and-room-audio)). Within a talking lounge, all authorized occupants may form one group regardless of exact seat distance up to the area's capacity. Walls and closed doors divide acoustic zones; a short server-side line/adjacency check prevents hearing directly through them.
 
 LiveKit supports selective subscription through both client and server APIs for spatial applications ([selective subscription](https://docs.livekit.io/transport/media/subscribe/)). The media orchestrator applies server-side subscription changes, while each publishing client also denies subscriptions outside its current server-provided allowlist. The client sets per-track volume from the authoritative distance plan, with a smooth curve rather than a hard edge.
 
@@ -1211,7 +1213,7 @@ Clients request a join ticket from the application endpoint and receive the corr
 
 #### Persistence ports
 
-World code depends on `CheckpointStore` and office repositories, not PostgreSQL imports. This is not intended to support arbitrary databases in MVP; it keeps simulation lifecycle separate from storage and allows a future owner process to load/checkpoint only its assigned floors.
+World code remains storage-agnostic. Application composition persists world and office state through the PostgreSQL repository boundary.
 
 #### Media provider port
 
@@ -1219,7 +1221,7 @@ The application uses one `MediaProvider` contract for room grants, subscriptions
 
 #### Versioned contracts
 
-REST OpenAPI, WebSocket protocol, checkpoint codec, layout schema, and mini-game ruleset have explicit versions. A host/client compatibility failure is detected before joining a world.
+REST OpenAPI, WebSocket protocol, layout schema, and mini-game ruleset have explicit versions. A host/client compatibility failure is detected before joining a world.
 
 ### 11.3 Scaling progression
 
@@ -1446,7 +1448,7 @@ Before launch, publish privacy terms, subprocessors, data locations, deletion/ex
 - Liveness checks only process/event-loop viability.
 - Readiness remains false until startup load/rebuild completes and PostgreSQL plus required server ownership are healthy. LiveKit failure may mark media degraded without taking the whole world offline.
 - Schema migrations are a separate, single-run deployment step and backward-compatible only for the duration of one rolling deployment if rolling deployment exists. The initial one-server release can use brief maintenance rather than maintaining legacy application behavior.
-- Deployments drain WebSockets and checkpoint before termination. Rollback must consider database/checkpoint schema compatibility explicitly.
+- Deployments drain WebSockets and flush dirty state before termination. Rollback must account for database migration compatibility.
 
 #### Backup and recovery
 
@@ -1517,7 +1519,7 @@ Work:
 - Establish pnpm workspace packages: `web`, `server`, `protocol`, `domain`, `world`, `persistence`, `minigames`, and later `desktop`.
 - CI for formatting/lint/typecheck/unit/integration/build/security scan; exact lockfile.
 - Fastify composition root, REST error model, OpenAPI, health/readiness, Pino/OpenTelemetry.
-- PostgreSQL/Drizzle migrations, repositories, transaction test harness, backup-ready deployment configuration.
+- PostgreSQL/MikroORM migrations, repositories, transaction test harness, backup-ready deployment configuration.
 - Accounts, email verification/reset, sessions/CSRF, join-ticket skeleton.
 - Team creation, invitations, membership roles/capabilities, roster APIs, transactional revocation.
 - React application shell, authentication/team flows, accessible control primitives, Pixi colored-square proof.
@@ -1642,7 +1644,7 @@ Every milestone includes:
 - Unit/integration/end-to-end tests proportional to the feature.
 - Tenant authorization and abuse cases.
 - Metrics, structured errors, and operational runbook updates.
-- Database/checkpoint migration and restore test when state changes.
+- Database migration and restart/restore tests when persisted state changes.
 - Keyboard/accessibility and concise error-recovery review for visible interfaces.
 - No debug flags, placeholder behavior, duplicate legacy paths, or silent fallbacks left in production code.
 
