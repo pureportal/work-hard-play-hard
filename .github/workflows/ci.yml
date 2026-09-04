@@ -87,6 +87,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install Chrome Headless Shell
+        run: pnpm exec puppeteer browsers install chrome-headless-shell
+
       - name: Validate workspace
         run: pnpm check
 
