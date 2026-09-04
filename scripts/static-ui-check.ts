@@ -299,7 +299,13 @@ try {
   }, {}, simultaneousInputStart);
   await new Promise((resolve) => setTimeout(resolve, 60));
   await page.keyboard.press("ArrowUp");
-  await new Promise((resolve) => setTimeout(resolve, 260));
+  await page.waitForFunction((start) => {
+    const commands = (globalThis as typeof globalThis & { mockSockets: Array<{ commands: Array<{ type: string; command?: string }> }> })
+      .mockSockets.at(-1)?.commands.slice(start)
+      .filter((command) => command.type === "game.command") ?? [];
+    const rotationIndex = commands.findIndex((command) => command.command === "rotate");
+    return rotationIndex >= 0 && commands.slice(rotationIndex + 1).some((command) => command.command === "left");
+  }, {}, simultaneousInputStart);
   await page.keyboard.up("ArrowLeft");
   const simultaneousInputCommands = await page.evaluate((start) => (
     (globalThis as typeof globalThis & { mockSockets: Array<{ commands: Array<{ type: string; command?: string }> }> })
