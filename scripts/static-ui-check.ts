@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import { dirname, extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer, { type HTTPRequest, type Page } from "puppeteer";
@@ -10,6 +10,7 @@ const artifactDirectory = resolve(workspaceDirectory, "artifacts");
 const bootstrap = new DemoStore().getBootstrap("user-maya");
 bootstrap.conversations = bootstrap.conversations.filter((conversation) => conversation.id !== "conversation-jonas");
 bootstrap.messages = bootstrap.messages.filter((message) => message.conversationId !== "conversation-jonas");
+await mkdir(artifactDirectory, { recursive: true });
 
 const browser = await puppeteer.launch({
   headless: "shell",
