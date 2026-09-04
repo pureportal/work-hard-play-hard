@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BootstrapData, ClientCommand, LayoutEdit, ServerEvent, WorldSnapshot } from "@workhard/shared";
 import { Workspace } from "./App";
-import { createTestEconomy, createTestGameSettings, createTestKidnappingConfiguration } from "./test-fixtures";
+import { createTestCorporateIdentity, createTestEconomy, createTestGameSettings, createTestKidnappingConfiguration } from "./test-fixtures";
 
 const realtime = vi.hoisted(() => ({
   handler: undefined as ((event: ServerEvent) => void) | undefined,
@@ -167,6 +167,7 @@ function workspace(): BootstrapData {
   }];
   return {
     currentUserId: "player",
+    corporateIdentity: createTestCorporateIdentity(),
     team: { id: "team", name: "Team", slug: "team", accent: "#000000" },
     office: { id: "office", teamId: "team", name: "Office" },
     floors: [{ id: "floor", officeId: "office", name: "Floor", level: 1, width: 256, height: 256, spawn: { x: 200, y: 200 }, background: "#ffffff" }],

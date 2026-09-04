@@ -1,4 +1,9 @@
-import type { GameSettings, KidnappingConfiguration, PlayerEconomy } from "@workhard/shared";
+import { DEFAULT_CORPORATE_IDENTITY } from "@workhard/shared";
+import type { CorporateIdentity, GameSettings, KidnappingConfiguration, PlayerEconomy } from "@workhard/shared";
+
+export function createTestCorporateIdentity(): CorporateIdentity {
+  return structuredClone(DEFAULT_CORPORATE_IDENTITY);
+}
 
 export function createTestEconomy(): PlayerEconomy {
   return {

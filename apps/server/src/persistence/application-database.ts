@@ -1,5 +1,10 @@
 import type { AuthUser, WorldPlayer } from "@workhard/shared";
 import type { AvatarReference, AvatarWrite, StoredAvatar } from "../avatar/avatar-record.js";
+import type {
+  BrandingLogoReference,
+  BrandingLogoWrite,
+  StoredBrandingLogo,
+} from "../branding/branding-logo-record.js";
 import type { MutableStoreState } from "../store.js";
 
 export interface PersistedAuthAccount extends AuthUser {
@@ -40,6 +45,10 @@ export interface ApplicationDatabase {
   saveAvatar(userId: string, avatar: AvatarWrite): Promise<AvatarReference>;
   readAvatar(userId: string): Promise<StoredAvatar | undefined>;
   removeAvatar(userId: string): Promise<boolean>;
+  getBrandingLogoReference(): Promise<BrandingLogoReference | undefined>;
+  saveBrandingLogo(logo: BrandingLogoWrite): Promise<BrandingLogoReference>;
+  readBrandingLogo(): Promise<StoredBrandingLogo | undefined>;
+  removeBrandingLogo(): Promise<boolean>;
   clear(): Promise<void>;
   close(): Promise<void>;
 }

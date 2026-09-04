@@ -16,6 +16,7 @@ import {
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   ASSET_CATALOG,
+  DEFAULT_CORPORATE_IDENTITY,
   GONG_INTERACTION_RANGE,
   getAssetDefinition,
   getDefaultAssetVariantId,
@@ -43,6 +44,8 @@ import type {
   RoomSettings,
   BootstrapData,
   ClientCommand,
+  CorporateIdentity,
+  CorporateIdentitySettings,
   Door,
   GameLobbyState,
   GameRoundState,
@@ -60,7 +63,8 @@ import type {
   WorldObject,
   WorldPlayer,
 } from "@workhard/shared";
-import { acceptInvitation, ApiError, changeMemberAccess, createDirectConversation, fetchBootstrap, fetchSession, inviteMember, isConnectionError, logout, removePlayerAvatar, revokeInvitation, updateRegistrationSettings, uploadChatImage, uploadPlayerAvatar, verifyMagicLink } from "./api";
+import { acceptInvitation, ApiError, changeMemberAccess, createDirectConversation, fetchBootstrap, fetchSession, inviteMember, isConnectionError, logout, removeCorporateLogo, removePlayerAvatar, revokeInvitation, updateCorporateIdentity, updateRegistrationSettings, uploadChatImage, uploadCorporateLogo, uploadPlayerAvatar, verifyMagicLink } from "./api";
+import { applyCorporateIdentity } from "./branding";
 import { Avatar } from "./components/Avatar";
 import { AvatarDialog } from "./components/AvatarDialog";
 import { RoomKnockNotice } from "./components/RoomKnockNotice";
@@ -122,6 +126,7 @@ interface AuthTokens {
 
 interface InitialWorkspaceState {
   data: BootstrapData | undefined;
+  corporateIdentity: CorporateIdentity;
   registration: RegistrationAvailability;
   setupRequired: boolean;
 }
@@ -157,6 +162,7 @@ function restoreInitialWorkspace(): Promise<InitialWorkspaceState> {
       }
       return {
         data: session.user ? await fetchBootstrap() : undefined,
+        corporateIdentity: session.corporateIdentity,
         registration: session.registration,
         setupRequired: session.setupRequired,
       };
@@ -198,6 +204,7 @@ function clearInitialInvitationToken(): void {
 
 export function App() {
   const [colorTheme, setColorTheme] = useState<ColorTheme>(getInitialColorTheme);
+  const [corporateIdentity, setCorporateIdentity] = useState<CorporateIdentity>(() => structuredClone(DEFAULT_CORPORATE_IDENTITY));
   const [bootstrap, setBootstrap] = useState<BootstrapData>();
   const [authState, setAuthState] = useState<"loading" | "signed-out" | "signed-in">("loading");
   const [registration, setRegistration] = useState<RegistrationAvailability>({
@@ -215,6 +222,10 @@ export function App() {
   useLayoutEffect(() => {
     applyColorTheme(colorTheme);
   }, [colorTheme]);
+
+  useLayoutEffect(() => {
+    applyCorporateIdentity(corporateIdentity);
+  }, [corporateIdentity]);
 
   const finishRecovery = useCallback(() => {
     recoveryPending.current = false;
@@ -272,6 +283,7 @@ export function App() {
       const data = await fetchBootstrap();
       finishRecovery();
       setSetupRequired(false);
+      setCorporateIdentity(data.corporateIdentity);
       setBootstrap(data);
       setAuthState("signed-in");
     } catch (reason) {
@@ -296,6 +308,7 @@ export function App() {
         setInvitationEmailMismatch(false);
         setError(undefined);
         setRegistration(restored.registration);
+        setCorporateIdentity(restored.data?.corporateIdentity ?? restored.corporateIdentity);
         setSetupRequired(restored.setupRequired);
         if (!restored.data) {
           setAuthState("signed-out");
@@ -368,6 +381,7 @@ export function App() {
         registrationsEnabled={registration.enabled}
         invitationRequired={registration.invitationRequired}
         setupRequired={setupRequired}
+        corporateIdentity={corporateIdentity}
         onAuthenticated={loadWorkspace}
         onServerChanged={() => {
           finishRecovery();
@@ -444,6 +458,7 @@ export function App() {
       onRegistrationSettingsChange={({ enabled, invitationRequired }) => {
         setRegistration({ enabled, invitationRequired });
       }}
+      onCorporateIdentityChange={setCorporateIdentity}
       onSignOut={signOut}
       onSessionExpired={handleSessionExpired}
     />
@@ -455,6 +470,7 @@ export function Workspace({
   colorTheme = "light",
   onColorThemeChange = () => undefined,
   onRegistrationSettingsChange = () => undefined,
+  onCorporateIdentityChange = () => undefined,
   onSignOut,
   onSessionExpired,
 }: {
@@ -462,6 +478,7 @@ export function Workspace({
   colorTheme?: ColorTheme;
   onColorThemeChange?: (theme: ColorTheme) => void;
   onRegistrationSettingsChange?: (settings: RegistrationSettings) => void;
+  onCorporateIdentityChange?: (identity: CorporateIdentity) => void;
   onSignOut: () => Promise<void>;
   onSessionExpired: () => void;
 }) {
@@ -707,6 +724,7 @@ export function Workspace({
         setFocusTarget(undefined);
       }
     } else if (event.type === "workspace.snapshot") {
+      onCorporateIdentityChange(event.data.corporateIdentity);
       setData((current) => mergeWorkspaceSnapshot(
         current,
         event.data,
@@ -793,6 +811,9 @@ export function Workspace({
       }
     } else if (event.type === "game.settings_updated") {
       setData((current) => ({ ...current, gameSettings: event.settings }));
+    } else if (event.type === "corporate_identity.updated") {
+      setData((current) => ({ ...current, corporateIdentity: event.corporateIdentity }));
+      onCorporateIdentityChange(event.corporateIdentity);
     } else if (event.type === "kidnapping.global_settings_updated") {
       setData((current) => ({
         ...current,
@@ -1023,7 +1044,7 @@ export function Workspace({
       }
       showToast(event.message);
     }
-  }, [activeCall, activeConversationId, activePanel, announceOffscreenGong, currentMeeting, currentUser.availability, data.currentUserId, data.members, displayGongRing, displayHighFive, displayReaction, floorId, showToast]);
+  }, [activeCall, activeConversationId, activePanel, announceOffscreenGong, currentMeeting, currentUser.availability, data.currentUserId, data.members, displayGongRing, displayHighFive, displayReaction, floorId, onCorporateIdentityChange, showToast]);
 
   const { connection, snapshot, send } = useRealtime({
     floorId,
@@ -1468,6 +1489,24 @@ export function Workspace({
     onRegistrationSettingsChange(updated);
   };
 
+  const saveCorporateIdentity = async (settings: CorporateIdentitySettings) => {
+    const updated = await updateCorporateIdentity(settings);
+    setData((current) => ({ ...current, corporateIdentity: updated }));
+    onCorporateIdentityChange(updated);
+  };
+
+  const updateCorporateLogo = async (file: File) => {
+    const updated = await uploadCorporateLogo(file);
+    setData((current) => ({ ...current, corporateIdentity: updated }));
+    onCorporateIdentityChange(updated);
+  };
+
+  const removeCorporateIdentityLogo = async () => {
+    const updated = await removeCorporateLogo();
+    setData((current) => ({ ...current, corporateIdentity: updated }));
+    onCorporateIdentityChange(updated);
+  };
+
   const updateAvatar = async (file: File) => {
     const member = await uploadPlayerAvatar(file);
     setData((current) => ({
@@ -1838,6 +1877,7 @@ export function Workspace({
     <main className="workspace-shell">
       <NavRail
         activePanel={activePanel}
+        corporateIdentity={data.corporateIdentity}
         canUseBuild
         currentUser={currentUser}
         unreadMessages={data.conversations.reduce((total, conversation) => total + conversation.unread, 0)}
@@ -2236,7 +2276,11 @@ export function Workspace({
           playerSettings={data.kidnapping.player}
           canManage={canManageMembers}
           registrationSettings={data.registrationSettings}
+          corporateIdentity={data.corporateIdentity}
           onRegistrationSettingsSave={saveRegistrationSettings}
+          onCorporateIdentitySave={saveCorporateIdentity}
+          onCorporateLogoUpload={updateCorporateLogo}
+          onCorporateLogoRemove={removeCorporateIdentityLogo}
           onGlobalChange={(settings) => request({
             type: "kidnapping.global_settings_update",
             requestId: requestId(),

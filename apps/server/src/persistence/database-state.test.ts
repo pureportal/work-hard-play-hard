@@ -23,6 +23,12 @@ describe("database workspace state", () => {
       whitelistedDomains: ["example.com"],
       defaultRole: "guest",
     });
+    source.updateCorporateIdentity({
+      applicationName: "Acme Spaces",
+      primaryColor: "#123abc",
+      secondaryColor: "#f28c28",
+      authenticationLayout: "centered",
+    });
 
     await database.saveWorkspaceState({ players: [], store: source.exportMutableState() });
 
@@ -49,6 +55,12 @@ describe("database workspace state", () => {
       invitationRequired: false,
       whitelistedDomains: ["example.com"],
       defaultRole: "guest",
+    });
+    expect(restored.getCorporateIdentity()).toEqual({
+      applicationName: "Acme Spaces",
+      primaryColor: "#123abc",
+      secondaryColor: "#f28c28",
+      authenticationLayout: "centered",
     });
   });
 

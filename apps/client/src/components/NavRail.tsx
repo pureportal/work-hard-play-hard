@@ -7,15 +7,16 @@ import {
   Video,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { Member } from "@workhard/shared";
+import type { CorporateIdentity, Member } from "@workhard/shared";
 import { Avatar } from "./Avatar";
 import { IconButton } from "./IconButton";
-import { NorthstarMark } from "./NorthstarMark";
+import { BrandMark } from "./BrandMark";
 
 export type WorkspacePanel = "people" | "chat" | "meetings" | "build" | "settings" | null;
 
 interface NavRailProps {
   activePanel: WorkspacePanel;
+  corporateIdentity: CorporateIdentity;
   canUseBuild: boolean;
   currentUser: Member;
   unreadMessages: number;
@@ -32,12 +33,12 @@ const items: { panel: Exclude<WorkspacePanel, null>; label: string; icon: Lucide
   { panel: "settings", label: "Settings", icon: Settings },
 ];
 
-export function NavRail({ activePanel, canUseBuild, currentUser, unreadMessages, onChange, onAvatarClick, onSignOut }: NavRailProps) {
+export function NavRail({ activePanel, corporateIdentity, canUseBuild, currentUser, unreadMessages, onChange, onAvatarClick, onSignOut }: NavRailProps) {
   return (
     <nav className="nav-rail" aria-label="Workspace">
       <span className="nav-item brand-nav-item">
-        <button className="brand-mark" aria-label="Office" onClick={() => onChange(null)}>
-          <NorthstarMark size={23} />
+        <button className="brand-mark" aria-label={`${corporateIdentity.applicationName} office`} onClick={() => onChange(null)}>
+          <BrandMark identity={corporateIdentity} size={23} />
         </button>
         <span className="nav-tooltip" aria-hidden="true">Office</span>
       </span>

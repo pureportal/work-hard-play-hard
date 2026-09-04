@@ -70,7 +70,22 @@ try {
   report("password session restored");
 
   await signOut(adminPage);
-  await adminPage.click(".auth-link-button");
+  await adminPage.evaluate(() => {
+    (globalThis as typeof globalThis & { authDocumentMarker?: string }).authDocumentMarker = "same-document";
+  });
+  await adminPage.click(".auth-utilities .auth-link-button:first-child");
+  await adminPage.waitForSelector('input[name="email"]', { visible: true });
+  await adminPage.click(".auth-utilities .auth-link-button:first-child");
+  await adminPage.waitForSelector('input[name="identifier"]', { visible: true });
+  const documentMarker = await adminPage.evaluate(() => (
+    globalThis as typeof globalThis & { authDocumentMarker?: string }
+  ).authDocumentMarker);
+  if (documentMarker !== "same-document") {
+    throw new Error("Returning to password sign-in reloaded the page");
+  }
+  report("email sign-in returned to password sign-in");
+
+  await adminPage.click(".auth-utilities .auth-link-button:first-child");
   await adminPage.type('input[name="email"]', "owner-e2e@example.com");
   await adminPage.click('button[type="submit"]');
   await adminPage.waitForSelector(".auth-email-sent", { visible: true });

@@ -1,6 +1,8 @@
 import { X } from "lucide-react";
 import type {
   GlobalKidnappingSettings,
+  CorporateIdentity,
+  CorporateIdentitySettings,
   KidnappingPolicy,
   KidnappingPolicyMode,
   Member,
@@ -9,6 +11,7 @@ import type {
 } from "@workhard/shared";
 import { IconButton } from "./IconButton";
 import { RegistrationSettingsEditor } from "./RegistrationSettingsEditor";
+import { CorporateIdentityEditor } from "./CorporateIdentityEditor";
 
 interface KidnappingSettingsPanelProps {
   members: Member[];
@@ -16,10 +19,14 @@ interface KidnappingSettingsPanelProps {
   globalSettings: GlobalKidnappingSettings;
   playerSettings: PlayerKidnappingSettings;
   registrationSettings?: RegistrationSettings | undefined;
+  corporateIdentity: CorporateIdentity;
   canManage: boolean;
   onGlobalChange: (settings: GlobalKidnappingSettings) => void;
   onPlayerChange: (settings: PlayerKidnappingSettings) => void;
   onRegistrationSettingsSave: (settings: RegistrationSettings) => Promise<void>;
+  onCorporateIdentitySave: (settings: CorporateIdentitySettings) => Promise<void>;
+  onCorporateLogoUpload: (file: File) => Promise<void>;
+  onCorporateLogoRemove: () => Promise<void>;
   onClose: () => void;
 }
 
@@ -36,10 +43,14 @@ export function KidnappingSettingsPanel({
   globalSettings,
   playerSettings,
   registrationSettings,
+  corporateIdentity,
   canManage,
   onGlobalChange,
   onPlayerChange,
   onRegistrationSettingsSave,
+  onCorporateIdentitySave,
+  onCorporateLogoUpload,
+  onCorporateLogoRemove,
   onClose,
 }: KidnappingSettingsPanelProps) {
   return (
@@ -49,6 +60,14 @@ export function KidnappingSettingsPanel({
         <IconButton label="Close settings" icon={X} onClick={onClose} />
       </div>
       <div className="panel-scroll settings-panel-scroll">
+        {registrationSettings && (
+          <CorporateIdentityEditor
+            identity={corporateIdentity}
+            onSave={onCorporateIdentitySave}
+            onLogoUpload={onCorporateLogoUpload}
+            onLogoRemove={onCorporateLogoRemove}
+          />
+        )}
         {registrationSettings && (
           <RegistrationSettingsEditor
             settings={registrationSettings}

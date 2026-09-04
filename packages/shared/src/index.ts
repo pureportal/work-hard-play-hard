@@ -59,6 +59,26 @@ export interface RegistrationAvailability {
   invitationRequired: boolean;
 }
 
+export type AuthenticationLayout = "split" | "centered";
+
+export interface CorporateIdentitySettings {
+  applicationName: string;
+  primaryColor: string;
+  secondaryColor: string;
+  authenticationLayout: AuthenticationLayout;
+}
+
+export interface CorporateIdentity extends CorporateIdentitySettings {
+  logoUrl?: string;
+}
+
+export const DEFAULT_CORPORATE_IDENTITY: CorporateIdentity = {
+  applicationName: "Northstar",
+  primaryColor: "#6757e8",
+  secondaryColor: "#ee9571",
+  authenticationLayout: "split",
+};
+
 const EMAIL_DOMAIN_PATTERN = /^(?=.{1,253}$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$/;
 
 export function normalizeEmailDomain(domain: string): string {
@@ -272,6 +292,7 @@ export interface WorkspaceAccessData {
 
 export interface BootstrapData extends WorkspaceAccessData {
   currentUserId: string;
+  corporateIdentity: CorporateIdentity;
   team: Team;
   office: Office;
   floors: Floor[];
@@ -351,6 +372,7 @@ export type ServerEvent =
   | { type: "session.ready"; userId: string; floorId: string }
   | { type: "session.synced" }
   | { type: "workspace.snapshot"; data: BootstrapData }
+  | { type: "corporate_identity.updated"; corporateIdentity: CorporateIdentity }
   | { type: "presence.changed"; member: Member }
   | { type: "conversation.created"; conversation: Conversation }
   | { type: "chat.message_created"; message: ChatMessage }

@@ -9,6 +9,7 @@ import {
   getAssetDefinition,
   getAssetVariants,
   getEmailDomain,
+  DEFAULT_CORPORATE_IDENTITY,
   hasMemberPermission,
   isValidEmailDomain,
   kidnappingPolicyAllows,
@@ -22,6 +23,8 @@ import type {
   ChatAttachment,
   ChatMessage,
   Conversation,
+  CorporateIdentity,
+  CorporateIdentitySettings,
   Floor,
   FloorLayout,
   GameScore,
@@ -59,6 +62,7 @@ export interface MutableStoreState {
   economy: EconomyPersistenceState;
   kidnapping: KidnappingPersistenceState;
   registrationSettings: RegistrationSettings;
+  corporateIdentity: CorporateIdentitySettings;
 }
 
 export interface KidnappingPersistenceState {
@@ -104,6 +108,7 @@ export class DemoStore {
   private globalKidnappingSettings: GlobalKidnappingSettings;
   private readonly playerKidnappingSettings = new Map<string, PlayerKidnappingSettings>();
   private registrationSettings = structuredClone(DEFAULT_REGISTRATION_SETTINGS);
+  private corporateIdentity = structuredClone(DEFAULT_CORPORATE_IDENTITY);
   dirty = false;
 
   constructor(initialData: BootstrapData = createSeedData()) {
@@ -114,6 +119,8 @@ export class DemoStore {
     this.messageSequenceByConversation = indexMessageSequences(this.data.messages);
     this.economy = new EconomyStore(this.data.members.map((member) => member.id));
     this.globalKidnappingSettings = structuredClone(initialData.kidnapping.global);
+    validateCorporateIdentity(initialData.corporateIdentity);
+    this.corporateIdentity = structuredClone(initialData.corporateIdentity);
     for (const member of this.data.members) {
       this.playerKidnappingSettings.set(member.id, structuredClone(DEFAULT_PLAYER_KIDNAPPING_SETTINGS));
     }
@@ -146,6 +153,7 @@ export class DemoStore {
         global: this.getGlobalKidnappingSettings(),
         player: this.getPlayerKidnappingSettings(currentUserId),
       },
+      corporateIdentity: this.getCorporateIdentity(),
       ...(currentMember.role === "owner" ? { registrationSettings: this.getRegistrationSettings() } : {}),
       ...access,
     });
@@ -229,6 +237,35 @@ export class DemoStore {
 
   getRegistrationSettings(): RegistrationSettings {
     return structuredClone(this.registrationSettings);
+  }
+
+  getCorporateIdentity(): CorporateIdentity {
+    return structuredClone(this.corporateIdentity);
+  }
+
+  updateCorporateIdentity(settings: CorporateIdentitySettings): CorporateIdentity {
+    const normalized = normalizeCorporateIdentity({
+      ...settings,
+      ...(this.corporateIdentity.logoUrl ? { logoUrl: this.corporateIdentity.logoUrl } : {}),
+    });
+    validateCorporateIdentity(normalized);
+    this.corporateIdentity = normalized;
+    this.dirty = true;
+    return this.getCorporateIdentity();
+  }
+
+  updateCorporateIdentityLogo(logoUrl: string | undefined, markDirty = true): CorporateIdentity {
+    this.corporateIdentity = {
+      ...this.corporateIdentity,
+      ...(logoUrl ? { logoUrl } : {}),
+    };
+    if (!logoUrl) {
+      delete this.corporateIdentity.logoUrl;
+    }
+    if (markDirty) {
+      this.dirty = true;
+    }
+    return this.getCorporateIdentity();
   }
 
   updateRegistrationSettings(settings: RegistrationSettings): RegistrationSettings {
@@ -919,6 +956,7 @@ export class DemoStore {
         players: [...this.playerKidnappingSettings].map(([userId, settings]) => ({ userId, settings })),
       },
       registrationSettings: this.registrationSettings,
+      corporateIdentity: corporateIdentitySettings(this.corporateIdentity),
     });
   }
 
@@ -939,6 +977,7 @@ export class DemoStore {
     );
     validateKidnappingSettings(next.kidnapping, next.members);
     validateRegistrationSettings(next.registrationSettings);
+    validateCorporateIdentity(next.corporateIdentity);
     this.economy.restoreState(next.economy);
     this.data.members = next.members;
     this.data.layouts = next.layouts;
@@ -951,6 +990,7 @@ export class DemoStore {
     this.data.gameStatistics = next.gameStatistics;
     this.globalKidnappingSettings = next.kidnapping.global;
     this.registrationSettings = next.registrationSettings;
+    this.corporateIdentity = next.corporateIdentity;
     this.playerKidnappingSettings.clear();
     for (const { userId, settings } of next.kidnapping.players) {
       this.playerKidnappingSettings.set(userId, settings);
@@ -1037,6 +1077,49 @@ function validateRegistrationSettings(settings: RegistrationSettings | undefined
       throw new Error("REGISTRATION_SETTINGS_INVALID");
     }
     domains.add(domain);
+  }
+}
+
+const BRAND_COLOR_PATTERN = /^#[0-9a-f]{6}$/;
+
+function normalizeCorporateIdentity(identity: CorporateIdentity): CorporateIdentity {
+  return {
+    applicationName: identity.applicationName.normalize("NFC").trim(),
+    primaryColor: identity.primaryColor.toLowerCase(),
+    secondaryColor: identity.secondaryColor.toLowerCase(),
+    authenticationLayout: identity.authenticationLayout,
+    ...(identity.logoUrl ? { logoUrl: identity.logoUrl } : {}),
+  };
+}
+
+function corporateIdentitySettings(identity: CorporateIdentity): CorporateIdentitySettings {
+  return {
+    applicationName: identity.applicationName,
+    primaryColor: identity.primaryColor,
+    secondaryColor: identity.secondaryColor,
+    authenticationLayout: identity.authenticationLayout,
+  };
+}
+
+function validateCorporateIdentity(identity: CorporateIdentity | undefined): void {
+  if (
+    !identity
+    || typeof identity !== "object"
+    || typeof identity.applicationName !== "string"
+    || identity.applicationName !== identity.applicationName.normalize("NFC").trim()
+    || identity.applicationName.length < 1
+    || identity.applicationName.length > 60
+    || typeof identity.primaryColor !== "string"
+    || !BRAND_COLOR_PATTERN.test(identity.primaryColor)
+    || typeof identity.secondaryColor !== "string"
+    || !BRAND_COLOR_PATTERN.test(identity.secondaryColor)
+    || !["split", "centered"].includes(identity.authenticationLayout)
+    || (identity.logoUrl !== undefined && (
+      typeof identity.logoUrl !== "string"
+      || !/^\/v1\/branding\/logo\.webp\?v=[A-Za-z0-9-]+$/.test(identity.logoUrl)
+    ))
+  ) {
+    throw new Error("CORPORATE_IDENTITY_INVALID");
   }
 }
 

@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_CORPORATE_IDENTITY } from "@workhard/shared";
 import type { BootstrapData, ClientCommand, ServerEvent, WorldSnapshot } from "@workhard/shared";
 import { Workspace } from "./App";
 import {
@@ -38,6 +39,7 @@ vi.mock("./components/WorldCanvasLoader", () => ({
 
 const workspace: BootstrapData = {
   currentUserId: "user-maya",
+  corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
   team: { id: "team", name: "Northstar", slug: "northstar", accent: "#6c5ce7" },
   office: { id: "office", teamId: "team", name: "Studio" },
   floors: [{

@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  clearServerOrigin,
+  getDefaultServerOrigin,
   getServerOrigin,
   normalizeServerOrigin,
   resolveRealtimeUrl,
@@ -26,5 +28,12 @@ describe("server URL configuration", () => {
   it("uses a matching WebSocket protocol", () => {
     setServerOrigin("http://127.0.0.1:3001");
     expect(resolveRealtimeUrl("/v1/realtime")).toBe("ws://127.0.0.1:3001/v1/realtime");
+  });
+
+  it("returns to the default origin after clearing a custom server", () => {
+    setServerOrigin("https://office.example.com");
+
+    expect(clearServerOrigin()).toBe(getDefaultServerOrigin());
+    expect(getServerOrigin()).toBe(getDefaultServerOrigin());
   });
 });

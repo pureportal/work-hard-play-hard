@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clientCommandSchema, registrationSettingsBodySchema } from "./protocol.js";
+import { clientCommandSchema, corporateIdentityBodySchema, registrationSettingsBodySchema } from "./protocol.js";
 
 describe("registration settings protocol", () => {
   it("normalizes valid domains and rejects duplicates and owner defaults", () => {
@@ -22,6 +22,28 @@ describe("registration settings protocol", () => {
       invitationRequired: true,
       whitelistedDomains: [],
       defaultRole: "owner",
+    }).success).toBe(false);
+  });
+});
+
+describe("corporate identity protocol", () => {
+  it("normalizes colors and rejects unknown settings", () => {
+    expect(corporateIdentityBodySchema.parse({
+      applicationName: " Acme Spaces ",
+      primaryColor: "#123ABC",
+      secondaryColor: "#F28C28",
+      authenticationLayout: "centered",
+    })).toEqual({
+      applicationName: "Acme Spaces",
+      primaryColor: "#123abc",
+      secondaryColor: "#f28c28",
+      authenticationLayout: "centered",
+    });
+    expect(corporateIdentityBodySchema.safeParse({
+      applicationName: "Acme",
+      primaryColor: "blue",
+      secondaryColor: "#f28c28",
+      authenticationLayout: "split",
     }).success).toBe(false);
   });
 });

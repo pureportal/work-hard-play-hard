@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import type { BootstrapData, Member } from "@workhard/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Workspace } from "./App";
-import { createTestEconomy, createTestGameSettings, createTestKidnappingConfiguration } from "./test-fixtures";
+import { createTestCorporateIdentity, createTestEconomy, createTestGameSettings, createTestKidnappingConfiguration } from "./test-fixtures";
 
 const apiMocks = vi.hoisted(() => ({
   uploadPlayerAvatar: vi.fn(),
@@ -39,6 +39,7 @@ const member: Member = {
 
 const workspace: BootstrapData = {
   currentUserId: member.id,
+  corporateIdentity: createTestCorporateIdentity(),
   team: { id: "team-one", name: "Team", slug: "team", accent: "#000000" },
   office: { id: "office-one", teamId: "team-one", name: "Office" },
   floors: [{

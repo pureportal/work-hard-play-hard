@@ -14,6 +14,7 @@ import type {
 import {
   DEFAULT_GAME_SETTINGS,
   DEFAULT_GLOBAL_KIDNAPPING_SETTINGS,
+  DEFAULT_CORPORATE_IDENTITY,
   DEFAULT_PLAYER_KIDNAPPING_SETTINGS,
   TETRIS_DEFINITION_ID,
   WELCOME_COIN_REWARD,
@@ -316,6 +317,7 @@ export function createSeedData(currentUserId = "user-maya", now = new Date()): B
   const scores = createScores(now);
   return structuredClone({
     currentUserId,
+    corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
     team,
     office,
     floors,

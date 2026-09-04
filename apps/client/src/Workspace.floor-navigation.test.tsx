@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_CORPORATE_IDENTITY } from "@workhard/shared";
 import type { BootstrapData, ClientCommand, Floor, FloorLayout, LayoutEdit, LayoutItemReference, ServerEvent, WorldObject, WorldSnapshot } from "@workhard/shared";
 import { Workspace } from "./App";
 import { createTestEconomy, createTestGameSettings, createTestKidnappingConfiguration } from "./test-fixtures";
@@ -338,6 +339,7 @@ function workspace(): BootstrapData {
   }));
   return {
     currentUserId: "user-maya",
+    corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
     team: { id: "team", name: "Northstar", slug: "northstar", accent: "#6c5ce7" },
     office: { id: "office", teamId: "team", name: "Northstar" },
     floors,

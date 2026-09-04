@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { acceptInvitation, ApiError, changeMemberAccess, fetchSession, inviteMember, isConnectionError, registerAccount, requestMagicLink, updateRegistrationSettings } from "./api";
+import { acceptInvitation, ApiError, changeMemberAccess, fetchSession, inviteMember, isConnectionError, registerAccount, removeCorporateLogo, requestMagicLink, updateCorporateIdentity, updateRegistrationSettings, uploadCorporateLogo } from "./api";
 
 let online = true;
 
@@ -170,5 +170,31 @@ describe("client requests", () => {
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("/v1/admin/registration-settings");
     expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({ method: "PUT" });
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual(settings);
+  });
+
+  it("updates corporate identity settings and logo through the canonical endpoints", async () => {
+    const settings = {
+      applicationName: "Acme Spaces",
+      primaryColor: "#123abc",
+      secondaryColor: "#f28c28",
+      authenticationLayout: "centered" as const,
+    };
+    const withLogo = { ...settings, logoUrl: "/v1/branding/logo.webp?v=one" };
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify(settings), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(withLogo), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(settings), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const logo = new File([new Uint8Array([1, 2, 3])], "logo.png", { type: "image/png" });
+
+    await expect(updateCorporateIdentity(settings)).resolves.toEqual(settings);
+    await expect(uploadCorporateLogo(logo)).resolves.toEqual(withLogo);
+    await expect(removeCorporateLogo()).resolves.toEqual(settings);
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain("/v1/admin/corporate-identity");
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual(settings);
+    expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({ method: "PUT", body: logo });
+    expect(String(fetchMock.mock.calls[1]?.[0])).toContain("/v1/admin/corporate-identity/logo");
+    expect(fetchMock.mock.calls[2]?.[1]).toMatchObject({ method: "DELETE" });
   });
 });

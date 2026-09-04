@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_CORPORATE_IDENTITY } from "@workhard/shared";
 import type { BootstrapData, ClientCommand, ServerEvent, WorldSnapshot } from "@workhard/shared";
 import { Workspace } from "./App";
 import { createTestEconomy, createTestGameSettings, createTestKidnappingConfiguration } from "./test-fixtures";
@@ -37,6 +38,7 @@ const meeting = {
 
 const workspace: BootstrapData = {
   currentUserId: "user-maya",
+  corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
   team: { id: "team", name: "Northstar", slug: "northstar", accent: "#6c5ce7" },
   office: { id: "office", teamId: "team", name: "Studio" },
   floors: [{

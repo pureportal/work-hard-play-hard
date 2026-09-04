@@ -187,6 +187,15 @@ export const registrationSettingsBodySchema = z.object({
   defaultRole: z.enum(["admin", "member", "guest"]),
 }).strict();
 
+const brandColorSchema = z.string().trim().regex(/^#[0-9a-fA-F]{6}$/).transform((color) => color.toLowerCase());
+
+export const corporateIdentityBodySchema = z.object({
+  applicationName: z.string().trim().min(1).max(60),
+  primaryColor: brandColorSchema,
+  secondaryColor: brandColorSchema,
+  authenticationLayout: z.enum(["split", "centered"]),
+}).strict();
+
 export const directConversationBodySchema = z.object({
   targetUserId: z.string().min(1).max(100),
 }).strict();

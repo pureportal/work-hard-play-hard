@@ -2,7 +2,7 @@ import { TETRIS_DEFINITION_ID } from "@workhard/shared";
 import type { BootstrapData, ChatMessage, Conversation } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
 import { mergeWorkspaceSnapshot } from "./workspace-state";
-import { createTestEconomy, createTestGameSettings, createTestKidnappingConfiguration } from "./test-fixtures";
+import { createTestCorporateIdentity, createTestEconomy, createTestGameSettings, createTestKidnappingConfiguration } from "./test-fixtures";
 
 function message(id: string, conversationId: string, userId: string, sequence: number): ChatMessage {
   return {
@@ -18,6 +18,7 @@ function message(id: string, conversationId: string, userId: string, sequence: n
 function data(conversations: Conversation[], messages: ChatMessage[]): BootstrapData {
   return {
     currentUserId: "maya",
+    corporateIdentity: createTestCorporateIdentity(),
     team: { id: "team", name: "Team", slug: "team", accent: "#000" },
     office: { id: "office", teamId: "team", name: "Office" },
     floors: [],

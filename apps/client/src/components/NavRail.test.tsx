@@ -2,6 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import type { Member } from "@workhard/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NavRail } from "./NavRail";
+import { createTestCorporateIdentity } from "../test-fixtures";
 
 const currentUser: Member = {
   id: "user-one",
@@ -23,6 +24,7 @@ describe("NavRail", () => {
   it("associates the unread count with Messages without changing its control name", () => {
     const { container } = render(
       <NavRail
+        corporateIdentity={createTestCorporateIdentity()}
         activePanel={null}
         canUseBuild
         currentUser={currentUser}

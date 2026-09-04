@@ -15,6 +15,7 @@ import type {
   PlayerKidnappingSettings,
   WorldPlayer,
   RegistrationSettings,
+  CorporateIdentitySettings,
 } from "@workhard/shared";
 
 export class MemberEntity {
@@ -168,6 +169,7 @@ export class WorkspaceSettingsEntity {
   kidnappingSettings!: GlobalKidnappingSettings;
   playerKidnappingSettings!: Array<{ userId: string; settings: PlayerKidnappingSettings }>;
   registrationSettings!: RegistrationSettings;
+  corporateIdentity!: CorporateIdentitySettings;
   updatedAt!: Date;
 }
 
@@ -501,6 +503,7 @@ export const workspaceSettingsSchema = new EntitySchema({
     kidnappingSettings: { type: "json", fieldName: "kidnapping_settings" },
     playerKidnappingSettings: { type: "json", fieldName: "player_kidnapping_settings" },
     registrationSettings: { type: "json", fieldName: "registration_settings" },
+    corporateIdentity: { type: "json", fieldName: "corporate_identity" },
     updatedAt: { type: Date, fieldName: "updated_at" },
   },
 });

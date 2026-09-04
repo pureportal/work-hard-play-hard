@@ -2,6 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_CORPORATE_IDENTITY } from "@workhard/shared";
 import { createApplication } from "./app.js";
 import { MemoryDatabase } from "./persistence/memory-database.js";
 
@@ -77,6 +78,7 @@ describe("authentication API", () => {
       user: null,
       setupRequired: true,
       registration: defaultRegistrationAvailability,
+      corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
     });
     expect(response.statusCode).toBe(201);
     expect(response.json()).toMatchObject({
@@ -113,6 +115,7 @@ describe("authentication API", () => {
       user: null,
       setupRequired: false,
       registration: defaultRegistrationAvailability,
+      corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
     });
   }, 15_000);
 
@@ -163,6 +166,7 @@ describe("authentication API", () => {
       user: null,
       setupRequired: false,
       registration: defaultRegistrationAvailability,
+      corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
     });
     expect(activeSession.json()).toMatchObject({ user: { id: "user-maya" } });
     expect(revokedBootstrap.statusCode).toBe(401);
@@ -190,6 +194,7 @@ describe("authentication API", () => {
       user: null,
       setupRequired: false,
       registration: defaultRegistrationAvailability,
+      corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
     });
     expect(bootstrap.statusCode).toBe(401);
   });
@@ -336,6 +341,7 @@ describe("authentication API", () => {
       user: null,
       setupRequired: false,
       registration: defaultRegistrationAvailability,
+      corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
     });
   });
 });

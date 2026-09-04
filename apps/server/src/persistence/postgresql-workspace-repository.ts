@@ -204,6 +204,7 @@ export class PostgreSqlWorkspaceRepository {
           players: settings.playerKidnappingSettings,
         },
         registrationSettings: settings.registrationSettings,
+        corporateIdentity: settings.corporateIdentity,
       },
     };
   }
@@ -370,6 +371,7 @@ export class PostgreSqlWorkspaceRepository {
         kidnappingSettings: state.store.kidnapping.global,
         playerKidnappingSettings: state.store.kidnapping.players,
         registrationSettings: state.store.registrationSettings,
+        corporateIdentity: state.store.corporateIdentity,
         updatedAt: new Date(),
       });
       await entityManager.nativeDelete(WorkspaceSettingsEntity, { id: { $ne: WORKSPACE_SETTINGS_ID } });

@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 import type { AvatarReference, AvatarWrite, StoredAvatar } from "../avatar/avatar-record.js";
 import type {
+  BrandingLogoReference,
+  BrandingLogoWrite,
+  StoredBrandingLogo,
+} from "../branding/branding-logo-record.js";
+import type {
   ApplicationDatabase,
   AuthPersistenceState,
   WorkspacePersistenceState,
@@ -10,6 +15,7 @@ export class MemoryDatabase implements ApplicationDatabase {
   private workspaceState: WorkspacePersistenceState | undefined;
   private authState: AuthPersistenceState | undefined;
   private readonly avatars = new Map<string, StoredAvatar>();
+  private brandingLogo: StoredBrandingLogo | undefined;
 
   async isHealthy(): Promise<boolean> {
     return true;
@@ -57,10 +63,33 @@ export class MemoryDatabase implements ApplicationDatabase {
     return this.avatars.delete(userId);
   }
 
+  async getBrandingLogoReference(): Promise<BrandingLogoReference | undefined> {
+    return this.brandingLogo ? { version: this.brandingLogo.version } : undefined;
+  }
+
+  async saveBrandingLogo(logo: BrandingLogoWrite): Promise<BrandingLogoReference> {
+    const version = randomUUID();
+    this.brandingLogo = { ...logo, data: Buffer.from(logo.data), version };
+    return { version };
+  }
+
+  async readBrandingLogo(): Promise<StoredBrandingLogo | undefined> {
+    return this.brandingLogo ? { ...this.brandingLogo, data: Buffer.from(this.brandingLogo.data) } : undefined;
+  }
+
+  async removeBrandingLogo(): Promise<boolean> {
+    if (!this.brandingLogo) {
+      return false;
+    }
+    this.brandingLogo = undefined;
+    return true;
+  }
+
   async clear(): Promise<void> {
     this.workspaceState = undefined;
     this.authState = undefined;
     this.avatars.clear();
+    this.brandingLogo = undefined;
   }
 
   async close(): Promise<void> {}

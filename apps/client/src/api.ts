@@ -4,6 +4,8 @@ import type {
   BootstrapData,
   ChatMessage,
   Conversation,
+  CorporateIdentity,
+  CorporateIdentitySettings,
   Invitation,
   Member,
   MemberRole,
@@ -46,12 +48,14 @@ interface SessionResponse {
   user: AuthUser | null;
   setupRequired: boolean;
   registration: RegistrationAvailability;
+  corporateIdentity: CorporateIdentity;
 }
 
 export interface AuthSession {
   user: AuthUser | undefined;
   setupRequired: boolean;
   registration: RegistrationAvailability;
+  corporateIdentity: CorporateIdentity;
 }
 
 interface MagicLinkResponse {
@@ -70,6 +74,7 @@ export async function fetchSession(): Promise<AuthSession> {
     user: session.user ?? undefined,
     setupRequired: session.setupRequired,
     registration: session.registration,
+    corporateIdentity: session.corporateIdentity,
   };
 }
 
@@ -181,6 +186,29 @@ export async function updateRegistrationSettings(settings: RegistrationSettings)
     body: JSON.stringify(settings),
   });
   return readResponse<RegistrationSettings>(response, "Registration settings could not be saved.");
+}
+
+export async function updateCorporateIdentity(settings: CorporateIdentitySettings): Promise<CorporateIdentity> {
+  const response = await fetchWithTimeout("/v1/admin/corporate-identity", {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(settings),
+  });
+  return readResponse<CorporateIdentity>(response, "Corporate identity could not be saved.");
+}
+
+export async function uploadCorporateLogo(file: File): Promise<CorporateIdentity> {
+  const response = await fetchWithTimeout("/v1/admin/corporate-identity/logo", {
+    method: "PUT",
+    headers: { "content-type": file.type },
+    body: file,
+  }, UPLOAD_TIMEOUT_MS);
+  return readResponse<CorporateIdentity>(response, "Logo could not be updated.");
+}
+
+export async function removeCorporateLogo(): Promise<CorporateIdentity> {
+  const response = await fetchWithTimeout("/v1/admin/corporate-identity/logo", { method: "DELETE" });
+  return readResponse<CorporateIdentity>(response, "Logo could not be removed.");
 }
 
 export async function uploadChatImage(conversationId: string, file: File): Promise<ChatMessage> {

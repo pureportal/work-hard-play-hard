@@ -46,6 +46,7 @@ import {
   type ClientCommand,
   type CoinTransaction,
   type Conversation,
+  type CorporateIdentity,
   type FloorLayout,
   type GlobalKidnappingSettings,
   type KidnappingEndReason,
@@ -258,6 +259,10 @@ export class WorldRuntime {
     this.recentWaves.clear();
     this.gongCooldowns.clear();
     this.seatOrigins.clear();
+  }
+
+  publishCorporateIdentity(corporateIdentity: CorporateIdentity): void {
+    this.broadcast({ type: "corporate_identity.updated", corporateIdentity });
   }
 
   connect(userId: string, floorId: string, send: Peer["send"]): string {

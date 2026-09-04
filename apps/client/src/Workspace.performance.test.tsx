@@ -4,7 +4,7 @@ import type { BootstrapData, Meeting, WorldPlayer, WorldSnapshot } from "@workha
 import type { DisplayHighFive, DisplayReaction } from "./reactions";
 import type { DisplayGongRing } from "./gong";
 import { Workspace } from "./App";
-import { createTestEconomy, createTestGameSettings, createTestKidnappingConfiguration } from "./test-fixtures";
+import { createTestCorporateIdentity, createTestEconomy, createTestGameSettings, createTestKidnappingConfiguration } from "./test-fixtures";
 
 const realtime = vi.hoisted(() => ({
   snapshot: undefined as WorldSnapshot | undefined,
@@ -51,6 +51,7 @@ const meeting: Meeting = {
 
 const workspace: BootstrapData = {
   currentUserId: "user-one",
+  corporateIdentity: createTestCorporateIdentity(),
   team: { id: "team-one", name: "Team", slug: "team", accent: "#000000" },
   office: { id: "office-one", teamId: "team-one", name: "Office" },
   floors: [{

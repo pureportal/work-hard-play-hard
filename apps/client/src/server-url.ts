@@ -1,20 +1,29 @@
 const SERVER_ORIGIN_KEY = "northstar.serverOrigin";
 const configuredServerOrigin = import.meta.env.VITE_SERVER_URL?.trim();
 
+export function getDefaultServerOrigin(): string {
+  return configuredServerOrigin
+    ? normalizeServerOrigin(configuredServerOrigin)
+    : window.location.origin;
+}
+
 export function getServerOrigin(): string {
   const storedServerOrigin = localStorage.getItem(SERVER_ORIGIN_KEY);
   if (storedServerOrigin) {
     return normalizeServerOrigin(storedServerOrigin);
   }
-  return configuredServerOrigin
-    ? normalizeServerOrigin(configuredServerOrigin)
-    : window.location.origin;
+  return getDefaultServerOrigin();
 }
 
 export function setServerOrigin(value: string): string {
   const serverOrigin = normalizeServerOrigin(value);
   localStorage.setItem(SERVER_ORIGIN_KEY, serverOrigin);
   return serverOrigin;
+}
+
+export function clearServerOrigin(): string {
+  localStorage.removeItem(SERVER_ORIGIN_KEY);
+  return getDefaultServerOrigin();
 }
 
 export function resolveServerUrl(path: string): string {

@@ -13,6 +13,12 @@ import { AvatarStore, type AvatarReference } from "./avatar/avatar-store.js";
 import { AuthStore } from "./auth/auth-store.js";
 import { AuthRateLimiter } from "./auth/rate-limiter.js";
 import {
+  BRANDING_LOGO_MAX_BYTES,
+  BrandingLogoInputError,
+  processBrandingLogo,
+} from "./branding/branding-logo-processor.js";
+import { BrandingLogoStore, type BrandingLogoReference } from "./branding/branding-logo-store.js";
+import {
   CHAT_IMAGE_MAX_BYTES,
   ChatImageStore,
   normalizeChatImageName,
@@ -23,6 +29,7 @@ import type { ApplicationDatabase } from "./persistence/application-database.js"
 import { PostgreSqlDatabase } from "./persistence/postgresql-database.js";
 import {
   clientCommandSchema,
+  corporateIdentityBodySchema,
   directConversationBodySchema,
   invitationAcceptBodySchema,
   invitationBodySchema,
@@ -85,7 +92,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     await database.close();
     throw error;
   });
-  const { auth, avatars, runtime, store } = initialized;
+  const { auth, avatars, brandingLogo, runtime, store } = initialized;
   const chatImages = new ChatImageStore(options.chatImagePath ?? defaultChatImagePath);
   const avatarProcessor = new AvatarImageProcessor();
   const authRateLimiter = new AuthRateLimiter();
@@ -94,6 +101,34 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
   const realtimeSocketsBySession = new Map<string, Set<RealtimeSocket>>();
   const realtimeSocketsByUser = new Map<string, Set<RealtimeSocket>>();
   const realtimeCommandWindowsByUser = new Map<string, RealtimeCommandWindow>();
+  let persistenceTimer: NodeJS.Timeout | undefined;
+  let pendingPersistence: Promise<void> | undefined;
+
+  const persist = async (): Promise<void> => {
+    if (pendingPersistence) {
+      await pendingPersistence;
+      return persist();
+    }
+    if (!runtime.dirty && !store.dirty) {
+      return;
+    }
+    const state = {
+      players: runtime.serializePlayers(),
+      store: store.exportMutableState(),
+    } as const;
+    runtime.markClean();
+    store.markClean();
+    pendingPersistence = database.saveWorkspaceState(state);
+    try {
+      await pendingPersistence;
+    } catch (error) {
+      runtime.markDirty();
+      store.markDirty();
+      throw error;
+    } finally {
+      pendingPersistence = undefined;
+    }
+  };
 
   await app.register(cors, {
     origin: [...clientOrigins],
@@ -119,6 +154,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
       request.url.startsWith("/v1/auth/")
       || request.url === "/v1/bootstrap"
       || request.url === "/v1/admin/registration-settings"
+      || request.url.startsWith("/v1/admin/corporate-identity")
     ) {
       reply.header("cache-control", "no-store");
     }
@@ -142,7 +178,10 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
   });
 
   for (const mimeType of SUPPORTED_IMAGE_MIME_TYPES) {
-    app.addContentTypeParser(mimeType, { parseAs: "buffer", bodyLimit: Math.max(CHAT_IMAGE_MAX_BYTES, AVATAR_IMAGE_MAX_BYTES) }, (_request, body, done) => {
+    app.addContentTypeParser(mimeType, {
+      parseAs: "buffer",
+      bodyLimit: Math.max(CHAT_IMAGE_MAX_BYTES, AVATAR_IMAGE_MAX_BYTES, BRANDING_LOGO_MAX_BYTES),
+    }, (_request, body, done) => {
       done(null, body);
     });
   }
@@ -158,7 +197,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     }
     return reply.code(503).send({ status: "unavailable", database: false });
   });
-  app.get("/v1/version", async () => ({ version: "2.0.0", protocol: 10 }));
+  app.get("/v1/version", async () => ({ version: "2.0.0", protocol: 11 }));
 
   app.get("/v1/auth/session", async (request) => {
     const user = getAuthenticatedUser(auth, request);
@@ -170,6 +209,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
         enabled: registrationSettings.enabled,
         invitationRequired: registrationSettings.invitationRequired,
       },
+      corporateIdentity: store.getCorporateIdentity(),
     };
   });
 
@@ -377,6 +417,95 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
       });
     }
     return store.updateRegistrationSettings(parsed.data);
+  });
+
+  app.put("/v1/admin/corporate-identity", async (request, reply) => {
+    const user = getAuthenticatedUser(auth, request);
+    if (!user) {
+      return reply.code(401).send({ code: "AUTH_REQUIRED", message: "Sign in to continue." });
+    }
+    if (!store.canManageGlobalSettings(user.id)) {
+      return reply.code(403).send({ code: "FORBIDDEN", message: "You cannot change corporate identity." });
+    }
+    const parsed = corporateIdentityBodySchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ code: "CORPORATE_IDENTITY_INVALID", message: "Check the corporate identity settings." });
+    }
+    const corporateIdentity = store.updateCorporateIdentity(parsed.data);
+    await persist();
+    runtime.publishCorporateIdentity(corporateIdentity);
+    return corporateIdentity;
+  });
+
+  app.put("/v1/admin/corporate-identity/logo", async (request, reply) => {
+    const user = getAuthenticatedUser(auth, request);
+    if (!user) {
+      return reply.code(401).send({ code: "AUTH_REQUIRED", message: "Sign in to continue." });
+    }
+    if (!store.canManageGlobalSettings(user.id)) {
+      return reply.code(403).send({ code: "FORBIDDEN", message: "You cannot change the corporate logo." });
+    }
+    const retryAfter = authRateLimiter.consume("branding-logo-upload", user.id, 20, AUTH_WINDOW_MS);
+    if (retryAfter) {
+      return sendRateLimit(reply, retryAfter);
+    }
+    const body = request.body;
+    if (!Buffer.isBuffer(body) || body.length === 0 || body.length > BRANDING_LOGO_MAX_BYTES) {
+      return reply.code(400).send({ code: "BRANDING_LOGO_INVALID", message: "Choose an image up to 5 MB." });
+    }
+    const detectedMimeType = detectImageMimeType(body);
+    const declaredMimeType = request.headers["content-type"]?.split(";", 1)[0];
+    if (!detectedMimeType || detectedMimeType !== declaredMimeType) {
+      return reply.code(415).send({ code: "BRANDING_LOGO_TYPE_INVALID", message: "Choose a PNG, JPEG, GIF, or WebP image." });
+    }
+    let processed;
+    try {
+      processed = await processBrandingLogo(body);
+    } catch (error) {
+      if (error instanceof BrandingLogoInputError) {
+        return reply.code(422).send({ code: "BRANDING_LOGO_INVALID", message: "Choose a valid image." });
+      }
+      throw error;
+    }
+    const reference = await brandingLogo.save(processed);
+    const corporateIdentity = store.updateCorporateIdentityLogo(brandingLogoUrl(reference));
+    await persist();
+    runtime.publishCorporateIdentity(corporateIdentity);
+    return corporateIdentity;
+  });
+
+  app.delete("/v1/admin/corporate-identity/logo", async (request, reply) => {
+    const user = getAuthenticatedUser(auth, request);
+    if (!user) {
+      return reply.code(401).send({ code: "AUTH_REQUIRED", message: "Sign in to continue." });
+    }
+    if (!store.canManageGlobalSettings(user.id)) {
+      return reply.code(403).send({ code: "FORBIDDEN", message: "You cannot change the corporate logo." });
+    }
+    await brandingLogo.remove();
+    const corporateIdentity = store.updateCorporateIdentityLogo(undefined);
+    await persist();
+    runtime.publishCorporateIdentity(corporateIdentity);
+    return corporateIdentity;
+  });
+
+  app.get("/v1/branding/logo.webp", async (request, reply) => {
+    const { v: version } = request.query as { v?: string };
+    const logo = await brandingLogo.read();
+    if (!logo || version !== logo.version) {
+      return reply.code(404).send({ code: "BRANDING_LOGO_NOT_FOUND", message: "Logo not found." });
+    }
+    const etag = `"${logo.version}"`;
+    reply
+      .header("content-type", logo.mimeType)
+      .header("content-length", logo.data.length)
+      .header("etag", etag)
+      .header("x-content-type-options", "nosniff")
+      .header("cache-control", "public, max-age=31536000, immutable");
+    if (request.headers["if-none-match"] === etag) {
+      return reply.code(304).send();
+    }
+    return reply.send(logo.data);
   });
 
   app.put("/v1/members/me/avatar", async (request, reply) => {
@@ -765,35 +894,6 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     }
   });
 
-  let persistenceTimer: NodeJS.Timeout | undefined;
-  let pendingPersistence: Promise<void> | undefined;
-
-  const persist = async (): Promise<void> => {
-    if (pendingPersistence) {
-      await pendingPersistence;
-      return persist();
-    }
-    if (!runtime.dirty && !store.dirty) {
-      return;
-    }
-    const state = {
-      players: runtime.serializePlayers(),
-      store: store.exportMutableState(),
-    } as const;
-    runtime.markClean();
-    store.markClean();
-    pendingPersistence = database.saveWorkspaceState(state);
-    try {
-      await pendingPersistence;
-    } catch (error) {
-      runtime.markDirty();
-      store.markDirty();
-      throw error;
-    } finally {
-      pendingPersistence = undefined;
-    }
-  };
-
   app.addHook("onReady", async () => {
     runtime.start();
     persistenceTimer = setInterval(() => {
@@ -837,6 +937,9 @@ async function initializePersistentState(database: ApplicationDatabase, seeded: 
     store.updateMemberAvatar(member.id, avatarUrl(avatarReferences.get(member.id)));
   }
 
+  const brandingLogo = new BrandingLogoStore(database);
+  store.updateCorporateIdentityLogo(brandingLogoUrl(await brandingLogo.getReference()), false);
+
   const auth = await AuthStore.create({ database, members: store.getMembers() });
   const runtime = new WorldRuntime(store);
   if (savedState) {
@@ -847,11 +950,15 @@ async function initializePersistentState(database: ApplicationDatabase, seeded: 
       store: store.exportMutableState(),
     });
   }
-  return { auth, avatars, runtime, store };
+  return { auth, avatars, brandingLogo, runtime, store };
 }
 
 function avatarUrl(reference: AvatarReference | undefined): string | undefined {
   return reference ? `/v1/members/${encodeURIComponent(reference.userId)}/avatar.webp?v=${encodeURIComponent(reference.version)}` : undefined;
+}
+
+function brandingLogoUrl(reference: BrandingLogoReference | undefined): string | undefined {
+  return reference ? `/v1/branding/logo.webp?v=${encodeURIComponent(reference.version)}` : undefined;
 }
 
 function getAuthenticatedUser(auth: AuthStore, request: FastifyRequest): AuthUser | undefined {

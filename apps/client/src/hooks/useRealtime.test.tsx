@@ -2,7 +2,7 @@ import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BootstrapData, ClientCommand, ServerEvent } from "@workhard/shared";
 import { useRealtime } from "./useRealtime";
-import { createTestEconomy, createTestGameSettings, createTestKidnappingConfiguration } from "../test-fixtures";
+import { createTestCorporateIdentity, createTestEconomy, createTestGameSettings, createTestKidnappingConfiguration } from "../test-fixtures";
 
 class MockWebSocket extends EventTarget {
   static readonly CONNECTING = 0;
@@ -56,6 +56,7 @@ let online = true;
 
 const workspaceSnapshot: BootstrapData = {
   currentUserId: "user-one",
+  corporateIdentity: createTestCorporateIdentity(),
   team: { id: "team-one", name: "Team", slug: "team", accent: "#000000" },
   office: { id: "office-one", teamId: "team-one", name: "Office" },
   floors: [],

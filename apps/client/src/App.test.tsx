@@ -2,6 +2,7 @@ import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ConnectionError } from "./api";
 import { App } from "./App";
+import { createTestCorporateIdentity } from "./test-fixtures";
 
 const apiMocks = vi.hoisted(() => ({
   fetchSession: vi.fn(),
@@ -21,6 +22,7 @@ vi.mock("./components/WorldCanvasLoader", () => ({
 
 let online = true;
 const registration = { enabled: false, invitationRequired: true };
+const corporateIdentity = createTestCorporateIdentity();
 
 beforeEach(() => {
   online = true;
@@ -38,8 +40,31 @@ afterEach(() => {
 });
 
 describe("App startup recovery", () => {
+  it("reflects public corporate identity on the authentication experience", async () => {
+    const configuredIdentity = {
+      applicationName: "Acme Spaces",
+      primaryColor: "#123abc",
+      secondaryColor: "#f28c28",
+      authenticationLayout: "centered" as const,
+      logoUrl: "/v1/branding/logo.webp?v=one",
+    };
+    apiMocks.fetchSession.mockResolvedValue({
+      user: undefined,
+      setupRequired: false,
+      registration,
+      corporateIdentity: configuredIdentity,
+    });
+
+    const { container } = render(<App />);
+    await act(async () => Promise.resolve());
+
+    expect(screen.getByRole("heading", { name: "Acme Spaces" })).toBeDefined();
+    expect(container.querySelector(".auth-shell.centered .corporate-logo")).not.toBeNull();
+    expect(document.documentElement.style.getPropertyValue("--brand-primary")).toBe("#123abc");
+  });
+
   it("shows first-user setup when the server is unconfigured", async () => {
-    apiMocks.fetchSession.mockResolvedValue({ user: undefined, setupRequired: true, registration });
+    apiMocks.fetchSession.mockResolvedValue({ user: undefined, setupRequired: true, registration, corporateIdentity });
 
     render(<App />);
     await act(async () => Promise.resolve());
@@ -52,7 +77,7 @@ describe("App startup recovery", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.5);
     apiMocks.fetchSession
       .mockRejectedValueOnce(new ConnectionError("Server could not be reached."))
-      .mockResolvedValueOnce({ user: undefined, setupRequired: false, registration });
+      .mockResolvedValueOnce({ user: undefined, setupRequired: false, registration, corporateIdentity });
 
     render(<App />);
     await act(async () => Promise.resolve());
@@ -71,7 +96,7 @@ describe("App startup recovery", () => {
     online = false;
     apiMocks.fetchSession
       .mockRejectedValueOnce(new ConnectionError("Connection unavailable."))
-      .mockResolvedValueOnce({ user: undefined, setupRequired: false, registration });
+      .mockResolvedValueOnce({ user: undefined, setupRequired: false, registration, corporateIdentity });
 
     render(<App />);
     await act(async () => Promise.resolve());
@@ -94,7 +119,7 @@ describe("App startup recovery", () => {
     online = false;
     apiMocks.fetchSession
       .mockRejectedValueOnce(new ConnectionError("Connection unavailable."))
-      .mockResolvedValueOnce({ user: undefined, setupRequired: false, registration });
+      .mockResolvedValueOnce({ user: undefined, setupRequired: false, registration, corporateIdentity });
 
     render(<App />);
     await act(async () => Promise.resolve());
