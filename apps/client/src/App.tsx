@@ -497,6 +497,7 @@ export function Workspace({
   const [incomingKnocks, setIncomingKnocks] = useState<RoomKnock[]>([]);
   const [pendingRoomIds, setPendingRoomIds] = useState<Set<string>>(() => new Set());
   const [grantedRoomIds, setGrantedRoomIds] = useState<Set<string>>(() => new Set());
+  const [dismissedDoorEntryId, setDismissedDoorEntryId] = useState<string>();
   const [openingMeeting, setOpeningMeeting] = useState<{ meetingId: string; view: MeetingView }>();
   const [leavingMeetingId, setLeavingMeetingId] = useState<string>();
   const [meetingSwitch, setMeetingSwitch] = useState<{ meeting: Meeting; view: MeetingView; consequence: string }>();
@@ -513,6 +514,7 @@ export function Workspace({
   const connectionWasOnline = useRef(false);
   const activeFloorIdRef = useRef(floorId);
   const pendingTravelFocus = useRef<{ requestId: string; floorId: string; focusUserId?: string } | undefined>(undefined);
+  const pendingDoorEntryRequestId = useRef<string | undefined>(undefined);
   const pendingKnockRequest = useRef<{ requestId: string; roomId: string } | undefined>(undefined);
   const pendingMeetingOpen = useRef<{ requestId: string; meetingId: string; view: MeetingView } | undefined>(undefined);
   const activeMeetingId = useRef<string | undefined>(undefined);
@@ -987,6 +989,10 @@ export function Workspace({
       if (event.requestId && pendingTravelFocus.current?.requestId === event.requestId) {
         pendingTravelFocus.current = undefined;
       }
+      if (event.requestId && pendingDoorEntryRequestId.current === event.requestId) {
+        pendingDoorEntryRequestId.current = undefined;
+        setDismissedDoorEntryId(undefined);
+      }
       if (event.requestId && pendingKnockRequest.current?.requestId === event.requestId) {
         const { roomId } = pendingKnockRequest.current;
         pendingKnockRequest.current = undefined;
@@ -1079,6 +1085,7 @@ export function Workspace({
     setLeavingMeetingId(undefined);
     setMeetingSwitch(undefined);
     pendingTravelFocus.current = undefined;
+    pendingDoorEntryRequestId.current = undefined;
     pendingKnockRequest.current = undefined;
     pendingMeetingOpen.current = undefined;
     pendingMeetingLeave.current = undefined;
@@ -1264,7 +1271,7 @@ export function Workspace({
     ? visibleMeetings.find((meeting) => meeting.status === "live" && isPlayerInMeetingArea(currentPlayer, meeting))
     : undefined;
 
-  const navigateToDestination = (destinationFloorId: string, x: number, y: number, focusUserId?: string): boolean => {
+  const navigateToDestination = (destinationFloorId: string, x: number, y: number, focusUserId?: string): string | undefined => {
     const movementRequestId = requestId();
     pendingTravelFocus.current = focusUserId
       ? { requestId: movementRequestId, floorId: destinationFloorId, focusUserId }
@@ -1280,14 +1287,14 @@ export function Workspace({
       if (pendingTravelFocus.current?.requestId === movementRequestId) {
         pendingTravelFocus.current = undefined;
       }
-      return false;
+      return undefined;
     }
     if (destinationFloorId !== activeFloorIdRef.current) {
       setFloorId(activeFloorIdRef.current);
       setSelection(undefined);
       setFocusTarget(undefined);
     }
-    return true;
+    return movementRequestId;
   };
 
   const viewFloor = (nextFloorId: string) => {
@@ -1614,6 +1621,16 @@ export function Workspace({
       .filter((candidate) => candidate.distance <= 84)
       .sort((left, right) => left.distance - right.distance)[0]
     : undefined;
+  const visibleNearbyDoor = nearbyDoor?.door.id === dismissedDoorEntryId ? undefined : nearbyDoor;
+
+  useEffect(() => {
+    if (dismissedDoorEntryId && nearbyDoor?.door.id !== dismissedDoorEntryId) {
+      pendingDoorEntryRequestId.current = undefined;
+      setDismissedDoorEntryId(undefined);
+    }
+  }, [dismissedDoorEntryId, nearbyDoor?.door.id]);
+
+  const visibleMeetingEntry = openingMeeting || meetingSwitch ? undefined : enteredMeeting;
   const meetingConversation = currentMeeting
     ? data.conversations.find((conversation) => conversation.meetingId === currentMeeting.id && conversation.type === "meeting")
     : undefined;
@@ -1907,25 +1924,35 @@ export function Workspace({
           />
         )}
 
-        {activePanel !== "build" && (enteredMeeting || hasVisibleSelection || nearbyDoor) && (
+        {activePanel !== "build" && (visibleMeetingEntry || hasVisibleSelection || visibleNearbyDoor) && (
           <div
             className={`world-actions ${hasVisibleSelection && selection?.anchor ? "contextual" : ""}`}
             style={hasVisibleSelection && selection?.anchor ? { left: selection.anchor.x, top: selection.anchor.y } : undefined}
           >
-          {enteredMeeting && (
-            <div className="context-action meeting-entry-action" role="region" aria-label={`${enteredMeeting.title} meeting`} aria-busy={openingMeeting?.meetingId === enteredMeeting.id}>
+          {visibleMeetingEntry && (
+            <div className="context-action meeting-entry-action" role="region" aria-label={`${visibleMeetingEntry.title} meeting`}>
               <Video size={18} />
-              <div><strong>{enteredMeeting.title}</strong></div>
-              <button className="primary-button" disabled={Boolean(openingMeeting)} onClick={() => openMeeting(enteredMeeting, "full")}>
-                <Video size={16} />{openingMeeting?.meetingId === enteredMeeting.id && openingMeeting.view === "full" ? "Opening…" : "Open"}
+              <div><strong>{visibleMeetingEntry.title}</strong></div>
+              <button className="primary-button" onClick={() => openMeeting(visibleMeetingEntry, "full")}>
+                <Video size={16} />Open
               </button>
-              <button className="secondary-button" disabled={Boolean(openingMeeting)} onClick={() => openMeeting(enteredMeeting, "small")}>
-                <Minimize2 size={16} />{openingMeeting?.meetingId === enteredMeeting.id && openingMeeting.view === "small" ? "Opening…" : "Open Small"}
+              <button className="secondary-button" onClick={() => openMeeting(visibleMeetingEntry, "small")}>
+                <Minimize2 size={16} />Open Small
               </button>
             </div>
           )}
           {hasVisibleSelection && (
-            <div className="context-action" role="region" aria-label={selectedPlayerMember ? `Selected ${selectedPlayerMember.name}` : "Selected place"}>
+            <div
+              className="context-action"
+              role="region"
+              aria-label={selectedPlayerMember ? `Selected ${selectedPlayerMember.name}` : "Selected place"}
+              onClick={(event) => {
+                const target = event.target;
+                if (target instanceof Element && target.closest("button:not(:disabled)")) {
+                  setSelection(undefined);
+                }
+              }}
+            >
             {selectedPlayerMember ? (
               <>
                 <Avatar member={selectedPlayerMember} className="person-avatar" />
@@ -1939,9 +1966,7 @@ export function Workspace({
                   disabled={Boolean(activeCall) || selectedPlayerMember.availability === "dnd"}
                   onClick={() => {
                     pendingTravelFocus.current = undefined;
-                    if (request({ type: "movement.approach_user", requestId: requestId(), targetUserId: selectedPlayerMember.id })) {
-                      setSelection(undefined);
-                    }
+                    request({ type: "movement.approach_user", requestId: requestId(), targetUserId: selectedPlayerMember.id });
                   }}
                 >
                   <Phone size={16} />Call
@@ -1954,9 +1979,7 @@ export function Workspace({
                     disabled={Boolean(currentPlayer?.carriedByUserId || carriedPlayer || selectedPlayer?.carriedByUserId)}
                     onClick={() => {
                       pendingTravelFocus.current = undefined;
-                      if (request({ type: "kidnapping.start", requestId: requestId(), targetUserId: selectedPlayerMember.id })) {
-                        setSelection(undefined);
-                      }
+                      request({ type: "kidnapping.start", requestId: requestId(), targetUserId: selectedPlayerMember.id });
                     }}
                   >
                     <Hand size={16} />Kidnap
@@ -2041,16 +2064,20 @@ export function Workspace({
             </div>
           )}
 
-          {nearbyDoor && (
-            <div className="door-interaction" role="region" aria-label={`${nearbyDoor.room.name} door`}>
+          {visibleNearbyDoor && (
+            <div className="door-interaction" role="region" aria-label={`${visibleNearbyDoor.room.name} door`}>
             <LockKeyhole size={16} />
-            <strong>{nearbyDoor.room.name}</strong>
-            {hasRoomAccess(nearbyDoor.room) ? (
+            <strong>{visibleNearbyDoor.room.name}</strong>
+            {hasRoomAccess(visibleNearbyDoor.room) ? (
               <button
                 className="primary-button"
                 onClick={() => {
-                  const destination = getRoomDoorPosition(layout, nearbyDoor.room, nearbyDoor.door, "inside");
-                  navigateToDestination(floorId, destination.x, destination.y);
+                  const destination = getRoomDoorPosition(layout, visibleNearbyDoor.room, visibleNearbyDoor.door, "inside");
+                  const movementRequestId = navigateToDestination(floorId, destination.x, destination.y);
+                  if (movementRequestId) {
+                    pendingDoorEntryRequestId.current = movementRequestId;
+                    setDismissedDoorEntryId(visibleNearbyDoor.door.id);
+                  }
                 }}
               >
                 <DoorOpen size={16} />Enter
@@ -2059,7 +2086,7 @@ export function Workspace({
               <button
                 className="secondary-button"
                 disabled={pendingRoomIds.size > 0}
-                onClick={() => knockAtRoom(nearbyDoor.room.id)}
+                onClick={() => knockAtRoom(visibleNearbyDoor.room.id)}
               >
                 <Hand size={16} />{pendingRoomIds.size > 0 ? "Waiting" : "Knock"}
               </button>

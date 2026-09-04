@@ -128,6 +128,7 @@ describe("Workspace kidnapping", () => {
       targetUserId: "user-leo",
     }));
     expect(realtime.send.mock.calls.some(([command]) => command.type === "movement.set_destination")).toBe(false);
+    expect(screen.queryByLabelText("Selected Leo Martins")).toBeNull();
   });
 
   it("removes the action when the workspace switch is off", () => {

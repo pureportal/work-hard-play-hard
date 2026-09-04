@@ -94,9 +94,11 @@ describe("Workspace celebration gong", () => {
       type: "movement.set_destination",
       floorId: "floor-studio",
     }));
+    expect(screen.queryByLabelText("Selected place")).toBeNull();
 
     realtime.snapshot = snapshot(430, 152);
     view.rerender(<Workspace initialData={workspace()} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Select gong" }));
     fireEvent.click(screen.getByRole("button", { name: "Ring gong" }));
 
     expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({
@@ -104,6 +106,7 @@ describe("Workspace celebration gong", () => {
       objectId: "gong",
     }));
     expect(audio.prepare).toHaveBeenCalled();
+    expect(screen.queryByLabelText("Selected place")).toBeNull();
   });
 
   it("renders a received celebration, chimes, announces an offscreen ringer, and exposes the cooldown", () => {

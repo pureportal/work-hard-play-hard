@@ -165,6 +165,118 @@ describe("Workspace floor navigation", () => {
     expect(menu.style.top).toBe("220px");
   });
 
+  it("closes selected-object actions after sitting", () => {
+    renderWorkspace();
+
+    fireEvent.click(screen.getByRole("button", { name: "Choose object" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sit" }));
+
+    expect(screen.queryByLabelText("Selected place")).toBeNull();
+    expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({
+      type: "asset.interact",
+      objectId: "chair",
+      interactionId: "seat",
+    }));
+  });
+
+  it("closes selected-object actions after standing", () => {
+    const seatedSnapshot = snapshot("floor-1", 112, 112);
+    seatedSnapshot.players[0]!.seat = { objectId: "chair", interactionId: "seat" };
+    realtime.snapshot = seatedSnapshot;
+    renderWorkspace();
+
+    fireEvent.click(screen.getByRole("button", { name: "Choose object" }));
+    fireEvent.click(screen.getByRole("button", { name: "Stand" }));
+
+    expect(screen.queryByLabelText("Selected place")).toBeNull();
+    expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({ type: "seat.leave" }));
+  });
+
+  it("closes selected-game actions after joining the lobby", () => {
+    const data = workspace();
+    data.layouts[0]!.objects = [{
+      id: "arcade",
+      floorId: "floor-1",
+      assetId: "equipment-arcade",
+      x: 96,
+      y: 96,
+      rotation: 0,
+      variantId: "graphite",
+    }];
+    data.miniGames = [{ id: "game-arcade", name: "Arcade", accent: "#ff7a66", objectId: "arcade" }];
+    renderWorkspace(data);
+
+    fireEvent.click(screen.getByRole("button", { name: "Choose object" }));
+    fireEvent.click(screen.getByRole("button", { name: "Join lobby" }));
+
+    expect(screen.queryByLabelText("Selected place")).toBeNull();
+    expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({ type: "movement.set_destination" }));
+  });
+
+  it("closes selected-portal actions after choosing a destination", () => {
+    const data = workspace();
+    data.layouts[0]!.objects = [{
+      id: "portal-up",
+      floorId: "floor-1",
+      assetId: "infrastructure-portal",
+      label: "2",
+      x: 96,
+      y: 96,
+      rotation: 0,
+      variantId: "violet",
+    }];
+    data.layouts[1]!.objects = [{
+      id: "portal-down",
+      floorId: "floor-2",
+      assetId: "infrastructure-portal",
+      label: "1",
+      x: 320,
+      y: 320,
+      rotation: 0,
+      variantId: "violet",
+    }];
+    renderWorkspace(data);
+
+    fireEvent.click(screen.getByRole("button", { name: "Choose object" }));
+    fireEvent.click(screen.getByRole("button", { name: "Go" }));
+
+    expect(screen.queryByLabelText("Selected place")).toBeNull();
+    expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({
+      type: "movement.set_destination",
+      floorId: "floor-2",
+    }));
+  });
+
+  it("closes an accessible door prompt after entering and restores it when movement fails", () => {
+    realtime.snapshot = snapshot("floor-1", 200, 100);
+    renderWorkspace(workspaceWithDoor(true));
+
+    fireEvent.click(screen.getByRole("button", { name: "Enter" }));
+
+    expect(screen.queryByLabelText("Focus room door")).toBeNull();
+    expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({ type: "movement.set_destination" }));
+
+    const command = movementCommands()[0]!;
+    act(() => realtime.handler?.({
+      type: "command.error",
+      requestId: command.requestId,
+      code: "MOVEMENT_BLOCKED",
+      message: "That room cannot be entered.",
+    }));
+
+    expect(screen.getByLabelText("Focus room door")).toBeTruthy();
+  });
+
+  it("keeps a door prompt open while a knock is pending", () => {
+    realtime.snapshot = snapshot("floor-1", 200, 100);
+    renderWorkspace(workspaceWithDoor(false));
+
+    fireEvent.click(screen.getByRole("button", { name: "Knock" }));
+
+    expect(screen.getByLabelText("Focus room door")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Waiting" })).toBeTruthy();
+  });
+
   it("moves, rotates, and removes an item selected on the build canvas", () => {
     renderWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "Build" }));
@@ -183,8 +295,34 @@ describe("Workspace floor navigation", () => {
   });
 });
 
-function renderWorkspace(): void {
-  render(<Workspace initialData={workspace()} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
+function renderWorkspace(data = workspace()): void {
+  render(<Workspace initialData={data} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
+}
+
+function workspaceWithDoor(hasAccess: boolean): BootstrapData {
+  const data = workspace();
+  const layout = data.layouts[0]!;
+  layout.walls = [{ id: "focus-wall", start: { x: 100, y: 100 }, end: { x: 300, y: 100 } }];
+  layout.openings = [{ id: "focus-door", wallId: "focus-wall", offset: 100, width: 64, type: "door" }];
+  layout.rooms = [{
+    id: "focus-room",
+    floorId: "floor-1",
+    name: "Focus room",
+    color: "#ffffff",
+    capacity: 4,
+    bounds: { x: 100, y: 100, width: 200, height: 200 },
+    footprint: [{ x: 100, y: 100, width: 200, height: 200 }],
+    boundary: [{ wallId: "focus-wall", startOffset: 0, endOffset: 200 }],
+    doorIds: ["focus-door"],
+    windowIds: [],
+    privateEligible: true,
+    access: {
+      mode: "assigned",
+      assignedPersonIds: hasAccess ? ["user-maya"] : [],
+      knockable: !hasAccess,
+    },
+  }];
+  return data;
 }
 
 function workspace(): BootstrapData {

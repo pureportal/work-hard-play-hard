@@ -182,6 +182,7 @@ describe("meeting area entry", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Open" }));
     expectMeetingJoinRequest();
+    expect(screen.queryByLabelText(`${meeting.title} meeting`)).toBeNull();
     emitJoined();
 
     const dialog = screen.getByRole("dialog");
@@ -196,6 +197,7 @@ describe("meeting area entry", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Open Small" }));
     expectMeetingJoinRequest();
+    expect(screen.queryByLabelText(`${meeting.title} meeting`)).toBeNull();
     emitJoined();
 
     const dialog = screen.getByRole("dialog");
@@ -205,7 +207,7 @@ describe("meeting area entry", () => {
     expect(screen.getByTestId("world-input").getAttribute("data-enabled")).toBe("true");
   });
 
-  it("prevents duplicate joins and preserves device choices when opening fails", async () => {
+  it("closes the action prompt, prevents duplicate joins, and restores it when opening fails", async () => {
     Object.defineProperty(navigator, "mediaDevices", {
       configurable: true,
       value: {
@@ -217,11 +219,7 @@ describe("meeting area entry", () => {
     await act(async () => Promise.resolve());
 
     fireEvent.click(screen.getByRole("button", { name: "Open" }));
-    const openingButton = screen.getByRole("button", { name: "Opening…" }) as HTMLButtonElement;
-    const smallButton = screen.getByRole("button", { name: "Open Small" }) as HTMLButtonElement;
-    expect(openingButton.disabled).toBe(true);
-    expect(smallButton.disabled).toBe(true);
-    fireEvent.click(openingButton);
+    expect(screen.queryByLabelText(`${meeting.title} meeting`)).toBeNull();
     expect(meetingJoinCommands()).toHaveLength(1);
     expect(screen.getByRole("button", { name: "Mute" })).toBeTruthy();
 
@@ -234,6 +232,7 @@ describe("meeting area entry", () => {
     }));
 
     expect((screen.getByRole("button", { name: "Open" }) as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.getByLabelText(`${meeting.title} meeting`)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Mute" })).toBeTruthy();
   });
 
@@ -249,6 +248,7 @@ describe("meeting area entry", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Open" }));
     const dialog = screen.getByRole("dialog", { name: `Open ${meeting.title}?` });
+    expect(screen.queryByLabelText(`${meeting.title} meeting`)).toBeNull();
     expect(within(dialog).getByText("This will end your call with Leo Martins.")).toBeTruthy();
     expect(meetingJoinCommands()).toHaveLength(0);
 
@@ -340,6 +340,7 @@ describe("meeting area entry", () => {
       type: "movement.approach_user",
       targetUserId: "user-leo",
     }));
+    expect(screen.queryByLabelText("Selected Leo Martins")).toBeNull();
   });
 });
 
