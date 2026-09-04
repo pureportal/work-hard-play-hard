@@ -15,7 +15,7 @@ const browser = await puppeteer.launch({
   headless: "shell",
   timeout: 120_000,
   protocolTimeout: 120_000,
-  args: ["--disable-dev-shm-usage", "--no-first-run"],
+  args: ["--disable-dev-shm-usage", "--no-first-run", "--no-sandbox"],
 });
 try {
   const [page] = await browser.pages();

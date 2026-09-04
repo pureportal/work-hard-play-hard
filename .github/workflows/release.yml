@@ -429,7 +429,7 @@ jobs:
 
       - name: Create checksum manifest
         working-directory: release-assets
-        run: sha256sum * > SHA256SUMS
+        run: sha256sum ./* > "$RUNNER_TEMP/SHA256SUMS" && mv "$RUNNER_TEMP/SHA256SUMS" SHA256SUMS
 
       - name: Publish release
         env:
