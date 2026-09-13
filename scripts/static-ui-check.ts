@@ -2,7 +2,9 @@ import { mkdir, readFile } from "node:fs/promises";
 import { dirname, extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer, { type HTTPRequest, type Page } from "puppeteer";
+import { ASSET_CATALOG } from "../packages/shared/src/index.js";
 import { DemoStore } from "../apps/server/src/store.js";
+import { verifyTicTacToeUi } from "./tic-tac-toe-ui-check.js";
 
 const workspaceDirectory = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distributionDirectory = resolve(workspaceDirectory, "apps/client/dist");
@@ -87,6 +89,8 @@ try {
   await page.waitForFunction(() => document.querySelector('.top-bar [role="status"]')?.textContent === "Connected");
   report("rapid floor choice ready");
 
+  await verifyDesktopBuildSidebar(page);
+
   await page.setViewport({ width: 320, height: 568, deviceScaleFactor: 1 });
   await page.evaluate(() => {
     Object.defineProperty(navigator, "onLine", { configurable: true, value: false });
@@ -152,11 +156,18 @@ try {
   await assertViewport(page, [".nav-rail", ".top-bar", ".build-panel"]);
   await assertContained(page, ".build-panel", [".room-control", ".room-control select", ".room-control .icon-button"]);
   assert(!(await page.$(".control-dock")), "Gameplay controls remained visible in Build Mode.");
-  const categoryTabs = await page.$eval(".asset-category-tabs", (element) => ({
-    clientWidth: element.clientWidth,
-    scrollWidth: element.scrollWidth,
-  }));
-  assert(categoryTabs.scrollWidth <= categoryTabs.clientWidth + 1, "Asset categories overflow the Build panel.");
+  await assertContained(page, ".build-panel", [".asset-category-tabs"]);
+  assert(await page.$eval(".asset-category-tabs", (element) => getComputedStyle(element).overflowX === "auto"), "Compact asset categories must scroll horizontally.");
+  const initialCategory = await page.$('.asset-category-tabs button[aria-selected="true"]');
+  assert(initialCategory, "An asset category must be selected.");
+  for (const category of await page.$$(".asset-category-tabs button")) {
+    await category.scrollIntoView();
+    await category.click();
+    assert(await category.evaluate((button) => button.getAttribute("aria-selected") === "true"), "Asset category could not be selected.");
+    await assertFullyContained(page, ".asset-category-tabs", ['button[aria-selected="true"]']);
+  }
+  await initialCategory.scrollIntoView();
+  await initialCategory.click();
   assert(await page.$eval(".asset-category-tabs", (element) => element.textContent?.includes("Outdoor") ?? false), "Outdoor assets are missing.");
   await page.screenshot({ path: resolve(artifactDirectory, "iteration-compact-build.png") });
   const categoryTargetHeight = await page.$$eval(".asset-category-tabs button", (buttons) => Math.min(...buttons.map((button) => button.getBoundingClientRect().height)));
@@ -259,33 +270,46 @@ try {
     socket?.emit({
       type: "game.lobby_updated",
       lobby: {
-        definitionId: "game-tetris",
-        objectId: "object-tetris",
+        definitionId: "game-falling-blocks",
+        objectId: "object-falling-blocks",
         floorId: "floor-studio",
         participantIds: ["user-maya", "user-leo"],
         capacity: 8,
       },
     });
   });
-  await page.waitForSelector(".tetris-lobby", { visible: true });
+  await page.waitForSelector(".falling-blocks-lobby", { visible: true });
   await page.setViewport({ width: 1280, height: 800, deviceScaleFactor: 1 });
-  await clickButtonWithText(page, "Start round");
-  await page.waitForSelector(".tetris-game", { visible: true });
-  await page.waitForSelector('.tetris-hold [aria-label="Held I piece"]', { visible: true });
-  await assertViewport(page, [".tetris-game", ".tetris-game > header", ".tetris-content"]);
-  await assertFullyContained(page, ".tetris-game", [".tetris-left-rail", ".tetris-board", ".tetris-sidebar", ".tetris-controls"]);
-  const desktopBoard = await page.$eval(".tetris-board", (element) => {
+  await clickButtonWithText(page, "Players");
+  await clickButtonWithText(page, "Play");
+  await page.waitForSelector(".falling-blocks-game", { visible: true });
+  await page.waitForSelector('.falling-blocks-hold [aria-label="Held I piece"]', { visible: true });
+  await assertViewport(page, [".falling-blocks-game", ".falling-blocks-game > header", ".falling-blocks-content"]);
+  await assertFullyContained(page, ".falling-blocks-game", [".falling-blocks-left-rail", ".falling-blocks-board", ".falling-blocks-sidebar", ".falling-blocks-controls"]);
+  const desktopBoard = await page.$eval(".falling-blocks-board", (element) => {
     const rect = element.getBoundingClientRect();
     return { width: rect.width, height: rect.height };
   });
-  assert(desktopBoard.width >= 280 && desktopBoard.height >= 560, "The Tetris board did not use the desktop viewport.");
-  const animationStyles = await page.evaluate(() => ({
-    game: getComputedStyle(document.querySelector(".tetris-game")!).animationName,
-    preview: getComputedStyle(document.querySelector(".tetris-piece-preview.has-piece")!).animationName,
-    cellTransition: getComputedStyle(document.querySelector(".tetris-cell.is-active")!).transitionDuration,
-  }));
-  assert(animationStyles.game !== "none" && animationStyles.preview !== "none", "Tetris entry or preview animation is missing.");
-  assert(animationStyles.cellTransition !== "0s", "Tetris cell transitions are missing.");
+  assert(desktopBoard.width >= 280 && desktopBoard.height >= 560, "The Falling Blocks board did not use the desktop viewport.");
+  await page.evaluate(() => {
+    const socket = (globalThis as typeof globalThis & {
+      mockSockets: Array<{ gameState?: { lines: number }; emit: (event: unknown) => void }>;
+    }).mockSockets.at(-1);
+    if (!socket?.gameState) throw new Error("Falling Blocks state is missing.");
+    socket.gameState = { ...socket.gameState, lines: socket.gameState.lines + 1 };
+    socket.emit(socket.gameState);
+  });
+  await page.waitForSelector(".falling-blocks-line-flash");
+  const lineFlash = await page.$eval(".falling-blocks-line-flash", async (element) => {
+    const animation = element.getAnimations()[0];
+    if (!animation) throw new Error("Falling Blocks line-clear animation is missing.");
+    animation.currentTime = 0;
+    animation.play();
+    const start = Number(getComputedStyle(element).opacity);
+    await animation.finished;
+    return { start, end: Number(getComputedStyle(element).opacity) };
+  });
+  assert(lineFlash.start > lineFlash.end && lineFlash.end === 0, "Falling Blocks line-clear feedback did not fade away.");
 
   const simultaneousInputStart = await page.evaluate(() => (
     (globalThis as typeof globalThis & { mockSockets: Array<{ commands: unknown[] }> })
@@ -322,8 +346,8 @@ try {
   );
 
   await page.keyboard.press("c");
-  await page.waitForFunction(() => (document.querySelector('.tetris-controls button:nth-child(5)') as HTMLButtonElement | null)?.disabled === true);
-  await page.waitForSelector('.tetris-hold [aria-label="Held T piece"]', { visible: true });
+  await page.waitForFunction(() => (document.querySelector('.falling-blocks-controls button:nth-child(5)') as HTMLButtonElement | null)?.disabled === true);
+  await page.waitForSelector('.falling-blocks-hold [aria-label="Held T piece"]', { visible: true });
   const firstHoldCount = await page.evaluate(() => (
     (globalThis as typeof globalThis & { mockSockets: Array<{ commands: Array<{ type: string; command?: string }> }> })
       .mockSockets.at(-1)?.commands.filter((command) => command.type === "game.command" && command.command === "hold").length ?? 0
@@ -336,42 +360,45 @@ try {
   ));
   assert(blockedHoldCount === firstHoldCount, "Hold was dispatched twice before a piece locked.");
   await page.keyboard.press("Space");
-  await page.waitForFunction(() => (document.querySelector('.tetris-controls button:nth-child(5)') as HTMLButtonElement | null)?.disabled === false);
+  await page.waitForFunction(() => (document.querySelector('.falling-blocks-controls button:nth-child(5)') as HTMLButtonElement | null)?.disabled === false);
   await page.keyboard.press("c");
   await page.waitForFunction((previousCount) => {
     const commands = (globalThis as typeof globalThis & { mockSockets: Array<{ commands: Array<{ type: string; command?: string }> }> })
       .mockSockets.at(-1)?.commands ?? [];
     return commands.filter((command) => command.type === "game.command" && command.command === "hold").length > previousCount;
   }, {}, firstHoldCount);
-  await page.waitForSelector('.tetris-hold [aria-label="Held O piece"]', { visible: true });
+  await page.waitForSelector('.falling-blocks-hold [aria-label="Held O piece"]', { visible: true });
   await page.screenshot({ path: resolve(artifactDirectory, "iteration-desktop-game.png") });
   report("desktop game input and hold ready");
 
   await page.setViewport({ width: 844, height: 390, deviceScaleFactor: 1 });
-  await assertViewport(page, [".tetris-game", ".tetris-game > header"]);
-  await assertFullyContained(page, ".tetris-game", [".tetris-left-rail", ".tetris-board", ".tetris-sidebar", ".tetris-controls"]);
-  const tetrisScroll = await page.$eval(".tetris-content", (element) => ({
+  await assertViewport(page, [".falling-blocks-game", ".falling-blocks-game > header"]);
+  await assertFullyContained(page, ".falling-blocks-game", [".falling-blocks-left-rail", ".falling-blocks-board", ".falling-blocks-sidebar", ".falling-blocks-controls"]);
+  const fallingBlocksScroll = await page.$eval(".falling-blocks-content", (element) => ({
     clientHeight: element.clientHeight,
     scrollHeight: element.scrollHeight,
   }));
-  assert(tetrisScroll.scrollHeight <= tetrisScroll.clientHeight + 1, "Game controls are clipped in a constrained viewport.");
+  assert(fallingBlocksScroll.scrollHeight <= fallingBlocksScroll.clientHeight + 1, "Game controls are clipped in a constrained viewport.");
   await page.screenshot({ path: resolve(artifactDirectory, "iteration-landscape-game.png") });
   report("landscape game ready");
 
   await page.setViewport({ width: 320, height: 568, deviceScaleFactor: 1 });
-  await assertViewport(page, [".tetris-game", ".tetris-game > header", ".tetris-content"]);
-  await assertFullyContained(page, ".tetris-game", [".tetris-left-rail", ".tetris-board", ".tetris-sidebar", ".tetris-controls"]);
-  const portraitTetrisScroll = await page.$eval(".tetris-content", (element) => ({
+  await assertViewport(page, [".falling-blocks-game", ".falling-blocks-game > header", ".falling-blocks-content"]);
+  await assertFullyContained(page, ".falling-blocks-game", [".falling-blocks-left-rail", ".falling-blocks-board", ".falling-blocks-sidebar", ".falling-blocks-controls"]);
+  const portraitFallingBlocksScroll = await page.$eval(".falling-blocks-content", (element) => ({
     clientHeight: element.clientHeight,
     scrollHeight: element.scrollHeight,
   }));
-  assert(portraitTetrisScroll.scrollHeight <= portraitTetrisScroll.clientHeight + 1, "Game controls require scrolling on a compact portrait screen.");
+  assert(portraitFallingBlocksScroll.scrollHeight <= portraitFallingBlocksScroll.clientHeight + 1, "Game controls require scrolling on a compact portrait screen.");
   await assertTouchUi(page);
   await page.screenshot({ path: resolve(artifactDirectory, "iteration-compact-game.png") });
   report("compact game ready");
 
   await page.click('button[aria-label="Close game"]');
-  await page.waitForSelector(".tetris-game", { hidden: true });
+  await page.locator('.game-exit-prompt button::-p-text(Leave game)').click();
+  await page.waitForSelector(".falling-blocks-game", { hidden: true });
+
+  await verifyTicTacToeUi(page, artifactDirectory);
 
   await verifyTouchMap(page);
   report("touch map ready");
@@ -403,6 +430,80 @@ try {
   process.stdout.write("Static production UI checks passed at 1440x900, 320x568, and 844x390.\n");
 } finally {
   await browser.close();
+}
+
+async function verifyDesktopBuildSidebar(page: Page): Promise<void> {
+  await page.click('button[aria-label="Close people"]');
+  await page.click('button[aria-label="Build"]');
+  await page.waitForSelector(".build-panel", { visible: true });
+
+  const metrics = await page.evaluate(() => {
+    const panel = document.querySelector<HTMLElement>(".build-panel")!;
+    const tools = [...document.querySelectorAll<HTMLElement>(".build-tools button")];
+    const categories = [...document.querySelectorAll<HTMLElement>(".asset-category-tabs button")];
+    const assets = [...document.querySelectorAll<HTMLElement>(".asset-grid > button")];
+    const activeTool = document.querySelector<HTMLElement>('.build-tools button[aria-pressed="true"]')!;
+    return {
+      panelWidth: panel.getBoundingClientRect().width,
+      toolCount: tools.length,
+      toolRows: new Set(tools.map((tool) => Math.round(tool.getBoundingClientRect().top))).size,
+      toolHeight: Math.min(...tools.map((tool) => tool.getBoundingClientRect().height)),
+      categoryCount: categories.length,
+      categoryColumns: new Set(categories.map((category) => Math.round(category.getBoundingClientRect().left))).size,
+      categoryRows: new Set(categories.map((category) => Math.round(category.getBoundingClientRect().top))).size,
+      categoryHeight: Math.min(...categories.map((category) => category.getBoundingClientRect().height)),
+      assetHeight: Math.min(...assets.map((asset) => asset.getBoundingClientRect().height)),
+      activeTool: activeTool.textContent?.trim(),
+    };
+  });
+
+  assert(Math.abs(metrics.panelWidth - 392) <= 1, `Build sidebar width is ${metrics.panelWidth}px.`);
+  assert(metrics.toolCount === 5 && metrics.toolRows === 1, "Build tools are not arranged in one scan line.");
+  assert(metrics.toolHeight >= 56, "Build tool targets are undersized.");
+  const categoryCount = ASSET_CATALOG.categories.filter((category) => category.buildable).length;
+  assert(metrics.categoryCount === categoryCount, "Build is missing catalog categories.");
+  assert(metrics.categoryColumns === 4 && metrics.categoryRows === Math.ceil(categoryCount / 4), "Asset categories are not arranged in four columns.");
+  assert(metrics.categoryHeight >= 48, "Asset category targets are undersized.");
+  assert(metrics.assetHeight >= 60, "Asset cards are undersized.");
+  assert(metrics.activeTool === "Select", "Select is not the initial active build tool.");
+
+  await page.click('.build-tools button:nth-child(2)');
+  assert(await page.$eval('.build-tools button:nth-child(2)', (button) => button.getAttribute("aria-pressed") === "true"), "Wall did not receive the selected state.");
+  await page.screenshot({ path: resolve(artifactDirectory, "build-sidebar-light-tools.png") });
+
+  await clickButtonWithText(page, "Storage");
+  await clickButtonWithText(page, "Credenza");
+  await clickButtonWithText(page, "Ink");
+  await page.waitForSelector('.asset-grid > button.active image[href="/world-assets/storage-credenza/ink.png"]');
+  const frontCrop = await page.$eval('.asset-grid > button.active .asset-shape-artwork', (element) => element.getAttribute("viewBox"));
+  await page.click(".asset-rotate");
+  await page.waitForFunction((previousCrop) => document.querySelector('.asset-grid > button.active .asset-shape-artwork')?.getAttribute("viewBox") !== previousCrop, {}, frontCrop);
+  await page.screenshot({ path: resolve(artifactDirectory, "build-sidebar-world-assets.png") });
+  await page.select(".asset-rarity-filter select", "legendary");
+  await clickButtonWithText(page, "Lighting");
+  assert(await page.$$eval(".asset-grid > button", (buttons) => buttons.length === 1 && buttons[0]?.textContent?.trim() === "Crystal floor lamp"), "Rarity filter did not select the legendary lamp.");
+  await page.select(".asset-rarity-filter select", "all");
+
+  await clickButtonWithText(page, "Seating");
+  await clickButtonWithText(page, "Office chair");
+  assert(await page.$eval('.asset-category-tabs button[aria-selected="true"]', (button) => button.textContent?.trim() === "Seating"), "Seating did not receive the selected tab state.");
+  assert(await page.$eval('.asset-grid > button[aria-pressed="true"]', (button) => button.textContent?.trim() === "Office chair"), "Office chair did not receive the selected asset state.");
+  await page.click('button[aria-label="Use dark mode"]');
+  await page.waitForFunction(() => document.documentElement.dataset.theme === "dark");
+  await page.screenshot({ path: resolve(artifactDirectory, "build-sidebar-dark-selection.png") });
+
+  await page.$eval(".room-control summary", (summary) => (summary as HTMLElement).click());
+  await page.$eval(".room-control", (room) => room.scrollIntoView({ block: "center" }));
+  assert(await page.$eval(".room-control", (room) => (room as HTMLDetailsElement).open), "Room editor did not expand.");
+  await page.screenshot({ path: resolve(artifactDirectory, "build-sidebar-dark-room-open.png") });
+
+  await page.click('button[aria-label="Use light mode"]');
+  await page.waitForFunction(() => document.documentElement.dataset.theme === "light");
+  await page.click('button[aria-label="Close build tools"]');
+  await page.waitForSelector(".build-panel", { hidden: true });
+  await page.click('button[aria-label="People"]');
+  await page.waitForSelector(".people-panel", { visible: true });
+  report("desktop build sidebar ready");
 }
 
 async function verifyTouchMap(touchPage: Page): Promise<void> {
@@ -472,7 +573,7 @@ async function installApplicationTransport(targetPage: Page): Promise<void> {
       }
 
       send(source: string): void {
-        const command = JSON.parse(source) as { type: string; floorId?: string; meetingId?: string; reaction?: string; command?: string };
+        const command = JSON.parse(source) as { type: string; floorId?: string; meetingId?: string; reaction?: string; command?: string; definitionId?: string };
         this.commands.push(command);
         if (command.type === "meeting.join" && command.meetingId) {
           const meeting = workspace.meetings.find((candidate) => candidate.id === command.meetingId);
@@ -496,14 +597,15 @@ async function installApplicationTransport(targetPage: Page): Promise<void> {
               ? { type: "meeting", meetingId }
               : { type: "floor", floorId: this.floorId },
           }));
-        } else if (command.type === "game.start") {
+        } else if (command.type === "game.start" && command.definitionId === "game-falling-blocks") {
           queueMicrotask(() => {
             const roundId = "round-static";
             this.emit({
               type: "game.round_started",
               round: {
                 id: roundId,
-                definitionId: "game-tetris",
+                definitionId: "game-falling-blocks",
+                objectId: command.objectId,
                 floorId: this.floorId,
                 startedAt: new Date().toISOString(),
                 status: "playing",
@@ -516,7 +618,7 @@ async function installApplicationTransport(targetPage: Page): Promise<void> {
             this.gameState = {
               type: "game.state",
               roundId,
-              definitionId: "game-tetris",
+              definitionId: "game-falling-blocks",
               grid: Array.from({ length: 20 }, (_, row) => Array.from({ length: 10 }, (_, column) =>
                 (row === 2 && column === 4) || (row === 3 && column >= 3 && column <= 5) ? 3 : row === 19 && column <= 2 ? 6 : 0,
               )),
