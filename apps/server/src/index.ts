@@ -1,8 +1,16 @@
 import { createApplication } from "./app.js";
+import { createAuthenticationEmailDelivery } from "./auth/email-delivery.js";
 
 const port = Number(process.env.PORT ?? 3001);
 const host = process.env.HOST ?? "127.0.0.1";
-const { app } = await createApplication({ logger: true });
+const emailDelivery = createAuthenticationEmailDelivery();
+const { app } = await createApplication({
+  logger: true,
+  ...(emailDelivery ? {
+    deliverMagicLink: emailDelivery.deliverMagicLink,
+    deliverInvitation: emailDelivery.deliverInvitation,
+  } : {}),
+});
 
 const close = async (): Promise<void> => {
   await app.close();

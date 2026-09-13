@@ -128,6 +128,7 @@ interface InitialWorkspaceState {
   data: BootstrapData | undefined;
   corporateIdentity: CorporateIdentity;
   registration: RegistrationAvailability;
+  magicLinkEnabled: boolean;
   setupRequired: boolean;
 }
 
@@ -164,6 +165,7 @@ function restoreInitialWorkspace(): Promise<InitialWorkspaceState> {
         data: session.user ? await fetchBootstrap() : undefined,
         corporateIdentity: session.corporateIdentity,
         registration: session.registration,
+        magicLinkEnabled: session.magicLinkEnabled,
         setupRequired: session.setupRequired,
       };
     })();
@@ -211,6 +213,7 @@ export function App() {
     enabled: false,
     invitationRequired: true,
   });
+  const [magicLinkEnabled, setMagicLinkEnabled] = useState(false);
   const [setupRequired, setSetupRequired] = useState(false);
   const [error, setError] = useState<string>();
   const [invitationEmailMismatch, setInvitationEmailMismatch] = useState(false);
@@ -308,6 +311,7 @@ export function App() {
         setInvitationEmailMismatch(false);
         setError(undefined);
         setRegistration(restored.registration);
+        setMagicLinkEnabled(restored.magicLinkEnabled);
         setCorporateIdentity(restored.data?.corporateIdentity ?? restored.corporateIdentity);
         setSetupRequired(restored.setupRequired);
         if (!restored.data) {
@@ -380,6 +384,7 @@ export function App() {
         invitationToken={initialInvitationToken}
         registrationsEnabled={registration.enabled}
         invitationRequired={registration.invitationRequired}
+        magicLinkEnabled={magicLinkEnabled}
         setupRequired={setupRequired}
         corporateIdentity={corporateIdentity}
         onAuthenticated={loadWorkspace}

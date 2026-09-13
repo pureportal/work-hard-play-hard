@@ -41,6 +41,7 @@ describe("AuthScreen setup", () => {
         setupRequired={false}
         registrationsEnabled={false}
         invitationRequired
+        magicLinkEnabled
         onAuthenticated={vi.fn()}
       />,
     );
@@ -58,6 +59,7 @@ describe("AuthScreen setup", () => {
         setupRequired={false}
         registrationsEnabled={false}
         invitationRequired
+        magicLinkEnabled
         onAuthenticated={vi.fn()}
       />,
     );
@@ -84,6 +86,7 @@ describe("AuthScreen setup", () => {
         setupRequired
         registrationsEnabled={false}
         invitationRequired
+        magicLinkEnabled
         onAuthenticated={onAuthenticated}
       />,
     );
@@ -111,6 +114,7 @@ describe("AuthScreen setup", () => {
         setupRequired={false}
         registrationsEnabled
         invitationRequired
+        magicLinkEnabled
         invitationToken={"a".repeat(43)}
         onAuthenticated={vi.fn()}
       />,
@@ -127,12 +131,28 @@ describe("AuthScreen setup", () => {
         setupRequired={false}
         registrationsEnabled={false}
         invitationRequired
+        magicLinkEnabled
         onAuthenticated={vi.fn()}
       />,
     );
 
     expect(screen.getByRole("button", { name: "Sign in" })).toBeDefined();
     expect(screen.queryByRole("button", { name: "Create account" })).toBeNull();
+  });
+
+  it("hides email sign-in when the server cannot deliver links", () => {
+    render(
+      <AuthScreen
+        corporateIdentity={corporateIdentity}
+        setupRequired={false}
+        registrationsEnabled={false}
+        invitationRequired
+        magicLinkEnabled={false}
+        onAuthenticated={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Email sign-in link" })).toBeNull();
   });
 
   it("returns from email sign-in to the password form without reloading", () => {
@@ -142,6 +162,7 @@ describe("AuthScreen setup", () => {
         setupRequired={false}
         registrationsEnabled
         invitationRequired
+        magicLinkEnabled
         onAuthenticated={vi.fn()}
       />,
     );
@@ -164,6 +185,7 @@ describe("AuthScreen setup", () => {
         setupRequired={false}
         registrationsEnabled={false}
         invitationRequired
+        magicLinkEnabled
         onAuthenticated={vi.fn()}
       />,
     );
@@ -173,6 +195,7 @@ describe("AuthScreen setup", () => {
     fireEvent.click(screen.getByRole("button", { name: "Send sign-in link" }));
 
     await screen.findByRole("heading", { name: "Check your email" });
+    expect(apiMocks.requestMagicLink).toHaveBeenCalledWith("maya@example.com", undefined);
     fireEvent.click(screen.getByRole("button", { name: "Back to sign in" }));
 
     expect(screen.getByRole("textbox", { name: "Username or email" })).toBeDefined();
@@ -189,6 +212,7 @@ describe("AuthScreen setup", () => {
         setupRequired={false}
         registrationsEnabled={false}
         invitationRequired
+        magicLinkEnabled
         onAuthenticated={vi.fn()}
       />,
     );
@@ -214,6 +238,7 @@ describe("AuthScreen setup", () => {
         setupRequired={false}
         registrationsEnabled
         invitationRequired
+        magicLinkEnabled
         onAuthenticated={onAuthenticated}
       />,
     );
@@ -242,6 +267,7 @@ describe("AuthScreen setup", () => {
         setupRequired={false}
         registrationsEnabled={false}
         invitationRequired
+        magicLinkEnabled
         onAuthenticated={vi.fn()}
         onServerChanged={onServerChanged}
       />,
@@ -268,6 +294,7 @@ describe("AuthScreen setup", () => {
         setupRequired={false}
         registrationsEnabled={false}
         invitationRequired
+        magicLinkEnabled
         onAuthenticated={vi.fn()}
         onServerChanged={onServerChanged}
       />,
@@ -288,6 +315,7 @@ describe("AuthScreen setup", () => {
         setupRequired={false}
         registrationsEnabled={false}
         invitationRequired
+        magicLinkEnabled
         onAuthenticated={vi.fn()}
       />,
     );

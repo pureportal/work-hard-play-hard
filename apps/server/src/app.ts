@@ -65,9 +65,9 @@ interface ApplicationOptions {
   clientUrl?: string;
   clientOrigins?: string[];
   exposeMagicLinks?: boolean;
-  deliverMagicLink?: (email: string, link: string) => Promise<void>;
+  deliverMagicLink?: (email: string, link: string, applicationName: string) => Promise<void>;
   exposeInvitationLinks?: boolean;
-  deliverInvitation?: (email: string, link: string) => Promise<void>;
+  deliverInvitation?: (email: string, link: string, applicationName: string) => Promise<void>;
   seeded?: boolean;
   logger?: boolean;
 }
@@ -98,6 +98,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
   const authRateLimiter = new AuthRateLimiter();
   const exposeMagicLinks = options.exposeMagicLinks ?? process.env.NODE_ENV !== "production";
   const exposeInvitationLinks = options.exposeInvitationLinks ?? process.env.NODE_ENV !== "production";
+  const magicLinkEnabled = Boolean(options.deliverMagicLink || exposeMagicLinks);
   const realtimeSocketsBySession = new Map<string, Set<RealtimeSocket>>();
   const realtimeSocketsByUser = new Map<string, Set<RealtimeSocket>>();
   const realtimeCommandWindowsByUser = new Map<string, RealtimeCommandWindow>();
@@ -209,6 +210,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
         enabled: registrationSettings.enabled,
         invitationRequired: registrationSettings.invitationRequired,
       },
+      magicLinkEnabled,
       corporateIdentity: store.getCorporateIdentity(),
     };
   });
@@ -316,7 +318,20 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
       magicUrl.hash = fragment.toString();
       link = magicUrl.toString();
       if (options.deliverMagicLink) {
-        await options.deliverMagicLink(magicLink.email, link);
+        try {
+          await options.deliverMagicLink(
+            magicLink.email,
+            link,
+            store.getCorporateIdentity().applicationName,
+          );
+        } catch (error) {
+          await auth.revokeMagicLink(magicLink.token);
+          request.log.error(error);
+          return reply.code(502).send({
+            code: "MAGIC_LINK_DELIVERY_FAILED",
+            message: "Sign-in link could not be sent.",
+          });
+        }
       }
     }
     return reply.code(202).send({
@@ -700,7 +715,11 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     const inviteLink = invitationUrl.toString();
     if (options.deliverInvitation) {
       try {
-        await options.deliverInvitation(issued.invitation.email, inviteLink);
+        await options.deliverInvitation(
+          issued.invitation.email,
+          inviteLink,
+          store.getCorporateIdentity().applicationName,
+        );
       } catch (error) {
         store.rollbackInvitationIssue(issued.invitation.id, issued.supersededInvitationIds);
         request.log.error(error);

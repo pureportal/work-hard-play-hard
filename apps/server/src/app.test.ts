@@ -78,6 +78,7 @@ describe("authentication API", () => {
       user: null,
       setupRequired: true,
       registration: defaultRegistrationAvailability,
+      magicLinkEnabled: true,
       corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
     });
     expect(response.statusCode).toBe(201);
@@ -115,6 +116,7 @@ describe("authentication API", () => {
       user: null,
       setupRequired: false,
       registration: defaultRegistrationAvailability,
+      magicLinkEnabled: true,
       corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
     });
   }, 15_000);
@@ -166,6 +168,7 @@ describe("authentication API", () => {
       user: null,
       setupRequired: false,
       registration: defaultRegistrationAvailability,
+      magicLinkEnabled: true,
       corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
     });
     expect(activeSession.json()).toMatchObject({ user: { id: "user-maya" } });
@@ -194,6 +197,7 @@ describe("authentication API", () => {
       user: null,
       setupRequired: false,
       registration: defaultRegistrationAvailability,
+      magicLinkEnabled: true,
       corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
     });
     expect(bootstrap.statusCode).toBe(401);
@@ -319,6 +323,88 @@ describe("authentication API", () => {
     expect(replayed.statusCode).toBe(401);
   });
 
+  it("delivers branded magic links without exposing account existence", async () => {
+    const deliverMagicLink = vi.fn(async () => undefined);
+    const context = await createApplication({
+      database: new MemoryDatabase(),
+      exposeMagicLinks: false,
+      deliverMagicLink,
+      seeded: true,
+    });
+    applications.push(context);
+    context.store.updateCorporateIdentity({
+      ...DEFAULT_CORPORATE_IDENTITY,
+      applicationName: "Acme Spaces",
+    });
+
+    const session = await context.app.inject({ method: "GET", url: "/v1/auth/session" });
+    const requested = await context.app.inject({
+      method: "POST",
+      url: "/v1/auth/magic-link",
+      payload: { email: "MAYA@northstar.studio" },
+    });
+    const unknown = await context.app.inject({
+      method: "POST",
+      url: "/v1/auth/magic-link",
+      payload: { email: "unknown@example.com" },
+    });
+
+    expect(session.json().magicLinkEnabled).toBe(true);
+    expect(requested.statusCode).toBe(202);
+    expect(requested.json()).toEqual({ message: "Check your email." });
+    expect(unknown.statusCode).toBe(202);
+    expect(unknown.json()).toEqual({ message: "Check your email." });
+    expect(deliverMagicLink).toHaveBeenCalledOnce();
+    expect(deliverMagicLink).toHaveBeenCalledWith(
+      "maya@northstar.studio",
+      expect.stringMatching(/^http:\/\/127\.0\.0\.1:5173\/auth\/magic#magic=/),
+      "Acme Spaces",
+    );
+  });
+
+  it("removes an undelivered magic link", async () => {
+    const database = new MemoryDatabase();
+    const context = await createApplication({
+      database,
+      exposeMagicLinks: false,
+      deliverMagicLink: async () => {
+        throw new Error("MAIL_UNAVAILABLE");
+      },
+      seeded: true,
+    });
+    applications.push(context);
+
+    const response = await context.app.inject({
+      method: "POST",
+      url: "/v1/auth/magic-link",
+      payload: { email: "maya@northstar.studio" },
+    });
+
+    expect(response.statusCode).toBe(502);
+    expect(response.json()).toMatchObject({ code: "MAGIC_LINK_DELIVERY_FAILED" });
+    expect((await database.loadAuthState())?.magicLinks).toEqual([]);
+  });
+
+  it("disables magic-link requests when links cannot be delivered", async () => {
+    const context = await createApplication({
+      database: new MemoryDatabase(),
+      exposeMagicLinks: false,
+      seeded: true,
+    });
+    applications.push(context);
+
+    const session = await context.app.inject({ method: "GET", url: "/v1/auth/session" });
+    const response = await context.app.inject({
+      method: "POST",
+      url: "/v1/auth/magic-link",
+      payload: { email: "maya@northstar.studio" },
+    });
+
+    expect(session.json().magicLinkEnabled).toBe(false);
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toMatchObject({ code: "MAGIC_LINK_UNAVAILABLE" });
+  });
+
   it("revokes the current session on sign out", async () => {
     const context = await application();
     const cookie = await loginCookie(context);
@@ -341,6 +427,7 @@ describe("authentication API", () => {
       user: null,
       setupRequired: false,
       registration: defaultRegistrationAvailability,
+      magicLinkEnabled: true,
       corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
     });
   });

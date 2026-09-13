@@ -38,6 +38,12 @@ services:
       POSTGRES_DB_NAME: ${POSTGRES_DB_NAME:-workHardPlayHard}
       POSTGRES_DB_USERNAME: ${POSTGRES_DB_USERNAME:-postgres}
       POSTGRES_DB_PASSWORD: ${POSTGRES_DB_PASSWORD:?Set POSTGRES_DB_PASSWORD in .env}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
     volumes:
       - northstar-images:/workspace/.data
     restart: unless-stopped

@@ -48,6 +48,7 @@ interface SessionResponse {
   user: AuthUser | null;
   setupRequired: boolean;
   registration: RegistrationAvailability;
+  magicLinkEnabled: boolean;
   corporateIdentity: CorporateIdentity;
 }
 
@@ -55,6 +56,7 @@ export interface AuthSession {
   user: AuthUser | undefined;
   setupRequired: boolean;
   registration: RegistrationAvailability;
+  magicLinkEnabled: boolean;
   corporateIdentity: CorporateIdentity;
 }
 
@@ -74,6 +76,7 @@ export async function fetchSession(): Promise<AuthSession> {
     user: session.user ?? undefined,
     setupRequired: session.setupRequired,
     registration: session.registration,
+    magicLinkEnabled: session.magicLinkEnabled,
     corporateIdentity: session.corporateIdentity,
   };
 }

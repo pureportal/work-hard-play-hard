@@ -1,3 +1,4 @@
+import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { acceptInvitation, ApiError, changeMemberAccess, fetchSession, inviteMember, isConnectionError, registerAccount, removeCorporateLogo, requestMagicLink, updateCorporateIdentity, updateRegistrationSettings, uploadCorporateLogo } from "./api";
 
@@ -17,6 +18,29 @@ afterEach(() => {
 });
 
 describe("client requests", () => {
+  it("reads magic-link availability from the public session", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      user: null,
+      setupRequired: false,
+      registration: { enabled: false, invitationRequired: true },
+      magicLinkEnabled: true,
+      corporateIdentity: {
+        applicationName: "Northstar",
+        primaryColor: "#7357ff",
+        secondaryColor: "#ff7a66",
+        authenticationLayout: "split",
+      },
+    }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    })));
+
+    await expect(fetchSession()).resolves.toMatchObject({
+      user: undefined,
+      magicLinkEnabled: true,
+    });
+  });
+
   it("distinguishes an offline browser from an unreachable server", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
 
@@ -133,7 +157,7 @@ describe("client requests", () => {
     const member = {
       id: "member/one",
       name: "Member",
-      initials: "ME",
+      initials: "ME", character: { ...DEFAULT_CHARACTER_APPEARANCE },
       email: "member@example.com",
       title: "",
       role: "member" as const,

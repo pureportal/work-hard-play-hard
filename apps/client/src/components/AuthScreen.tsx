@@ -13,6 +13,7 @@ interface AuthScreenProps {
   invitationToken?: string | undefined;
   registrationsEnabled: boolean;
   invitationRequired: boolean;
+  magicLinkEnabled: boolean;
   setupRequired: boolean;
   corporateIdentity: CorporateIdentity;
   onAuthenticated: (invitationAccepted?: boolean) => Promise<void>;
@@ -24,6 +25,7 @@ export function AuthScreen({
   invitationToken,
   registrationsEnabled,
   invitationRequired,
+  magicLinkEnabled,
   setupRequired,
   corporateIdentity,
   onAuthenticated,
@@ -265,7 +267,7 @@ export function AuthScreen({
 
         {!magicSent && (
           <div className="auth-utilities">
-            {mode === "login" && (
+            {mode === "login" && magicLinkEnabled && (
               <button type="button" className="auth-link-button" onClick={() => switchMode("magic")}>
                 <Mail size={16} />
                 Email sign-in link

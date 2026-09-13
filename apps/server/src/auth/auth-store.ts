@@ -139,6 +139,16 @@ export class AuthStore {
     return { user: this.publicUser(account)!, sessionToken };
   }
 
+  async revokeMagicLink(token: string): Promise<void> {
+    const tokenHash = hashToken(token);
+    const retainedMagicLinks = this.state.magicLinks.filter((candidate) => candidate.tokenHash !== tokenHash);
+    if (retainedMagicLinks.length === this.state.magicLinks.length) {
+      return;
+    }
+    this.state.magicLinks = retainedMagicLinks;
+    await this.persist();
+  }
+
   async revokeSession(token: string | undefined): Promise<void> {
     if (!token) {
       return;

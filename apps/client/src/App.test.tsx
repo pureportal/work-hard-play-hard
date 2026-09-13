@@ -52,6 +52,7 @@ describe("App startup recovery", () => {
       user: undefined,
       setupRequired: false,
       registration,
+      magicLinkEnabled: true,
       corporateIdentity: configuredIdentity,
     });
 
@@ -59,12 +60,19 @@ describe("App startup recovery", () => {
     await act(async () => Promise.resolve());
 
     expect(screen.getByRole("heading", { name: "Acme Spaces" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Email sign-in link" })).toBeDefined();
     expect(container.querySelector(".auth-shell.centered .corporate-logo")).not.toBeNull();
     expect(document.documentElement.style.getPropertyValue("--brand-primary")).toBe("#123abc");
   });
 
   it("shows first-user setup when the server is unconfigured", async () => {
-    apiMocks.fetchSession.mockResolvedValue({ user: undefined, setupRequired: true, registration, corporateIdentity });
+    apiMocks.fetchSession.mockResolvedValue({
+      user: undefined,
+      setupRequired: true,
+      registration,
+      magicLinkEnabled: true,
+      corporateIdentity,
+    });
 
     render(<App />);
     await act(async () => Promise.resolve());
@@ -77,7 +85,13 @@ describe("App startup recovery", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.5);
     apiMocks.fetchSession
       .mockRejectedValueOnce(new ConnectionError("Server could not be reached."))
-      .mockResolvedValueOnce({ user: undefined, setupRequired: false, registration, corporateIdentity });
+      .mockResolvedValueOnce({
+        user: undefined,
+        setupRequired: false,
+        registration,
+        magicLinkEnabled: true,
+        corporateIdentity,
+      });
 
     render(<App />);
     await act(async () => Promise.resolve());
@@ -96,7 +110,13 @@ describe("App startup recovery", () => {
     online = false;
     apiMocks.fetchSession
       .mockRejectedValueOnce(new ConnectionError("Connection unavailable."))
-      .mockResolvedValueOnce({ user: undefined, setupRequired: false, registration, corporateIdentity });
+      .mockResolvedValueOnce({
+        user: undefined,
+        setupRequired: false,
+        registration,
+        magicLinkEnabled: true,
+        corporateIdentity,
+      });
 
     render(<App />);
     await act(async () => Promise.resolve());
@@ -119,7 +139,13 @@ describe("App startup recovery", () => {
     online = false;
     apiMocks.fetchSession
       .mockRejectedValueOnce(new ConnectionError("Connection unavailable."))
-      .mockResolvedValueOnce({ user: undefined, setupRequired: false, registration, corporateIdentity });
+      .mockResolvedValueOnce({
+        user: undefined,
+        setupRequired: false,
+        registration,
+        magicLinkEnabled: true,
+        corporateIdentity,
+      });
 
     render(<App />);
     await act(async () => Promise.resolve());
