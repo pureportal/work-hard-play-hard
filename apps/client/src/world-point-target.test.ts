@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getDefaultAssetVariantId, requireAssetDefinition, type FloorLayout, type WorldObject } from "@workhard/shared";
 import { resolveWorldPointTarget } from "./world-point-target";
+import { getWorldAssetArtwork } from "./world-asset-artwork";
 
 describe("world point targets", () => {
   it("treats room floors as movement destinations", () => {
@@ -41,6 +42,22 @@ describe("world point targets", () => {
     const layout = createLayout(gong);
 
     expect(resolveWorldPointTarget(layout, 48, 48)).toEqual({ type: "object", object: gong });
+  });
+
+  it.each(["equipment-whiteboard", "equipment-checklist"])("selects %s with pointer and touch targets in every rotation", (assetId) => {
+    for (const rotation of [0, 90, 180, 270] as const) {
+      const board = { ...createObject("board", assetId, 32, 32), rotation };
+      const layout = createLayout(board);
+      expect(resolveWorldPointTarget(layout, 40, 40)).toEqual({ type: "object", object: board });
+      expect(resolveWorldPointTarget(layout, rotation % 180 ? 24 : 40, rotation % 180 ? 40 : 24, 44)).toEqual({ type: "object", object: board });
+      const { bounds } = getWorldAssetArtwork(requireAssetDefinition(assetId), board.variantId, rotation);
+      expect(resolveWorldPointTarget(layout, board.x + bounds.x + bounds.width / 2, board.y + bounds.y + bounds.height / 4))
+        .toEqual({ type: "object", object: board });
+      if (rotation % 180 === 0) {
+        const behind = { ...board, id: "behind", y: board.y - 16 };
+        expect(resolveWorldPointTarget(createLayout(behind, board), board.x + 32, board.y - 8)).toEqual({ type: "object", object: board });
+      }
+    }
   });
 
   it("expands small interaction targets only when a minimum target size is requested", () => {

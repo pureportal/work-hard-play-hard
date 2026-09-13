@@ -1,5 +1,5 @@
 import type { AddressInfo } from "node:net";
-import { TETRIS_DEFINITION_ID, type ServerEvent } from "@workhard/shared";
+import { FALLING_BLOCKS_DEFINITION_ID, type ServerEvent } from "@workhard/shared";
 import { afterEach, describe, expect, it } from "vitest";
 import WebSocket from "ws";
 import { createApplication, type ApplicationContext } from "./app.js";
@@ -130,7 +130,7 @@ describe("realtime transport", () => {
     await expect(Promise.all(closed)).resolves.toEqual([1000, 1000]);
   });
 
-  it("starts and records one Tetris round for players gathered over realtime", async () => {
+  it("starts and records one Falling Blocks round for players gathered over realtime", async () => {
     const context = await listeningApplication();
     context.runtime.restorePlayers(context.runtime.serializePlayers().map((player) => {
       if (player.userId === "user-maya") {
@@ -164,11 +164,11 @@ describe("realtime transport", () => {
     mayaSocket.send(JSON.stringify({
       type: "game.start",
       requestId: "start-together",
-      definitionId: TETRIS_DEFINITION_ID,
+      definitionId: FALLING_BLOCKS_DEFINITION_ID, objectId: "object-falling-blocks",
     }));
     const [mayaRoundEvent, leoRoundEvent] = await Promise.all([mayaRoundStarted, leoRoundStarted]);
     if (mayaRoundEvent.type !== "game.round_started" || leoRoundEvent.type !== "game.round_started") {
-      throw new Error("Tetris round did not start");
+      throw new Error("Falling Blocks round did not start");
     }
     expect(leoRoundEvent.round.id).toBe(mayaRoundEvent.round.id);
     expect(mayaRoundEvent.round.participants.map((participant) => participant.userId)).toEqual([
@@ -183,7 +183,7 @@ describe("realtime transport", () => {
     mayaSocket.send(JSON.stringify({ type: "game.end", requestId: "finish-maya" }));
     const [mayaCompletion, leoCompletion] = await Promise.all([completedForMaya, completedForLeo]);
     if (mayaCompletion.type !== "game.round_completed" || leoCompletion.type !== "game.round_completed") {
-      throw new Error("Tetris round did not complete");
+      throw new Error("Falling Blocks round did not complete");
     }
 
     expect(leoCompletion.round.id).toBe(mayaRoundEvent.round.id);

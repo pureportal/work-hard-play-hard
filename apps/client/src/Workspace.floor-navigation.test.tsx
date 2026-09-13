@@ -157,14 +157,24 @@ describe("Workspace floor navigation", () => {
   });
 
   it("positions selected-object actions beside the clicked object", () => {
+    const bounds = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains("top-bar")) return new DOMRect(80, 16, 720, 54);
+      if (this.classList.contains("control-dock")) return new DOMRect(280, 510, 300, 60);
+      return new DOMRect(80, 0, 720, 600);
+    });
+    const width = vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(240);
+    const height = vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(60);
     renderWorkspace();
 
     fireEvent.click(screen.getByRole("button", { name: "Choose object" }));
 
     const menu = screen.getByLabelText("Selected place").closest(".world-actions") as HTMLElement;
     expect(menu.classList.contains("contextual")).toBe(true);
-    expect(menu.style.left).toBe("180px");
-    expect(menu.style.top).toBe("220px");
+    expect(menu.style.left).toBe("60px");
+    expect(menu.style.top).toBe("148px");
+    bounds.mockRestore();
+    width.mockRestore();
+    height.mockRestore();
   });
 
   it("closes selected-object actions after sitting", () => {
@@ -205,7 +215,7 @@ describe("Workspace floor navigation", () => {
       rotation: 0,
       variantId: "graphite",
     }];
-    data.miniGames = [{ id: "game-arcade", name: "Arcade", accent: "#ff7a66", objectId: "arcade" }];
+    data.miniGames = [{ id: "game-arcade", name: "Arcade", accent: "#ff7a66", assetId: data.layouts[0]!.objects[0]!.assetId }];
     renderWorkspace(data);
 
     fireEvent.click(screen.getByRole("button", { name: "Choose object" }));

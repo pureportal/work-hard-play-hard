@@ -144,18 +144,18 @@ describe("WorldRuntime snapshot fanout", () => {
 
   it("skips lobby reconciliation while every player is idle", () => {
     const store = new DemoStore();
-    const getMiniGames = vi.spyOn(store, "getMiniGames");
+    const getGameObjects = vi.spyOn(store, "getGameObjects");
     const runtime = new WorldRuntime(store);
     const peerId = runtime.connect("user-maya", "floor-studio", () => undefined);
-    getMiniGames.mockClear();
+    getGameObjects.mockClear();
 
     runtime.runTickForTest();
     runtime.runTickForTest();
-    expect(getMiniGames).not.toHaveBeenCalled();
+    expect(getGameObjects).not.toHaveBeenCalled();
 
     runtime.handleCommand(peerId, { type: "movement.input", sequence: 1, dx: 1, dy: 0 });
     runtime.runTickForTest();
-    expect(getMiniGames).toHaveBeenCalled();
+    expect(getGameObjects).toHaveBeenCalled();
   });
 
   it("only visits active movement states on each tick", () => {

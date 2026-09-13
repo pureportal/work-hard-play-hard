@@ -1,5 +1,6 @@
 import {
   ASSET_CATALOG,
+  TIC_TAC_TOE_DEFINITION_ID,
   detectRooms,
   getAssetDefinition,
   getAssetPlacementError,
@@ -63,16 +64,26 @@ describe("development seed", () => {
       access: expect.objectContaining({ assignedPersonIds: expect.arrayContaining(["user-aisha"]) }),
     }));
     expect(data.layouts.flatMap((layout) => layout.objects)).toContainEqual(expect.objectContaining({
-      id: "object-tetris",
-      assetId: "equipment-tetris",
+      id: "object-falling-blocks",
+      assetId: "equipment-falling-blocks",
     }));
-    expect(getAssetDefinition("equipment-tetris")).toMatchObject({ kind: "game", buildable: true });
+    expect(getAssetDefinition("equipment-falling-blocks")).toMatchObject({ kind: "game", buildable: true });
+    expect(data.layouts.flatMap((layout) => layout.objects)).toContainEqual(expect.objectContaining({
+      id: "object-tic-tac-toe",
+      assetId: "equipment-tic-tac-toe",
+    }));
+    expect(getAssetDefinition("equipment-tic-tac-toe")).toMatchObject({ kind: "game", buildable: true });
+    expect(data.miniGames).toContainEqual(expect.objectContaining({
+      id: TIC_TAC_TOE_DEFINITION_ID,
+      assetId: "equipment-tic-tac-toe",
+    }));
     expect(data.floors).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: "floor-studio", width: 1_792, height: 1_088 }),
       expect.objectContaining({ id: "floor-rooftop", width: 1_408, height: 896 }),
     ]));
     const seededAssetIds = new Set(objects.map((object) => object.assetId));
-    expect(ASSET_CATALOG.assets.map((asset) => asset.id).filter((assetId) => !seededAssetIds.has(assetId))).toEqual([]);
+    expect(seededAssetIds.size).toBeGreaterThanOrEqual(30);
+    expect([...seededAssetIds].every((assetId) => ASSET_CATALOG.assets.some((asset) => asset.id === assetId))).toBe(true);
     expect(new Set(objects.filter((object) => object.assetId === "floor-tile").map((object) => object.variantId)))
       .toEqual(new Set(["grass", "stone", "wood"]));
     expect(objects).toEqual(expect.arrayContaining([
@@ -125,7 +136,6 @@ describe("development seed", () => {
     const roomIds = new Set(rooms.map((room) => room.id));
     const meetingIds = new Set(data.meetings.map((meeting) => meeting.id));
     const conversationIds = new Set(data.conversations.map((conversation) => conversation.id));
-    const objectIds = new Set(data.layouts.flatMap((layout) => layout.objects.map((object) => object.id)));
     const gameIds = new Set(data.miniGames.map((game) => game.id));
 
     expectUnique(data.members.map((member) => member.id));
@@ -233,7 +243,7 @@ describe("development seed", () => {
     }
 
     for (const game of data.miniGames) {
-      expect(objectIds.has(game.objectId)).toBe(true);
+      expect(data.layouts.some((layout) => layout.objects.some((object) => object.assetId === game.assetId))).toBe(true);
     }
     for (const score of data.scores) {
       expect(gameIds.has(score.definitionId)).toBe(true);

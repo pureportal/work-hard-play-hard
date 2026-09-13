@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_CORPORATE_IDENTITY } from "@workhard/shared";
 import type { BootstrapData, ClientCommand, ServerEvent, WorldSnapshot } from "@workhard/shared";
 import { Workspace } from "./App";
+import type { WorldCanvasProps } from "./components/WorldCanvas";
 import { createTestEconomy, createTestGameSettings, createTestKidnappingConfiguration } from "./test-fixtures";
 
 const realtime = vi.hoisted(() => ({
@@ -20,9 +21,10 @@ vi.mock("./hooks/useRealtime", () => ({
 }));
 
 vi.mock("./components/WorldCanvasLoader", () => ({
-  WorldCanvas: ({ inputEnabled, onPlayerSelect }: { inputEnabled: boolean; onPlayerSelect: (userId: string) => void }) => (
-    <div data-testid="world-input" data-enabled={inputEnabled}>
-      <button onClick={() => onPlayerSelect("user-leo")}>Select Leo</button>
+  WorldCanvas: ({ inputEnabled, onPlayerSelect, onObjectSelect, layout, activeInteraction }: WorldCanvasProps) => (
+    <div data-testid="world-input" data-enabled={inputEnabled} data-active-area={JSON.stringify(activeInteraction)}>
+      <button onClick={() => onPlayerSelect("user-leo", { x: 0, y: 0 })}>Select Leo</button>
+      {layout.objects.map((object) => <button key={object.id} onClick={() => onObjectSelect(object, undefined, { x: 0, y: 0 })}>Select {object.id}</button>)}
     </div>
   ),
 }));
@@ -150,6 +152,77 @@ afterEach(() => {
 });
 
 describe("meeting area entry", () => {
+  it("opens and plays each overlapping Falling Blocks cabinet by its saved object ID", () => {
+    const data = structuredClone(workspace);
+    data.layouts[0]!.objects = [
+      { id: "object-tetris", floorId: "floor", assetId: "equipment-falling-blocks", x: 180, y: 180, rotation: 0, variantId: "graphite" },
+      { id: "placed-blocks", floorId: "floor", assetId: "equipment-falling-blocks", x: 280, y: 180, rotation: 0, variantId: "graphite" },
+    ];
+    data.miniGames = [{ id: "game-falling-blocks", assetId: "equipment-falling-blocks", name: "Falling Blocks", accent: "#6757e8" }];
+    render(<Workspace initialData={data} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Select object-tetris" }));
+    expect(screen.getByRole("button", { name: "Join lobby" })).toBeTruthy();
+
+    act(() => {
+      for (const object of data.layouts[0]!.objects) realtime.handler!({ type: "game.lobby_updated", lobby: {
+        definitionId: "game-falling-blocks", objectId: object.id, floorId: "floor", capacity: 8, participantIds: ["user-maya"],
+      } });
+    });
+    const picker = screen.getByRole("combobox", { name: "Active interaction" });
+    expect(within(picker).getAllByRole("option", { name: "Falling Blocks" })).toHaveLength(2);
+    for (const object of data.layouts[0]!.objects) {
+      fireEvent.click(screen.getByRole("button", { name: `Select ${object.id}` }));
+      expect((picker as HTMLSelectElement).value).toBe(object.id);
+      expect(JSON.parse(screen.getByTestId("world-input").dataset.activeArea!)).toMatchObject({ x: object.x + 48 });
+      fireEvent.click(within(screen.getByRole("complementary", { name: "Falling Blocks lobby" })).getByRole("button", { name: "Play" }));
+      expect(realtime.send).toHaveBeenLastCalledWith(expect.objectContaining({
+        type: "game.start", definitionId: "game-falling-blocks", objectId: object.id, solo: true,
+      }));
+    }
+
+    act(() => realtime.handler!({ type: "game.round_started", round: {
+      id: "round", definitionId: "game-falling-blocks", objectId: "placed-blocks", floorId: "floor", startedAt: new Date().toISOString(), status: "playing",
+      participants: [{ userId: "user-maya", status: "playing", score: 0, lines: 0, level: 1 }],
+    } }));
+    expect(screen.getByRole("dialog", { name: "Falling Blocks" })).toBeTruthy();
+    expect(screen.getByTestId("world-input").dataset.enabled).toBe("false");
+  });
+
+  it("switches between overlapping games, a meeting, and nearby chat and highlights the chosen area", () => {
+    const data = structuredClone(workspace);
+    data.layouts[0]!.objects = [
+      { id: "blocks", floorId: "floor", assetId: "equipment-falling-blocks", x: 180, y: 180, rotation: 0, variantId: "graphite" },
+      { id: "toe", floorId: "floor", assetId: "equipment-tic-tac-toe", x: 300, y: 180, rotation: 0, variantId: "graphite" },
+    ];
+    data.miniGames = [
+      { id: "game-falling-blocks", assetId: "equipment-falling-blocks", name: "Falling Blocks", accent: "#6757e8" },
+      { id: "game-tic-tac-toe", assetId: "equipment-tic-tac-toe", name: "Tic-Tac-Toe", accent: "#6757e8" },
+    ];
+    realtime.snapshot!.players[1]!.x = 290;
+    realtime.snapshot!.players[1]!.roomId = "room-review";
+    render(<Workspace initialData={data} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
+    act(() => {
+      for (const game of data.miniGames) realtime.handler!({ type: "game.lobby_updated", lobby: {
+        definitionId: game.id, objectId: data.layouts[0]!.objects.find((object) => object.assetId === game.assetId)!.id, floorId: "floor", capacity: 2, participantIds: ["user-maya"],
+      } });
+    });
+    const picker = screen.getByRole("combobox", { name: "Active interaction" });
+    expect(within(picker).getAllByRole("option")).toHaveLength(4);
+    fireEvent.change(picker, { target: { value: "blocks" } });
+    expect(screen.getByRole("complementary", { name: "Falling Blocks lobby" })).toBeTruthy();
+    expect(screen.getByTestId("world-input").dataset.activeArea).toContain('"radius":124');
+    expect(screen.queryByRole("dialog", { name: "Falling Blocks" })).toBeNull();
+    fireEvent.change(picker, { target: { value: "toe" } });
+    expect(screen.getByRole("complementary", { name: "Tic-Tac-Toe lobby" })).toBeTruthy();
+    expect(screen.getByTestId("world-input").dataset.activeArea).toContain('"x":348');
+    fireEvent.change(picker, { target: { value: meeting.id } });
+    expect(screen.getByRole("button", { name: "Open Small" })).toBeTruthy();
+    expect(screen.getByTestId("world-input").dataset.activeArea).toContain('"type":"rect"');
+    fireEvent.change(picker, { target: { value: "user-leo" } });
+    expect(within(screen.getByRole("region", { name: "Nearby actions" })).getByRole("button", { name: "Chat" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Next interaction" }));
+    expect((picker as HTMLSelectElement).value).not.toBe("user-leo");
+  });
   it("shows both actions without opening a chat or meeting window", () => {
     renderWorkspace();
 

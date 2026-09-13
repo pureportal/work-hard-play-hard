@@ -2,6 +2,7 @@ import { authAccountSchema, authSessionSchema, magicLinkSchema } from "./auth-en
 import { brandingLogoSchema } from "./branding-logo-entity.js";
 import {
   chatMessageSchema,
+  chessMatchSchema,
   coinTransactionSchema,
   conversationParticipantSchema,
   conversationSchema,
@@ -33,6 +34,7 @@ export const databaseEntities = [
   meetingParticipantSchema,
   gameScoreSchema,
   playerGameStatisticsSchema,
+  chessMatchSchema,
   economyAccountSchema,
   ownedAssetSchema,
   coinTransactionSchema,

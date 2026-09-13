@@ -1,10 +1,18 @@
 import { z } from "zod";
+import { workObjectEditSchema } from "./work/work-object-state.js";
 import {
   ASSIGNABLE_MEMBER_PERMISSIONS,
+  BOT_DIFFICULTIES,
+  CHESS_ACCESS_MODES,
+  CHESS_PROMOTION_PIECES,
+  CHESS_TIME_CONTROLS,
   KIDNAPPING_POLICY_MODES,
   REACTION_KINDS,
-  TETRIS_COMMANDS,
-  TETRIS_DEFINITION_ID,
+  FALLING_BLOCKS_COMMANDS,
+  FALLING_BLOCKS_DEFINITION_ID,
+  TIC_TAC_TOE_DEFINITION_ID,
+  TIC_TAC_TOE_PIECE_SIZES,
+  TIC_TAC_TOE_VARIANTS,
   isValidEmailDomain,
   normalizeEmailDomain,
 } from "@workhard/shared";
@@ -20,6 +28,50 @@ const assetRotation = z.union([z.literal(0), z.literal(90), z.literal(180), z.li
 const assetVariantId = z.string().min(1).max(40).regex(/^[a-z0-9-]+$/);
 const gameSettings = z.object({
   allowPlayerAssetPlacementInPublicRooms: z.boolean(),
+}).strict();
+const ticTacToeCell = z.number().int().min(0).max(8);
+const ticTacToeCommand = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("classic.place"), cell: ticTacToeCell }).strict(),
+  z.object({ kind: z.literal("ultimate.place"), board: ticTacToeCell, cell: ticTacToeCell }).strict(),
+  z.object({ kind: z.literal("stacking.place"), cell: ticTacToeCell, size: z.enum(TIC_TAC_TOE_PIECE_SIZES) }).strict(),
+  z.object({ kind: z.literal("stacking.move"), fromCell: ticTacToeCell, toCell: ticTacToeCell }).strict(),
+]);
+const gameBot = z.object({ difficulty: z.enum(BOT_DIFFICULTIES) }).strict();
+const gameStart = z.object({
+  type: z.literal("game.start"),
+  requestId,
+  definitionId: z.enum([FALLING_BLOCKS_DEFINITION_ID, TIC_TAC_TOE_DEFINITION_ID]),
+  objectId: z.string().min(1).max(128).optional(),
+  variantId: z.enum(TIC_TAC_TOE_VARIANTS.map((variant) => variant.id)).optional(),
+  bot: gameBot.optional(),
+  solo: z.boolean().optional(),
+}).strict().superRefine(({ definitionId, objectId, variantId, bot, solo }, context) => {
+  if ((definitionId === FALLING_BLOCKS_DEFINITION_ID) !== (objectId !== undefined)) {
+    context.addIssue({ code: "custom", message: "Cabinet does not match the game." });
+  }
+  if ((definitionId === TIC_TAC_TOE_DEFINITION_ID) !== (variantId !== undefined)) {
+    context.addIssue({ code: "custom", message: "Variant does not match the game." });
+  }
+  if ((bot && definitionId !== TIC_TAC_TOE_DEFINITION_ID) || (solo !== undefined && definitionId !== FALLING_BLOCKS_DEFINITION_ID)) {
+    context.addIssue({ code: "custom", message: "Opponent does not match the game." });
+  }
+});
+const chessMatchId = z.string().uuid();
+const chessMatchSettings = z.object({
+  timeControl: z.enum(CHESS_TIME_CONTROLS),
+  pauseWeekends: z.boolean(),
+  access: z.enum(CHESS_ACCESS_MODES),
+  opponentUserId: z.string().min(1).max(100).optional(),
+  bot: gameBot.optional(),
+}).strict().refine(
+  ({ access, opponentUserId, bot }) => bot
+    ? access === "locked" && opponentUserId === undefined
+    : access === "locked" ? Boolean(opponentUserId) : opponentUserId === undefined,
+).refine(({ timeControl, pauseWeekends }) => !pauseWeekends || timeControl === "daily");
+const chessMove = z.object({
+  from: z.string().regex(/^[a-h][1-8]$/),
+  to: z.string().regex(/^[a-h][1-8]$/),
+  promotion: z.enum(CHESS_PROMOTION_PIECES).optional(),
 }).strict();
 const kidnappingUserIds = z.array(z.string().min(1).max(100))
   .max(100)
@@ -126,6 +178,8 @@ export const clientCommandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("economy.purchase_asset"), requestId, assetId: z.string().min(1).max(100) }).strict(),
   z.object({ type: z.literal("game.settings_update"), requestId, settings: gameSettings }).strict(),
   z.object({ type: z.literal("asset.interact"), requestId, objectId: z.string().min(1).max(100), interactionId: z.string().min(1).max(100) }).strict(),
+  z.object({ type: z.literal("work.update"), requestId, objectId: z.string().min(1).max(100), baseRevision: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER - 1), edit: workObjectEditSchema }).strict(),
+  z.object({ type: z.literal("work.approach"), requestId, objectId: z.string().min(1).max(100) }).strict(),
   z.object({ type: z.literal("seat.leave"), requestId }).strict(),
   z.object({
     type: z.literal("room.update_settings"),
@@ -148,9 +202,23 @@ export const clientCommandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("call.end"), requestId, callId: z.string().min(1).max(100) }),
   z.object({ type: z.literal("meeting.join"), requestId, meetingId: z.string().min(1).max(100) }),
   z.object({ type: z.literal("meeting.leave"), requestId, meetingId: z.string().min(1).max(100) }),
-  z.object({ type: z.literal("game.start"), requestId, definitionId: z.literal(TETRIS_DEFINITION_ID) }),
+  gameStart,
   z.object({ type: z.literal("game.end"), requestId }),
-  z.object({ type: z.literal("game.command"), requestId, command: z.enum(TETRIS_COMMANDS) }),
+  z.object({
+    type: z.literal("game.command"),
+    requestId,
+    command: z.union([z.enum(FALLING_BLOCKS_COMMANDS), ticTacToeCommand]),
+  }).strict(),
+  z.object({ type: z.literal("chess.match_create"), requestId, settings: chessMatchSettings }).strict(),
+  z.object({ type: z.literal("chess.match_join"), requestId, matchId: chessMatchId }).strict(),
+  z.object({ type: z.literal("chess.match_open"), requestId, matchId: chessMatchId }).strict(),
+  z.object({ type: z.literal("chess.match_close"), requestId, matchId: chessMatchId }).strict(),
+  z.object({ type: z.literal("chess.match_cancel"), requestId, matchId: chessMatchId }).strict(),
+  z.object({ type: z.literal("chess.move"), requestId, matchId: chessMatchId, move: chessMove }).strict(),
+  z.object({ type: z.literal("chess.resign"), requestId, matchId: chessMatchId }).strict(),
+  z.object({ type: z.literal("chess.draw_offer"), requestId, matchId: chessMatchId }).strict(),
+  z.object({ type: z.literal("chess.draw_claim"), requestId, matchId: chessMatchId, move: chessMove.optional() }).strict(),
+  z.object({ type: z.literal("chess.draw_respond"), requestId, matchId: chessMatchId, accept: z.boolean() }).strict(),
 ]);
 
 const memberPermissionsSchema = z.array(z.enum(ASSIGNABLE_MEMBER_PERMISSIONS))

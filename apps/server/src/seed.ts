@@ -16,7 +16,9 @@ import {
   DEFAULT_GLOBAL_KIDNAPPING_SETTINGS,
   DEFAULT_CORPORATE_IDENTITY,
   DEFAULT_PLAYER_KIDNAPPING_SETTINGS,
-  TETRIS_DEFINITION_ID,
+  CHESS_DEFINITION_ID,
+  FALLING_BLOCKS_DEFINITION_ID,
+  TIC_TAC_TOE_DEFINITION_ID,
   WELCOME_COIN_REWARD,
   getDailyRewardStatus,
   randomCharacterAppearance,
@@ -224,7 +226,7 @@ function createMessages(now: Date): ChatMessage[] {
     { id: "message-team-1", conversationId: "conversation-team", userId: "user-amara", body: "API contract is ready for review.", createdAt: shiftedIso(now, -150), sequence: 1 },
     { id: "message-team-2", conversationId: "conversation-team", userId: "user-leo", body: "Nice. I left the latest flow on the board.", createdAt: shiftedIso(now, -145), sequence: 2 },
     { id: "message-team-3", conversationId: "conversation-team", userId: "user-elena", body: "The preview environment is stable again.", createdAt: shiftedIso(now, -138), sequence: 3 },
-    { id: "message-team-4", conversationId: "conversation-team", userId: "user-jonas", body: "Tetris score to beat: 4,820.", createdAt: shiftedIso(now, -126), sequence: 4 },
+    { id: "message-team-4", conversationId: "conversation-team", userId: "user-jonas", body: "Falling Blocks score to beat: 4,820.", createdAt: shiftedIso(now, -126), sequence: 4 },
     { id: "message-team-5", conversationId: "conversation-team", userId: "user-maya", body: "Open huddle is live in the Product Studio.", createdAt: shiftedIso(now, -115), sequence: 5 },
     { id: "message-team-6", conversationId: "conversation-team", userId: "user-theo", body: "I will run the entry checks from there.", createdAt: shiftedIso(now, -112), sequence: 6 },
     { id: "message-product-1", conversationId: "conversation-product", userId: "user-maya", body: "Product crit starts in ten.", createdAt: shiftedIso(now, -92), sequence: 1 },
@@ -279,17 +281,19 @@ function createMeetings(now: Date): Meeting[] {
 }
 
 const miniGames: MiniGameDefinition[] = [
-  { id: TETRIS_DEFINITION_ID, name: "Tetris", accent: "#ff7a66", objectId: "object-tetris" },
+  { id: FALLING_BLOCKS_DEFINITION_ID, name: "Falling Blocks", accent: "#ff7a66", assetId: "equipment-falling-blocks" },
+  { id: TIC_TAC_TOE_DEFINITION_ID, name: "Tic-Tac-Toe", accent: "#5b8def", assetId: "equipment-tic-tac-toe" },
+  { id: CHESS_DEFINITION_ID, name: "Chess", accent: "#79664f", assetId: "equipment-chess" },
 ];
 
 function createScores(now: Date): GameScore[] {
   return [
-    { id: "score-jonas", roundId: "round-seed-jonas", definitionId: TETRIS_DEFINITION_ID, userId: "user-jonas", score: 4820, lines: 21, level: 3, mode: "solo", playerCount: 1, placement: 1, won: false, playedAt: shiftedIso(now, -24 * 60) },
-    { id: "score-priya", roundId: "round-seed-priya-leo", definitionId: TETRIS_DEFINITION_ID, userId: "user-priya", score: 3640, lines: 17, level: 3, mode: "multiplayer", playerCount: 2, placement: 1, won: true, playedAt: shiftedIso(now, -2 * 24 * 60) },
-    { id: "score-leo", roundId: "round-seed-priya-leo", definitionId: TETRIS_DEFINITION_ID, userId: "user-leo", score: 2910, lines: 14, level: 2, mode: "multiplayer", playerCount: 2, placement: 2, won: false, playedAt: shiftedIso(now, -2 * 24 * 60) },
-    { id: "score-elena", roundId: "round-seed-elena-theo", definitionId: TETRIS_DEFINITION_ID, userId: "user-elena", score: 2540, lines: 13, level: 2, mode: "multiplayer", playerCount: 2, placement: 1, won: true, playedAt: shiftedIso(now, -3 * 24 * 60) },
-    { id: "score-theo", roundId: "round-seed-elena-theo", definitionId: TETRIS_DEFINITION_ID, userId: "user-theo", score: 2100, lines: 11, level: 2, mode: "multiplayer", playerCount: 2, placement: 2, won: false, playedAt: shiftedIso(now, -3 * 24 * 60) },
-    { id: "score-noah", roundId: "round-seed-noah", definitionId: TETRIS_DEFINITION_ID, userId: "user-noah", score: 1760, lines: 9, level: 2, mode: "solo", playerCount: 1, placement: 1, won: false, playedAt: shiftedIso(now, -5 * 24 * 60) },
+    { id: "score-jonas", roundId: "round-seed-jonas", definitionId: FALLING_BLOCKS_DEFINITION_ID, userId: "user-jonas", score: 4820, lines: 21, level: 3, mode: "solo", playerCount: 1, placement: 1, won: false, playedAt: shiftedIso(now, -24 * 60) },
+    { id: "score-priya", roundId: "round-seed-priya-leo", definitionId: FALLING_BLOCKS_DEFINITION_ID, userId: "user-priya", score: 3640, lines: 17, level: 3, mode: "multiplayer", playerCount: 2, placement: 1, won: true, playedAt: shiftedIso(now, -2 * 24 * 60) },
+    { id: "score-leo", roundId: "round-seed-priya-leo", definitionId: FALLING_BLOCKS_DEFINITION_ID, userId: "user-leo", score: 2910, lines: 14, level: 2, mode: "multiplayer", playerCount: 2, placement: 2, won: false, playedAt: shiftedIso(now, -2 * 24 * 60) },
+    { id: "score-elena", roundId: "round-seed-elena-theo", definitionId: FALLING_BLOCKS_DEFINITION_ID, userId: "user-elena", score: 2540, lines: 13, level: 2, mode: "multiplayer", playerCount: 2, placement: 1, won: true, playedAt: shiftedIso(now, -3 * 24 * 60) },
+    { id: "score-theo", roundId: "round-seed-elena-theo", definitionId: FALLING_BLOCKS_DEFINITION_ID, userId: "user-theo", score: 2100, lines: 11, level: 2, mode: "multiplayer", playerCount: 2, placement: 2, won: false, playedAt: shiftedIso(now, -3 * 24 * 60) },
+    { id: "score-noah", roundId: "round-seed-noah", definitionId: FALLING_BLOCKS_DEFINITION_ID, userId: "user-noah", score: 1760, lines: 9, level: 2, mode: "solo", playerCount: 1, placement: 1, won: false, playedAt: shiftedIso(now, -5 * 24 * 60) },
   ];
 }
 
@@ -297,7 +301,7 @@ function createGameStatistics(scores: GameScore[]): PlayerGameStatistics[] {
   return members.map((member) => {
     const playerScores = scores.filter((score) => score.userId === member.id);
     return {
-      definitionId: TETRIS_DEFINITION_ID,
+      definitionId: FALLING_BLOCKS_DEFINITION_ID,
       userId: member.id,
       gamesPlayed: playerScores.length,
       multiplayerGamesPlayed: playerScores.filter((score) => score.mode === "multiplayer").length,

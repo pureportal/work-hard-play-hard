@@ -73,13 +73,164 @@ describe("movement protocol", () => {
   });
 });
 
-describe("Tetris protocol", () => {
+describe("Falling Blocks protocol", () => {
+  it("accepts explicit solo play and rejects opponent options for the wrong game", () => {
+    const start = { type: "game.start", requestId: "solo", definitionId: "game-falling-blocks", objectId: "object-falling-blocks", solo: true };
+    expect(clientCommandSchema.safeParse(start).success).toBe(true);
+    expect(clientCommandSchema.safeParse({ ...start, objectId: undefined }).success).toBe(false);
+    expect(clientCommandSchema.safeParse({ ...start, objectId: "" }).success).toBe(false);
+    expect(clientCommandSchema.safeParse({ ...start, bot: { difficulty: "easy" } }).success).toBe(false);
+    expect(clientCommandSchema.safeParse({ ...start, definitionId: "game-tic-tac-toe", variantId: "classic" }).success).toBe(false);
+  });
+
   it("accepts the hold command", () => {
     expect(clientCommandSchema.safeParse({
       type: "game.command",
       requestId: "hold-piece",
       command: "hold",
     }).success).toBe(true);
+  });
+});
+
+describe("Tic-Tac-Toe protocol", () => {
+  it("validates bot difficulty without accepting client-controlled identities", () => {
+    const start = { type: "game.start", requestId: "bot", definitionId: "game-tic-tac-toe", variantId: "ultimate" };
+    for (const difficulty of ["easy", "medium", "hard"]) {
+      expect(clientCommandSchema.safeParse({ ...start, bot: { difficulty } }).success).toBe(true);
+    }
+    expect(clientCommandSchema.safeParse({ ...start, bot: { difficulty: "expert" } }).success).toBe(false);
+    expect(clientCommandSchema.safeParse({ ...start, bot: { difficulty: "easy", userId: "user-leo" } }).success).toBe(false);
+  });
+
+  it.each([
+    { kind: "classic.place", cell: 0.5 },
+    { kind: "ultimate.place", board: -1, cell: 0 },
+    { kind: "ultimate.place", board: 0, cell: 9 },
+    { kind: "stacking.place", cell: 0, size: "huge" },
+    { kind: "stacking.move", fromCell: 0, toCell: -1 },
+    { kind: "stacking.move", fromCell: 0 },
+    { kind: "classic.place", cell: 0, mark: "o" },
+    { kind: "unknown", cell: 0 },
+  ])("rejects malformed or client-controlled moves: %j", (command) => {
+    expect(clientCommandSchema.safeParse({ type: "game.command", requestId: "invalid", command }).success).toBe(false);
+  });
+
+  it("rejects unknown variants and variants on another game", () => {
+    expect(clientCommandSchema.safeParse({ type: "game.start", requestId: "invalid", definitionId: "game-tic-tac-toe", variantId: "unknown" }).success).toBe(false);
+    expect(clientCommandSchema.safeParse({ type: "game.start", requestId: "invalid", definitionId: "game-falling-blocks", objectId: "object-falling-blocks", variantId: "classic" }).success).toBe(false);
+  });
+
+  it("accepts a variant start and each move shape", () => {
+    expect(clientCommandSchema.safeParse({
+      type: "game.start",
+      requestId: "start-stacking",
+      definitionId: "game-tic-tac-toe",
+      variantId: "stacking",
+    }).success).toBe(true);
+
+    for (const command of [
+      { kind: "classic.place", cell: 4 },
+      { kind: "ultimate.place", board: 2, cell: 7 },
+      { kind: "stacking.place", cell: 1, size: "large" },
+      { kind: "stacking.move", fromCell: 1, toCell: 8 },
+    ]) {
+      expect(clientCommandSchema.safeParse({
+        type: "game.command",
+        requestId: "move",
+        command,
+      }).success).toBe(true);
+    }
+  });
+
+  it("rejects missing variants and out-of-range cells", () => {
+    expect(clientCommandSchema.safeParse({
+      type: "game.start",
+      requestId: "start",
+      definitionId: "game-tic-tac-toe",
+    }).success).toBe(false);
+    expect(clientCommandSchema.safeParse({
+      type: "game.command",
+      requestId: "move",
+      command: { kind: "classic.place", cell: 9 },
+    }).success).toBe(false);
+  });
+});
+
+describe("chess protocol", () => {
+  const matchId = "11111111-1111-4111-8111-111111111111";
+
+  it("requires bot games to have a private seat without a human invitation", () => {
+    const command = { type: "chess.match_create", requestId: "bot" };
+    const settings = { timeControl: "standard", pauseWeekends: false, access: "locked", bot: { difficulty: "medium" } };
+    expect(clientCommandSchema.safeParse({ ...command, settings }).success).toBe(true);
+    expect(clientCommandSchema.safeParse({ ...command, settings: { ...settings, access: "open" } }).success).toBe(false);
+    expect(clientCommandSchema.safeParse({ ...command, settings: { ...settings, opponentUserId: "user-leo" } }).success).toBe(false);
+    expect(clientCommandSchema.safeParse({ ...command, settings: { ...settings, bot: { difficulty: "expert" } } }).success).toBe(false);
+  });
+
+  it("accepts open, locked, timed, and promotion commands", () => {
+    for (const settings of [
+      { timeControl: "standard", pauseWeekends: false, access: "open" },
+      { timeControl: "rapid", pauseWeekends: false, access: "open" },
+      {
+        timeControl: "daily",
+        pauseWeekends: true,
+        access: "locked",
+        opponentUserId: "user-leo",
+      },
+    ]) {
+      expect(clientCommandSchema.safeParse({
+        type: "chess.match_create",
+        requestId: "create-chess",
+        settings,
+      }).success).toBe(true);
+    }
+    expect(clientCommandSchema.safeParse({
+      type: "chess.move",
+      requestId: "promote",
+      matchId,
+      move: { from: "a7", to: "a8", promotion: "knight" },
+    }).success).toBe(true);
+    expect(clientCommandSchema.safeParse({
+      type: "chess.draw_respond",
+      requestId: "draw",
+      matchId,
+      accept: true,
+    }).success).toBe(true);
+  });
+
+  it("rejects invalid settings, squares, match IDs, and extra fields", () => {
+    for (const command of [
+      {
+        type: "chess.match_create",
+        requestId: "weekend-rapid",
+        settings: { timeControl: "rapid", pauseWeekends: true, access: "open" },
+      },
+      {
+        type: "chess.match_create",
+        requestId: "locked-without-player",
+        settings: { timeControl: "standard", pauseWeekends: false, access: "locked" },
+      },
+      {
+        type: "chess.move",
+        requestId: "bad-square",
+        matchId,
+        move: { from: "e9", to: "e4" },
+      },
+      {
+        type: "chess.match_open",
+        requestId: "bad-id",
+        matchId: "not-a-match-id",
+      },
+      {
+        type: "chess.match_create",
+        requestId: "extra",
+        settings: { timeControl: "standard", pauseWeekends: false, access: "open" },
+        spectatorMode: true,
+      },
+    ]) {
+      expect(clientCommandSchema.safeParse(command).success).toBe(false);
+    }
   });
 });
 

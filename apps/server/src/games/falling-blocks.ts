@@ -1,12 +1,12 @@
 import {
-  TETRIS_DEFINITION_ID,
+  FALLING_BLOCKS_DEFINITION_ID,
   TETROMINO_COLOR_IDS,
   TETROMINO_SHAPES,
   TETROMINO_TYPES,
-  type GameState,
+  type FallingBlocksGameState,
   type TetrominoType,
-  type TetrisCellPosition,
-  type TetrisCommand,
+  type FallingBlocksCellPosition,
+  type FallingBlocksCommand,
 } from "@workhard/shared";
 
 interface Piece {
@@ -73,7 +73,7 @@ export class FallingBlocksGame {
     return moved;
   }
 
-  command(command: TetrisCommand): boolean {
+  command(command: FallingBlocksCommand): boolean {
     if (!this.running) {
       return false;
     }
@@ -117,7 +117,7 @@ export class FallingBlocksGame {
     return didChange;
   }
 
-  get state(): GameState {
+  get state(): FallingBlocksGameState {
     const grid = this.board.map((row) => [...row]);
     const activeCells = this.piece ? this.cellPositions(this.piece) : [];
     if (this.piece) {
@@ -130,7 +130,7 @@ export class FallingBlocksGame {
     return {
       type: "game.state",
       roundId: this.roundId,
-      definitionId: TETRIS_DEFINITION_ID,
+      definitionId: FALLING_BLOCKS_DEFINITION_ID,
       grid,
       score: this.score,
       lines: this.lines,
@@ -302,8 +302,8 @@ export class FallingBlocksGame {
     return ghost;
   }
 
-  private cellPositions(piece: Piece): TetrisCellPosition[] {
-    const positions: TetrisCellPosition[] = [];
+  private cellPositions(piece: Piece): FallingBlocksCellPosition[] {
+    const positions: FallingBlocksCellPosition[] = [];
     piece.cells.forEach((row, rowIndex) => {
       row.forEach((value, columnIndex) => {
         if (value) {

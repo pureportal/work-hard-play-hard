@@ -1,32 +1,37 @@
 import { ArrowDown, ArrowLeft, ArrowRight, Check, Pause, Play, RotateCw, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import type { GameRoundState, GameState, Member, TetrisCommand } from "@workhard/shared";
+import type { FallingBlocksGameState, GameRoundState, Member, FallingBlocksCommand } from "@workhard/shared";
+import { GameResultActions } from "./GameResultActions";
+import { GameExitPrompt } from "./GameExitPrompt";
 import { useModalFocus } from "../hooks/useModalFocus";
-import { useTetrisKeyboard } from "../hooks/useTetrisKeyboard";
+import { useFallingBlocksKeyboard } from "../hooks/useFallingBlocksKeyboard";
 import { IconButton } from "./IconButton";
-import { TetrisMark } from "./TetrisMark";
+import { FallingBlocksMark } from "./FallingBlocksMark";
 import {
-  TetrisPiecePreview,
-  TETRIS_BLOCK_COLORS,
+  FallingBlocksPiecePreview,
+  FALLING_BLOCKS_BLOCK_COLORS,
   TETROMINO_COLORS,
-} from "./TetrisPiecePreview";
+} from "./FallingBlocksPiecePreview";
 
-interface TetrisGameProps {
-  state: GameState | undefined;
+interface FallingBlocksGameProps {
+  state: FallingBlocksGameState | undefined;
   round: GameRoundState;
   members: Member[];
   currentUserId: string;
-  onCommand: (command: TetrisCommand) => void;
+  onCommand: (command: FallingBlocksCommand) => void;
   onClose: () => void;
+  onPlayAgain?: (() => void) | undefined;
 }
 
 const EMPTY_GRID = Array.from({ length: 20 }, () => Array<number>(10).fill(0));
 
-export function TetrisGame({ state, round, members, currentUserId, onCommand, onClose }: TetrisGameProps) {
-  const dialogRef = useModalFocus<HTMLElement>(onClose);
+export function FallingBlocksGame({ state, round, members, currentUserId, onCommand, onClose, onPlayAgain }: FallingBlocksGameProps) {
+  const [confirmingExit, setConfirmingExit] = useState(false);
+  const closeGame = () => round.status === "playing" ? setConfirmingExit(true) : onClose();
+  const dialogRef = useModalFocus<HTMLElement>(closeGame);
   const currentPlayer = round.participants.find((participant) => participant.userId === currentUserId);
   const multiplayer = round.participants.length > 1;
-  const canControl = round.status === "playing" && currentPlayer?.status === "playing" && state?.running === true;
+  const canControl = !confirmingExit && round.status === "playing" && currentPlayer?.status === "playing" && state?.running === true;
   const activeCellKeys = useMemo(
     () => new Set(state?.activeCells.map(({ row, column }) => `${row}-${column}`) ?? []),
     [state?.activeCells],
@@ -39,7 +44,7 @@ export function TetrisGame({ state, round, members, currentUserId, onCommand, on
   const previousLinesRef = useRef(currentLines);
   const [lineClearSequence, setLineClearSequence] = useState(0);
 
-  useTetrisKeyboard({
+  useFallingBlocksKeyboard({
     enabled: canControl,
     allowPause: !multiplayer,
     allowHold: state?.canHold === true,
@@ -61,24 +66,25 @@ export function TetrisGame({ state, round, members, currentUserId, onCommand, on
 
   return (
     <div className="modal-backdrop game-backdrop">
-      <section ref={dialogRef} className="tetris-game" role="dialog" aria-modal="true" aria-labelledby="tetris-title" tabIndex={-1}>
-        <header>
-          <div><TetrisMark className="game-mini-mark" /><h2 id="tetris-title">Tetris</h2></div>
-          <IconButton label="Close game" icon={X} onClick={onClose} />
+      <section ref={dialogRef} className="arcade-game falling-blocks-game" role="dialog" aria-modal="true" aria-labelledby="falling-blocks-title" tabIndex={-1}>
+        <header className="game-header">
+          <div><FallingBlocksMark className="game-mini-mark" /><h2 id="falling-blocks-title">Falling Blocks</h2></div>
+          <IconButton label="Close game" icon={X} onClick={closeGame} />
         </header>
 
-        <div className="tetris-content">
-          <aside className="tetris-left-rail">
-            <section className={`tetris-preview-panel tetris-hold${state?.canHold === false ? " is-locked" : ""}`}>
+        {confirmingExit && round.status === "playing" && <GameExitPrompt multiplayer={multiplayer} onLeave={onClose} onCancel={() => setConfirmingExit(false)} />}
+        <div className="falling-blocks-content">
+          <aside className="falling-blocks-left-rail">
+            <section className={`falling-blocks-preview-panel falling-blocks-hold${state?.canHold === false ? " is-locked" : ""}`}>
               <h3>Hold <kbd>C</kbd></h3>
-              <TetrisPiecePreview
+              <FallingBlocksPiecePreview
                 key={state?.heldPiece ?? "empty"}
                 piece={state?.heldPiece ?? null}
                 label={state?.heldPiece ? `Held ${state.heldPiece} piece` : "Hold is empty"}
               />
             </section>
 
-            <div className="tetris-key-guide" aria-label="Keyboard controls">
+            <div className="falling-blocks-key-guide" aria-label="Keyboard controls">
               <div><kbd>← →</kbd><span>Move</span></div>
               <div><kbd>↑</kbd><span>Rotate</span></div>
               <div><kbd>↓</kbd><span>Soft drop</span></div>
@@ -86,32 +92,32 @@ export function TetrisGame({ state, round, members, currentUserId, onCommand, on
             </div>
           </aside>
 
-          <div className="tetris-playfield">
-            <div className={`tetris-board-frame${stackIsHigh ? " is-danger" : ""}`}>
-              <div className="tetris-board" role="img" aria-label="Tetris board">
+          <div className="falling-blocks-playfield">
+            <div className={`falling-blocks-board-frame${stackIsHigh ? " is-danger" : ""}`}>
+              <div className="falling-blocks-board" role="img" aria-label="Falling Blocks board">
                 {grid.flatMap((row, rowIndex) =>
                   row.map((cell, columnIndex) => {
                     const key = `${rowIndex}-${columnIndex}`;
                     const active = activeCellKeys.has(key);
                     const ghost = cell === 0 && ghostCellKeys.has(key);
                     const cellColor = cell > 0
-                      ? TETRIS_BLOCK_COLORS[cell] ?? "#ffffff"
+                      ? FALLING_BLOCKS_BLOCK_COLORS[cell] ?? "#ffffff"
                       : ghost && state?.activePiece
                         ? TETROMINO_COLORS[state.activePiece]
                         : undefined;
                     const className = [
-                      "tetris-cell",
+                      "falling-blocks-cell",
                       cell > 0 ? "is-filled" : "",
                       active ? "is-active" : "",
                       ghost ? "is-ghost" : "",
                     ].filter(Boolean).join(" ");
                     const style = cellColor
-                      ? { "--tetris-cell-color": cellColor } as CSSProperties
+                      ? { "--falling-blocks-cell-color": cellColor } as CSSProperties
                       : undefined;
                     return <span key={key} className={className} style={style} />;
                   }),
                 )}
-                {lineClearSequence > 0 && <span key={lineClearSequence} className="tetris-line-flash" />}
+                {lineClearSequence > 0 && <span key={lineClearSequence} className="falling-blocks-line-flash" />}
                 {boardStatus && (
                   <div className="board-state">
                     {state?.paused ? <Pause size={20} /> : currentPlayer?.status === "finished" ? <Check size={20} /> : null}
@@ -122,24 +128,24 @@ export function TetrisGame({ state, round, members, currentUserId, onCommand, on
             </div>
           </div>
 
-          <aside className="tetris-sidebar">
-            <section className="tetris-preview-panel tetris-next">
+          <aside className="falling-blocks-sidebar">
+            <section className="falling-blocks-preview-panel falling-blocks-next">
               <h3>Next</h3>
-              <div className="tetris-next-list">
+              <div className="falling-blocks-next-list">
                 {(state?.nextPieces ?? []).map((piece, index) => (
-                  <TetrisPiecePreview key={`${index}-${piece}`} piece={piece} label={`${piece} piece next`} />
+                  <FallingBlocksPiecePreview key={`${index}-${piece}`} piece={piece} label={`${piece} piece next`} />
                 ))}
               </div>
             </section>
 
-            <dl className="tetris-stats" aria-label="Game statistics">
+            <dl className="falling-blocks-stats" aria-label="Game statistics">
               <div className="score"><dt>Score</dt><dd key={state?.score ?? currentPlayer?.score ?? 0}>{(state?.score ?? currentPlayer?.score ?? 0).toLocaleString()}</dd></div>
               <div><dt>Lines</dt><dd key={state?.lines ?? currentPlayer?.lines ?? 0}>{state?.lines ?? currentPlayer?.lines ?? 0}</dd></div>
               <div><dt>Level</dt><dd key={state?.level ?? currentPlayer?.level ?? 1}>{state?.level ?? currentPlayer?.level ?? 1}</dd></div>
             </dl>
 
             {multiplayer && (
-              <section className="tetris-round-players">
+              <section className="falling-blocks-round-players">
                 <h3>Round</h3>
                 <ol>
                   {[...round.participants]
@@ -160,7 +166,7 @@ export function TetrisGame({ state, round, members, currentUserId, onCommand, on
           </aside>
 
           {canControl && (
-            <div className="tetris-controls" aria-label="Game controls">
+            <div className="falling-blocks-controls" aria-label="Game controls">
               <button aria-label="Move left" onClick={() => onCommand("left")}><ArrowLeft size={19} /></button>
               <button aria-label="Rotate" onClick={() => onCommand("rotate")}><RotateCw size={19} /></button>
               <button aria-label="Move right" onClick={() => onCommand("right")}><ArrowRight size={19} /></button>
@@ -176,6 +182,7 @@ export function TetrisGame({ state, round, members, currentUserId, onCommand, on
             </div>
           )}
         </div>
+        {round.status === "completed" && <GameResultActions onClose={onClose} onPlayAgain={onPlayAgain} />}
       </section>
     </div>
   );
@@ -184,7 +191,7 @@ export function TetrisGame({ state, round, members, currentUserId, onCommand, on
 function getBoardStatus(
   round: GameRoundState,
   player: GameRoundState["participants"][number] | undefined,
-  state: GameState | undefined,
+  state: FallingBlocksGameState | undefined,
   multiplayer: boolean,
 ): string | undefined {
   if (!state) {

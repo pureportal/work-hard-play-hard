@@ -4,6 +4,7 @@ import type {
   Availability,
   ChatAttachment,
   CharacterAppearance,
+  ChessMatchRecord,
   ConversationType,
   FloorLayout,
   GameSettings,
@@ -128,6 +129,14 @@ export class PlayerGameStatisticsEntity {
   highestLines!: number;
   totalScore!: number;
   totalLines!: number;
+  sortOrder!: number;
+}
+
+export class ChessMatchEntity {
+  id!: string;
+  state!: ChessMatchRecord;
+  createdAt!: Date;
+  updatedAt!: Date;
   sortOrder!: number;
 }
 
@@ -410,6 +419,19 @@ export const playerGameStatisticsSchema = new EntitySchema({
     { name: "player_game_statistics_total_lines_check", expression: "total_lines >= 0" },
     { name: "player_game_statistics_sort_order_check", expression: "sort_order >= 0" },
   ],
+});
+
+export const chessMatchSchema = new EntitySchema({
+  class: ChessMatchEntity,
+  tableName: "chess_matches",
+  properties: {
+    id: { type: String, primary: true },
+    state: { type: "json" },
+    createdAt: { type: Date, fieldName: "created_at", index: true },
+    updatedAt: { type: Date, fieldName: "updated_at", index: true },
+    sortOrder: { type: Number, fieldName: "sort_order" },
+  },
+  checks: [{ name: "chess_matches_sort_order_check", expression: "sort_order >= 0" }],
 });
 
 export const economyAccountSchema = new EntitySchema({

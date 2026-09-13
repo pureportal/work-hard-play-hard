@@ -19,6 +19,8 @@ import {
   DEFAULT_CORPORATE_IDENTITY,
   GONG_INTERACTION_RANGE,
   getAssetDefinition,
+  getGameArea,
+  PROXIMITY_INTERACTION_RADIUS,
   getDefaultAssetVariantId,
   getCenteredAssetPosition,
   getCorrespondingFloorPortals,
@@ -34,7 +36,9 @@ import {
   hasMemberPermission,
   kidnappingPolicyAllows,
   requireAssetVariant,
-  TETRIS_DEFINITION_ID,
+  CHESS_DEFINITION_ID,
+  FALLING_BLOCKS_DEFINITION_ID,
+  TIC_TAC_TOE_DEFINITION_ID,
 } from "@workhard/shared";
 import type {
   AssignableMemberPermission,
@@ -45,6 +49,10 @@ import type {
   BootstrapData,
   CharacterAppearance,
   ClientCommand,
+  ChessLobbyState,
+  ChessMatchSettings,
+  ChessMatchView,
+  ChessMoveInput,
   CorporateIdentity,
   CorporateIdentitySettings,
   Door,
@@ -84,10 +92,20 @@ import { PeoplePanel } from "./components/PeoplePanel";
 import { KidnappingSettingsPanel } from "./components/KidnappingSettingsPanel";
 import { ProximityCallNotice } from "./components/ProximityCallNotice";
 import { ProximityMedia } from "./components/ProximityMedia";
-import { TetrisGame } from "./components/TetrisGame";
-import { TetrisLobby } from "./components/TetrisLobby";
+import { InteractionPanel } from "./components/InteractionPanel";
+import { WorkObjectDialog } from "./components/WorkObjectDialog";
+import { useWorkObjectUpdates } from "./hooks/useWorkObjectUpdates";
+import { canUseWorkObject, getWorkObjectState } from "@workhard/shared";
+import { useInteractionAreas, type InteractionArea } from "./hooks/useInteractionAreas";
+import { FallingBlocksGame } from "./components/FallingBlocksGame";
+import { FallingBlocksLobby } from "./components/FallingBlocksLobby";
+import { ChessGame } from "./components/ChessGame";
+import { ChessLobby } from "./components/ChessLobby";
+import { TicTacToeGame } from "./components/TicTacToeGame";
+import { TicTacToeLobby } from "./components/TicTacToeLobby";
 import { TopBar } from "./components/TopBar";
 import type { ContextAnchor } from "./components/WorldCanvas";
+import { WorldActionMenu } from "./components/WorldActionMenu";
 import { preloadWorldCanvas, WorldCanvas } from "./components/WorldCanvasLoader";
 import { playGongChime, prepareGongChime } from "./gong-audio";
 import { GONG_EFFECT_DURATION_MS, type DisplayGongRing } from "./gong";
@@ -497,6 +515,8 @@ export function Workspace({
   const [editingAssetVariantId, setEditingAssetVariantId] = useState(DEFAULT_ASSET_VARIANT_ID);
   const [editingAssetRotation, setEditingAssetRotation] = useState<AssetRotation>(0);
   const [selection, setSelection] = useState<WorldSelection>();
+  const [workObject, setWorkObject] = useState<WorldObject>();
+  const { update: updateWorkObject, handleEvent: handleWorkEvent, disconnect: disconnectWorkUpdates } = useWorkObjectUpdates();
   const [buildSelection, setBuildSelection] = useState<LayoutItemReference>();
   const [movingBuildItem, setMovingBuildItem] = useState<LayoutItemReference>();
   const [placingOwnedAssetId, setPlacingOwnedAssetId] = useState<string>();
@@ -504,9 +524,14 @@ export function Workspace({
   const [meetingId, setMeetingId] = useState<string>();
   const [meetingView, setMeetingView] = useState<MeetingView>("full");
   const [gameOpen, setGameOpen] = useState(false);
-  const [gameLobby, setGameLobby] = useState<GameLobbyState>();
+  const [gameLobbies, setGameLobbies] = useState<Record<string, GameLobbyState>>({});
   const [gameRound, setGameRound] = useState<GameRoundState>();
   const [gameState, setGameState] = useState<GameState>();
+  const [chessLobby, setChessLobby] = useState<ChessLobbyState>();
+  const [chessMatch, setChessMatch] = useState<ChessMatchView>();
+  const [chessOpen, setChessOpen] = useState(false);
+  const chessOpenRef = useRef(false);
+  const pendingChessOpenRequestId = useRef<string | undefined>(undefined);
   const [muted, setMuted] = useState(true);
   const [cameraOn, setCameraOn] = useState(false);
   const [capturedProximityMedia, setCapturedProximityMedia] = useState({ microphone: false, camera: false });
@@ -707,6 +732,7 @@ export function Workspace({
   }, []);
 
   const handleRealtimeEvent = useCallback((event: ServerEvent) => {
+    if (handleWorkEvent(event)) return;
     if (event.type === "session.ready") {
       const floorChanged = event.floorId !== activeFloorIdRef.current;
       activeFloorIdRef.current = event.floorId;
@@ -716,7 +742,11 @@ export function Workspace({
         setBuildSelection(undefined);
         setMovingBuildItem(undefined);
         setPlacingOwnedAssetId(undefined);
-        setGameLobby(undefined);
+        setGameLobbies({});
+        setChessLobby(undefined);
+        setChessMatch(undefined);
+        setChessOpen(false);
+        chessOpenRef.current = false;
         setIncomingKnocks([]);
         setPendingRoomIds(new Set());
         setGrantedRoomIds(new Set());
@@ -973,7 +1003,7 @@ export function Workspace({
         }, 500);
       }
     } else if (event.type === "game.lobby_updated") {
-      setGameLobby(event.lobby);
+      setGameLobbies((current) => ({ ...current, [event.lobby.objectId]: event.lobby }));
     } else if (event.type === "game.round_started") {
       if (event.round.participants.some((participant) => participant.userId === data.currentUserId)) {
         setGameRound(event.round);
@@ -998,9 +1028,27 @@ export function Workspace({
       if (playerScore) {
         const coinReward = event.coinRewards.find((reward) => reward.userId === data.currentUserId)?.amount ?? 0;
         const reward = coinReward > 0 ? ` +${coinReward} coins.` : "";
-        showToast(playerScore.won
-          ? `You won with ${playerScore.score.toLocaleString()}.${reward}`
-          : `Score saved: ${playerScore.score.toLocaleString()}.${reward}`);
+        if (event.round.definitionId === TIC_TAC_TOE_DEFINITION_ID) {
+          showToast(playerScore.won
+            ? `You won.${reward}`
+            : event.round.winnerUserId
+              ? `You lost.${reward}`
+              : `Draw.${reward}`);
+        } else {
+          showToast(playerScore.won
+            ? `You won with ${playerScore.score.toLocaleString()}.${reward}`
+            : `Score saved: ${playerScore.score.toLocaleString()}.${reward}`);
+        }
+      }
+    } else if (event.type === "chess.lobby_updated") {
+      setChessLobby(event.lobby);
+    } else if (event.type === "chess.lobby_closed") {
+      setChessLobby(undefined);
+    } else if (event.type === "chess.match_state") {
+      if (chessOpenRef.current) {
+        pendingChessOpenRequestId.current = undefined;
+        setChessMatch(event.match);
+        setChessOpen(true);
       }
     } else if (event.type === "layout.conflict") {
       if (event.requestId === pendingLayoutMove.current) {
@@ -1013,6 +1061,12 @@ export function Workspace({
       }
       showToast("The layout changed. Try again.");
     } else if (event.type === "command.error") {
+      if (event.requestId && pendingChessOpenRequestId.current === event.requestId) {
+        pendingChessOpenRequestId.current = undefined;
+        chessOpenRef.current = false;
+        setChessOpen(false);
+        setChessMatch(undefined);
+      }
       if (event.requestId && pendingTravelFocus.current?.requestId === event.requestId) {
         pendingTravelFocus.current = undefined;
       }
@@ -1050,13 +1104,17 @@ export function Workspace({
       }
       showToast(event.message);
     }
-  }, [activeCall, activeConversationId, activePanel, announceOffscreenGong, currentMeeting, currentUser.availability, data.currentUserId, data.members, displayGongRing, displayHighFive, displayReaction, floorId, onCorporateIdentityChange, showToast]);
+  }, [activeCall, activeConversationId, activePanel, announceOffscreenGong, currentMeeting, currentUser.availability, data.currentUserId, data.members, displayGongRing, displayHighFive, displayReaction, floorId, handleWorkEvent, onCorporateIdentityChange, showToast]);
 
   const { connection, snapshot, send } = useRealtime({
     floorId,
     onEvent: handleRealtimeEvent,
     onUnauthorized: onSessionExpired,
   });
+
+  useEffect(() => {
+    if (connection !== "online") disconnectWorkUpdates();
+  }, [connection, disconnectWorkUpdates]);
 
   useEffect(() => {
     if (connection === "online") {
@@ -1076,9 +1134,14 @@ export function Workspace({
     setMuted(true);
     setCameraOn(false);
     setGameOpen(false);
-    setGameLobby(undefined);
+    setGameLobbies({});
     setGameRound(undefined);
     setGameState(undefined);
+    setChessLobby(undefined);
+    setChessMatch(undefined);
+    setChessOpen(false);
+    chessOpenRef.current = false;
+    pendingChessOpenRequestId.current = undefined;
     setReactions([]);
     setHighFives([]);
     setGongRings([]);
@@ -1245,7 +1308,7 @@ export function Workspace({
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.repeat || event.altKey || event.ctrlKey || event.metaKey || gameOpen || activePanel === "build") {
+      if (event.repeat || event.altKey || event.ctrlKey || event.metaKey || gameOpen || chessOpen || workObject || activePanel === "build") {
         return;
       }
       const target = event.target;
@@ -1261,7 +1324,7 @@ export function Workspace({
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activePanel, gameOpen, sendReaction]);
+  }, [activePanel, chessOpen, gameOpen, workObject, sendReaction]);
 
   useEffect(() => {
     if (!activePanel) {
@@ -1272,7 +1335,9 @@ export function Workspace({
         event.key !== "Escape"
         || event.defaultPrevented
         || avatarDialogOpen
+        || workObject
         || gameOpen
+        || chessOpen
         || Boolean(currentMeeting)
         || Boolean(meetingSwitch)
       ) {
@@ -1283,7 +1348,7 @@ export function Workspace({
     };
     document.addEventListener("keydown", closePanel);
     return () => document.removeEventListener("keydown", closePanel);
-  }, [activePanel, avatarDialogOpen, currentMeeting, gameOpen, meetingSwitch]);
+  }, [activePanel, avatarDialogOpen, chessOpen, currentMeeting, gameOpen, meetingSwitch, workObject]);
 
   const visiblePlayers = snapshot?.floorId === floorId ? snapshot.players : [];
   const currentPlayer = visiblePlayers.find((player) => player.userId === data.currentUserId);
@@ -1294,9 +1359,9 @@ export function Workspace({
   const carriedMember = carriedPlayer ? data.members.find((member) => member.id === carriedPlayer.userId) : undefined;
   const carrierMember = carrierPlayer ? data.members.find((member) => member.id === carrierPlayer.userId) : undefined;
   const currentRoom = layout.rooms.find((room) => room.id === currentPlayer?.roomId);
-  const enteredMeeting = currentPlayer && !currentMeeting
-    ? visibleMeetings.find((meeting) => meeting.status === "live" && isPlayerInMeetingArea(currentPlayer, meeting))
-    : undefined;
+  const enteredMeetings = currentPlayer && !currentMeeting && !openingMeeting && !meetingSwitch
+    ? visibleMeetings.filter((meeting) => meeting.status === "live" && isPlayerInMeetingArea(currentPlayer, meeting))
+    : [];
 
   const navigateToDestination = (destinationFloorId: string, x: number, y: number, focusUserId?: string): string | undefined => {
     const movementRequestId = requestId();
@@ -1575,6 +1640,41 @@ export function Workspace({
     setGameState(undefined);
   };
 
+  const createChessMatch = (settings: ChessMatchSettings) => {
+    const id = requestId();
+    if (settings.bot) {
+      chessOpenRef.current = true;
+      pendingChessOpenRequestId.current = id;
+    }
+    if (!request({ type: "chess.match_create", requestId: id, settings }) && settings.bot) {
+      chessOpenRef.current = false;
+      pendingChessOpenRequestId.current = undefined;
+    }
+  };
+
+  const openChessMatch = (matchId: string, join = false) => {
+    const chessRequestId = requestId();
+    pendingChessOpenRequestId.current = chessRequestId;
+    chessOpenRef.current = true;
+    const sent = request(join
+      ? { type: "chess.match_join", requestId: chessRequestId, matchId }
+      : { type: "chess.match_open", requestId: chessRequestId, matchId });
+    if (!sent) {
+      pendingChessOpenRequestId.current = undefined;
+      chessOpenRef.current = false;
+    }
+  };
+
+  const closeChess = () => {
+    chessOpenRef.current = false;
+    pendingChessOpenRequestId.current = undefined;
+    if (chessMatch) {
+      request({ type: "chess.match_close", requestId: requestId(), matchId: chessMatch.id });
+    }
+    setChessOpen(false);
+    setChessMatch(undefined);
+  };
+
   const gatherAtGame = (object: WorldObject) => {
     if (!currentPlayer) {
       showToast("Connection unavailable.");
@@ -1625,9 +1725,17 @@ export function Workspace({
   );
   const hasVisibleSelection = Boolean(selectedObject || selectedPlayerMember);
   const selectedGameDefinition = selectedObject
-    ? data.miniGames.find((definition) => definition.objectId === selectedObject.id)
+    ? data.miniGames.find((definition) => definition.assetId === selectedObject.assetId)
     : undefined;
   const selectedGong = selectedObjectDefinition?.kind === "gong" ? selectedObject : undefined;
+  const selectedWorkObject = selectedObjectDefinition?.workKind ? selectedObject : undefined;
+  const currentWorkObject = workObject && data.layouts.flatMap((floorLayout) => floorLayout.objects).find((object) => object.id === workObject.id);
+  const workState = workObject && getWorkObjectState(currentWorkObject ?? workObject);
+  const openWorkObject = (object: WorldObject) => {
+    request({ type: "movement.stop", requestId: requestId() });
+    setSelection(undefined);
+    setWorkObject(object);
+  };
   const selectedGongInRange = Boolean(
     selectedGong
     && currentPlayer?.floorId === selectedGong.floorId
@@ -1645,7 +1753,7 @@ export function Workspace({
   const hasRoomAccess = (room: Room) => room.access.mode === "open"
     || room.access.assignedPersonIds.includes(data.currentUserId)
     || grantedRoomIds.has(room.id);
-  const nearbyDoor = currentPlayer
+  const nearbyDoors = currentPlayer
     ? layout.rooms
       .filter((room) => room.access.mode === "assigned" && currentRoom?.id !== room.id)
       .flatMap((room) => layout.openings
@@ -1656,18 +1764,17 @@ export function Workspace({
       }))
       .filter((candidate) => hasRoomAccess(candidate.room) || candidate.room.access.knockable)
       .filter((candidate) => candidate.distance <= 84)
-      .sort((left, right) => left.distance - right.distance)[0]
-    : undefined;
-  const visibleNearbyDoor = nearbyDoor?.door.id === dismissedDoorEntryId ? undefined : nearbyDoor;
+      .sort((left, right) => left.distance - right.distance)
+    : [];
+  const nearbyDoorIds = nearbyDoors.map(({ door }) => door.id).join("|");
 
   useEffect(() => {
-    if (dismissedDoorEntryId && nearbyDoor?.door.id !== dismissedDoorEntryId) {
+    if (dismissedDoorEntryId && !nearbyDoors.some(({ door }) => door.id === dismissedDoorEntryId)) {
       pendingDoorEntryRequestId.current = undefined;
       setDismissedDoorEntryId(undefined);
     }
-  }, [dismissedDoorEntryId, nearbyDoor?.door.id]);
+  }, [dismissedDoorEntryId, nearbyDoorIds]);
 
-  const visibleMeetingEntry = openingMeeting || meetingSwitch ? undefined : enteredMeeting;
   const meetingConversation = currentMeeting
     ? data.conversations.find((conversation) => conversation.meetingId === currentMeeting.id && conversation.type === "meeting")
     : undefined;
@@ -1695,11 +1802,58 @@ export function Workspace({
     () => gongRings.filter((ring) => ring.floorId === floorId),
     [floorId, gongRings],
   );
-  const visibleGameLobby = gameLobby?.floorId === floorId
-    && gameLobby.participantIds.includes(data.currentUserId)
-    && !gameRound
-    ? gameLobby
-    : undefined;
+  const availableGameLobbies = Object.values(gameLobbies).filter((lobby) =>
+    lobby.floorId === floorId && lobby.participantIds.includes(data.currentUserId) && !gameRound,
+  );
+  const availableChessLobby = chessLobby?.floorId === floorId && !gameRound ? chessLobby : undefined;
+  const interactionAreas: InteractionArea[] = [];
+  if (currentPlayer) {
+    for (const object of layout.objects) {
+      const definition = getAssetDefinition(object.assetId);
+      if (!definition?.workKind || !canUseWorkObject(object, layout, currentPlayer)) continue;
+      const bounds = getPlacedAssetBounds(object);
+      interactionAreas.push({ id: object.id, label: object.label ?? definition.name,
+        distance: distanceToBounds(currentPlayer.x, currentPlayer.y, bounds), highlight: { type: "rect", bounds } });
+    }
+    for (const lobby of [...availableGameLobbies, ...(availableChessLobby ? [availableChessLobby] : [])]) {
+      const object = layout.objects.find((candidate) => candidate.id === lobby.objectId);
+      const definition = data.miniGames.find((candidate) => candidate.id === lobby.definitionId);
+      if (!object || !definition) continue;
+      const area = getGameArea(object);
+      interactionAreas.push({ id: lobby.objectId, label: object.label ?? definition.name,
+        distance: Math.hypot(currentPlayer.x - area.x, currentPlayer.y - area.y),
+        highlight: { type: "circle", ...area } });
+    }
+    for (const meeting of enteredMeetings) {
+      const location = meeting.location;
+      const room = location.type === "room" ? layout.rooms.find((candidate) => candidate.id === location.roomId) : undefined;
+      if (location.type === "room" && !room) continue;
+      interactionAreas.push({ id: meeting.id, label: meeting.title, distance: 0,
+        highlight: location.type === "public" ? { type: "circle", x: location.x, y: location.y, radius: location.radius } : { type: "rect", bounds: room!.bounds } });
+    }
+    for (const candidate of nearbyDoors.filter(({ door }) => door.id !== dismissedDoorEntryId)) {
+      const position = getRoomDoorPosition(layout, candidate.room, candidate.door);
+      interactionAreas.push({ id: candidate.door.id, label: candidate.room.name, distance: candidate.distance,
+        highlight: { type: "circle", ...position, radius: 84 } });
+    }
+    for (const player of visiblePlayers) {
+      const member = data.members.find((candidate) => candidate.id === player.userId);
+      if (!member || player.userId === data.currentUserId || !player.connected || currentMeeting) continue;
+      const distance = Math.hypot(player.x - currentPlayer.x, player.y - currentPlayer.y);
+      if (distance > PROXIMITY_INTERACTION_RADIUS || player.roomId !== currentPlayer.roomId) continue;
+      interactionAreas.push({ id: player.userId, label: member.name, distance,
+        highlight: { type: "circle", x: player.x, y: player.y, radius: PROXIMITY_INTERACTION_RADIUS } });
+    }
+  }
+  interactionAreas.sort((left, right) => left.distance - right.distance || left.id.localeCompare(right.id));
+  const { active: activeInteraction, select: selectInteraction } = useInteractionAreas(interactionAreas);
+  const visibleGameLobby = availableGameLobbies.find((lobby) => lobby.objectId === activeInteraction?.id);
+  const visibleChessLobby = activeInteraction?.id === availableChessLobby?.objectId ? availableChessLobby : undefined;
+  const visibleMeetingEntry = enteredMeetings.find((meeting) => meeting.id === activeInteraction?.id);
+  const visibleNearbyDoor = nearbyDoors.find(({ door }) => door.id === activeInteraction?.id);
+  const nearbyMember = data.members.find((member) => member.id === activeInteraction?.id);
+  const nearbyWorkObject = layout.objects.find((object) => object.id === activeInteraction?.id && getAssetDefinition(object.assetId)?.workKind);
+  const selectedGameLobbyVisible = Boolean(selectedGameDefinition && interactionAreas.some((area) => area.id === selectedObject?.id));
   const visibleIncomingKnocks = useMemo(() => incomingKnocks.flatMap((knock) => {
     const room = allRooms.find((item) => item.id === knock.roomId);
     const requester = data.members.find((member) => member.id === knock.requesterUserId);
@@ -1919,7 +2073,8 @@ export function Workspace({
           movingBuildItem={movingBuildItem}
           playerAssetPlacement={playerAssetPlacement}
           colorTheme={colorTheme}
-          inputEnabled={floorId === activeFloorIdRef.current && activePanel !== "build" && !avatarDialogOpen && !gameOpen && (!currentMeeting || meetingView === "small")}
+          activeInteraction={activePanel !== "build" && !gameOpen && !chessOpen ? activeInteraction?.highlight : undefined}
+          inputEnabled={floorId === activeFloorIdRef.current && activePanel !== "build" && !avatarDialogOpen && !gameOpen && !chessOpen && !workObject && (!currentMeeting || meetingView === "small")}
           focusTarget={focusTarget}
           onDestination={(x, y) => {
             setSelection(undefined);
@@ -1927,9 +2082,15 @@ export function Workspace({
           }}
           onPlayerSelect={(userId, anchor) => setSelection({ type: "player", userId, anchor })}
           onEdit={(edit) => applyBuildEdit(edit, edit.tool === "asset.move" || edit.tool === "wall.move" || edit.tool === "opening.move")}
-          onObjectSelect={(object, interactionId, anchor) => setSelection(interactionId
-            ? { type: "object", object, interactionId, anchor }
-            : { type: "object", object, anchor })}
+          onObjectSelect={(object, interactionId, anchor) => {
+            const game = data.miniGames.find((candidate) => candidate.assetId === object.assetId);
+            if (game && interactionAreas.some((area) => area.id === object.id)) {
+              selectInteraction(object.id);
+              setSelection(undefined);
+            } else {
+              setSelection(interactionId ? { type: "object", object, interactionId, anchor } : { type: "object", object, anchor });
+            }
+          }}
           onBuildItemSelect={(item) => {
             const selectableItem = canBuild
               ? item
@@ -1951,22 +2112,48 @@ export function Workspace({
           }}
         />
 
-        {activePanel !== "build" && visibleGameLobby && (
-          <TetrisLobby
+        {activePanel !== "build" && !gameOpen && !chessOpen && !workObject
+          && (!hasVisibleSelection || Boolean(selectedGameDefinition)) && activeInteraction && (
+          <InteractionPanel areas={interactionAreas} active={activeInteraction} onSelect={selectInteraction}>
+        {visibleGameLobby?.definitionId === FALLING_BLOCKS_DEFINITION_ID && (
+          <FallingBlocksLobby
             lobby={visibleGameLobby}
             members={data.members}
             scores={data.scores}
             statistics={data.gameStatistics}
             currentUserId={data.currentUserId}
-            onStart={() => request({ type: "game.start", requestId: requestId(), definitionId: TETRIS_DEFINITION_ID })}
+            onStart={(solo) => request({ type: "game.start", requestId: requestId(), definitionId: FALLING_BLOCKS_DEFINITION_ID, objectId: visibleGameLobby.objectId, solo })}
           />
         )}
 
-        {activePanel !== "build" && (visibleMeetingEntry || hasVisibleSelection || visibleNearbyDoor) && (
-          <div
-            className={`world-actions ${hasVisibleSelection && selection?.anchor ? "contextual" : ""}`}
-            style={hasVisibleSelection && selection?.anchor ? { left: selection.anchor.x, top: selection.anchor.y } : undefined}
-          >
+        {visibleGameLobby?.definitionId === TIC_TAC_TOE_DEFINITION_ID && (
+          <TicTacToeLobby
+            lobby={visibleGameLobby}
+            members={data.members}
+            statistics={data.gameStatistics}
+            currentUserId={data.currentUserId}
+            onStart={(variantId, bot) => request({
+              type: "game.start",
+              requestId: requestId(),
+              definitionId: TIC_TAC_TOE_DEFINITION_ID,
+              variantId,
+              ...(bot ? { bot } : {}),
+            })}
+          />
+        )}
+
+        {visibleChessLobby && (
+          <ChessLobby
+            lobby={visibleChessLobby}
+            members={data.members}
+            currentUserId={data.currentUserId}
+            onCreate={createChessMatch}
+            onJoin={(matchId) => openChessMatch(matchId, true)}
+            onOpen={openChessMatch}
+            onCancel={(matchId) => request({ type: "chess.match_cancel", requestId: requestId(), matchId })}
+          />
+        )}
+
           {visibleMeetingEntry && (
             <div className="context-action meeting-entry-action" role="region" aria-label={`${visibleMeetingEntry.title} meeting`}>
               <Video size={18} />
@@ -1979,6 +2166,56 @@ export function Workspace({
               </button>
             </div>
           )}
+          {visibleNearbyDoor && (
+            <div className="door-interaction" role="region" aria-label={`${visibleNearbyDoor.room.name} door`}>
+            <LockKeyhole size={16} />
+            <strong>{visibleNearbyDoor.room.name}</strong>
+            {hasRoomAccess(visibleNearbyDoor.room) ? (
+              <button
+                className="primary-button"
+                onClick={() => {
+                  const destination = getRoomDoorPosition(layout, visibleNearbyDoor.room, visibleNearbyDoor.door, "inside");
+                  const movementRequestId = navigateToDestination(floorId, destination.x, destination.y);
+                  if (movementRequestId) {
+                    pendingDoorEntryRequestId.current = movementRequestId;
+                    setDismissedDoorEntryId(visibleNearbyDoor.door.id);
+                  }
+                }}
+              >
+                <DoorOpen size={16} />Enter
+              </button>
+            ) : (
+              <button
+                className="secondary-button"
+                disabled={pendingRoomIds.size > 0}
+                onClick={() => knockAtRoom(visibleNearbyDoor.room.id)}
+              >
+                <Hand size={16} />{pendingRoomIds.size > 0 ? "Waiting" : "Knock"}
+              </button>
+            )}
+            </div>
+          )}
+            {nearbyWorkObject && (
+              <div className="nearby-person-actions">
+                <strong>{nearbyWorkObject.label ?? getAssetDefinition(nearbyWorkObject.assetId)?.name}</strong>
+                <button className="primary-button" onClick={() => openWorkObject(nearbyWorkObject)}>Open board</button>
+              </div>
+            )}
+            {nearbyMember && (
+              <div className="nearby-person-actions">
+                <Avatar member={nearbyMember} className="person-avatar" />
+                <strong>{nearbyMember.name}</strong>
+                <button className="primary-button" onClick={() => messageMember(nearbyMember.id)}>Chat</button>
+                <button className="secondary-button" disabled={Boolean(activeCall) || nearbyMember.availability === "dnd"}
+                  onClick={() => request({ type: "movement.approach_user", requestId: requestId(), targetUserId: nearbyMember.id })}>
+                  <Phone size={16} />Call
+                </button>
+              </div>
+            )}
+          </InteractionPanel>
+        )}
+        {activePanel !== "build" && hasVisibleSelection && (
+          <WorldActionMenu anchor={selection?.anchor}>
           {hasVisibleSelection && (
             <div
               className="context-action"
@@ -2033,9 +2270,20 @@ export function Workspace({
                 </div>
               </>
             )}
-            {selectedGameDefinition && !visibleGameLobby && (
+            {selectedGameDefinition && !selectedGameLobbyVisible && (
               <button className="primary-button" onClick={() => gatherAtGame(selectedObject!)}>
-                <Play size={16} fill="currentColor" />Join lobby
+                <Play size={16} fill="currentColor" />{selectedGameDefinition.id === CHESS_DEFINITION_ID ? "Open chess" : "Join lobby"}
+              </button>
+            )}
+            {selectedWorkObject && (
+              <button className="primary-button" onClick={() => {
+                if (currentPlayer && canUseWorkObject(selectedWorkObject, layout, currentPlayer)) openWorkObject(selectedWorkObject);
+                else {
+                  request({ type: "work.approach", requestId: requestId(), objectId: selectedWorkObject.id });
+                  setSelection(undefined);
+                }
+              }}>
+                {currentPlayer && canUseWorkObject(selectedWorkObject, layout, currentPlayer) ? "Open board" : "Walk to board"}
               </button>
             )}
             {selectedGong && (selectedGongCooldownSeconds > 0 ? (
@@ -2102,36 +2350,7 @@ export function Workspace({
             </div>
           )}
 
-          {visibleNearbyDoor && (
-            <div className="door-interaction" role="region" aria-label={`${visibleNearbyDoor.room.name} door`}>
-            <LockKeyhole size={16} />
-            <strong>{visibleNearbyDoor.room.name}</strong>
-            {hasRoomAccess(visibleNearbyDoor.room) ? (
-              <button
-                className="primary-button"
-                onClick={() => {
-                  const destination = getRoomDoorPosition(layout, visibleNearbyDoor.room, visibleNearbyDoor.door, "inside");
-                  const movementRequestId = navigateToDestination(floorId, destination.x, destination.y);
-                  if (movementRequestId) {
-                    pendingDoorEntryRequestId.current = movementRequestId;
-                    setDismissedDoorEntryId(visibleNearbyDoor.door.id);
-                  }
-                }}
-              >
-                <DoorOpen size={16} />Enter
-              </button>
-            ) : (
-              <button
-                className="secondary-button"
-                disabled={pendingRoomIds.size > 0}
-                onClick={() => knockAtRoom(visibleNearbyDoor.room.id)}
-              >
-                <Hand size={16} />{pendingRoomIds.size > 0 ? "Waiting" : "Knock"}
-              </button>
-            )}
-            </div>
-          )}
-          </div>
+          </WorldActionMenu>
         )}
 
         {activePanel !== "build" && <ProximityMedia
@@ -2380,14 +2599,59 @@ export function Workspace({
           onSaveCharacter={updateCharacter}
         />
       )}
-      {activePanel !== "build" && gameOpen && gameRound && (
-        <TetrisGame
-          state={gameState}
+      {workObject && workState && (
+        <WorkObjectDialog key={workObject.id} title={workObject.label ?? getAssetDefinition(workObject.assetId)!.name} state={workState}
+          unavailable={!currentWorkObject ? "This board was removed. Close it and select another."
+            : connection !== "online" ? "Connection unavailable. Reconnect to edit."
+              : !currentPlayer || !canUseWorkObject(currentWorkObject, layout, currentPlayer) ? "Move closer to the board to edit it." : undefined}
+          onClose={() => setWorkObject(undefined)}
+          onUpdate={(baseRevision, edit) => updateWorkObject(send, { type: "work.update", requestId: requestId(), objectId: workObject.id, baseRevision, edit })} />
+      )}
+
+      {activePanel !== "build" && gameOpen && gameRound?.definitionId === FALLING_BLOCKS_DEFINITION_ID && (
+        <FallingBlocksGame
+          key={gameRound.id}
+          state={gameState?.definitionId === FALLING_BLOCKS_DEFINITION_ID ? gameState : undefined}
           round={gameRound}
           members={data.members}
           currentUserId={data.currentUserId}
           onCommand={(command) => request({ type: "game.command", requestId: requestId(), command })}
+          onPlayAgain={gameRound.participants.length === 1 ? () => {
+            closeGame();
+            request({ type: "game.start", requestId: requestId(), definitionId: FALLING_BLOCKS_DEFINITION_ID, objectId: gameRound.objectId, solo: true });
+          } : undefined}
           onClose={closeGame}
+        />
+      )}
+      {activePanel !== "build" && gameOpen && gameRound?.definitionId === TIC_TAC_TOE_DEFINITION_ID && gameState?.definitionId === TIC_TAC_TOE_DEFINITION_ID && (
+        <TicTacToeGame
+          key={gameRound.id}
+          state={gameState}
+          members={data.members}
+          currentUserId={data.currentUserId}
+          onCommand={(command) => request({ type: "game.command", requestId: requestId(), command })}
+          onPlayAgain={gameState.bot ? () => {
+            closeGame();
+            request({ type: "game.start", requestId: requestId(), definitionId: TIC_TAC_TOE_DEFINITION_ID,
+              variantId: gameState.variantId, bot: gameState.bot! });
+          } : undefined}
+          onClose={closeGame}
+        />
+      )}
+      {activePanel !== "build" && chessOpen && chessMatch && (
+        <ChessGame
+          key={chessMatch.id}
+          match={chessMatch}
+          members={data.members}
+          currentUserId={data.currentUserId}
+          onMove={(move: ChessMoveInput) => request({ type: "chess.move", requestId: requestId(), matchId: chessMatch.id, move })}
+          onOfferDraw={() => request({ type: "chess.draw_offer", requestId: requestId(), matchId: chessMatch.id })}
+          onClaimDraw={(move) => request({ type: "chess.draw_claim", requestId: requestId(), matchId: chessMatch.id, ...(move ? { move } : {}) })}
+          onRespondToDraw={(accept) => request({ type: "chess.draw_respond", requestId: requestId(), matchId: chessMatch.id, accept })}
+          onResign={() => request({ type: "chess.resign", requestId: requestId(), matchId: chessMatch.id })}
+          onClose={closeChess}
+          onRetryBot={() => openChessMatch(chessMatch.id)}
+          onPlayAgain={chessMatch.settings.bot ? () => createChessMatch(chessMatch.settings) : undefined}
         />
       )}
     </main>

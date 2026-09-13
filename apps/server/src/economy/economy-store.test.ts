@@ -60,7 +60,7 @@ describe("EconomyStore", () => {
       "ECONOMY_REQUEST_CONFLICT",
     );
     expect(() => economy.purchaseAsset("player", "outdoor-pool", "purchase-pool", firstDay)).toThrow("INSUFFICIENT_COINS");
-    expect(() => economy.purchaseAsset("player", "equipment-tetris", "purchase-game", firstDay)).toThrow("ASSET_UNAVAILABLE");
+    expect(() => economy.purchaseAsset("player", "equipment-falling-blocks", "purchase-game", firstDay)).toThrow("ASSET_UNAVAILABLE");
     expect(economy.getPlayerEconomy("player", firstDay).coinBalance).toBe(180);
   });
 
@@ -207,7 +207,7 @@ describe("EconomyStore", () => {
     expect(() => economy.validateWorkspace(["player"], [layout([])], [{
       id: "score-one",
       roundId: "round-one",
-      definitionId: "game-tetris",
+      definitionId: "game-falling-blocks",
       userId: "player",
       score: 400,
       lines: 4,

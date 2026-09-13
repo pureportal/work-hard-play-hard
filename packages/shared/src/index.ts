@@ -1,9 +1,23 @@
 import type { AssetRotation } from "./assets.js";
+import type { WorkObjectEdit } from "./work-objects.js";
 import type { CharacterAppearance } from "./character.js";
+import type { GameBot } from "./game-bot.js";
 import type { FloorLayout, LayoutEdit, RoomSettings } from "./building.js";
+import type {
+  ChessLobbyState,
+  ChessMatchSettings,
+  ChessMatchView,
+  ChessMoveInput,
+} from "./chess.js";
 import type { CoinTransaction, GameCoinReward, GameSettings, PlayerEconomy } from "./economy.js";
 import type { Position } from "./geometry.js";
-import type { TetrominoType, TetrisCellPosition, TetrisCommand } from "./tetris.js";
+import type { TetrominoType, FallingBlocksCellPosition, FallingBlocksCommand } from "./falling-blocks.js";
+import {
+  TIC_TAC_TOE_DEFINITION_ID,
+  type TicTacToeCommand,
+  type TicTacToeGameState,
+  type TicTacToeVariantId,
+} from "./tic-tac-toe.js";
 import type {
   GlobalKidnappingSettings,
   KidnappingConfiguration,
@@ -13,6 +27,7 @@ import type {
 export * from "./building.js";
 export * from "./character.js";
 export * from "./assets.js";
+export * from "./work-objects.js";
 export * from "./asset-placement.js";
 export * from "./layout-placement.js";
 export * from "./geometry.js";
@@ -21,7 +36,11 @@ export * from "./room-detection.js";
 export * from "./economy.js";
 export * from "./player-asset-placement.js";
 export * from "./kidnapping.js";
-export * from "./tetris.js";
+export * from "./falling-blocks.js";
+export * from "./chess.js";
+export * from "./tic-tac-toe.js";
+export * from "./game-area.js";
+export * from "./game-bot.js";
 
 export type Availability = "available" | "busy" | "dnd" | "away";
 
@@ -225,10 +244,10 @@ export interface MiniGameDefinition {
   id: string;
   name: string;
   accent: string;
-  objectId: string;
+  assetId: string;
 }
 
-export const TETRIS_DEFINITION_ID = "game-tetris" as const;
+export const FALLING_BLOCKS_DEFINITION_ID = "game-falling-blocks" as const;
 
 export interface GameScore {
   id: string;
@@ -277,6 +296,7 @@ export interface GameRoundParticipantState {
 export interface GameRoundState {
   id: string;
   definitionId: string;
+  objectId: string;
   floorId: string;
   startedAt: string;
   status: "playing" | "completed";
@@ -351,10 +371,10 @@ export interface RoomKnock {
 
 export type RoomKnockState = "pending" | "accepted" | "declined" | "expired";
 
-export interface GameState {
+export interface FallingBlocksGameState {
   type: "game.state";
   roundId: string;
-  definitionId: string;
+  definitionId: typeof FALLING_BLOCKS_DEFINITION_ID;
   grid: number[][];
   score: number;
   lines: number;
@@ -362,12 +382,15 @@ export interface GameState {
   running: boolean;
   paused: boolean;
   activePiece: TetrominoType | null;
-  activeCells: TetrisCellPosition[];
-  ghostCells: TetrisCellPosition[];
+  activeCells: FallingBlocksCellPosition[];
+  ghostCells: FallingBlocksCellPosition[];
   heldPiece: TetrominoType | null;
   nextPieces: TetrominoType[];
   canHold: boolean;
 }
+
+export type GameState = FallingBlocksGameState | TicTacToeGameState;
+export type GameCommand = FallingBlocksCommand | TicTacToeCommand;
 
 export type ServerEvent =
   | WorldSnapshot
@@ -407,6 +430,9 @@ export type ServerEvent =
   }
   | { type: "economy.updated"; economy: PlayerEconomy; requestId?: string; transaction?: CoinTransaction }
   | { type: "game.settings_updated"; settings: GameSettings }
+  | { type: "chess.lobby_updated"; lobby: ChessLobbyState }
+  | { type: "chess.lobby_closed"; definitionId: ChessLobbyState["definitionId"] }
+  | { type: "chess.match_state"; match: ChessMatchView }
   | { type: "kidnapping.global_settings_updated"; settings: GlobalKidnappingSettings }
   | { type: "kidnapping.player_settings_updated"; settings: PlayerKidnappingSettings }
   | { type: "kidnapping.started"; carrierUserId: string; carriedUserId: string }
@@ -434,6 +460,8 @@ export type ClientCommand =
   | { type: "economy.purchase_asset"; requestId: string; assetId: string }
   | { type: "game.settings_update"; requestId: string; settings: GameSettings }
   | { type: "asset.interact"; requestId: string; objectId: string; interactionId: string }
+  | { type: "work.update"; requestId: string; objectId: string; baseRevision: number; edit: WorkObjectEdit }
+  | { type: "work.approach"; requestId: string; objectId: string }
   | { type: "seat.leave"; requestId: string }
   | { type: "room.update_settings"; requestId: string; baseRevision: number; roomId: string; settings: RoomSettings }
   | { type: "room.knock"; requestId: string; roomId: string }
@@ -446,8 +474,19 @@ export type ClientCommand =
   | { type: "call.end"; requestId: string; callId: string }
   | { type: "meeting.join"; requestId: string; meetingId: string }
   | { type: "meeting.leave"; requestId: string; meetingId: string }
-  | { type: "game.start"; requestId: string; definitionId: typeof TETRIS_DEFINITION_ID }
+  | { type: "game.start"; requestId: string; definitionId: typeof FALLING_BLOCKS_DEFINITION_ID; objectId: string; solo?: boolean }
+  | { type: "game.start"; requestId: string; definitionId: typeof TIC_TAC_TOE_DEFINITION_ID; variantId: TicTacToeVariantId; bot?: GameBot }
   | { type: "game.end"; requestId: string }
-  | { type: "game.command"; requestId: string; command: TetrisCommand };
+  | { type: "game.command"; requestId: string; command: GameCommand }
+  | { type: "chess.match_create"; requestId: string; settings: ChessMatchSettings }
+  | { type: "chess.match_join"; requestId: string; matchId: string }
+  | { type: "chess.match_open"; requestId: string; matchId: string }
+  | { type: "chess.match_close"; requestId: string; matchId: string }
+  | { type: "chess.match_cancel"; requestId: string; matchId: string }
+  | { type: "chess.move"; requestId: string; matchId: string; move: ChessMoveInput }
+  | { type: "chess.resign"; requestId: string; matchId: string }
+  | { type: "chess.draw_offer"; requestId: string; matchId: string }
+  | { type: "chess.draw_claim"; requestId: string; matchId: string; move?: ChessMoveInput }
+  | { type: "chess.draw_respond"; requestId: string; matchId: string; accept: boolean };
 
 export type KidnappingEndReason = "cancelled" | "interrupted" | "access_revoked";

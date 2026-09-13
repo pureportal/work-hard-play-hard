@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { GameOpponentPicker } from "./GameOpponentPicker";
 import { Play, Trophy } from "lucide-react";
 import type {
   GameLobbyState,
@@ -6,25 +8,26 @@ import type {
   PlayerGameStatistics,
 } from "@workhard/shared";
 import { Avatar } from "./Avatar";
-import { TetrisMark } from "./TetrisMark";
+import { FallingBlocksMark } from "./FallingBlocksMark";
 
-interface TetrisLobbyProps {
+interface FallingBlocksLobbyProps {
   lobby: GameLobbyState;
   members: Member[];
   scores: GameScore[];
   statistics: PlayerGameStatistics[];
   currentUserId: string;
-  onStart: () => void;
+  onStart: (solo: boolean) => void;
 }
 
-export function TetrisLobby({
+export function FallingBlocksLobby({
   lobby,
   members,
   scores,
   statistics,
   currentUserId,
   onStart,
-}: TetrisLobbyProps) {
+}: FallingBlocksLobbyProps) {
+  const [mode, setMode] = useState<"solo" | "multiplayer">("solo");
   const participants = lobby.participantIds.flatMap((userId) => {
     const member = members.find((candidate) => candidate.id === userId);
     return member ? [member] : [];
@@ -44,16 +47,18 @@ export function TetrisLobby({
     .slice(0, 5);
 
   return (
-    <aside className="tetris-lobby" aria-label="Tetris lobby">
+    <aside className="game-lobby falling-blocks-lobby" aria-label="Falling Blocks lobby">
       <header>
-        <TetrisMark />
+        <FallingBlocksMark />
         <div>
-          <h2>Tetris</h2>
-          <span>{participants.length}/{lobby.capacity} players</span>
+          <h2>Falling Blocks</h2>
+
         </div>
       </header>
 
-      <section className="tetris-lobby-players">
+      <GameOpponentPicker mode={mode} onModeChange={setMode} soloLabel="Solo" />
+
+      {mode === "multiplayer" && <section className="falling-blocks-lobby-players">
         <h3>Lobby</h3>
         <ul>
           {participants.map((member) => (
@@ -64,14 +69,14 @@ export function TetrisLobby({
             </li>
           ))}
         </ul>
-      </section>
+      </section>}
 
-      <button className="primary-button tetris-start-button" onClick={onStart}>
+      <button className="primary-button falling-blocks-start-button" disabled={mode === "multiplayer" && participants.length < 2} onClick={() => onStart(mode === "solo")}>
         <Play size={16} fill="currentColor" />
-        {participants.length > 1 ? "Start round" : "Start solo"}
+        {mode === "multiplayer" && participants.length < 2 ? "Waiting for player" : "Play"}
       </button>
 
-      <dl className="tetris-player-stats" aria-label="Your Tetris statistics">
+      <dl className="falling-blocks-player-stats" aria-label="Your Falling Blocks statistics">
         <div><dt>Best</dt><dd>{(playerStatistics?.highestScore ?? 0).toLocaleString()}</dd></div>
         <div><dt>Wins</dt><dd>{playerStatistics?.multiplayerWins ?? 0}</dd></div>
         <div><dt>Games</dt><dd>{playerStatistics?.gamesPlayed ?? 0}</dd></div>
@@ -79,7 +84,7 @@ export function TetrisLobby({
       </dl>
 
       {highScores.length > 0 && (
-        <section className="tetris-high-scores">
+        <section className="falling-blocks-high-scores">
           <h3><Trophy size={15} />High scores</h3>
           <ol>
             {highScores.map((score, index) => {

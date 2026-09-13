@@ -1,6 +1,15 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import {
+  BOT_DIFFICULTIES,
+  CHESS_ACCESS_MODES,
+  CHESS_COLORS,
+  CHESS_DEFINITION_ID,
+  CHESS_MATCH_RESULTS,
+  CHESS_PIECE_TYPES,
+  CHESS_PROMOTION_PIECES,
+  CHESS_TIME_CONTROLS,
   DEFAULT_PLAYER_KIDNAPPING_SETTINGS,
+  GAME_BOT_USER_ID,
   KIDNAPPING_POLICY_MODES,
   MAX_LAYOUT_OBJECTS_PER_FLOOR,
   MAX_LAYOUT_OPENINGS_PER_FLOOR,
@@ -24,6 +33,7 @@ import type {
   ChatAttachment,
   ChatMessage,
   CharacterAppearance,
+  ChessMatchRecord,
   Conversation,
   CorporateIdentity,
   CorporateIdentitySettings,
@@ -45,6 +55,7 @@ import type {
   WorkspaceAccessData,
 } from "@workhard/shared";
 import { createSeedData } from "./seed.js";
+import { workObjectStateSchema } from "./work/work-object-state.js";
 import {
   EconomyStore,
   type EconomyOperationResult,
@@ -61,6 +72,7 @@ export interface MutableStoreState {
   meetings: Meeting[];
   scores: GameScore[];
   gameStatistics: PlayerGameStatistics[];
+  chessMatches: ChessMatchRecord[];
   economy: EconomyPersistenceState;
   kidnapping: KidnappingPersistenceState;
   registrationSettings: RegistrationSettings;
@@ -83,6 +95,7 @@ interface GameRoundScoreInput {
   lines: number;
   level: number;
   order: number;
+  won: boolean;
 }
 
 export interface IssuedInvitation {
@@ -111,6 +124,7 @@ export class DemoStore {
   private readonly playerKidnappingSettings = new Map<string, PlayerKidnappingSettings>();
   private registrationSettings = structuredClone(DEFAULT_REGISTRATION_SETTINGS);
   private corporateIdentity = structuredClone(DEFAULT_CORPORATE_IDENTITY);
+  private chessMatches: ChessMatchRecord[] = [];
   dirty = false;
 
   constructor(initialData: BootstrapData = createSeedData()) {
@@ -209,12 +223,15 @@ export class DemoStore {
     return this.data.layouts.flatMap((layout) => layout.objects).find((object) => object.id === objectId);
   }
 
-  getMiniGames(): MiniGameDefinition[] {
-    return this.data.miniGames;
-  }
-
   getMiniGame(definitionId: string): MiniGameDefinition | undefined {
     return this.data.miniGames.find((definition) => definition.id === definitionId);
+  }
+
+  getGameObjects(definitionId: string): WorldObject[] {
+    const definition = this.getMiniGame(definitionId);
+    return definition ? this.data.layouts.flatMap((layout) =>
+      layout.objects.filter((object) => object.assetId === definition.assetId),
+    ) : [];
   }
 
   getMeeting(meetingId: string): Meeting | undefined {
@@ -376,6 +393,11 @@ export class DemoStore {
     );
     this.data.conversations = this.data.conversations.filter((conversation) => !removedConversationIds.has(conversation.id));
     this.data.messages = this.data.messages.filter((message) => !removedConversationIds.has(message.conversationId));
+    this.chessMatches = this.chessMatches.filter((match) => (
+      match.whiteUserId !== userId
+      && match.blackUserId !== userId
+      && match.reservedBlackUserId !== userId
+    ));
     this.economy.removeAccount(userId);
     this.playerKidnappingSettings.delete(userId);
     this.globalKidnappingSettings.targetPolicy.userIds = this.globalKidnappingSettings.targetPolicy.userIds.filter((id) => id !== userId);
@@ -455,6 +477,29 @@ export class DemoStore {
 
   getGameStatistics(): PlayerGameStatistics[] {
     return this.data.gameStatistics;
+  }
+
+  getChessMatches(): ChessMatchRecord[] {
+    return structuredClone(this.chessMatches);
+  }
+
+  saveChessMatch(match: ChessMatchRecord): void {
+    const existingIndex = this.chessMatches.findIndex((candidate) => candidate.id === match.id);
+    if (existingIndex === -1) {
+      this.chessMatches.push(structuredClone(match));
+    } else {
+      this.chessMatches[existingIndex] = structuredClone(match);
+    }
+    this.dirty = true;
+  }
+
+  removeChessMatch(matchId: string): void {
+    const next = this.chessMatches.filter((match) => match.id !== matchId);
+    if (next.length === this.chessMatches.length) {
+      throw new Error("CHESS_MATCH_NOT_FOUND");
+    }
+    this.chessMatches = next;
+    this.dirty = true;
   }
 
   canManageMembers(userId: string): boolean {
@@ -774,8 +819,11 @@ export class DemoStore {
         || !Number.isSafeInteger(result.level)
         || result.level < 0
         || !Number.isSafeInteger(result.order)
-        || result.order < 0,
+        || result.order < 0
+        || typeof result.won !== "boolean"
       )
+      || results.filter((result) => result.won).length > 1
+      || (results.length === 1 && results[0]!.won)
       || !isIsoTimestamp(playedAt)
       || !this.getMiniGame(definitionId)
     ) {
@@ -805,7 +853,7 @@ export class DemoStore {
       mode,
       playerCount,
       placement: index + 1,
-      won: mode === "multiplayer" && index === 0,
+      won: result.won,
       playedAt,
     }));
     const nextStatistics = structuredClone(this.data.gameStatistics);
@@ -946,6 +994,7 @@ export class DemoStore {
       meetings: this.data.meetings,
       scores: this.data.scores,
       gameStatistics: this.data.gameStatistics,
+      chessMatches: this.chessMatches,
       economy: this.economy.exportState(),
       kidnapping: {
         global: this.globalKidnappingSettings,
@@ -958,9 +1007,10 @@ export class DemoStore {
 
   restoreMutableState(state: MutableStoreState): void {
     const next = structuredClone(state);
-    if (!Array.isArray(next.layouts) || !Array.isArray(next.scores)) {
+    if (!Array.isArray(next.layouts) || !Array.isArray(next.scores) || !Array.isArray(next.chessMatches)) {
       throw new Error("STORE_STATE_INVALID");
     }
+    validateChessMatches(next.chessMatches, next.members);
     for (const layout of next.layouts) {
       assertLayoutIntegrity(layout);
     }
@@ -984,6 +1034,7 @@ export class DemoStore {
     this.data.meetings = next.meetings;
     this.data.scores = next.scores;
     this.data.gameStatistics = next.gameStatistics;
+    this.chessMatches = next.chessMatches;
     this.globalKidnappingSettings = next.kidnapping.global;
     this.registrationSettings = next.registrationSettings;
     this.corporateIdentity = next.corporateIdentity;
@@ -1176,6 +1227,114 @@ function validateKidnappingPolicy(
   }
 }
 
+function validateChessMatches(matches: ChessMatchRecord[], members: readonly Member[]): void {
+  const memberIds = new Set(members.map((member) => member.id));
+  const matchIds = new Set<string>();
+  for (const match of matches) {
+    const participantIds = [match?.creatorUserId, match?.whiteUserId, match?.blackUserId, match?.reservedBlackUserId]
+      .filter((userId): userId is string => Boolean(userId));
+    if (
+      !match
+      || typeof match !== "object"
+      || typeof match.id !== "string"
+      || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(match.id)
+      || matchIds.has(match.id)
+      || match.definitionId !== CHESS_DEFINITION_ID
+      || typeof match.objectId !== "string"
+      || !match.objectId
+      || !["waiting", "active", "completed"].includes(match.status)
+      || !CHESS_TIME_CONTROLS.includes(match.settings?.timeControl)
+      || !CHESS_ACCESS_MODES.includes(match.settings?.access)
+      || typeof match.settings?.pauseWeekends !== "boolean"
+      || (match.settings.pauseWeekends && match.settings.timeControl !== "daily")
+      || !isValidChessParticipants(match, memberIds)
+      || (match.status === "waiting" && match.blackUserId !== undefined)
+      || (match.status !== "waiting" && match.blackUserId === undefined)
+      || typeof match.fen !== "string"
+      || !match.fen
+      || !Array.isArray(match.moves)
+      || !isValidChessClock(match)
+      || !isIsoTimestamp(match.createdAt)
+      || !isIsoTimestamp(match.updatedAt)
+      || Date.parse(match.updatedAt) < Date.parse(match.createdAt)
+      || (match.startedAt !== undefined && !isIsoTimestamp(match.startedAt))
+      || (match.completedAt !== undefined && !isIsoTimestamp(match.completedAt))
+      || (match.status === "waiting" && match.startedAt !== undefined)
+      || (match.status !== "waiting" && !match.startedAt)
+      || (match.drawOfferByUserId !== undefined && (
+        match.status !== "active"
+        || !participantIds.includes(match.drawOfferByUserId)
+      ))
+      || !isValidChessOutcome(match, new Set(participantIds))
+      || match.moves.some((move) => (
+        !/^[a-h][1-8]$/.test(move.from)
+        || !/^[a-h][1-8]$/.test(move.to)
+        || !CHESS_COLORS.includes(move.color)
+        || !CHESS_PIECE_TYPES.includes(move.piece)
+        || (move.captured !== undefined && !CHESS_PIECE_TYPES.includes(move.captured))
+        || (move.promotion !== undefined && !CHESS_PROMOTION_PIECES.includes(move.promotion))
+        || typeof move.san !== "string"
+        || !move.san
+        || !isIsoTimestamp(move.playedAt)
+      ))
+    ) {
+      throw new Error("CHESS_STATE_INVALID");
+    }
+    matchIds.add(match.id);
+  }
+}
+
+function isValidChessParticipants(match: ChessMatchRecord, memberIds: ReadonlySet<string>): boolean {
+  const { creatorUserId, whiteUserId, blackUserId, reservedBlackUserId, settings } = match;
+  if (creatorUserId !== whiteUserId || whiteUserId === GAME_BOT_USER_ID || !memberIds.has(whiteUserId)) {
+    return false;
+  }
+  if (settings.bot !== undefined) {
+    return settings.bot !== null
+      && BOT_DIFFICULTIES.includes(settings.bot.difficulty)
+      && settings.access === "locked"
+      && settings.opponentUserId === undefined
+      && reservedBlackUserId === undefined
+      && blackUserId === GAME_BOT_USER_ID;
+  }
+  if ([blackUserId, reservedBlackUserId].some((userId) => userId !== undefined && (
+    userId === GAME_BOT_USER_ID || userId === whiteUserId || !memberIds.has(userId)
+  ))) {
+    return false;
+  }
+  if (settings.access === "open") {
+    return settings.opponentUserId === undefined && reservedBlackUserId === undefined;
+  }
+  return Boolean(settings.opponentUserId)
+    && settings.opponentUserId === reservedBlackUserId
+    && (blackUserId === undefined || blackUserId === reservedBlackUserId);
+}
+
+function isValidChessClock(match: ChessMatchRecord): boolean {
+  const values = [match.clock?.whiteRemainingMs, match.clock?.blackRemainingMs];
+  const timed = match.settings.timeControl !== "standard";
+  return Boolean(match.clock)
+    && values.every((value) => timed
+      ? typeof value === "number" && Number.isFinite(value) && value >= 0
+      : value === null)
+    && (match.clock.activeSince === undefined || isIsoTimestamp(match.clock.activeSince))
+    && (match.status === "active" && timed ? match.clock.activeSince !== undefined : match.clock.activeSince === undefined);
+}
+
+function isValidChessOutcome(match: ChessMatchRecord, participantIds: ReadonlySet<string>): boolean {
+  if (match.status !== "completed") {
+    return match.completedAt === undefined && match.outcome === undefined;
+  }
+  if (!match.completedAt || !match.outcome || !CHESS_MATCH_RESULTS.includes(match.outcome.result)) {
+    return false;
+  }
+  const decisive = match.outcome.result === "checkmate"
+    || (["resignation", "timeout"].includes(match.outcome.result) && match.outcome.winnerUserId !== undefined);
+  return decisive
+    ? typeof match.outcome.winnerUserId === "string" && participantIds.has(match.outcome.winnerUserId)
+    : match.outcome.winnerUserId === undefined;
+}
+
 function assertLayoutIntegrity(layout: FloorLayout): void {
   if (
     !layout
@@ -1224,5 +1383,11 @@ function assertLayoutIntegrity(layout: FloorLayout): void {
       throw new Error("LAYOUT_STATE_INVALID");
     }
     objectIds.add(object.id);
+    if (object.workState !== undefined && (
+      !workObjectStateSchema.safeParse(object.workState).success
+      || object.workState.kind !== definition.workKind
+    )) {
+      throw new Error("WORK_OBJECT_STATE_INVALID");
+    }
   }
 }

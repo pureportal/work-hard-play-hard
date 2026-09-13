@@ -1,5 +1,5 @@
 import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
-import { TETRIS_DEFINITION_ID } from "@workhard/shared";
+import { FALLING_BLOCKS_DEFINITION_ID } from "@workhard/shared";
 import type { BootstrapData, ChatMessage, Conversation } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
 import { mergeWorkspaceSnapshot } from "./workspace-state";
@@ -68,7 +68,7 @@ describe("mergeWorkspaceSnapshot", () => {
       scores: [{
         id: "score",
         roundId: "round",
-        definitionId: TETRIS_DEFINITION_ID,
+        definitionId: FALLING_BLOCKS_DEFINITION_ID,
         userId: "leo",
         score: 120,
         lines: 2,

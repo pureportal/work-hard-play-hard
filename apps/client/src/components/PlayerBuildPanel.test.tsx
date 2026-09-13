@@ -46,7 +46,7 @@ describe("PlayerBuildPanel", () => {
     expect((screen.getByRole("button", { name: "Need 250 more coins for Pool" }) as HTMLButtonElement).disabled).toBe(true);
 
     fireEvent.click(screen.getByRole("tab", { name: "Equipment" }));
-    const unavailableButton = screen.getByRole("button", { name: "Tetris table unavailable" }) as HTMLButtonElement;
+    const unavailableButton = screen.getByRole("button", { name: "Falling Blocks table unavailable" }) as HTMLButtonElement;
     expect(unavailableButton.disabled).toBe(true);
     expect(unavailableButton.textContent).toBe("Unavailable");
   });

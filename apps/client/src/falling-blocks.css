@@ -1,0 +1,573 @@
+.falling-blocks-mark {
+  position: relative;
+  display: block;
+  width: 40px;
+  height: 30px;
+  flex-shrink: 0;
+}
+
+.falling-blocks-mark i {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #8580cc;
+  border: 1px solid #ffffff70;
+  border-radius: 3px;
+  box-shadow: inset 0 -2px #30244030;
+}
+
+.falling-blocks-mark i:first-child {
+  left: 14px;
+  top: 2px;
+  background: #d77e79;
+}
+
+.falling-blocks-mark i:nth-child(2) {
+  left: 0;
+  top: 16px;
+}
+
+.falling-blocks-mark i:nth-child(3) {
+  left: 14px;
+  top: 16px;
+  background: #e5bb63;
+}
+
+.falling-blocks-mark i:nth-child(4) {
+  left: 28px;
+  top: 16px;
+  background: #70aa99;
+}
+
+.falling-blocks-lobby-players,
+.falling-blocks-high-scores {
+  margin-top: 16px;
+}
+
+.falling-blocks-lobby ul,
+.falling-blocks-high-scores ol {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.falling-blocks-lobby-players li,
+.falling-blocks-high-scores li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.falling-blocks-lobby-players li > span:nth-child(2),
+.falling-blocks-high-scores li > span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.falling-blocks-high-scores h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.falling-blocks-high-scores li > span:first-child {
+  text-align: center;
+  color: var(--muted);
+}
+
+.falling-blocks-start-button {
+  width: 100%;
+  justify-content: center;
+}
+
+.falling-blocks-player-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  margin: 14px 0 0;
+}
+
+.falling-blocks-player-stats > div {
+  padding: 10px 3px;
+  text-align: center;
+  border-radius: 10px;
+}
+
+.falling-blocks-player-stats dt {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.falling-blocks-player-stats dd {
+  margin: 5px 0 0;
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.falling-blocks-game {
+  width: min(960px, 100%);
+  height: min(820px, 100%);
+}
+
+.falling-blocks-content {
+  display: grid;
+  grid-template-areas: "left board right" "controls board right";
+  grid-template-columns: minmax(130px, 170px) minmax(0, 340px) minmax(150px, 190px);
+  grid-template-rows: minmax(0, 1fr) auto;
+  flex: 1;
+  min-height: 0;
+  justify-content: center;
+  gap: 20px;
+  padding: 24px;
+}
+
+.falling-blocks-left-rail {
+  grid-area: left;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.falling-blocks-playfield {
+  grid-area: board;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  container-type: size;
+}
+
+.falling-blocks-board-frame {
+  width: min(100cqw, 50cqh);
+  padding: 7px;
+  background: linear-gradient(145deg, #6b627e, #383143);
+  border: 1px solid #81768f;
+  border-radius: 14px;
+  box-shadow: 0 12px 24px #21172d26, inset 0 1px #ffffff40;
+}
+
+.falling-blocks-board-frame.is-danger {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 36%, transparent);
+}
+
+.falling-blocks-board {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  grid-template-rows: repeat(20, minmax(0, 1fr));
+  gap: 1px;
+  width: 100%;
+  aspect-ratio: 1 / 2;
+  padding: 4px;
+  overflow: hidden;
+  background: #211e2b;
+  border: 1px solid #15111d;
+  border-radius: 7px;
+}
+
+.falling-blocks-cell {
+  min-width: 0;
+  min-height: 0;
+  background: #ffffff06;
+  border: 1px solid #ffffff03;
+  border-radius: 3px;
+}
+
+.falling-blocks-cell.is-filled,
+.falling-blocks-piece-preview > .filled {
+  background: linear-gradient(135deg, #ffffff48 0 16%, transparent 17% 78%, #30213d28 79%), var(--falling-blocks-cell-color);
+  border-color: #ffffff50;
+  box-shadow: inset 0 -2px #30213d38, inset 0 1px #ffffff38;
+}
+
+.falling-blocks-cell.is-active {
+  filter: brightness(1.12);
+}
+
+.falling-blocks-cell.is-ghost {
+  background: color-mix(in srgb, var(--falling-blocks-cell-color) 12%, transparent);
+  border-color: color-mix(in srgb, var(--falling-blocks-cell-color) 75%, transparent);
+}
+
+.falling-blocks-line-flash {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  pointer-events: none;
+  background: #ffffff38;
+  animation: falling-blocks-line-flash 280ms ease-out forwards;
+}
+
+.board-state {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  color: #fcf7f1;
+  font-size: 16px;
+  font-weight: 650;
+  background: #211e2bdc;
+  backdrop-filter: blur(3px);
+}
+
+.falling-blocks-preview-panel,
+.falling-blocks-stats,
+.falling-blocks-round-players,
+.falling-blocks-key-guide {
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.falling-blocks-preview-panel {
+  padding: 14px;
+}
+
+.falling-blocks-preview-panel h3,
+.falling-blocks-round-players h3 {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.falling-blocks-preview-panel h3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.falling-blocks-piece-preview {
+  --falling-blocks-preview-cell: 16px;
+  --falling-blocks-cell-color: var(--falling-blocks-piece-color);
+  display: grid;
+  grid-template-columns: repeat(4, var(--falling-blocks-preview-cell));
+  grid-template-rows: repeat(4, var(--falling-blocks-preview-cell));
+  justify-content: center;
+}
+
+.falling-blocks-piece-preview > span {
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid transparent;
+  border-radius: 3px;
+}
+
+.falling-blocks-hold.is-locked .falling-blocks-piece-preview {
+  opacity: 0.4;
+}
+
+.falling-blocks-key-guide {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.falling-blocks-key-guide div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.falling-blocks-game kbd {
+  padding: 4px 6px;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 10px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel);
+}
+
+.falling-blocks-sidebar {
+  grid-area: right;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.falling-blocks-next-list {
+  display: grid;
+  gap: 6px;
+}
+
+.falling-blocks-next-list .falling-blocks-piece-preview {
+  --falling-blocks-preview-cell: 10px;
+}
+
+.falling-blocks-next-list .falling-blocks-piece-preview:first-child {
+  --falling-blocks-preview-cell: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.falling-blocks-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.falling-blocks-stats > div {
+  padding: 12px 6px;
+  text-align: center;
+}
+
+.falling-blocks-stats .score {
+  grid-column: 1 / -1;
+  border-bottom: 1px solid var(--line);
+}
+
+.falling-blocks-stats dt {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.falling-blocks-stats dd {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.falling-blocks-stats .score dd {
+  font-size: 26px;
+}
+
+.falling-blocks-round-players {
+  padding: 12px;
+}
+
+.falling-blocks-round-players ol {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.falling-blocks-round-players li {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  gap: 5px;
+  padding: 7px 4px;
+  font-size: 11px;
+  border-radius: 6px;
+}
+
+.falling-blocks-round-players li[aria-current="true"] {
+  background: var(--accent-soft);
+}
+
+.falling-blocks-round-players li > span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.falling-blocks-round-players strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.falling-blocks-controls {
+  grid-area: controls;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-self: end;
+  gap: 7px;
+}
+
+.falling-blocks-controls button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 4px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--line) 70%, transparent);
+  touch-action: manipulation;
+}
+
+.falling-blocks-controls button:hover:not(:disabled) {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.falling-blocks-controls button:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.falling-blocks-controls button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.falling-blocks-controls button.hard-drop {
+  color: var(--brand-on-primary);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.falling-blocks-controls button.hard-drop:hover:not(:disabled) {
+  background: var(--accent-dark);
+}
+
+.falling-blocks-controls .pause-control {
+  grid-column: 1 / -1;
+}
+
+@keyframes falling-blocks-line-flash {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .falling-blocks-content {
+    grid-template-areas: "left board right" "controls controls controls";
+    grid-template-columns: 56px minmax(0, 1fr) 76px;
+    gap: 12px 7px;
+    padding: 12px 10px;
+  }
+  .falling-blocks-key-guide,
+  .falling-blocks-hold kbd {
+    display: none;
+  }
+  .falling-blocks-preview-panel,
+  .falling-blocks-round-players {
+    padding: 8px 4px;
+    border-radius: 10px;
+  }
+  .falling-blocks-preview-panel h3,
+  .falling-blocks-round-players h3 {
+    justify-content: center;
+    font-size: 11px;
+  }
+  .falling-blocks-hold .falling-blocks-piece-preview {
+    --falling-blocks-preview-cell: 10px;
+  }
+  .falling-blocks-next-list .falling-blocks-piece-preview,
+  .falling-blocks-next-list .falling-blocks-piece-preview:first-child {
+    --falling-blocks-preview-cell: 10px;
+  }
+  .falling-blocks-next-list .falling-blocks-piece-preview:nth-child(n + 4) {
+    display: none;
+  }
+  .falling-blocks-sidebar {
+    gap: 10px;
+  }
+  .falling-blocks-stats {
+    grid-template-columns: 1fr;
+    border-radius: 10px;
+  }
+  .falling-blocks-stats > div {
+    padding: 6px 2px;
+  }
+  .falling-blocks-stats dd,
+  .falling-blocks-stats .score dd {
+    font-size: 16px;
+  }
+  .falling-blocks-board-frame {
+    padding: 4px;
+    border-radius: 10px;
+  }
+  .falling-blocks-controls {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 7px;
+  }
+  .falling-blocks-round-players li {
+    grid-template-columns: 12px minmax(0, 1fr);
+    font-size: 10px;
+  }
+  .falling-blocks-round-players strong {
+    grid-column: 2;
+  }
+}
+
+@media (max-height: 520px) and (min-width: 701px) {
+  .falling-blocks-content {
+    grid-template-columns: 150px minmax(0, 200px) 190px;
+    padding: 12px;
+    gap: 10px 20px;
+  }
+  .falling-blocks-key-guide {
+    display: none;
+  }
+  .falling-blocks-hold {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+  }
+  .falling-blocks-hold h3 {
+    margin: 0;
+  }
+  .falling-blocks-hold kbd {
+    display: none;
+  }
+  .falling-blocks-hold .falling-blocks-piece-preview {
+    --falling-blocks-preview-cell: 9px;
+  }
+  .falling-blocks-next-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .falling-blocks-next-list .falling-blocks-piece-preview,
+  .falling-blocks-next-list .falling-blocks-piece-preview:first-child {
+    --falling-blocks-preview-cell: 10px;
+    padding: 0;
+    border: 0;
+  }
+  .falling-blocks-next-list .falling-blocks-piece-preview:nth-child(n + 4) {
+    display: none;
+  }
+  .falling-blocks-preview-panel {
+    padding: 8px;
+  }
+  .falling-blocks-sidebar {
+    gap: 10px;
+  }
+  .falling-blocks-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .falling-blocks-stats > div,
+  .falling-blocks-stats .score {
+    grid-column: auto;
+    padding: 8px 3px;
+    border: 0;
+  }
+  .falling-blocks-stats dd,
+  .falling-blocks-stats .score dd {
+    font-size: 18px;
+  }
+  .falling-blocks-controls {
+    gap: 5px;
+  }
+  .falling-blocks-controls button {
+    min-height: 40px;
+  }
+}

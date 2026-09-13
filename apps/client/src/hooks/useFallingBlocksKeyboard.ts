@@ -1,11 +1,11 @@
 import { useEffect, useRef } from "react";
-import type { TetrisCommand } from "@workhard/shared";
+import type { FallingBlocksCommand } from "@workhard/shared";
 
-interface TetrisKeyboardOptions {
+interface FallingBlocksKeyboardOptions {
   enabled: boolean;
   allowPause: boolean;
   allowHold: boolean;
-  onCommand: (command: TetrisCommand) => void;
+  onCommand: (command: FallingBlocksCommand) => void;
 }
 
 interface PressedDirection {
@@ -22,7 +22,7 @@ const lateralCommands: Partial<Record<string, PressedDirection["command"]>> = {
   ArrowRight: "right",
 };
 
-const actionCommands: Partial<Record<string, TetrisCommand>> = {
+const actionCommands: Partial<Record<string, FallingBlocksCommand>> = {
   ArrowUp: "rotate",
   KeyX: "rotate",
   Space: "drop",
@@ -33,7 +33,7 @@ const actionCommands: Partial<Record<string, TetrisCommand>> = {
   KeyP: "pause",
 };
 
-export function useTetrisKeyboard({ enabled, allowPause, allowHold, onCommand }: TetrisKeyboardOptions): void {
+export function useFallingBlocksKeyboard({ enabled, allowPause, allowHold, onCommand }: FallingBlocksKeyboardOptions): void {
   const onCommandRef = useRef(onCommand);
   const permissionsRef = useRef({ allowHold, allowPause });
 
@@ -58,7 +58,7 @@ export function useTetrisKeyboard({ enabled, allowPause, allowHold, onCommand }:
     let horizontalRepeatTimer: number | undefined;
     let softDropTimer: number | undefined;
 
-    const dispatch = (command: TetrisCommand) => onCommandRef.current(command);
+    const dispatch = (command: FallingBlocksCommand) => onCommandRef.current(command);
 
     const stopHorizontalRepeat = () => {
       window.clearTimeout(horizontalDelayTimer);

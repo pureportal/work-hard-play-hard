@@ -24,14 +24,14 @@ describe("asset direction indicators", () => {
   });
 
   it("falls back to the asset orientation when there are no actions", () => {
-    const indicators = getAssetDirectionIndicators(object("equipment-tetris", 270), 0.78);
+    const indicators = getAssetDirectionIndicators(object("equipment-falling-blocks", 270), 0.78);
 
     expect(indicators).toEqual([{
       center: { x: 56, y: 48 },
       bounds: { x: 0, y: 0, width: 112, height: 96 },
       direction: "right",
     }]);
-    expect(requireAssetDefinition("equipment-tetris").radius).toBe(124);
+    expect(requireAssetDefinition("equipment-falling-blocks").radius).toBe(124);
   });
 
   it("moves a single chair arrow clear of the pointer while preserving its origin", () => {

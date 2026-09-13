@@ -735,8 +735,8 @@ describe("WorldRuntime navigation boundaries", () => {
     runtime.disconnect(firstPeer);
 
     store.addMessage("conversation-team", "user-leo", "Sent while disconnected.");
-    store.recordGameRound("round-reconnect", "game-tetris", [
-      { userId: "user-leo", score: 7200, lines: 12, level: 2, order: 0 },
+    store.recordGameRound("round-reconnect", "game-falling-blocks", [
+      { userId: "user-leo", score: 7200, lines: 12, level: 2, order: 0, won: false },
     ]);
     store.updateMemberAccess("user-jonas", "admin", []);
 
@@ -1427,7 +1427,7 @@ describe("WorldRuntime game lifecycle", () => {
     for (let tick = 0; tick < 500; tick += 1) {
       runtime.runTickForTest();
     }
-    send(runtime, mayaPeer, { type: "game.start", requestId: "start-game", definitionId: "game-tetris" });
+    send(runtime, mayaPeer, { type: "game.start", requestId: "start-game", definitionId: "game-falling-blocks", objectId: "object-falling-blocks" });
     expect(mayaEvents).toContainEqual(expect.objectContaining({ type: "game.state" }));
     send(runtime, mayaPeer, { type: "game.end", requestId: "end-game" });
     send(runtime, mayaPeer, { type: "game.command", requestId: "move-after-close", command: "left" });

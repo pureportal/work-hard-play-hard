@@ -325,6 +325,7 @@
     {
       "id": "equipment-whiteboard",
       "name": "Whiteboard",
+      "workKind": "whiteboard",
       "category": "equipment",
       "kind": "whiteboard",
       "themeSetId": "equipment",
@@ -339,6 +340,7 @@
       "name": "Checklist",
       "category": "equipment",
       "kind": "whiteboard",
+      "workKind": "checklist",
       "themeSetId": "equipment",
       "buildable": true,
       "shop": {"price": 160, "available": true},
@@ -371,8 +373,8 @@
       "rarity": "epic"
     },
     {
-      "id": "equipment-tetris",
-      "name": "Tetris table",
+      "id": "equipment-falling-blocks",
+      "name": "Falling Blocks table",
       "category": "equipment",
       "kind": "game",
       "themeSetId": "equipment",

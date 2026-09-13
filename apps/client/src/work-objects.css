@@ -1,0 +1,202 @@
+.work-object-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(680px, 100%);
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+}
+
+.work-object-dialog > header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.work-object-dialog h2 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 20px;
+}
+
+.work-object-content {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 20px;
+}
+
+.whiteboard-notes {
+  display: block;
+  width: 100%;
+  height: min(42dvh, 360px);
+  min-height: 120px;
+  resize: vertical;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-strong);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.work-object-dialog > footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+}
+
+.work-object-form, .work-object-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.work-object-form > input {
+  flex: 1 1 180px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-strong);
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.work-object-dialog button {
+  min-height: 40px;
+}
+
+.work-object-dialog .icon-button {
+  flex: 0 0 40px;
+  width: 40px;
+}
+
+.work-object-save-state {
+  flex: 1;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.work-object-save-state:empty {
+  display: none;
+}
+
+.work-object-form > .primary-button {
+  margin-left: auto;
+}
+
+.checklist-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.checklist-progress progress {
+  flex: 1;
+  min-width: 0;
+  height: 6px;
+  accent-color: var(--accent);
+}
+
+.checklist-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.checklist-items li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.checklist-items li:last-child {
+  border-bottom: 0;
+}
+
+.checklist-items label {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 12px;
+  min-width: 0;
+  min-height: 40px;
+  cursor: pointer;
+}
+
+.checklist-items input {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.checklist-items label span {
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+
+.checklist-items .completed label span {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.work-object-error {
+  color: var(--danger);
+  font-size: 13px;
+  margin: 0 0 12px;
+}
+
+.work-object-conflict {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.work-object-conflict p, .work-object-discard p {
+  margin: 0 0 12px;
+}
+
+.work-object-conflict pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+}
+
+.work-object-conflict .work-object-buttons {
+  margin-top: 12px;
+}
+
+@media (max-width: 600px), (max-height: 500px) {
+  .work-object-dialog > header, .work-object-dialog > footer, .work-object-content {
+    padding: 12px;
+  }
+
+  .work-object-dialog h2 {
+    font-size: 18px;
+  }
+
+  .work-object-form > input {
+    flex-basis: 100%;
+  }
+}

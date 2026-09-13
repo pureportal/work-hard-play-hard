@@ -1,7 +1,7 @@
+import { nearbyGameParticipants } from "./game-lobby.js";
 import { randomUUID } from "node:crypto";
 import {
-  getPlacedAssetBounds,
-  TETRIS_DEFINITION_ID,
+  FALLING_BLOCKS_DEFINITION_ID,
   type GameLobbyState,
   type GameRoundState,
   type ServerEvent,
@@ -10,17 +10,13 @@ import {
 } from "@workhard/shared";
 import { DemoStore } from "../store.js";
 import { FallingBlocksGame } from "./falling-blocks.js";
+import type { GameEventDelivery } from "./game-event-delivery.js";
+
+export type { GameEventDelivery } from "./game-event-delivery.js";
 
 const LOBBY_CAPACITY = 8;
-const LOBBY_JOIN_DISTANCE = 76;
-const LOBBY_LEAVE_DISTANCE = 116;
 
 type GameCommand = Parameters<FallingBlocksGame["command"]>[0];
-
-export type GameEventDelivery =
-  | { scope: "all"; event: ServerEvent }
-  | { scope: "floor"; floorId: string; event: ServerEvent }
-  | { scope: "users"; userIds: string[]; event: ServerEvent };
 
 interface PlayerCompletion {
   score: number;
@@ -31,7 +27,8 @@ interface PlayerCompletion {
 
 interface ActiveRound {
   id: string;
-  definitionId: typeof TETRIS_DEFINITION_ID;
+  definitionId: typeof FALLING_BLOCKS_DEFINITION_ID;
+  objectId: string;
   floorId: string;
   startedAt: string;
   participantIds: string[];
@@ -45,8 +42,8 @@ interface StartResult {
   deliveries: GameEventDelivery[];
 }
 
-export class TetrisMultiplayerRuntime {
-  private readonly lobbyParticipants = new Map<string, string[]>();
+export class FallingBlocksMultiplayerRuntime {
+  private readonly lobbies = new Map<string, GameLobbyState>();
   private readonly rounds = new Map<string, ActiveRound>();
   private readonly roundIdByUser = new Map<string, string>();
 
@@ -59,39 +56,27 @@ export class TetrisMultiplayerRuntime {
     const deliveries: GameEventDelivery[] = [];
     const playerList = [...players];
 
-    for (const definition of this.store.getMiniGames()) {
-      const object = this.store.getObject(definition.objectId);
-      if (!object) {
-        continue;
-      }
-      const previous = this.lobbyParticipants.get(definition.id) ?? [];
-      const candidates = playerList
-        .filter((player) => this.canJoinLobby(player, object, connectedUserIds))
-        .map((player) => ({
-          userId: player.userId,
-          distance: distanceFromObject(player, object),
-        }));
-      const candidateDistances = new Map(candidates.map((candidate) => [candidate.userId, candidate.distance]));
-      const next = previous.filter((userId) => (candidateDistances.get(userId) ?? Infinity) <= LOBBY_LEAVE_DISTANCE);
-      for (const candidate of candidates.sort((left, right) => left.distance - right.distance || left.userId.localeCompare(right.userId))) {
-        if (next.length >= LOBBY_CAPACITY) {
-          break;
-        }
-        if (candidate.distance <= LOBBY_JOIN_DISTANCE && !next.includes(candidate.userId)) {
-          next.push(candidate.userId);
-        }
-      }
-
-      this.lobbyParticipants.set(definition.id, next);
-      if (!sameMembers(previous, next)) {
-        deliveries.push(this.lobbyDelivery(definition.id, object, next));
+    const objects = this.store.getGameObjects(FALLING_BLOCKS_DEFINITION_ID);
+    const objectIds = new Set(objects.map((object) => object.id));
+    for (const [objectId, lobby] of this.lobbies) {
+      if (objectIds.has(objectId)) continue;
+      deliveries.push(this.lobbyDelivery({ ...lobby, participantIds: [] }));
+      this.lobbies.delete(objectId);
+    }
+    for (const object of objects) {
+      const previous = this.lobbies.get(object.id);
+      const next = nearbyGameParticipants(playerList.filter((player) => !this.isPlaying(player.userId)), object, connectedUserIds, previous?.participantIds ?? [], LOBBY_CAPACITY);
+      const lobby = this.lobbyState(object, next);
+      this.lobbies.set(object.id, lobby);
+      if (!previous || previous.floorId !== lobby.floorId || !sameMembers(previous.participantIds, next)) {
+        deliveries.push(this.lobbyDelivery(lobby));
       }
     }
 
     return deliveries;
   }
 
-  start(userId: string, definitionId: string): StartResult {
+  start(userId: string, objectId: string, solo = false): StartResult {
     const existingRound = this.getRoundForUser(userId);
     if (existingRound) {
       return {
@@ -99,22 +84,21 @@ export class TetrisMultiplayerRuntime {
         deliveries: this.sessionDeliveries(userId, existingRound),
       };
     }
-    if (definitionId !== TETRIS_DEFINITION_ID) {
+    const definition = this.store.getMiniGame(FALLING_BLOCKS_DEFINITION_ID);
+    const object = this.store.getObject(objectId);
+    if (!definition || !object || object.assetId !== definition.assetId) {
       throw new Error("GAME_NOT_FOUND");
     }
-    const definition = this.store.getMiniGame(definitionId);
-    const object = definition ? this.store.getObject(definition.objectId) : undefined;
-    if (!definition || !object) {
-      throw new Error("GAME_NOT_FOUND");
-    }
-    const participantIds = [...(this.lobbyParticipants.get(definitionId) ?? [])];
-    if (!participantIds.includes(userId)) {
+    const nearbyUserIds = this.lobbies.get(objectId)?.participantIds ?? [];
+    if (!nearbyUserIds.includes(userId)) {
       throw new Error("GAME_TOO_FAR");
     }
+    const participantIds = solo ? [userId] : [...nearbyUserIds];
 
     const round: ActiveRound = {
       id: randomUUID(),
-      definitionId: TETRIS_DEFINITION_ID,
+      definitionId: FALLING_BLOCKS_DEFINITION_ID,
+      objectId,
       floorId: object.floorId,
       startedAt: new Date().toISOString(),
       participantIds,
@@ -129,16 +113,21 @@ export class TetrisMultiplayerRuntime {
       this.roundIdByUser.set(participantId, round.id);
     }
     this.rounds.set(round.id, round);
-    this.lobbyParticipants.set(definitionId, []);
-
-    const deliveries: GameEventDelivery[] = [
-      this.lobbyDelivery(definitionId, object, []),
+    const deliveries: GameEventDelivery[] = [];
+    for (const [lobbyObjectId, lobby] of this.lobbies) {
+      const remaining = lobby.participantIds.filter((participantId) => !participantIds.includes(participantId));
+      if (remaining.length === lobby.participantIds.length) continue;
+      const updated = { ...lobby, participantIds: remaining };
+      this.lobbies.set(lobbyObjectId, updated);
+      deliveries.push(this.lobbyDelivery(updated));
+    }
+    deliveries.push(
       {
         scope: "users",
         userIds: participantIds,
         event: { type: "game.round_started", round: this.roundState(round) },
       },
-    ];
+    );
     for (const participantId of participantIds) {
       const game = round.games.get(participantId)!;
       deliveries.push({ scope: "users", userIds: [participantId], event: game.state });
@@ -146,7 +135,7 @@ export class TetrisMultiplayerRuntime {
         scope: "all",
         event: {
           type: "presence.changed",
-          member: this.store.updateMemberLocation(participantId, round.floorId, "Playing Tetris"),
+          member: this.store.updateMemberLocation(participantId, round.floorId, "Playing Falling Blocks"),
         },
       });
     }
@@ -223,15 +212,8 @@ export class TetrisMultiplayerRuntime {
 
   getSessionEvents(userId: string): ServerEvent[] {
     const events: ServerEvent[] = [];
-    for (const definition of this.store.getMiniGames()) {
-      const participantIds = this.lobbyParticipants.get(definition.id) ?? [];
-      if (!participantIds.includes(userId)) {
-        continue;
-      }
-      const object = this.store.getObject(definition.objectId);
-      if (object) {
-        events.push({ type: "game.lobby_updated", lobby: this.lobbyState(definition.id, object, participantIds) });
-      }
+    for (const lobby of this.lobbies.values()) {
+      if (lobby.participantIds.includes(userId)) events.push({ type: "game.lobby_updated", lobby });
     }
     const round = this.getRoundForUser(userId);
     if (round) {
@@ -244,28 +226,17 @@ export class TetrisMultiplayerRuntime {
     return events;
   }
 
-  private canJoinLobby(
-    player: WorldPlayer,
-    object: WorldObject,
-    connectedUserIds: ReadonlySet<string>,
-  ): boolean {
-    return player.connected
-      && connectedUserIds.has(player.userId)
-      && player.floorId === object.floorId
-      && !this.roundIdByUser.has(player.userId);
-  }
-
-  private lobbyDelivery(definitionId: string, object: WorldObject, participantIds: string[]): GameEventDelivery {
+  private lobbyDelivery(lobby: GameLobbyState): GameEventDelivery {
     return {
       scope: "floor",
-      floorId: object.floorId,
-      event: { type: "game.lobby_updated", lobby: this.lobbyState(definitionId, object, participantIds) },
+      floorId: lobby.floorId,
+      event: { type: "game.lobby_updated", lobby },
     };
   }
 
-  private lobbyState(definitionId: string, object: WorldObject, participantIds: string[]): GameLobbyState {
+  private lobbyState(object: WorldObject, participantIds: string[]): GameLobbyState {
     return {
-      definitionId,
+      definitionId: FALLING_BLOCKS_DEFINITION_ID,
       objectId: object.id,
       floorId: object.floorId,
       participantIds: [...participantIds],
@@ -335,14 +306,23 @@ export class TetrisMultiplayerRuntime {
 
   private completeRound(round: ActiveRound, deliveries: GameEventDelivery[]): void {
     const completedAt = new Date().toISOString();
+    const results = round.participantIds.map((userId) => ({ userId, ...round.completions.get(userId)! }));
+    const winnerUserId = results.length > 1
+      ? [...results].sort((left, right) =>
+        right.score - left.score
+        || right.lines - left.lines
+        || right.level - left.level
+        || left.order - right.order
+        || left.userId.localeCompare(right.userId),
+      )[0]!.userId
+      : undefined;
     const recorded = this.store.recordGameRound(
       round.id,
       round.definitionId,
-      round.participantIds.map((userId) => ({ userId, ...round.completions.get(userId)! })),
+      results.map((result) => ({ ...result, won: result.userId === winnerUserId })),
       completedAt,
     );
     const placements = new Map(recorded.scores.map((score) => [score.userId, score.placement]));
-    const winnerUserId = recorded.scores.find((score) => score.won)?.userId;
     const completedRound = this.roundState(round, {
       completedAt,
       placements,
@@ -382,6 +362,7 @@ export class TetrisMultiplayerRuntime {
     return {
       id: round.id,
       definitionId: round.definitionId,
+      objectId: round.objectId,
       floorId: round.floorId,
       startedAt: round.startedAt,
       status: completion ? "completed" : "playing",
@@ -402,12 +383,6 @@ export class TetrisMultiplayerRuntime {
   }
 }
 
-function distanceFromObject(player: WorldPlayer, object: WorldObject): number {
-  const bounds = getPlacedAssetBounds(object);
-  const deltaX = Math.max(bounds.x - player.x, 0, player.x - bounds.x - bounds.width);
-  const deltaY = Math.max(bounds.y - player.y, 0, player.y - bounds.y - bounds.height);
-  return Math.hypot(deltaX, deltaY);
-}
 
 function sameMembers(left: string[], right: string[]): boolean {
   return left.length === right.length && left.every((userId, index) => userId === right[index]);

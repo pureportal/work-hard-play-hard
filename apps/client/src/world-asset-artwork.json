@@ -6663,11 +6663,11 @@
       }
     }
   },
-  "equipment-tetris": {
+  "equipment-falling-blocks": {
     "elevation": 0,
     "variants": {
       "graphite": {
-        "path": "/world-assets/equipment-tetris/graphite.png",
+        "path": "/world-assets/equipment-falling-blocks/graphite.png",
         "width": 625,
         "height": 218,
         "frames": [
@@ -6698,7 +6698,7 @@
         ]
       },
       "white": {
-        "path": "/world-assets/equipment-tetris/white.png",
+        "path": "/world-assets/equipment-falling-blocks/white.png",
         "width": 625,
         "height": 218,
         "frames": [
@@ -6729,7 +6729,7 @@
         ]
       },
       "violet": {
-        "path": "/world-assets/equipment-tetris/violet.png",
+        "path": "/world-assets/equipment-falling-blocks/violet.png",
         "width": 625,
         "height": 218,
         "frames": [

@@ -1,5 +1,6 @@
 import assetCatalogSource from "./asset-catalog.json" with { type: "json" };
 import type { Position, Rect } from "./geometry.js";
+import type { WorkObjectKind, WorkObjectState } from "./work-objects.js";
 
 export const ASSET_ROTATIONS = [0, 90, 180, 270] as const;
 
@@ -50,6 +51,7 @@ export interface AssetDefinition {
   rarity: AssetRarity;
   buildable: boolean;
   radius?: number;
+  workKind?: WorkObjectKind;
   shop?: {
     price: number;
     available: boolean;
@@ -100,6 +102,7 @@ export interface WorldObject {
   label?: string;
   ownerUserId?: string;
   ownedAssetId?: string;
+  workState?: WorkObjectState;
 }
 
 export interface ResolvedAssetCell extends RasterCell {
@@ -433,6 +436,7 @@ function validateAssetCatalog(catalog: AssetCatalog): void {
         || !asset.buildable
       ))
       || !validAssetKinds.has(asset.kind)
+      || (asset.workKind !== undefined && !["whiteboard", "checklist"].includes(asset.workKind))
       || (asset.radius !== undefined && (!Number.isFinite(asset.radius) || asset.radius <= 0))
       || !validLayers.has(asset.placement.layer)
       || !validPlacementTargets.has(asset.placement.requires)

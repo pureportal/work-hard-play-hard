@@ -1,0 +1,675 @@
+.tic-tac-toe-mark {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  gap: 3px;
+  padding: 6px;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.tic-tac-toe-mark > span {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+
+.tic-tac-toe-mark > .is-x::before,
+.tic-tac-toe-mark > .is-x::after {
+  position: absolute;
+  top: calc(50% - 1px);
+  left: 10%;
+  width: 80%;
+  height: 2px;
+  content: "";
+  background: var(--game-cross);
+  border-radius: 2px;
+  transform: rotate(45deg);
+}
+
+.tic-tac-toe-mark > .is-x::after {
+  transform: rotate(-45deg);
+}
+
+.tic-tac-toe-mark > .is-o::after {
+  position: absolute;
+  inset: 10%;
+  content: "";
+  border: 2px solid var(--game-nought);
+  border-radius: 50%;
+}
+
+.tic-tac-toe-variant-picker {
+  margin: 12px 0;
+}
+
+.tic-tac-toe-lobby-players {
+  padding: 0;
+  margin: 14px 0 0;
+  list-style: none;
+}
+
+.tic-tac-toe-lobby-players li {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 42px;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.tic-tac-toe-lobby-players li > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tic-tac-toe-start-button {
+  width: 100%;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.tic-tac-toe-player-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin: 14px 0 0;
+}
+
+.tic-tac-toe-player-stats > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.tic-tac-toe-player-stats dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.tic-tac-toe-player-stats dd {
+  margin: 0;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.tic-tac-toe-game {
+  width: min(800px, 100%);
+}
+
+.tic-tac-toe-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tic-tac-toe-header-actions > button:not(.icon-button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 12px;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.tic-tac-toe-header-actions > button[aria-expanded="true"] {
+  color: var(--ink);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.tic-tac-toe-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 0;
+  flex: 1;
+  padding: 24px;
+  overflow: auto;
+}
+
+.tic-tac-toe-players {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(480px, 100%);
+  gap: 10px;
+}
+
+.tic-tac-toe-players > div {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 8px 10px;
+  gap: 10px;
+  color: var(--muted);
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.tic-tac-toe-players > .is-active {
+  color: var(--ink);
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--line));
+}
+
+.tic-tac-toe-players strong {
+  flex: 1;
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tic-tac-toe-player-avatar,
+.game-bot-avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+}
+
+.game-bot-avatar {
+  color: var(--ink);
+  background: var(--accent-soft);
+}
+
+.tic-tac-toe-player-mark {
+  position: relative;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.tic-tac-toe-player-mark.is-x::before,
+.tic-tac-toe-player-mark.is-x::after {
+  position: absolute;
+  top: calc(50% - 1.5px);
+  width: 100%;
+  height: 3px;
+  content: "";
+  background: var(--game-cross);
+  border-radius: 2px;
+  transform: rotate(45deg);
+}
+
+.tic-tac-toe-player-mark.is-x::after {
+  transform: rotate(-45deg);
+}
+
+.tic-tac-toe-player-mark.is-o {
+  border: 3px solid var(--game-nought);
+  border-radius: 50%;
+}
+
+.tic-tac-toe-status {
+  padding-top: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.tic-tac-toe-status.is-won {
+  color: var(--success);
+}
+
+.tic-tac-toe-rules {
+  width: min(560px, 100%);
+  padding: 12px 14px;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.tic-tac-toe-rules p {
+  margin: 0;
+}
+
+.tic-tac-toe-rules p + p {
+  margin-top: 6px;
+}
+
+.tic-tac-toe-playfield {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  padding-top: 18px;
+}
+
+.tic-tac-toe-board,
+.tic-tac-toe-ultimate-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  width: min(430px, 100%);
+  aspect-ratio: 1;
+  padding: 10px;
+  gap: 8px;
+  background: var(--game-recess);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: 0 10px 24px #24193018, inset 0 1px #ffffff28;
+}
+
+.tic-tac-toe-board > button,
+.tic-tac-toe-local-board > button {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  place-items: center;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--line) 80%, transparent);
+  touch-action: manipulation;
+}
+
+.tic-tac-toe-board > button:not(:disabled):hover,
+.tic-tac-toe-local-board > button:not(:disabled):hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.tic-tac-toe-board > button:focus-visible,
+.tic-tac-toe-local-board > button:focus-visible {
+  z-index: 3;
+  outline-offset: -3px;
+}
+
+.tic-tac-toe-board > button:disabled,
+.tic-tac-toe-local-board > button:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.tic-tac-toe-board > button.is-winning,
+.tic-tac-toe-local-board.is-winning {
+  background: color-mix(in srgb, var(--success) 18%, var(--panel-strong));
+  border-color: var(--success);
+}
+
+.tic-tac-toe-board-mark {
+  position: relative;
+  display: block;
+  width: 54%;
+  height: 54%;
+  filter: drop-shadow(0 3px 0 #32203a1c);
+}
+
+.tic-tac-toe-board-mark.is-x::before,
+.tic-tac-toe-board-mark.is-x::after {
+  position: absolute;
+  top: calc(50% - 4px);
+  left: 0;
+  width: 100%;
+  height: 8px;
+  content: "";
+  background: var(--game-cross);
+  border-radius: 4px;
+  transform: rotate(45deg);
+}
+
+.tic-tac-toe-board-mark.is-x::after {
+  transform: rotate(-45deg);
+}
+
+.tic-tac-toe-board-mark.is-o {
+  border: 8px solid var(--game-nought);
+  border-radius: 50%;
+}
+
+.tic-tac-toe-ultimate-board {
+  width: min(530px, 100%);
+  gap: 8px;
+}
+
+.tic-tac-toe-local-board {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  min-width: 0;
+  min-height: 0;
+  padding: 5px;
+  gap: 3px;
+  background: var(--panel);
+  border: 2px solid transparent;
+  border-radius: 10px;
+}
+
+.tic-tac-toe-local-board.is-active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.tic-tac-toe-local-board.is-closed > button {
+  opacity: 0.18;
+}
+
+.tic-tac-toe-local-board > button {
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+.tic-tac-toe-local-board .tic-tac-toe-board-mark {
+  filter: none;
+}
+
+.tic-tac-toe-local-board .tic-tac-toe-board-mark.is-x::before,
+.tic-tac-toe-local-board .tic-tac-toe-board-mark.is-x::after {
+  top: calc(50% - 1.5px);
+  height: 3px;
+}
+
+.tic-tac-toe-local-board .tic-tac-toe-board-mark.is-o {
+  border-width: 3px;
+}
+
+.tic-tac-toe-board-mark.local-board-result {
+  position: absolute;
+  z-index: 2;
+  top: 20%;
+  left: 20%;
+  width: 60%;
+  height: 60%;
+  pointer-events: none;
+}
+
+.tic-tac-toe-stacking-layout {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 430px);
+  align-items: center;
+  width: min(580px, 100%);
+  gap: 16px;
+}
+
+.tic-tac-toe-opponent-reserves {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.tic-tac-toe-opponent-reserves > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tic-tac-toe-piece-picker {
+  display: grid;
+  gap: 8px;
+}
+
+.tic-tac-toe-piece-picker button {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px;
+  gap: 5px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 550;
+  text-align: left;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.tic-tac-toe-piece-picker button:last-child {
+  display: block;
+  text-align: center;
+}
+
+.tic-tac-toe-piece-picker button[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.tic-tac-toe-piece-picker button:disabled {
+  opacity: 0.4;
+}
+
+.tic-tac-toe-piece-picker strong {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stacking-piece {
+  --stacking-piece-size: 30%;
+  --stacking-color: var(--game-cross);
+  position: relative;
+  display: block;
+  width: var(--stacking-piece-size);
+  aspect-ratio: 1;
+  background: linear-gradient(145deg, #ffffff60, transparent 48%), var(--stacking-color);
+  border: 2px solid color-mix(in srgb, var(--stacking-color) 70%, #382940);
+  border-radius: 50%;
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--stacking-color) 70%, #382940), inset 0 1px #ffffff65, 0 7px 10px #32203a22;
+  container-type: inline-size;
+}
+
+.stacking-piece.is-medium {
+  --stacking-piece-size: 48%;
+}
+
+.stacking-piece.is-large {
+  --stacking-piece-size: 68%;
+}
+
+.stacking-piece.is-o {
+  --stacking-color: var(--game-nought);
+}
+
+.stacking-piece::after {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fffaf0;
+  font-size: clamp(10px, 44cqw, 36px);
+  font-weight: 650;
+  line-height: 1;
+}
+
+.stacking-piece.is-x::after {
+  content: "×";
+}
+
+.stacking-piece.is-o::after {
+  content: "○";
+}
+
+.tic-tac-toe-piece-picker .stacking-piece,
+.tic-tac-toe-opponent-reserves .stacking-piece {
+  width: 24px;
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--stacking-color) 70%, #382940);
+}
+
+.tic-tac-toe-piece-picker .stacking-piece.is-small,
+.tic-tac-toe-opponent-reserves .stacking-piece.is-small {
+  width: 15px;
+  margin-inline: auto;
+}
+
+.tic-tac-toe-piece-picker .stacking-piece.is-medium,
+.tic-tac-toe-opponent-reserves .stacking-piece.is-medium {
+  width: 20px;
+  margin-inline: auto;
+}
+
+.tic-tac-toe-piece-picker .stacking-piece::after,
+.tic-tac-toe-opponent-reserves .stacking-piece::after {
+  font-size: 13px;
+}
+
+.tic-tac-toe-board.is-stacking > button.is-selected {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 2px var(--accent);
+  background: var(--accent-soft);
+}
+
+@media (max-width: 700px) {
+  .tic-tac-toe-content {
+    padding: 16px 12px;
+    container-type: size;
+  }
+  .tic-tac-toe-players {
+    gap: 8px;
+  }
+  .tic-tac-toe-players > div {
+    padding: 8px;
+    gap: 7px;
+  }
+  .tic-tac-toe-board,
+  .tic-tac-toe-ultimate-board {
+    padding: 7px;
+    gap: 5px;
+    border-radius: 16px;
+  }
+  .tic-tac-toe-local-board {
+    padding: 3px;
+    gap: 2px;
+    border-radius: 7px;
+  }
+}
+
+@media (max-width: 700px) and (orientation: portrait), (max-width: 700px) and (min-height: 521px) {
+  .tic-tac-toe-stacking-layout {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 16px;
+  }
+  .tic-tac-toe-stacking-layout .tic-tac-toe-board {
+    width: min(100%, calc(100cqh - 258px));
+  }
+  .tic-tac-toe-piece-picker {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    order: 2;
+    width: 100%;
+  }
+  .tic-tac-toe-piece-picker button {
+    grid-template-columns: 1fr auto;
+    justify-items: center;
+    padding: 8px 4px;
+    gap: 6px 3px;
+    text-align: center;
+  }
+  .tic-tac-toe-piece-picker button > span:nth-child(2) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .tic-tac-toe-piece-picker strong {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+
+@media (max-width: 380px) {
+  .tic-tac-toe-header-actions {
+    gap: 4px;
+  }
+  .tic-tac-toe-header-actions > button:not(.icon-button) {
+    padding: 0 8px;
+  }
+  .tic-tac-toe-header-actions > button:not(.icon-button) svg {
+    display: none;
+  }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .tic-tac-toe-game {
+    height: 100%;
+  }
+  .tic-tac-toe-content {
+    display: grid;
+    grid-template-columns: 152px minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    align-items: start;
+    gap: 10px 20px;
+    padding: 12px 16px;
+  }
+  .tic-tac-toe-players {
+    grid-column: 1;
+    grid-row: 1;
+    grid-template-columns: 1fr;
+  }
+  .tic-tac-toe-status {
+    grid-column: 1;
+    grid-row: 2;
+    padding: 0;
+  }
+  .tic-tac-toe-rules {
+    grid-column: 1;
+    grid-row: 3;
+    min-height: 0;
+    max-height: 100%;
+    padding: 8px;
+    margin: 0;
+    overflow: auto;
+    font-size: 12px;
+  }
+  .tic-tac-toe-playfield {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    align-self: stretch;
+    min-height: 0;
+    padding-top: 0;
+    container-type: size;
+  }
+  .tic-tac-toe-board,
+  .tic-tac-toe-ultimate-board {
+    width: min(100%, 100cqh);
+  }
+  .tic-tac-toe-stacking-layout {
+    grid-template-columns: 128px minmax(0, 1fr);
+    gap: 12px;
+  }
+  .tic-tac-toe-stacking-layout .tic-tac-toe-board {
+    width: min(100%, calc(100cqh - 36px));
+  }
+  .tic-tac-toe-piece-picker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+  }
+  .tic-tac-toe-piece-picker button {
+    grid-template-columns: 1fr auto;
+    min-height: 40px;
+    padding: 4px;
+    gap: 2px 4px;
+    text-align: center;
+  }
+  .tic-tac-toe-piece-picker button > span:nth-child(2) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .tic-tac-toe-piece-picker strong {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}

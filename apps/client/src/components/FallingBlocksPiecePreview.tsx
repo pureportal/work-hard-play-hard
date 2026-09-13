@@ -2,16 +2,16 @@ import type { CSSProperties } from "react";
 import { TETROMINO_SHAPES, type TetrominoType } from "@workhard/shared";
 
 export const TETROMINO_COLORS: Record<TetrominoType, string> = {
-  I: "#24d9f4",
-  O: "#ffd447",
-  T: "#ad78ff",
-  J: "#4d7dff",
-  L: "#ff9f43",
-  S: "#48dc8b",
-  Z: "#ff607d",
+  I: "#79c8cf",
+  O: "#e6c36e",
+  T: "#ad8dd1",
+  J: "#7a99db",
+  L: "#e5a275",
+  S: "#89bd9c",
+  Z: "#db8590",
 };
 
-export const TETRIS_BLOCK_COLORS = [
+export const FALLING_BLOCKS_BLOCK_COLORS = [
   "transparent",
   TETROMINO_COLORS.I,
   TETROMINO_COLORS.O,
@@ -22,12 +22,12 @@ export const TETRIS_BLOCK_COLORS = [
   TETROMINO_COLORS.Z,
 ];
 
-interface TetrisPiecePreviewProps {
+interface FallingBlocksPiecePreviewProps {
   piece: TetrominoType | null;
   label: string;
 }
 
-export function TetrisPiecePreview({ piece, label }: TetrisPiecePreviewProps) {
+export function FallingBlocksPiecePreview({ piece, label }: FallingBlocksPiecePreviewProps) {
   const filledCells = new Set<string>();
   if (piece) {
     const shape = TETROMINO_SHAPES[piece];
@@ -43,11 +43,11 @@ export function TetrisPiecePreview({ piece, label }: TetrisPiecePreviewProps) {
   }
 
   const style = piece
-    ? { "--tetris-piece-color": TETROMINO_COLORS[piece] } as CSSProperties
+    ? { "--falling-blocks-piece-color": TETROMINO_COLORS[piece] } as CSSProperties
     : undefined;
 
   return (
-    <div className={`tetris-piece-preview${piece ? " has-piece" : ""}`} style={style} role="img" aria-label={label}>
+    <div className={`falling-blocks-piece-preview${piece ? " has-piece" : ""}`} style={style} role="img" aria-label={label}>
       {Array.from({ length: 16 }, (_, index) => {
         const row = Math.floor(index / 4);
         const column = index % 4;

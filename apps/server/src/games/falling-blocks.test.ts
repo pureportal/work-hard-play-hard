@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TETROMINO_SHAPES, type TetrisCellPosition } from "@workhard/shared";
+import { TETROMINO_SHAPES, type FallingBlocksCellPosition } from "@workhard/shared";
 import { FallingBlocksGame } from "./falling-blocks.js";
 
 describe("FallingBlocksGame", () => {
@@ -82,7 +82,7 @@ describe("FallingBlocksGame", () => {
   });
 });
 
-function normalizeCells(cells: TetrisCellPosition[]): string[] {
+function normalizeCells(cells: FallingBlocksCellPosition[]): string[] {
   const minimumRow = Math.min(...cells.map(({ row }) => row));
   const minimumColumn = Math.min(...cells.map(({ column }) => column));
   return cells

@@ -3,6 +3,8 @@ import {
   CHARACTER_WALK_SPEED,
   ASSET_RASTER_SIZE,
   BUILD_GRID_SIZE,
+  canUseWorkObject,
+  getWorkObjectState,
   GONG_COOLDOWN_MS,
   GONG_INTERACTION_RANGE,
   MAX_LAYOUT_OBJECTS_PER_FLOOR,
@@ -59,18 +61,19 @@ import {
   type Rect,
   type ReactionKind,
   type ServerEvent,
-  type TetrisCommand,
+  type GameCommand,
+  type TicTacToeVariantId,
   type WorldObject,
   type WorldPlayer,
   type WorldSnapshot,
   type Wall,
   type WallOpening,
 } from "@workhard/shared";
-import {
-  TetrisMultiplayerRuntime,
-  type GameEventDelivery,
-} from "../games/tetris-multiplayer.js";
+import { ChessMultiplayerRuntime } from "../games/chess-multiplayer.js";
+import type { GameEventDelivery } from "../games/game-event-delivery.js";
+import { GamesRuntime } from "../games/games-runtime.js";
 import { DemoStore } from "../store.js";
+import { applyWorkObjectEdit } from "../work/work-object-state.js";
 import { canOccupy } from "./collision.js";
 import {
   findFloorRoute,
@@ -99,6 +102,7 @@ const SNAPSHOT_COMMAND_TYPES = new Set<ClientCommand["type"]>([
   "player_asset.move",
   "player_asset.remove",
   "asset.interact",
+  "work.approach",
   "seat.leave",
   "room.update_settings",
   "interaction.wave",
@@ -118,6 +122,7 @@ const SPATIAL_COMMAND_TYPES = new Set<ClientCommand["type"]>([
   "player_asset.move",
   "player_asset.remove",
   "asset.interact",
+  "work.approach",
   "seat.leave",
   "room.update_settings",
 ]);
@@ -187,7 +192,8 @@ export class WorldRuntime {
   private readonly activeMovementUserIds = new Set<string>();
   private readonly movementSequences = new Map<string, number>();
   private readonly proximityMedia = new Map<string, { microphone: boolean; camera: boolean }>();
-  private readonly gameRuntime: TetrisMultiplayerRuntime;
+  private readonly gameRuntime: GamesRuntime;
+  private readonly chessRuntime: ChessMultiplayerRuntime;
   private readonly calls = new Map<string, ActiveCall>();
   private readonly roomKnocks = new Map<string, ActiveRoomKnock>();
   private readonly roomGrants = new Map<string, Set<string>>();
@@ -204,8 +210,9 @@ export class WorldRuntime {
   private economyDayKey = getUtcDayKey(new Date());
   dirty = false;
 
-  constructor(private readonly store: DemoStore) {
-    this.gameRuntime = new TetrisMultiplayerRuntime(store);
+  constructor(private readonly store: DemoStore, options: { chessNow?: () => Date } = {}) {
+    this.gameRuntime = new GamesRuntime(store);
+    this.chessRuntime = new ChessMultiplayerRuntime(store, options.chessNow);
     for (const member of store.getMembers()) {
       if (!member.online || !member.floorId || !member.position) {
         continue;
@@ -232,6 +239,7 @@ export class WorldRuntime {
   }
 
   stop(): void {
+    this.chessRuntime.stop();
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = undefined;
@@ -344,7 +352,7 @@ export class WorldRuntime {
     this.sendSnapshot(peer);
     const activeMeetingId = this.activeMeetings.get(userId);
     send({ type: "workspace.snapshot", data: this.store.getBootstrap(userId) });
-    this.dispatchGameEvents(this.gameRuntime.syncLobbies(this.players.values(), this.connectedUserIds()));
+    this.syncGameLobbies();
     this.sendActiveSessionState(peer, activeMeetingId);
     send({ type: "session.synced" });
     return peer.id;
@@ -376,10 +384,11 @@ export class WorldRuntime {
       this.leaveActiveMeeting(peer.userId);
       this.handleKnockDisconnect(peer.userId);
       this.dispatchGameEvents(this.gameRuntime.leave(peer.userId));
+      this.chessRuntime.disconnect(peer.userId);
       this.roomGrants.delete(peer.userId);
       this.lastReactionAt.delete(peer.userId);
       this.clearRecentWavesForUser(peer.userId);
-      this.dispatchGameEvents(this.gameRuntime.syncLobbies(this.players.values(), this.connectedUserIds()));
+      this.syncGameLobbies();
       this.reconcileProximityCalls();
     } else {
       const movement = this.movements.get(peer.userId);
@@ -454,6 +463,12 @@ export class WorldRuntime {
         case "asset.interact":
           this.interactWithAsset(peer, command.requestId, command.objectId, command.interactionId);
           break;
+        case "work.update":
+          this.updateWorkObject(peer, command);
+          break;
+        case "work.approach":
+          this.approachWorkObject(peer, command.requestId, command.objectId);
+          break;
         case "seat.leave":
           this.leaveSeat(peer.userId);
           break;
@@ -491,13 +506,58 @@ export class WorldRuntime {
           this.leaveMeeting(peer, command.meetingId);
           break;
         case "game.start":
-          this.startGame(peer, command.definitionId);
+          this.startGame(
+            peer,
+            command.definitionId,
+            "variantId" in command ? command.variantId : undefined,
+            command,
+          );
           break;
         case "game.end":
           this.endGame(peer);
           break;
         case "game.command":
           this.commandGame(peer, command.command);
+          break;
+        case "chess.match_create":
+          if (this.gameRuntime.isPlaying(peer.userId)) throw new Error("GAME_IN_PROGRESS");
+          this.dispatchGameEvents(this.chessRuntime.create(peer.userId, command.settings));
+          if (command.settings.bot) this.stopMovement(peer.userId);
+          this.syncGameLobbies();
+          break;
+        case "chess.match_join":
+          if (this.gameRuntime.isPlaying(peer.userId)) throw new Error("GAME_IN_PROGRESS");
+          this.dispatchGameEvents(this.chessRuntime.join(peer.userId, command.matchId));
+          this.stopMovement(peer.userId);
+          this.syncGameLobbies();
+          break;
+        case "chess.match_open":
+          if (this.gameRuntime.isPlaying(peer.userId)) throw new Error("GAME_IN_PROGRESS");
+          this.dispatchGameEvents(this.chessRuntime.open(peer.userId, command.matchId));
+          this.stopMovement(peer.userId);
+          this.syncGameLobbies();
+          break;
+        case "chess.match_close":
+          this.dispatchGameEvents(this.chessRuntime.close(peer.userId, command.matchId));
+          this.syncGameLobbies();
+          break;
+        case "chess.match_cancel":
+          this.dispatchGameEvents(this.chessRuntime.cancel(peer.userId, command.matchId));
+          break;
+        case "chess.move":
+          this.dispatchGameEvents(this.chessRuntime.move(peer.userId, command.matchId, command.move));
+          break;
+        case "chess.resign":
+          this.dispatchGameEvents(this.chessRuntime.resign(peer.userId, command.matchId));
+          break;
+        case "chess.draw_offer":
+          this.dispatchGameEvents(this.chessRuntime.offerDraw(peer.userId, command.matchId));
+          break;
+        case "chess.draw_claim":
+          this.dispatchGameEvents(this.chessRuntime.claimDraw(peer.userId, command.matchId, command.move));
+          break;
+        case "chess.draw_respond":
+          this.dispatchGameEvents(this.chessRuntime.respondToDraw(peer.userId, command.matchId, command.accept));
           break;
       }
       if (SNAPSHOT_COMMAND_TYPES.has(command.type)) {
@@ -660,13 +720,14 @@ export class WorldRuntime {
       this.validateRoomKnocks();
       this.validateCalls();
       this.reconcileProximityCalls();
-      this.dispatchGameEvents(this.gameRuntime.syncLobbies(this.players.values(), this.connectedUserIds()));
+      this.syncGameLobbies();
     }
     const gameEvents = this.gameRuntime.update(deltaMs);
     this.dispatchGameEvents(gameEvents);
     if (gameEvents.length > 0) {
-      this.dispatchGameEvents(this.gameRuntime.syncLobbies(this.players.values(), this.connectedUserIds()));
+      this.syncGameLobbies();
     }
+    this.dispatchGameEvents(this.chessRuntime.update());
 
     if (this.tickNumber % SNAPSHOT_HEARTBEAT_TICKS === 0) {
       const economyDayKey = getUtcDayKey(new Date());
@@ -2744,6 +2805,37 @@ export class WorldRuntime {
     }
   }
 
+  private approachWorkObject(peer: Peer, requestId: string, objectId: string): void {
+    const player = this.players.get(peer.userId);
+    const layout = player ? this.store.getLayout(player.floorId) : undefined;
+    const floor = player ? this.store.getFloor(player.floorId) : undefined;
+    const object = layout?.objects.find((candidate) => candidate.id === objectId);
+    if (!player?.connected || !layout || !floor || !object || !getWorkObjectState(object)) throw new Error("WORK_OBJECT_NOT_FOUND");
+    const path = this.findAssetInteractionPath(layout, floor, player, getPlacedAssetBounds(object),
+      (point) => canUseWorkObject(object, layout, { ...point, floorId: player.floorId }));
+    const destination = path.at(-1);
+    if (!destination) throw new Error("DESTINATION_BLOCKED");
+    this.handleDestination(peer, requestId, object.floorId, destination.x, destination.y);
+  }
+
+  private updateWorkObject(peer: Peer, command: Extract<ClientCommand, { type: "work.update" }>): void {
+    const player = this.players.get(peer.userId);
+    const layout = player ? this.store.getLayout(player.floorId) : undefined;
+    const object = layout?.objects.find((candidate) => candidate.id === command.objectId);
+    const state = object && getWorkObjectState(object);
+    if (!player?.connected || !layout || !object || !state) throw new Error("WORK_OBJECT_NOT_FOUND");
+    if (!canUseWorkObject(object, layout, player)) throw new Error("WORK_OBJECT_TOO_FAR");
+    if (state.revision !== command.baseRevision) {
+      peer.send({ type: "layout.updated", layout: this.store.getVisibleLayout(layout.floorId, peer.userId)! });
+      throw new Error("WORK_OBJECT_CONFLICT");
+    }
+    const workState = applyWorkObjectEdit(state, command.edit);
+    const next = { ...layout, revision: layout.revision + 1,
+      objects: layout.objects.map((candidate) => candidate.id === object.id ? { ...candidate, workState } : candidate) };
+    const saved = this.store.replaceLayout(next).layout;
+    this.broadcastLayout(saved, { userId: peer.userId, requestId: command.requestId });
+  }
+
   private ringGong(peer: Peer, objectId: string): void {
     const player = this.players.get(peer.userId);
     const layout = player ? this.store.getLayout(player.floorId) : undefined;
@@ -3201,26 +3293,27 @@ export class WorldRuntime {
     this.broadcastMeetingUpdate(meeting);
   }
 
-  private startGame(peer: Peer, definitionId: string): void {
-    this.dispatchGameEvents(this.gameRuntime.syncLobbies(this.players.values(), this.connectedUserIds()));
-    const started = this.gameRuntime.start(peer.userId, definitionId);
+  private startGame(peer: Peer, definitionId: string, variantId?: TicTacToeVariantId, options: Parameters<GamesRuntime["start"]>[3] = {}): void {
+    if (this.chessRuntime.isViewing(peer.userId)) throw new Error("GAME_IN_PROGRESS");
+    this.syncGameLobbies();
+    const started = this.gameRuntime.start(peer.userId, definitionId, variantId, options);
     for (const participantId of started.participantIds) {
       this.stopMovement(participantId);
     }
     this.dispatchGameEvents(started.deliveries);
   }
 
-  private commandGame(peer: Peer, command: TetrisCommand): void {
+  private commandGame(peer: Peer, command: GameCommand): void {
     const deliveries = this.gameRuntime.command(peer.userId, command);
     this.dispatchGameEvents(deliveries);
     if (deliveries.some((delivery) => delivery.event.type === "game.round_completed")) {
-      this.dispatchGameEvents(this.gameRuntime.syncLobbies(this.players.values(), this.connectedUserIds()));
+      this.syncGameLobbies();
     }
   }
 
   private endGame(peer: Peer): void {
     this.dispatchGameEvents(this.gameRuntime.leave(peer.userId));
-    this.dispatchGameEvents(this.gameRuntime.syncLobbies(this.players.values(), this.connectedUserIds()));
+    this.syncGameLobbies();
   }
 
   private stopMovement(userId: string): void {
@@ -3421,6 +3514,12 @@ export class WorldRuntime {
     }
   }
 
+  private syncGameLobbies(): void {
+    const connectedUserIds = this.connectedUserIds();
+    this.dispatchGameEvents(this.gameRuntime.syncLobbies([...this.players.values()].filter((player) => !this.chessRuntime.isViewing(player.userId)), connectedUserIds));
+    this.dispatchGameEvents(this.chessRuntime.syncLobby(this.players.values(), connectedUserIds));
+  }
+
   private connectedUserIds(): Set<string> {
     return new Set([...this.peers.values()].map((peer) => peer.userId));
   }
@@ -3523,6 +3622,12 @@ export class WorldRuntime {
       PERSON_OFFLINE: "They are offline.",
       PERSON_UNAVAILABLE: "They are unavailable.",
       INTERACTION_INVALID: "That interaction is not available.",
+      WORK_OBJECT_NOT_FOUND: "This board was removed. Close it and select another.",
+      WORK_OBJECT_TOO_FAR: "Move closer to the board to edit it.",
+      WORK_OBJECT_CONFLICT: "The board changed. Review the latest version and try again.",
+      WORK_OBJECT_INVALID: "This action does not belong to this board.",
+      CHECKLIST_FULL: "This checklist is full. Remove an item to add another.",
+      CHECKLIST_ITEM_NOT_FOUND: "This item was removed. Add it again if needed.",
       REACTION_RATE_LIMITED: "Give it a moment.",
       GONG_NOT_FOUND: "That gong is no longer available.",
       GONG_TOO_FAR: "Move closer to ring the gong.",
@@ -3542,10 +3647,34 @@ export class WorldRuntime {
       KNOCK_NOT_FOUND: "That request is no longer active.",
       GAME_NOT_STARTED: "Start the game first.",
       GAME_NOT_FOUND: "That game is unavailable.",
-      GAME_TOO_FAR: "Gather around the Tetris blocks first.",
+      GAME_TOO_FAR: "Move closer to the game table.",
       GAME_ALREADY_FINISHED: "Your game is finished.",
       GAME_PAUSE_MULTIPLAYER: "Multiplayer rounds cannot be paused.",
       GAME_IN_PROGRESS: "Leave the game before moving.",
+      GAME_VARIANT_INVALID: "Choose a game variant.",
+      GAME_PLAYERS_REQUIRED: "Two players are required.",
+      GAME_NOT_YOUR_TURN: "Wait for your turn.",
+      GAME_MOVE_INVALID: "Choose a valid move.",
+      GAME_COMMAND_INVALID: "That move does not match this game.",
+      GAME_PLAYER_INVALID: "You are not in this game.",
+      CHESS_NOT_FOUND: "Chess is unavailable.",
+      CHESS_TOO_FAR: "Move closer to the chess table.",
+      CHESS_MATCH_NOT_FOUND: "That match is no longer available.",
+      CHESS_MATCH_PENDING: "Cancel your waiting match first.",
+      CHESS_BOT_MATCH_ACTIVE: "Open your bot game to continue, or resign before starting another.",
+      CHESS_MATCH_STARTED: "That match has already started.",
+      CHESS_MATCH_OWN: "Choose another match.",
+      CHESS_MATCH_LOCKED: "That match is locked.",
+      CHESS_MATCH_FORBIDDEN: "That match is locked.",
+      CHESS_MATCH_CANNOT_CANCEL: "That match cannot be cancelled.",
+      CHESS_MATCH_NOT_ACTIVE: "That match is not active.",
+      CHESS_NOT_YOUR_TURN: "Wait for your turn.",
+      CHESS_MOVE_ILLEGAL: "That move is not legal.",
+      CHESS_SETTINGS_INVALID: "Choose valid match settings.",
+      CHESS_OPPONENT_INVALID: "Choose another player.",
+      CHESS_DRAW_PENDING: "A draw offer is already pending.",
+      CHESS_DRAW_NOT_FOUND: "That draw offer is no longer available.",
+      CHESS_DRAW_UNAVAILABLE: "A draw cannot be claimed in this position. Choose a move.",
       NOTHING_TO_ERASE: "There is nothing there.",
       SPACE_OCCUPIED: "That space is occupied.",
       OPENING_REQUIRES_WALL: "Place it on a wall.",

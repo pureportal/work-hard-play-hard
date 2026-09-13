@@ -100,7 +100,7 @@ describe("BuildPanel", () => {
     expect(screen.getAllByRole("radio").map((option) => option.textContent)).toEqual(["Wood", "Stone", "Grass"]);
   });
 
-  it("offers Tetris in the equipment build category", () => {
+  it("offers Falling Blocks in the equipment build category", () => {
     const onToolChange = vi.fn();
     const onAssetChange = vi.fn();
     render(
@@ -127,9 +127,9 @@ describe("BuildPanel", () => {
     );
 
     fireEvent.click(screen.getByRole("tab", { name: "Equipment" }));
-    fireEvent.click(screen.getByRole("button", { name: "Tetris table" }));
+    fireEvent.click(screen.getByRole("button", { name: "Falling Blocks table" }));
 
-    expect(onAssetChange).toHaveBeenCalledWith("equipment-tetris");
+    expect(onAssetChange).toHaveBeenCalledWith("equipment-falling-blocks");
     expect(onToolChange).toHaveBeenCalledWith("asset");
   });
 

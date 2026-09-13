@@ -1,9 +1,9 @@
 import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { TETRIS_DEFINITION_ID } from "@workhard/shared";
+import { FALLING_BLOCKS_DEFINITION_ID } from "@workhard/shared";
 import type { GameScore, Member, PlayerGameStatistics } from "@workhard/shared";
-import { TetrisLobby } from "./TetrisLobby";
+import { FallingBlocksLobby } from "./FallingBlocksLobby";
 
 afterEach(cleanup);
 
@@ -14,7 +14,7 @@ const members: Member[] = [
 
 const statistics: PlayerGameStatistics[] = [
   {
-    definitionId: TETRIS_DEFINITION_ID,
+    definitionId: FALLING_BLOCKS_DEFINITION_ID,
     userId: "maya",
     gamesPlayed: 4,
     multiplayerGamesPlayed: 3,
@@ -25,7 +25,7 @@ const statistics: PlayerGameStatistics[] = [
     totalLines: 19,
   },
   {
-    definitionId: TETRIS_DEFINITION_ID,
+    definitionId: FALLING_BLOCKS_DEFINITION_ID,
     userId: "leo",
     gamesPlayed: 2,
     multiplayerGamesPlayed: 2,
@@ -42,14 +42,14 @@ const scores: GameScore[] = [
   score("leo-score", "leo", 980),
 ];
 
-describe("TetrisLobby", () => {
+describe("FallingBlocksLobby", () => {
   it("shows gathered players, persistent statistics, and starts the shared round", () => {
     const onStart = vi.fn();
     render(
-      <TetrisLobby
+      <FallingBlocksLobby
         lobby={{
-          definitionId: TETRIS_DEFINITION_ID,
-          objectId: "object-tetris",
+          definitionId: FALLING_BLOCKS_DEFINITION_ID,
+          objectId: "object-falling-blocks",
           floorId: "floor-studio",
           participantIds: ["maya", "leo"],
           capacity: 8,
@@ -62,22 +62,23 @@ describe("TetrisLobby", () => {
       />,
     );
 
-    const lobby = screen.getByRole("complementary", { name: "Tetris lobby" });
+    fireEvent.click(screen.getByRole("button", { name: "Players" }));
+    const lobby = screen.getByRole("complementary", { name: "Falling Blocks lobby" });
     expect(within(lobby).getByText("You")).toBeTruthy();
     expect(within(lobby).getAllByText("Leo Martins")).toHaveLength(2);
-    expect(within(lobby).getByLabelText("Your Tetris statistics").textContent).toContain("1,240");
-    expect(within(lobby).getByLabelText("Your Tetris statistics").textContent).toContain("19");
+    expect(within(lobby).getByLabelText("Your Falling Blocks statistics").textContent).toContain("1,240");
+    expect(within(lobby).getByLabelText("Your Falling Blocks statistics").textContent).toContain("19");
 
-    fireEvent.click(within(lobby).getByRole("button", { name: "Start round" }));
-    expect(onStart).toHaveBeenCalledOnce();
+    fireEvent.click(within(lobby).getByRole("button", { name: "Play" }));
+    expect(onStart).toHaveBeenCalledWith(false);
   });
 
   it("labels a one-player lobby as solo", () => {
     render(
-      <TetrisLobby
+      <FallingBlocksLobby
         lobby={{
-          definitionId: TETRIS_DEFINITION_ID,
-          objectId: "object-tetris",
+          definitionId: FALLING_BLOCKS_DEFINITION_ID,
+          objectId: "object-falling-blocks",
           floorId: "floor-studio",
           participantIds: ["maya"],
           capacity: 8,
@@ -90,7 +91,7 @@ describe("TetrisLobby", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: "Start solo" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Play" })).toBeTruthy();
   });
 });
 
@@ -99,7 +100,7 @@ function member(id: string, name: string, initials: string, color: string): Memb
     id,
     name,
     initials,
-    character: DEFAULT_CHARACTER_APPEARANCE,
+    character: { ...DEFAULT_CHARACTER_APPEARANCE },
     color,
     email: `${id}@example.com`,
     title: "",
@@ -114,7 +115,7 @@ function score(id: string, userId: string, value: number): GameScore {
   return {
     id,
     roundId: `${id}-round`,
-    definitionId: TETRIS_DEFINITION_ID,
+    definitionId: FALLING_BLOCKS_DEFINITION_ID,
     userId,
     score: value,
     lines: 4,

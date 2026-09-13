@@ -16,7 +16,8 @@
     "build": "tsup",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run src"
+    "test": "vitest run src",
+    "test:database": "vitest run tests"
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",

@@ -65,6 +65,7 @@ interface ApplicationOptions {
   deliverInvitation?: (email: string, link: string, applicationName: string) => Promise<void>;
   seeded?: boolean;
   logger?: boolean;
+  chessNow?: () => Date;
 }
 
 export interface ApplicationContext {
@@ -83,7 +84,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
   const clientOrigins = resolveClientOrigins(clientUrl, options.clientOrigins ?? parseClientOrigins(process.env.CLIENT_ORIGINS));
   const app = Fastify({ logger: options.logger ?? false });
   const database = options.database ?? await PostgreSqlDatabase.connect();
-  const initialized = await initializePersistentState(database, options.seeded ?? false).catch(async (error: unknown) => {
+  const initialized = await initializePersistentState(database, options.seeded ?? false, options.chessNow).catch(async (error: unknown) => {
     await database.close();
     throw error;
   });
@@ -809,6 +810,19 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
         return;
       }
       runtime.handleCommand(peerId, parsed.data as ClientCommand);
+      if (parsed.data.type.startsWith("chess.") || parsed.data.type === "work.update") {
+        void persist().catch((error: unknown) => {
+          app.log.error(error);
+          sendEvent(socket, {
+            type: "command.error",
+            ...requestIdFromCandidate(candidate),
+            code: parsed.data.type === "work.update" ? "WORK_SAVE_FAILED" : "CHESS_SAVE_FAILED",
+            message: parsed.data.type === "work.update"
+              ? "Your board could not be saved. Reconnect to check its state."
+              : "Your game could not be saved. Reconnect to check its state.",
+          });
+        });
+      }
     });
 
     socket.on("pong", () => {
@@ -880,7 +894,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
   return { app, store, auth, runtime };
 }
 
-async function initializePersistentState(database: ApplicationDatabase, seeded: boolean) {
+async function initializePersistentState(database: ApplicationDatabase, seeded: boolean, chessNow?: () => Date) {
   const store = new DemoStore(seeded ? createSeedData() : createInitialData());
   const savedState = await database.loadWorkspaceState();
   if (savedState) {
@@ -891,7 +905,7 @@ async function initializePersistentState(database: ApplicationDatabase, seeded: 
   store.updateCorporateIdentityLogo(brandingLogoUrl(await brandingLogo.getReference()), false);
 
   const auth = await AuthStore.create({ database, members: store.getMembers() });
-  const runtime = new WorldRuntime(store);
+  const runtime = new WorldRuntime(store, chessNow ? { chessNow } : {});
   if (savedState) {
     runtime.restorePlayers(savedState.players);
   } else {

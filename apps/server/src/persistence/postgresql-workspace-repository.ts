@@ -4,6 +4,7 @@ import type { Conversation, Meeting } from "@workhard/shared";
 import type { WorkspacePersistenceState } from "./application-database.js";
 import {
   ChatMessageEntity,
+  ChessMatchEntity,
   CoinTransactionEntity,
   ConversationEntity,
   ConversationParticipantEntity,
@@ -64,6 +65,7 @@ export class PostgreSqlWorkspaceRepository {
       {},
       { orderBy: { sortOrder: "asc" } },
     );
+    const chessMatches = await entityManager.find(ChessMatchEntity, {}, { orderBy: { sortOrder: "asc" } });
     const economyAccounts = await entityManager.find(EconomyAccountEntity, {}, { orderBy: { sortOrder: "asc" } });
     const ownedAssets = await entityManager.find(OwnedAssetEntity, {}, { orderBy: { sortOrder: "asc" } });
     const coinTransactions = await entityManager.find(CoinTransactionEntity, {}, { orderBy: { sortOrder: "asc" } });
@@ -164,6 +166,7 @@ export class PostgreSqlWorkspaceRepository {
           totalScore: statistics.totalScore,
           totalLines: statistics.totalLines,
         })),
+        chessMatches: chessMatches.map((match) => match.state),
         economy: {
           accounts: economyAccounts.map((account) => ({
             userId: account.userId,
@@ -316,6 +319,13 @@ export class PostgreSqlWorkspaceRepository {
         PlayerGameStatisticsEntity,
         state.store.gameStatistics.map((statistics, sortOrder) => ({ ...statistics, sortOrder })),
       );
+      await synchronizeRows(entityManager, ChessMatchEntity, "id", state.store.chessMatches.map((match, sortOrder) => ({
+        id: match.id,
+        state: match,
+        createdAt: new Date(match.createdAt),
+        updatedAt: new Date(match.updatedAt),
+        sortOrder,
+      })));
 
       await synchronizeRows(entityManager, EconomyAccountEntity, "userId", state.store.economy.accounts.map((account, sortOrder) => ({
         userId: account.userId,
@@ -387,6 +397,7 @@ export class PostgreSqlWorkspaceRepository {
     await entityManager.nativeDelete(OwnedAssetEntity, {});
     await entityManager.nativeDelete(EconomyAccountEntity, {});
     await entityManager.nativeDelete(PlayerGameStatisticsEntity, {});
+    await entityManager.nativeDelete(ChessMatchEntity, {});
     await entityManager.nativeDelete(GameScoreEntity, {});
     await entityManager.nativeDelete(MeetingParticipantEntity, {});
     await entityManager.nativeDelete(MeetingEntity, {});

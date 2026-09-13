@@ -1,0 +1,361 @@
+@import "./falling-blocks.css";
+
+@import "./chess.css";
+
+@import "./tic-tac-toe.css";
+
+.arcade-game,
+.game-lobby {
+  --game-cross: #ba625e;
+  --game-nought: #7962b5;
+  --game-recess: #e7e0e8;
+}
+
+:root[data-theme="dark"] :is(.arcade-game, .game-lobby) {
+  --game-cross: #ed9b8e;
+  --game-nought: #b4a0e5;
+  --game-recess: #1b1823;
+}
+
+.game-backdrop {
+  padding: 16px;
+  background: #211b30b8;
+  backdrop-filter: blur(8px);
+}
+
+.arcade-game {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+  color: var(--ink);
+  background: radial-gradient(ellipse at 10% 0, color-mix(in srgb, var(--brand-secondary) 10%, transparent), transparent 60%), var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  box-shadow: var(--shadow), 0 30px 90px #15101f38;
+}
+
+.arcade-game:focus {
+  outline: none;
+}
+
+.game-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  min-height: 72px;
+  padding: 12px 18px;
+  gap: 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.game-header > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.game-header h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+
+.game-header h2 + span {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.game-header .icon-button {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  background: var(--panel-strong);
+  border-radius: 10px;
+}
+
+.arcade-game .secondary-button {
+  color: var(--ink);
+  background: var(--panel-strong);
+  border-color: var(--line);
+}
+
+.arcade-game .primary-button,
+.arcade-game .secondary-button {
+  min-height: 40px;
+  font-size: 13px;
+}
+
+.interaction-panel {
+  position: absolute;
+  z-index: 35;
+  top: calc(84px + env(safe-area-inset-top));
+  right: 20px;
+  width: min(340px, calc(100% - 40px));
+  max-height: calc(100% - 176px);
+  overflow: auto;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+}
+
+.interaction-navigation {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+  background: var(--accent-soft);
+}
+
+.interaction-navigation button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+}
+
+.interaction-navigation select {
+  min-width: 0;
+  flex: 1;
+  padding: 8px 2px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--ink);
+  border: 0;
+  background: transparent;
+}
+
+.interaction-navigation > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.interaction-navigation button:hover {
+  background: var(--panel-strong);
+}
+
+.game-lobby {
+  padding: 16px;
+  color: var(--ink);
+  background: var(--panel);
+}
+
+.game-lobby > header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 46px;
+  margin-bottom: 16px;
+}
+
+.game-lobby > header h2 {
+  margin: 0;
+  font-size: 17px;
+  letter-spacing: -0.025em;
+}
+
+.game-opponent-picker {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.game-segments {
+  display: flex;
+  gap: 3px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-strong);
+}
+
+.game-segments button {
+  flex: 1;
+  padding: 9px 5px;
+  min-height: 40px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.game-segments button[aria-pressed="true"] {
+  color: var(--ink);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+.game-lobby .primary-button {
+  min-height: 44px;
+  font-size: 13px;
+}
+
+.game-lobby .falling-blocks-player-stats > div,
+.game-lobby .tic-tac-toe-player-stats > div {
+  background: var(--panel-strong);
+  color: var(--ink);
+}
+
+.game-lobby .falling-blocks-player-stats dt,
+.game-lobby .tic-tac-toe-player-stats dt {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.game-lobby .falling-blocks-player-stats dd,
+.game-lobby .tic-tac-toe-player-stats dd {
+  font-size: 15px;
+}
+
+.game-lobby h3,
+.game-lobby .falling-blocks-high-scores li {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.game-play-button {
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.interaction-content .context-action,
+.interaction-content .door-interaction,
+.nearby-person-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  padding: 16px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.interaction-content .meeting-entry-action > div,
+.interaction-content .door-interaction > strong,
+.nearby-person-actions > strong {
+  flex: 1;
+  min-width: 180px;
+}
+
+.game-result-actions,
+.game-exit-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px;
+  border-top: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.game-exit-prompt {
+  background: var(--panel-strong);
+}
+
+.game-exit-prompt p {
+  margin: 0;
+  flex-basis: 100%;
+  text-align: center;
+  font-size: 13px;
+}
+
+.chess-bot-error {
+  padding: 12px;
+  font-size: 13px;
+}
+
+.chess-bot-error p {
+  margin: 0 0 8px;
+}
+
+@media (max-width: 700px) {
+  .game-backdrop {
+    padding: 0;
+  }
+  .arcade-game {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    border: 0;
+  }
+  .game-header {
+    min-height: 64px;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .game-header > div:first-child {
+    gap: 9px;
+  }
+  .game-header h2 {
+    font-size: 16px;
+  }
+  .game-header h2 + span {
+    font-size: 11px;
+  }
+  .game-header .chess-mark,
+  .game-header .tic-tac-toe-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+  .game-result-actions {
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+  }
+  .interaction-panel {
+    right: 10px;
+    width: min(320px, calc(100% - 20px));
+    max-height: calc(100% - 184px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-height: 520px) and (min-width: 701px) {
+  .game-backdrop {
+    padding: 8px;
+  }
+  .arcade-game {
+    border-radius: 16px;
+  }
+  .game-header {
+    min-height: 60px;
+    padding: 8px 12px;
+  }
+  .game-header .chess-mark,
+  .game-header .tic-tac-toe-mark {
+    width: 36px;
+    height: 36px;
+  }
+  .game-exit-prompt {
+    gap: 8px;
+    padding: 8px;
+  }
+  .game-exit-prompt p {
+    flex-basis: auto;
+  }
+}

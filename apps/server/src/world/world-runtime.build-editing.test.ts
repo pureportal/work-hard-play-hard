@@ -162,7 +162,7 @@ describe("WorldRuntime build editing", () => {
     runtime.stop();
   });
 
-  it("places Tetris through build editing", () => {
+  it("places Falling Blocks through build editing", () => {
     const store = new DemoStore();
     const layout = store.getLayout("floor-studio")!;
     layout.walls = [];
@@ -175,14 +175,14 @@ describe("WorldRuntime build editing", () => {
 
     send(runtime, peer, {
       type: "layout.apply",
-      requestId: "place-tetris",
+      requestId: "place-falling-blocks",
       baseRevision: layout.revision,
-      edit: { tool: "asset", assetId: "equipment-tetris", variantId: "graphite", rotation: 0, position: { x: 1088, y: 576 } },
+      edit: { tool: "asset", assetId: "equipment-falling-blocks", variantId: "graphite", rotation: 0, position: { x: 1088, y: 576 } },
     });
 
-    expect(commandError(events, "place-tetris")).toBeUndefined();
+    expect(commandError(events, "place-falling-blocks")).toBeUndefined();
     expect(store.getLayout("floor-studio")?.objects).toContainEqual(expect.objectContaining({
-      assetId: "equipment-tetris",
+      assetId: "equipment-falling-blocks",
       x: 1088,
       y: 576,
     }));

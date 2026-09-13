@@ -24,11 +24,11 @@ export const TETROMINO_COLOR_IDS: Record<TetrominoType, number> = {
   Z: 7,
 };
 
-export const TETRIS_COMMANDS = ["left", "right", "rotate", "down", "drop", "hold", "pause"] as const;
+export const FALLING_BLOCKS_COMMANDS = ["left", "right", "rotate", "down", "drop", "hold", "pause"] as const;
 
-export type TetrisCommand = typeof TETRIS_COMMANDS[number];
+export type FallingBlocksCommand = typeof FALLING_BLOCKS_COMMANDS[number];
 
-export interface TetrisCellPosition {
+export interface FallingBlocksCellPosition {
   column: number;
   row: number;
 }

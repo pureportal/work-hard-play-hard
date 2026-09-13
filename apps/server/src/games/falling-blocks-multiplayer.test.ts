@@ -1,21 +1,82 @@
-import { TETRIS_DEFINITION_ID } from "@workhard/shared";
-import type { GameEventDelivery } from "./tetris-multiplayer.js";
+import { FALLING_BLOCKS_DEFINITION_ID, getGameArea } from "@workhard/shared";
+import type { GameEventDelivery } from "./falling-blocks-multiplayer.js";
 import type { ServerEvent, WorldPlayer } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
 import { DemoStore } from "../store.js";
-import { TetrisMultiplayerRuntime } from "./tetris-multiplayer.js";
+import { FallingBlocksMultiplayerRuntime } from "./falling-blocks-multiplayer.js";
 
-describe("TetrisMultiplayerRuntime", () => {
+describe("FallingBlocksMultiplayerRuntime", () => {
+  it.each(["object-tetris", "saved-cabinet"])("plays a restored cabinet with the ID %s", (objectId) => {
+    const store = new DemoStore();
+    const saved = store.exportMutableState();
+    const object = saved.layouts.flatMap((layout) => layout.objects).find((candidate) => candidate.assetId === "equipment-falling-blocks")!;
+    object.id = objectId;
+    store.restoreMutableState(saved);
+    const runtime = new FallingBlocksMultiplayerRuntime(store);
+    const area = getGameArea(object);
+    const player = nearbyPlayer("user-maya", area.x, area.y + area.radius - 1);
+    runtime.syncLobbies([player], new Set([player.userId]));
+
+    expect(runtime.getSessionEvents(player.userId)).toContainEqual(expect.objectContaining({
+      type: "game.lobby_updated", lobby: expect.objectContaining({ objectId, participantIds: [player.userId] }),
+    }));
+    const started = runtime.start(player.userId, objectId, true);
+    expect(events(started.deliveries)).toContainEqual(expect.objectContaining({
+      type: "game.round_started", round: expect.objectContaining({ objectId, definitionId: FALLING_BLOCKS_DEFINITION_ID }),
+    }));
+    const before = events(started.deliveries).find((event) => event.type === "game.state" && event.definitionId === FALLING_BLOCKS_DEFINITION_ID)!;
+    const after = events(runtime.command(player.userId, "drop")).find((event) => event.type === "game.state" && event.definitionId === FALLING_BLOCKS_DEFINITION_ID)!;
+    expect(after.score).toBeGreaterThan(before.score);
+  });
+
+  it("keeps overlapping cabinets distinct and starts only the selected cabinet's participants", () => {
+    const store = new DemoStore();
+    const object = store.getObject("object-falling-blocks")!;
+    const second = { ...object, id: "placed-blocks", x: object.x - 176 };
+    store.getLayout(object.floorId)!.objects.push(second);
+    const runtime = new FallingBlocksMultiplayerRuntime(store);
+    const area = getGameArea(object);
+    const players = [nearbyPlayer("user-maya", area.x - 88, area.y), nearbyPlayer("user-leo", area.x + 100, area.y)];
+    const connected = new Set(players.map((player) => player.userId));
+    runtime.syncLobbies(players, connected);
+
+    expect(runtime.getSessionEvents("user-maya").filter((event) => event.type === "game.lobby_updated")).toHaveLength(2);
+    const started = runtime.start("user-maya", second.id);
+    expect(started.participantIds).toEqual(["user-maya"]);
+    expect(runtime.getSessionEvents("user-leo")).toContainEqual(expect.objectContaining({
+      type: "game.lobby_updated", lobby: expect.objectContaining({ objectId: object.id, participantIds: ["user-leo"] }),
+    }));
+    expect(runtime.getSessionEvents("user-maya").some((event) => event.type === "game.lobby_updated")).toBe(false);
+  });
+
+  it("closes removed cabinets and rejects unrelated or distant equipment", () => {
+    const store = new DemoStore();
+    const object = store.getObject("object-falling-blocks")!;
+    const runtime = new FallingBlocksMultiplayerRuntime(store);
+    const player = nearbyPlayer("user-maya", 1050, 620);
+    runtime.syncLobbies([player], new Set([player.userId]));
+    expect(() => runtime.start(player.userId, "object-chess")).toThrow("GAME_NOT_FOUND");
+    expect(() => runtime.start("user-leo", object.id)).toThrow("GAME_TOO_FAR");
+    const layout = store.getLayout(object.floorId)!;
+    layout.objects = layout.objects.filter((candidate) => candidate.id !== object.id);
+
+    expect(events(runtime.syncLobbies([player], new Set([player.userId])))).toContainEqual(expect.objectContaining({
+      type: "game.lobby_updated", lobby: expect.objectContaining({ objectId: object.id, participantIds: [] }),
+    }));
+    expect(runtime.getSessionEvents(player.userId)).toEqual([]);
+    expect(() => runtime.start(player.userId, object.id)).toThrow("GAME_NOT_FOUND");
+  });
+
   it("forms one proximity lobby and starts every gathered player in the same round", () => {
     const store = new DemoStore();
-    const runtime = new TetrisMultiplayerRuntime(store);
+    const runtime = new FallingBlocksMultiplayerRuntime(store);
     const players = [nearbyPlayer("user-maya", 1_050, 620), nearbyPlayer("user-leo", 1_250, 620)];
 
     const lobbyEvents = runtime.syncLobbies(players, new Set(players.map((player) => player.userId)));
     const lobby = events(lobbyEvents).find((event) => event.type === "game.lobby_updated");
     expect(lobby?.type === "game.lobby_updated" && lobby.lobby.participantIds).toEqual(["user-maya", "user-leo"]);
 
-    const started = runtime.start("user-maya", TETRIS_DEFINITION_ID);
+    const started = runtime.start("user-maya", "object-falling-blocks");
     const startEvents = events(started.deliveries).filter((event) => event.type === "game.round_started");
     const boardEvents = events(started.deliveries).filter((event) => event.type === "game.state");
 
@@ -35,11 +96,11 @@ describe("TetrisMultiplayerRuntime", () => {
 
   it("records authoritative multiplayer scores and awards exactly one non-solo win", () => {
     const store = new DemoStore();
-    const runtime = new TetrisMultiplayerRuntime(store);
+    const runtime = new FallingBlocksMultiplayerRuntime(store);
     const players = [nearbyPlayer("user-maya", 1_050, 620), nearbyPlayer("user-leo", 1_250, 620)];
     const startingBalances = new Map(players.map((player) => [player.userId, store.getPlayerEconomy(player.userId).coinBalance]));
     runtime.syncLobbies(players, new Set(players.map((player) => player.userId)));
-    const started = runtime.start("user-maya", TETRIS_DEFINITION_ID);
+    const started = runtime.start("user-maya", "object-falling-blocks");
     const roundId = events(started.deliveries).find((event) => event.type === "game.round_started");
 
     runtime.command("user-maya", "drop");
@@ -86,17 +147,17 @@ describe("TetrisMultiplayerRuntime", () => {
 
   it("keeps a solo high score without counting it as a multiplayer win", () => {
     const store = new DemoStore();
-    const runtime = new TetrisMultiplayerRuntime(store);
+    const runtime = new FallingBlocksMultiplayerRuntime(store);
     const maya = nearbyPlayer("user-maya", 1_050, 620);
 
     runtime.syncLobbies([maya], new Set([maya.userId]));
-    runtime.start(maya.userId, TETRIS_DEFINITION_ID);
+    runtime.start(maya.userId, "object-falling-blocks");
     runtime.command(maya.userId, "drop");
     runtime.leave(maya.userId);
     const firstScore = store.getScores().find((score) => score.userId === maya.userId)!;
 
     runtime.syncLobbies([maya], new Set([maya.userId]));
-    runtime.start(maya.userId, TETRIS_DEFINITION_ID);
+    runtime.start(maya.userId, "object-falling-blocks");
     runtime.leave(maya.userId);
     const statistics = store.getGameStatistics().find((candidate) => candidate.userId === maya.userId);
 

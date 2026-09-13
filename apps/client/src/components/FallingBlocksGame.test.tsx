@@ -1,21 +1,21 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { GameRoundState, GameState, TetrisCommand } from "@workhard/shared";
-import { TetrisGame } from "./TetrisGame";
+import type { FallingBlocksGameState, GameRoundState, FallingBlocksCommand } from "@workhard/shared";
+import { FallingBlocksGame } from "./FallingBlocksGame";
 
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
 });
 
-describe("TetrisGame", () => {
+describe("FallingBlocksGame", () => {
   it("shows hold, next pieces, ghost cells, and the current statistics", () => {
     const { container } = renderGame(vi.fn());
 
     expect(screen.getByRole("img", { name: "Held T piece" })).toBeTruthy();
     expect(screen.getByRole("img", { name: "O piece next" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Hold" })).not.toHaveProperty("disabled", true);
-    expect(container.querySelectorAll(".tetris-cell.is-ghost")).toHaveLength(4);
+    expect(container.querySelectorAll(".falling-blocks-cell.is-ghost")).toHaveLength(4);
     expect(screen.getByLabelText("Game statistics").textContent).toContain("1,240");
   });
 
@@ -63,13 +63,13 @@ describe("TetrisGame", () => {
   });
 });
 
-function renderGame(onCommand: (command: TetrisCommand) => void) {
+function renderGame(onCommand: (command: FallingBlocksCommand) => void) {
   return render(gameElement(onCommand, createState()));
 }
 
-function gameElement(onCommand: (command: TetrisCommand) => void, state: GameState) {
+function gameElement(onCommand: (command: FallingBlocksCommand) => void, state: FallingBlocksGameState) {
   return (
-    <TetrisGame
+    <FallingBlocksGame
       state={state}
       round={round}
       members={[]}
@@ -80,7 +80,7 @@ function gameElement(onCommand: (command: TetrisCommand) => void, state: GameSta
   );
 }
 
-function createState(): GameState {
+function createState(): FallingBlocksGameState {
   const grid = Array.from({ length: 20 }, () => Array<number>(10).fill(0));
   for (const column of [3, 4, 5, 6]) {
     grid[0]![column] = 1;
@@ -88,7 +88,7 @@ function createState(): GameState {
   return {
     type: "game.state",
     roundId: "round-test",
-    definitionId: "game-tetris",
+    definitionId: "game-falling-blocks",
     grid,
     score: 1_240,
     lines: 8,
@@ -105,8 +105,9 @@ function createState(): GameState {
 }
 
 const round: GameRoundState = {
+  objectId: "object-falling-blocks",
   id: "round-test",
-  definitionId: "game-tetris",
+  definitionId: "game-falling-blocks",
   floorId: "floor-studio",
   startedAt: "2026-09-03T12:00:00.000Z",
   status: "playing",
