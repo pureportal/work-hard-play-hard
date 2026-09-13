@@ -1,3 +1,4 @@
+import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Member } from "@workhard/shared";
@@ -6,7 +7,7 @@ import { PeoplePanel } from "./PeoplePanel";
 const owner: Member = {
   id: "owner",
   name: "Owner",
-  initials: "OW",
+  initials: "OW", character: { ...DEFAULT_CHARACTER_APPEARANCE },
   email: "owner@example.com",
   title: "",
   role: "owner",
@@ -19,7 +20,7 @@ const owner: Member = {
 const member: Member = {
   id: "member",
   name: "Alex Member",
-  initials: "AM",
+  initials: "AM", character: { ...DEFAULT_CHARACTER_APPEARANCE },
   email: "alex@example.com",
   title: "Engineer",
   role: "member",

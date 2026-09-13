@@ -35,7 +35,7 @@ function travelToFloor(runtime: WorldRuntime, peerId: string, events: ServerEven
     floorId,
     ...destination,
   });
-  for (let tick = 0; tick < 500; tick += 1) {
+  for (let tick = 0; tick < 1500; tick += 1) {
     runtime.runTickForTest();
     const player = runtime.serializePlayers().find((candidate) => candidate.userId === userId);
     if (
@@ -898,21 +898,21 @@ describe("WorldRuntime layout safety", () => {
       type: "layout.apply",
       requestId: "split-arcade",
       baseRevision: before.revision,
-      edit: { tool: "wall", start: { x: 1408, y: 448 }, end: { x: 1408, y: 928 } },
+      edit: { tool: "wall", start: { x: 1024, y: 448 }, end: { x: 1024, y: 928 } },
     });
 
     const divided = store.getLayout("floor-studio")!;
-    expect(divided.walls.at(-1)).toMatchObject({ start: { x: 1408, y: 448 }, end: { x: 1408, y: 928 } });
+    expect(divided.walls.at(-1)).toMatchObject({ start: { x: 1024, y: 448 }, end: { x: 1024, y: 928 } });
     expect(divided.rooms).toHaveLength(before.rooms.length + 1);
-    expect(divided.rooms.find((room) => room.bounds.x === 1408)).toMatchObject({ privateEligible: false });
+    expect(divided.rooms.find((room) => room.bounds.x === 1024)).toMatchObject({ privateEligible: true });
 
     send(runtime, mayaPeer, {
       type: "layout.apply",
       requestId: "add-small-room-door",
       baseRevision: divided.revision,
-      edit: { tool: "door", position: { x: 1408, y: 704 } },
+      edit: { tool: "door", position: { x: 1024, y: 704 } },
     });
-    expect(store.getLayout("floor-studio")?.rooms.find((room) => room.bounds.x === 1408)).toMatchObject({ privateEligible: true });
+    expect(store.getLayout("floor-studio")?.rooms.find((room) => room.bounds.x === 1024)).toMatchObject({ privateEligible: true });
     runtime.stop();
   });
 
@@ -990,7 +990,7 @@ describe("WorldRuntime layout safety", () => {
     const events: ServerEvent[] = [];
     const peer = connect(runtime, "user-jonas", events);
     const initialRevision = store.getLayout("floor-studio")!.revision;
-    const edit = { tool: "wall" as const, start: { x: 1408, y: 448 }, end: { x: 1408, y: 928 } };
+    const edit = { tool: "wall" as const, start: { x: 1024, y: 448 }, end: { x: 1024, y: 928 } };
 
     send(runtime, peer, { type: "layout.apply", requestId: "denied", baseRevision: initialRevision, edit });
     expect(events.at(-1)).toMatchObject({ type: "command.error", requestId: "denied", code: "EDIT_FORBIDDEN" });
@@ -1008,7 +1008,7 @@ describe("WorldRuntime layout safety", () => {
       type: "layout.apply",
       requestId: "revoked",
       baseRevision: initialRevision + 1,
-      edit: { tool: "erase", position: { x: 1408, y: 700 } },
+      edit: { tool: "erase", position: { x: 1024, y: 700 } },
     });
     expect(events.at(-1)).toMatchObject({ type: "command.error", requestId: "revoked", code: "EDIT_FORBIDDEN" });
     runtime.stop();

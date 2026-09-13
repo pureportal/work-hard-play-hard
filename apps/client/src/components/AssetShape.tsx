@@ -1,36 +1,16 @@
-import type { CSSProperties } from "react";
-import {
-  getDefaultAssetVariantId,
-  getPlacedAssetBounds,
-  getPlacedAssetCells,
-  getPlacedAssetInteractions,
-  requireAssetVariant,
-} from "@workhard/shared";
-import type { AssetDefinition, AssetRotation, WorldObject } from "@workhard/shared";
-import { AssetShapeArtwork } from "./AssetShapeArtwork";
+import { getDefaultAssetVariantId } from "@workhard/shared";
+import type { AssetDefinition, AssetRotation } from "@workhard/shared";
+import { getWorldAssetArtwork } from "../world-asset-artwork";
+import "../world-asset.css";
 
 export function AssetShape({ asset, rotation = 0, variantId = getDefaultAssetVariantId(asset) }: {
   asset: AssetDefinition;
   rotation?: AssetRotation;
   variantId?: string;
 }) {
-  const variant = requireAssetVariant(asset, variantId);
-  const previewObject: WorldObject = {
-    id: `preview-${asset.id}`,
-    floorId: "preview",
-    assetId: asset.id,
-    x: 0,
-    y: 0,
-    rotation,
-    variantId,
-  };
-  const cells = getPlacedAssetCells(previewObject);
-  const bounds = getPlacedAssetBounds(previewObject);
+  const artwork = getWorldAssetArtwork(asset, variantId, rotation);
+  const { bounds, frame } = artwork;
   const padding = 6;
-  const style = {
-    "--asset-color": variant.color,
-    "--asset-dark-color": `color-mix(in srgb, ${variant.color} 86%, #171922 14%)`,
-  } as CSSProperties;
 
   return (
     <svg
@@ -38,17 +18,20 @@ export function AssetShape({ asset, rotation = 0, variantId = getDefaultAssetVar
       aria-hidden="true"
       focusable="false"
       preserveAspectRatio="xMidYMid meet"
-      style={style}
       viewBox={`${bounds.x - padding} ${bounds.y - padding} ${bounds.width + padding * 2} ${bounds.height + padding * 2}`}
     >
-      <AssetShapeArtwork
-        asset={asset}
-        variant={variant}
-        cells={cells}
-        bounds={bounds}
-        interactions={getPlacedAssetInteractions(previewObject)}
-        rotation={rotation}
-      />
+      <svg
+        className="asset-shape-artwork"
+        x={bounds.x}
+        y={bounds.y}
+        width={bounds.width}
+        height={bounds.height}
+        viewBox={`${frame.x} ${frame.y} ${frame.width} ${frame.height}`}
+        preserveAspectRatio="none"
+        overflow="hidden"
+      >
+        <image href={artwork.path} width={artwork.atlasWidth} height={artwork.atlasHeight} />
+      </svg>
     </svg>
   );
 }

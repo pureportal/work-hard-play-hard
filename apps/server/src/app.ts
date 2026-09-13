@@ -4,12 +4,7 @@ import cors from "@fastify/cors";
 import websocket from "@fastify/websocket";
 import type { AuthUser, ClientCommand, Member, MemberRole, ServerEvent } from "@workhard/shared";
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
-import {
-  AVATAR_IMAGE_MAX_BYTES,
-  AvatarImageInputError,
-  AvatarImageProcessor,
-} from "./avatar/avatar-image-processor.js";
-import { AvatarStore, type AvatarReference } from "./avatar/avatar-store.js";
+import { characterAppearanceSchema } from "./avatar/character-schema.js";
 import { AuthStore } from "./auth/auth-store.js";
 import { AuthRateLimiter } from "./auth/rate-limiter.js";
 import {
@@ -92,9 +87,8 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     await database.close();
     throw error;
   });
-  const { auth, avatars, brandingLogo, runtime, store } = initialized;
+  const { auth, brandingLogo, runtime, store } = initialized;
   const chatImages = new ChatImageStore(options.chatImagePath ?? defaultChatImagePath);
-  const avatarProcessor = new AvatarImageProcessor();
   const authRateLimiter = new AuthRateLimiter();
   const exposeMagicLinks = options.exposeMagicLinks ?? process.env.NODE_ENV !== "production";
   const exposeInvitationLinks = options.exposeInvitationLinks ?? process.env.NODE_ENV !== "production";
@@ -181,7 +175,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
   for (const mimeType of SUPPORTED_IMAGE_MIME_TYPES) {
     app.addContentTypeParser(mimeType, {
       parseAs: "buffer",
-      bodyLimit: Math.max(CHAT_IMAGE_MAX_BYTES, AVATAR_IMAGE_MAX_BYTES, BRANDING_LOGO_MAX_BYTES),
+      bodyLimit: Math.max(CHAT_IMAGE_MAX_BYTES, BRANDING_LOGO_MAX_BYTES),
     }, (_request, body, done) => {
       done(null, body);
     });
@@ -243,6 +237,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
         await auth.removeAccount(registered.user.id);
         throw error;
       }
+      await persist();
       runtime.publishMember(member);
       if (invitationAccepted) {
         runtime.publishWorkspaceAccess();
@@ -385,6 +380,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     }
     try {
       const accepted = store.acceptInvitation(parsed.data.token, user);
+      await persist();
       runtime.publishMember(accepted.member);
       runtime.publishWorkspaceAccess();
       return accepted.invitation;
@@ -523,7 +519,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     return reply.send(logo.data);
   });
 
-  app.put("/v1/members/me/avatar", async (request, reply) => {
+  app.put("/v1/members/me/character", async (request, reply) => {
     const user = getAuthenticatedUser(auth, request);
     if (!user) {
       return reply.code(401).send({ code: "AUTH_REQUIRED", message: "Sign in to continue." });
@@ -531,69 +527,14 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     if (!store.getMember(user.id)) {
       return reply.code(404).send({ code: "USER_NOT_FOUND", message: "User not found." });
     }
-    const retryAfter = authRateLimiter.consume("avatar-upload", user.id, 20, AUTH_WINDOW_MS);
-    if (retryAfter) {
-      return sendRateLimit(reply, retryAfter);
+    const parsed = characterAppearanceSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ code: "CHARACTER_INVALID", message: "Choose an option for each part of your character." });
     }
-    const body = request.body;
-    if (!Buffer.isBuffer(body) || body.length === 0 || body.length > AVATAR_IMAGE_MAX_BYTES) {
-      return reply.code(400).send({ code: "AVATAR_IMAGE_INVALID", message: "Choose an image up to 5 MB." });
-    }
-    const detectedMimeType = detectImageMimeType(body);
-    const declaredMimeType = request.headers["content-type"]?.split(";", 1)[0];
-    if (!detectedMimeType || detectedMimeType !== declaredMimeType) {
-      return reply.code(415).send({ code: "AVATAR_IMAGE_TYPE_INVALID", message: "Choose a PNG, JPEG, GIF, or WebP image." });
-    }
-    let processed;
-    try {
-      processed = await avatarProcessor.process(body);
-    } catch (error) {
-      if (error instanceof AvatarImageInputError) {
-        return reply.code(422).send({ code: "AVATAR_IMAGE_INVALID", message: "Choose a valid image." });
-      }
-      throw error;
-    }
-    const reference = await avatars.save(user.id, processed);
-    const member = store.updateMemberAvatar(user.id, avatarUrl(reference));
+    const member = store.updateMemberCharacter(user.id, parsed.data);
+    await persist();
     runtime.publishMember(member);
     return member;
-  });
-
-  app.delete("/v1/members/me/avatar", async (request, reply) => {
-    const user = getAuthenticatedUser(auth, request);
-    if (!user) {
-      return reply.code(401).send({ code: "AUTH_REQUIRED", message: "Sign in to continue." });
-    }
-    if (!store.getMember(user.id)) {
-      return reply.code(404).send({ code: "USER_NOT_FOUND", message: "User not found." });
-    }
-    await avatars.remove(user.id);
-    const member = store.updateMemberAvatar(user.id, undefined);
-    runtime.publishMember(member);
-    return member;
-  });
-
-  app.get("/v1/members/:memberId/avatar.webp", async (request, reply) => {
-    const { memberId } = request.params as { memberId: string };
-    const { v: version } = request.query as { v?: string };
-    if (!store.getMember(memberId)) {
-      return reply.code(404).send({ code: "AVATAR_NOT_FOUND", message: "Avatar not found." });
-    }
-    const avatar = await avatars.read(memberId);
-    if (!avatar || version !== avatar.version) {
-      return reply.code(404).send({ code: "AVATAR_NOT_FOUND", message: "Avatar not found." });
-    }
-    const etag = `"${avatar.version}"`;
-    reply
-      .header("content-type", avatar.mimeType)
-      .header("content-length", avatar.data.length)
-      .header("etag", etag)
-      .header("x-content-type-options", "nosniff")
-      .header("cache-control", "private, max-age=31536000, immutable");
-    if (request.headers["if-none-match"] === etag) {
-      return reply.code(304).send();
-    }
-    return reply.send(avatar.data);
   });
 
   app.post("/v1/conversations/direct", async (request, reply) => {
@@ -929,13 +870,9 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
       await persist();
     } finally {
       try {
-        await avatarProcessor.close();
+        await auth.close();
       } finally {
-        try {
-          await auth.close();
-        } finally {
-          await database.close();
-        }
+        await database.close();
       }
     }
   });
@@ -948,12 +885,6 @@ async function initializePersistentState(database: ApplicationDatabase, seeded: 
   const savedState = await database.loadWorkspaceState();
   if (savedState) {
     store.restoreMutableState(savedState.store);
-  }
-
-  const avatars = new AvatarStore(database);
-  const avatarReferences = new Map((await avatars.getReferences()).map((reference) => [reference.userId, reference]));
-  for (const member of store.getMembers()) {
-    store.updateMemberAvatar(member.id, avatarUrl(avatarReferences.get(member.id)));
   }
 
   const brandingLogo = new BrandingLogoStore(database);
@@ -969,11 +900,7 @@ async function initializePersistentState(database: ApplicationDatabase, seeded: 
       store: store.exportMutableState(),
     });
   }
-  return { auth, avatars, brandingLogo, runtime, store };
-}
-
-function avatarUrl(reference: AvatarReference | undefined): string | undefined {
-  return reference ? `/v1/members/${encodeURIComponent(reference.userId)}/avatar.webp?v=${encodeURIComponent(reference.version)}` : undefined;
+  return { auth, brandingLogo, runtime, store };
 }
 
 function brandingLogoUrl(reference: BrandingLogoReference | undefined): string | undefined {

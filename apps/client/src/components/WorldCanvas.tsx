@@ -1,11 +1,20 @@
 import { ArrowUp, Check, LocateFixed, Minus, Plus, RotateCw, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Application, Container, Graphics, Sprite, Text, Texture } from "pixi.js";
+import { Application, Container, Graphics, Text } from "pixi.js";
+import { CharacterSprite } from "../character-sprite";
+import { CharacterSeat } from "../character-seat";
+import { createWorldAssetView } from "../world-asset-view";
+import { WorldAssetTextures } from "../world-asset-textures";
+import "../world-asset.css";
 import {
   ASSET_RASTER_SIZE,
   BUILD_GRID_SIZE,
-  PROXIMITY_GROUP_REACH_RADIUS,
-  PROXIMITY_INTERACTION_RADIUS,
+  CHARACTER_WORLD_SIZE,
+  CHARACTER_CANVAS_SIZE,
+  CHARACTER_FOOT_ANCHOR,
+  CHARACTER_SEAT_ANCHOR,
+  CHARACTER_SEATED_FOOT_Y,
+  characterAppearanceKey,
   WALL_THICKNESS,
   getAssetDefinition,
   getAssetPlacementError,
@@ -16,7 +25,6 @@ import {
   getOutdoorWindowLights,
   getPlacedAssetBounds,
   getPlacedAssetCells,
-  getPlacedAssetInteractions,
   getPlayerAssetRoomError,
   getWallOpeningPlacement,
   getWallPlacementError,
@@ -27,13 +35,11 @@ import {
   normalizeWall,
   pointInRect,
   requireAssetDefinition,
-  requireAssetVariant,
   snapToBuildGrid,
 } from "@workhard/shared";
 import type {
-  AssetDefinition,
   AssetRotation,
-  AssetVariantDefinition,
+  CharacterAppearance,
   Floor,
   FloorLayout,
   GameSettings,
@@ -43,7 +49,6 @@ import type {
   Meeting,
   Member,
   OpeningType,
-  PlacedAssetCell,
   PlacedAssetInteraction,
   Rect,
   Wall,
@@ -51,14 +56,16 @@ import type {
   WorldPlayer,
 } from "@workhard/shared";
 import type { DisplayGongRing } from "../gong";
+import { renderCharacter } from "../character-renderer";
 import { getAssetDirectionIndicators, getAssetOrientationLabel, rotateAssetClockwise } from "../asset-orientation";
 import { REACTION_EMOJI, type DisplayHighFive, type DisplayReaction } from "../reactions";
-import { resolveServerUrl } from "../server-url";
 import type { ColorTheme } from "../theme";
 import { isPointInWorldTarget, resolveWorldPointTarget } from "../world-point-target";
 import { IconButton } from "./IconButton";
+import type { InteractionHighlight } from "../hooks/useInteractionAreas";
 
 export interface WorldCanvasProps {
+  activeInteraction?: InteractionHighlight | undefined;
   floor: Floor;
   layout: FloorLayout;
   members: Member[];
@@ -104,6 +111,7 @@ interface RendererCallbacks {
   onGongOffscreen: WorldCanvasProps["onGongOffscreen"];
   onAssetPreviewStateChange: (state: AssetPreviewState) => void;
   onCameraModeChange: (mode: CameraMode) => void;
+  onArtworkError: (error: Error) => void;
 }
 
 interface AssetPreviewState {
@@ -128,17 +136,22 @@ const TOUCH_DRAG_THRESHOLD = 10;
 const MULTI_POINTER_MOVE_THRESHOLD = 1;
 const MULTI_POINTER_ZOOM_THRESHOLD = 0.002;
 const MIN_TOUCH_TARGET_SIZE = 44;
+const SEATED_CHARACTER_OFFSET = (CHARACTER_FOOT_ANCHOR.y - CHARACTER_SEAT_ANCHOR.y) / CHARACTER_CANVAS_SIZE * CHARACTER_WORLD_SIZE;
+const SEATED_FEET_OFFSET = (CHARACTER_SEATED_FOOT_Y - CHARACTER_SEAT_ANCHOR.y) / CHARACTER_CANVAS_SIZE * CHARACTER_WORLD_SIZE;
 
 interface PlayerView {
   container: Container;
-  proximity: Graphics;
   status: Graphics;
-  facing: Graphics;
   wave: Graphics;
   avatarImage: Container;
-  initials: Text;
+  ground: Container;
   name: Text;
-  avatarUrl: string | undefined;
+  characterKey: string;
+  characterSprite?: CharacterSprite;
+  characterSeat: CharacterSeat;
+  canWalk: boolean;
+  seated: boolean;
+  seatOffsetY: number;
   reactionBubble: Container;
   reactionText: Text;
   reactionId?: string;
@@ -149,7 +162,6 @@ interface PlayerView {
   wavingUntil: number;
   availability?: Member["availability"];
   facingDirection?: WorldPlayer["facing"];
-  proximityStyle?: string;
 }
 
 interface HighFiveView {
@@ -161,8 +173,7 @@ interface HighFiveView {
 }
 
 interface GongObjectView {
-  disc: Container;
-  mallet: Container;
+  body: Container;
   ringStartedAt: number;
   ringUntil: number;
 }
@@ -202,21 +213,12 @@ const statusColors: Record<Member["availability"], string> = {
   away: "#9aa2ad",
 };
 
-const proximityColors = ["#6c5ce7", "#287fc1", "#0f9f82", "#d9822b", "#d35c79"];
-
-function proximityColor(callId: string): string {
-  let hash = 0;
-  for (const character of callId) {
-    hash = Math.imul(hash, 31) + character.charCodeAt(0);
-  }
-  return proximityColors[Math.abs(hash) % proximityColors.length]!;
-}
-
 export function WorldCanvas(props: WorldCanvasProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<OfficeRenderer | undefined>(undefined);
   const [assetPreviewState, setAssetPreviewState] = useState<AssetPreviewState>({ hasPoint: false, canPlace: false });
   const [cameraMode, setCameraMode] = useState<CameraMode>("follow");
+  const [artworkFailed, setArtworkFailed] = useState(false);
   const lifecycleRef = useRef<PixiLifecycle | undefined>(undefined);
   const propsRef = useRef(props);
   const callbacksRef = useRef<RendererCallbacks>({
@@ -228,6 +230,10 @@ export function WorldCanvas(props: WorldCanvasProps) {
     onGongOffscreen: props.onGongOffscreen,
     onAssetPreviewStateChange: setAssetPreviewState,
     onCameraModeChange: setCameraMode,
+    onArtworkError: (error) => {
+      console.error("World artwork could not load.", error);
+      setArtworkFailed(true);
+    },
   });
   const directionCallbackRef = useRef(props.onDirectionalInput);
   const sequenceRef = useRef(0);
@@ -242,6 +248,10 @@ export function WorldCanvas(props: WorldCanvasProps) {
     onGongOffscreen: props.onGongOffscreen,
     onAssetPreviewStateChange: setAssetPreviewState,
     onCameraModeChange: setCameraMode,
+    onArtworkError: (error) => {
+      console.error("World artwork could not load.", error);
+      setArtworkFailed(true);
+    },
   };
   directionCallbackRef.current = props.onDirectionalInput;
   propsRef.current = props;
@@ -295,6 +305,7 @@ export function WorldCanvas(props: WorldCanvasProps) {
           current.colorTheme,
         );
         renderer.setPlayers(current.players, current.members, current.currentUserId);
+        renderer.setActiveInteraction(current.editing ? undefined : current.activeInteraction);
         renderer.setReactions(current.reactions);
         renderer.setHighFives(current.highFives);
         renderer.setGongRings(current.gongRings);
@@ -356,6 +367,10 @@ export function WorldCanvas(props: WorldCanvasProps) {
 
   const assetPlacementActive = props.editing
     && (props.editingTool === "asset" || props.movingBuildItem?.type === "asset");
+
+  useEffect(() => {
+    rendererRef.current?.setActiveInteraction(props.editing ? undefined : props.activeInteraction);
+  }, [props.activeInteraction, props.editing]);
 
   useEffect(() => {
     if (!assetPlacementActive) {
@@ -458,6 +473,12 @@ export function WorldCanvas(props: WorldCanvasProps) {
         tabIndex={0}
         aria-label={props.editing ? `${props.floor.name} build canvas.` : `${props.floor.name} office map. Use arrow keys or WASD to move.`}
       />
+      {artworkFailed && (
+        <div className="world-artwork-error" role="alert">
+          <span>Artwork could not load.</span>
+          <button onClick={() => window.location.reload()}>Reload</button>
+        </div>
+      )}
       <div className="world-zoom-controls" role="toolbar" aria-label="Camera">
         <IconButton label="Zoom in" icon={Plus} onClick={() => rendererRef.current?.zoomBy(0.12)} />
         <IconButton label="Zoom out" icon={Minus} onClick={() => rendererRef.current?.zoomBy(-0.12)} />
@@ -502,7 +523,11 @@ class OfficeRenderer {
   private readonly world = new Container();
   private readonly layoutLayer = new Container();
   private readonly selectionOverlay = new Graphics();
+  private readonly interactionOverlay = new Graphics();
   private readonly buildPreview = new Graphics();
+  private readonly assetPreviewLayer = new Container();
+  private readonly assetTextures = new WorldAssetTextures();
+  private assetPreview: { key: string; container: Container } | undefined;
   private readonly playerLayer = new Container();
   private readonly celebrationLayer = new Container();
   private readonly playerViews = new Map<string, PlayerView>();
@@ -554,7 +579,7 @@ class OfficeRenderer {
     this.app.stage.addChild(this.world);
     this.world.scale.set(this.zoom);
     this.playerLayer.sortableChildren = true;
-    this.world.addChild(this.layoutLayer, this.selectionOverlay, this.buildPreview, this.playerLayer, this.celebrationLayer);
+    this.world.addChild(this.layoutLayer, this.interactionOverlay, this.selectionOverlay, this.assetPreviewLayer, this.buildPreview, this.playerLayer, this.celebrationLayer);
     this.app.canvas.addEventListener("pointerdown", this.handlePointerDown);
     this.app.canvas.addEventListener("pointermove", this.handlePointerMove);
     this.app.canvas.addEventListener("pointerup", this.handlePointerUp);
@@ -610,7 +635,7 @@ class OfficeRenderer {
     this.playerAssetPlacement = playerAssetPlacement;
     this.colorTheme = colorTheme;
     if (toolChanged) {
-      this.buildPreview.clear();
+      this.clearBuildPreview();
       delete this.buildStart;
       delete this.buildOrientation;
       this.touchPlacement = false;
@@ -664,10 +689,9 @@ class OfficeRenderer {
         continue;
       }
       let view = this.playerViews.get(player.userId);
-      if (view && view.avatarUrl !== member.avatarUrl) {
-        view.container.destroy({ children: true });
-        this.playerViews.delete(player.userId);
-        view = undefined;
+      if (view && view.characterKey !== characterAppearanceKey(member.character)) {
+        view.characterKey = characterAppearanceKey(member.character);
+        void this.loadPlayerCharacter(view, member.character);
       }
       if (!view) {
         view = this.createPlayerView(member, player.userId === currentUserId);
@@ -677,34 +701,37 @@ class OfficeRenderer {
         this.applyReaction(view, this.reactions.get(player.userId));
       }
       const carrier = player.carriedByUserId ? playerMap.get(player.carriedByUserId) : undefined;
+      view.seated = Boolean(player.seat || carrier);
+      const seat = player.seat && !carrier ? this.layout?.objects.find((object) => object.id === player.seat!.objectId) : undefined;
+      view.seatOffsetY = view.characterSeat.update(seat, player.facing);
+      view.avatarImage.y = view.seatOffsetY;
+      view.canWalk = !view.seated;
+      view.ground.visible = view.canWalk;
+      view.name.x = carrier ? -18 - view.name.width / 2 : 0;
+      view.name.y = 10 + (view.seated ? Math.max(SEATED_FEET_OFFSET + view.seatOffsetY, ASSET_RASTER_SIZE) : 0);
+      view.status.y = view.seated ? SEATED_CHARACTER_OFFSET + view.seatOffsetY : 0;
       view.targetX = carrier?.x ?? player.x;
-      view.targetY = (carrier?.y ?? player.y) - (carrier ? 42 : 0);
-      view.container.zIndex = carrier ? 1 : 0;
+      view.targetY = (carrier?.y ?? player.y) - (carrier ? CHARACTER_WORLD_SIZE * 0.7 : 0);
+      view.container.zIndex = carrier ? -1 : 0;
       view.wavingUntil = player.wavingUntil ?? 0;
-      const proximityStyle = player.proximity?.callId
-        ? `call:${player.proximity.callId}`
-        : player.proximity ? `ready:${member.color}` : "";
-      if (view.proximityStyle !== proximityStyle) {
-        view.proximityStyle = proximityStyle;
-        view.proximity.clear();
-        if (player.proximity) {
-          const radius = player.proximity.callId ? PROXIMITY_GROUP_REACH_RADIUS : PROXIMITY_INTERACTION_RADIUS;
-          const color = player.proximity.callId ? proximityColor(player.proximity.callId) : member.color;
-          view.proximity
-            .circle(0, 0, radius)
-            .fill({ color, alpha: player.proximity.callId ? 0.1 : 0.06 })
-            .stroke({ color, width: 2, alpha: player.proximity.callId ? 0.58 : 0.42 });
-        }
-      }
       if (view.availability !== player.availability) {
         view.availability = player.availability;
-        view.status.clear().circle(13, -13, 5).fill(statusColors[player.availability]).stroke({ color: "#ffffff", width: 2 });
+        view.status.clear().circle(10, -CHARACTER_WORLD_SIZE + 8, 4).fill(statusColors[player.availability]).stroke({ color: "#ffffff", width: 2 });
       }
-      if (view.facingDirection !== player.facing) {
-        view.facingDirection = player.facing;
-        view.facing.rotation = facingRotation(player.facing);
-      }
+      view.facingDirection = carrier?.facing ?? player.facing;
     }
+  }
+
+  setActiveInteraction(area: InteractionHighlight | undefined): void {
+    const graphic = this.interactionOverlay.clear();
+    if (!area) return;
+    if (area.type === "circle") {
+      graphic.circle(area.x, area.y, area.radius);
+    } else {
+      const { x, y, width, height } = area.bounds;
+      graphic.roundRect(x, y, width, height, 8);
+    }
+    graphic.stroke({ color: "#6c5ce7", width: 1.5, alpha: 0.32 });
   }
 
   setReactions(reactions: DisplayReaction[]): void {
@@ -893,6 +920,7 @@ class OfficeRenderer {
     this.app.canvas.removeEventListener("pointerleave", this.handlePointerLeave);
     this.app.canvas.removeEventListener("wheel", this.handleWheel);
     this.cancelPointerInteraction();
+    this.assetTextures.destroy();
   }
 
   private drawLayout(): void {
@@ -994,14 +1022,10 @@ class OfficeRenderer {
       if (meeting.status === "ended" || meeting.location.type !== "public" || meeting.location.floorId !== this.floor.id) {
         continue;
       }
-      const marker = new Graphics()
-        .circle(meeting.location.x, meeting.location.y, meeting.location.radius)
-        .fill({ color: "#6c5ce7", alpha: 0.09 })
-        .stroke({ color: "#6c5ce7", width: 3, alpha: meeting.status === "live" ? 0.72 : 0.38 });
       const center = new Graphics()
         .circle(meeting.location.x, meeting.location.y, 5)
         .fill({ color: "#6c5ce7", alpha: 0.78 });
-      this.layoutLayer.addChild(marker, center);
+      this.layoutLayer.addChild(center);
     }
 
     const walls = this.placementLayout?.walls ?? this.layout.walls;
@@ -1041,7 +1065,11 @@ class OfficeRenderer {
     const objects = this.layout.objects.filter((object) => requireAssetDefinition(object.assetId).placement.layer !== "ground").sort((left, right) => {
       const leftLayer = requireAssetDefinition(left.assetId).placement.layer === "surface" ? 1 : 0;
       const rightLayer = requireAssetDefinition(right.assetId).placement.layer === "surface" ? 1 : 0;
-      return leftLayer - rightLayer;
+      const leftBounds = getPlacedAssetBounds(left);
+      const rightBounds = getPlacedAssetBounds(right);
+      return leftLayer - rightLayer
+        || leftBounds.y + leftBounds.height - rightBounds.y - rightBounds.height
+        || leftBounds.x - rightBounds.x;
     });
     for (const object of objects) {
       this.drawObject(object);
@@ -1058,328 +1086,29 @@ class OfficeRenderer {
   }
 
   private drawObject(object: WorldObject): void {
-    const definition = requireAssetDefinition(object.assetId);
-    const cells = getPlacedAssetCells(object);
-    const bounds = getPlacedAssetBounds(object);
-    const centerX = bounds.x + bounds.width / 2;
-    const centerY = bounds.y + bounds.height / 2;
-    const variant = requireAssetVariant(definition, object.variantId);
-    if (definition.kind === "floor-tile") {
-      const surface = new Graphics()
-        .roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 3)
-        .fill(variant.color)
-        .stroke({ color: variant.accentColor, width: 1, alpha: 0.72 });
-      drawFloorSurfacePattern(surface, bounds, variant, object.rotation);
-      this.layoutLayer.addChild(surface);
-      return;
+    const view = createWorldAssetView(this.assetTextures, object, this.colorTheme, this.callbacks.current.onArtworkError);
+    this.layoutLayer.addChild(view.container);
+    if (requireAssetDefinition(object.assetId).kind === "gong") {
+      this.gongViews.set(object.id, { body: view.body, ringStartedAt: 0, ringUntil: 0 });
     }
-    if (definition.kind === "gong") {
-      this.drawGong(object, bounds, variant);
-      return;
-    }
-    if (definition.radius) {
-      const radius = new Graphics();
-      drawAssetRadius(radius, bounds, definition.radius, "#6c5ce7", 0.035, 0.24);
-      this.layoutLayer.addChild(radius);
-    }
-
-    const shadow = new Graphics();
-    const body = new Graphics();
-    const dark = this.colorTheme === "dark";
-    const objectColor = dark ? mixHex(variant.color, "#171922", 0.14) : variant.color;
-    for (const cell of cells) {
-      shadow
-        .rect(cell.worldX + 3, cell.worldY + 4, ASSET_RASTER_SIZE, ASSET_RASTER_SIZE)
-        .fill({ color: "#08090e", alpha: dark ? 0.3 : 0.11 });
-      if (cell.type === "foliage") {
-        body
-          .roundRect(cell.worldX, cell.worldY, ASSET_RASTER_SIZE, ASSET_RASTER_SIZE, 5)
-          .fill({ color: objectColor, alpha: 0.96 });
-      } else {
-        body
-          .roundRect(cell.worldX, cell.worldY, ASSET_RASTER_SIZE, ASSET_RASTER_SIZE, cell.type === "support" ? 1 : 2)
-          .fill({ color: objectColor, alpha: cell.type === "support" ? 0.78 : 1 });
-      }
-    }
-    const interactions = getPlacedAssetInteractions(object);
-    this.layoutLayer.addChild(shadow, body, drawCellOutline(cells));
-    this.drawObjectDetails(definition, variant, cells, bounds, interactions);
-
-    if (interactions.length > 0) {
-      const interactionGraphic = new Graphics();
-      for (const interaction of interactions) {
-        interactionGraphic
-          .roundRect(interaction.bounds.x + 2, interaction.bounds.y + 2, interaction.bounds.width - 4, interaction.bounds.height - 4, 5)
-          .stroke({ color: "#ffffff", width: 1, alpha: 0.28 });
-        const vector = directionVector(interaction.direction);
-        interactionGraphic
-          .moveTo(interaction.center.x - vector.x * 3, interaction.center.y - vector.y * 3)
-          .lineTo(interaction.center.x + vector.x * 6, interaction.center.y + vector.y * 6)
-          .stroke({ color: "#ffffff", width: 2, alpha: 0.46 });
-      }
-      this.layoutLayer.addChild(interactionGraphic);
-    }
-
-    if (object.label) {
-      const darkLabel = dark || definition.kind === "arcade" || definition.kind === "game";
-      const label = new Text({
-        text: object.label,
-        style: {
-          fontFamily: "Inter, Segoe UI, sans-serif",
-          fontSize: definition.kind === "portal" ? 13 : 11,
-          fontWeight: "700",
-          fill: darkLabel ? "#ffffff" : "#34313b",
-        },
-      });
-      label.anchor.set(0.5);
-      const labelY = definition.kind === "portal" ? centerY : bounds.y + bounds.height - 11;
-      label.position.set(centerX, labelY);
-      const plate = new Graphics()
-        .roundRect(centerX - label.width / 2 - 6, labelY - label.height / 2 - 3, label.width + 12, label.height + 6, 6)
-        .fill({ color: darkLabel ? "#292734" : "#fffdfa", alpha: darkLabel ? 0.82 : 0.72 });
-      this.layoutLayer.addChild(plate, label);
-    }
-  }
-
-  private drawObjectDetails(
-    definition: AssetDefinition,
-    variant: AssetVariantDefinition,
-    cells: PlacedAssetCell[],
-    bounds: Rect,
-    interactions: PlacedAssetInteraction[],
-  ): void {
-    const details = new Graphics();
-    const centerX = bounds.x + bounds.width / 2;
-    const centerY = bounds.y + bounds.height / 2;
-
-    if (definition.id === "table-round") {
-      details
-        .ellipse(centerX, centerY, Math.max(8, bounds.width / 2 - 5), Math.max(8, bounds.height / 2 - 5))
-        .fill({ color: "#ffffff", alpha: 0.08 })
-        .stroke({ color: "#ffffff", width: 2, alpha: 0.24 })
-        .circle(centerX, centerY, 5)
-        .fill({ color: variant.accentColor, alpha: 0.55 });
-    } else if (definition.kind === "desk" || definition.kind === "table") {
-      for (const cell of cells.filter((candidate) => candidate.allows.includes("decoration"))) {
-        details
-          .roundRect(cell.worldX + 3, cell.worldY + 3, ASSET_RASTER_SIZE - 6, 3, 1.5)
-          .fill({ color: variant.secondaryColor, alpha: 0.36 });
-      }
-    } else if (definition.kind === "chair" || definition.kind === "sofa") {
-      for (const interaction of interactions) {
-        const { x, y, width, height } = interaction.bounds;
-        details
-          .roundRect(x + 4, y + 4, width - 8, height - 8, 7)
-          .fill({ color: variant.secondaryColor, alpha: 0.32 })
-          .stroke({ color: variant.accentColor, width: 1, alpha: 0.42 });
-        if (interaction.direction === "up" || interaction.direction === "down") {
-          const edgeY = interaction.direction === "down" ? y + 6 : y + height - 6;
-          details.moveTo(x + 6, edgeY).lineTo(x + width - 6, edgeY).stroke({ color: variant.accentColor, width: 3, alpha: 0.48 });
-        } else {
-          const edgeX = interaction.direction === "left" ? x + width - 6 : x + 6;
-          details.moveTo(edgeX, y + 6).lineTo(edgeX, y + height - 6).stroke({ color: variant.accentColor, width: 3, alpha: 0.48 });
-        }
-      }
-    } else if (definition.kind === "plant") {
-      cells.forEach((cell, index) => {
-        const offset = index % 2 === 0 ? 0 : 1;
-        details
-          .ellipse(cell.worldX + 6 + offset, cell.worldY + 6, 6, 4)
-          .fill({ color: variant.secondaryColor, alpha: 0.95 })
-          .ellipse(cell.worldX + 10, cell.worldY + 10 - offset, 4, 6)
-          .fill({ color: variant.color, alpha: 0.98 })
-          .circle(cell.worldX + 8, cell.worldY + 8, 2)
-          .fill({ color: variant.accentColor, alpha: 0.8 });
-      });
-      const potWidth = Math.min(20, Math.max(10, bounds.width - 8));
-      details
-        .roundRect(centerX - potWidth / 2, bounds.y + bounds.height - 8, potWidth, 8, 3)
-        .fill({ color: mixHex(variant.accentColor, "#8b5f45", 0.45), alpha: 0.94 });
-    } else if (definition.kind === "garden") {
-      cells.forEach((cell, index) => {
-        const flower = ["#f4b942", "#ef8372", "#d9b6ed"][index % 3]!;
-        details
-          .ellipse(cell.worldX + 5, cell.worldY + 7, 4, 3).fill("#7fb77d")
-          .ellipse(cell.worldX + 11, cell.worldY + 10, 3, 4).fill("#5f9d70")
-          .circle(cell.worldX + 9, cell.worldY + 5, 2.3).fill(flower);
-      });
-    } else if (definition.kind === "pool") {
-      details
-        .roundRect(bounds.x + 6, bounds.y + 6, bounds.width - 12, bounds.height - 12, 13)
-        .fill(variant.secondaryColor)
-        .stroke({ color: variant.accentColor, width: 3, alpha: 0.75 });
-      for (let y = bounds.y + 28; y < bounds.y + bounds.height - 14; y += 28) {
-        details
-          .moveTo(bounds.x + 20, y)
-          .bezierCurveTo(bounds.x + bounds.width * 0.34, y - 8, bounds.x + bounds.width * 0.4, y + 8, bounds.x + bounds.width * 0.54, y)
-          .bezierCurveTo(bounds.x + bounds.width * 0.68, y - 8, bounds.x + bounds.width * 0.75, y + 8, bounds.x + bounds.width - 20, y)
-          .stroke({ color: "#f4fbff", width: 3, alpha: 0.66 });
-      }
-    } else if (definition.kind === "arcade") {
-      const vertical = bounds.height >= bounds.width;
-      const screen = vertical
-        ? { x: bounds.x + 9, y: bounds.y + 11, width: bounds.width - 18, height: Math.min(34, bounds.height * 0.38) }
-        : { x: bounds.x + 11, y: bounds.y + 9, width: Math.min(34, bounds.width * 0.38), height: bounds.height - 18 };
-      details
-        .roundRect(screen.x, screen.y, screen.width, screen.height, 5)
-        .fill(variant.secondaryColor)
-        .stroke({ color: variant.accentColor, width: 2, alpha: 0.72 });
-      if (vertical) {
-        details.circle(bounds.x + 18, bounds.y + bounds.height * 0.62, 4).fill("#ff7a66");
-        details.circle(bounds.x + bounds.width - 18, bounds.y + bounds.height * 0.62, 4).fill("#f4b942");
-      } else {
-        details.circle(bounds.x + bounds.width * 0.62, bounds.y + 18, 4).fill("#ff7a66");
-        details.circle(bounds.x + bounds.width * 0.62, bounds.y + bounds.height - 18, 4).fill("#f4b942");
-      }
-    } else if (definition.kind === "portal") {
-      details
-        .roundRect(bounds.x + 7, bounds.y + 7, bounds.width - 14, bounds.height - 14, 10)
-        .stroke({ color: variant.secondaryColor, width: 3, alpha: 0.95 })
-        .roundRect(bounds.x + 14, bounds.y + 14, bounds.width - 28, bounds.height - 28, 7)
-        .stroke({ color: variant.accentColor, width: 2, alpha: 0.9 });
-    } else if (definition.kind === "laptop") {
-      details
-        .roundRect(bounds.x + 3, bounds.y + 2, bounds.width - 6, bounds.height - 5, 2)
-        .fill(variant.accentColor)
-        .stroke({ color: variant.secondaryColor, width: 2, alpha: 0.88 })
-        .moveTo(bounds.x + 2, bounds.y + bounds.height - 2)
-        .lineTo(bounds.x + bounds.width - 2, bounds.y + bounds.height - 2)
-        .stroke({ color: "#d4d9df", width: 2, alpha: 0.8 });
-    } else if (definition.kind === "monitor") {
-      const horizontal = bounds.width >= bounds.height;
-      const screen = horizontal
-        ? { x: bounds.x + 3, y: bounds.y + 2, width: bounds.width - 6, height: bounds.height - 5 }
-        : { x: bounds.x + 2, y: bounds.y + 3, width: bounds.width - 5, height: bounds.height - 6 };
-      details
-        .roundRect(screen.x, screen.y, screen.width, screen.height, 2)
-        .fill(variant.accentColor)
-        .stroke({ color: variant.secondaryColor, width: 2, alpha: 0.82 })
-        .circle(centerX, centerY, 2)
-        .fill({ color: "#d7f5fb", alpha: 0.9 });
-    } else if (definition.kind === "coffee") {
-      details
-        .circle(centerX, centerY, 5.5)
-        .fill(variant.secondaryColor)
-        .stroke({ color: variant.accentColor, width: 1.5, alpha: 0.85 })
-        .circle(centerX + 6, centerY, 3.5)
-        .stroke({ color: variant.secondaryColor, width: 2, alpha: 0.95 })
-        .circle(centerX, centerY, 2.7)
-        .fill(variant.accentColor);
-    } else if (definition.kind === "lamp") {
-      details
-        .circle(centerX, centerY, 10).fill({ color: variant.secondaryColor, alpha: 0.24 })
-        .circle(centerX, centerY, 6).fill(variant.secondaryColor)
-        .stroke({ color: "#ffffff", width: 2, alpha: 0.72 });
-    } else if (definition.kind === "bookshelf") {
-      const horizontal = bounds.width >= bounds.height;
-      details
-        .roundRect(bounds.x + 3, bounds.y + 3, bounds.width - 6, bounds.height - 6, 3)
-        .fill({ color: variant.accentColor, alpha: 0.62 })
-        .stroke({ color: variant.secondaryColor, width: 2, alpha: 0.62 });
-      const bookColors = ["#d96f67", "#e2b458", "#6b91c8", "#71a47d", "#a77bc0"];
-      if (horizontal) {
-        for (let x = bounds.x + 8, index = 0; x < bounds.x + bounds.width - 7; x += 11, index += 1) {
-          details.roundRect(x, bounds.y + 6 + index % 2, 7, bounds.height - 12 - index % 2, 1).fill(bookColors[index % bookColors.length]!);
-        }
-      } else {
-        for (let y = bounds.y + 8, index = 0; y < bounds.y + bounds.height - 7; y += 11, index += 1) {
-          details.roundRect(bounds.x + 6 + index % 2, y, bounds.width - 12 - index % 2, 7, 1).fill(bookColors[index % bookColors.length]!);
-        }
-      }
-    } else if (definition.kind === "whiteboard") {
-      const horizontal = bounds.width >= bounds.height;
-      details
-        .roundRect(bounds.x + 3, bounds.y + 3, bounds.width - 6, bounds.height - 6, 3)
-        .fill(variant.secondaryColor)
-        .stroke({ color: variant.accentColor, width: 2 });
-      if (horizontal) {
-        details.moveTo(bounds.x + 13, centerY - 2).lineTo(bounds.x + bounds.width * 0.52, centerY - 2).stroke({ color: "#8294c7", width: 2, alpha: 0.72 });
-        details.moveTo(bounds.x + bounds.width * 0.6, centerY + 2).lineTo(bounds.x + bounds.width - 14, centerY + 2).stroke({ color: "#e68a76", width: 2, alpha: 0.72 });
-      } else {
-        details.moveTo(centerX - 2, bounds.y + 13).lineTo(centerX - 2, bounds.y + bounds.height * 0.52).stroke({ color: "#8294c7", width: 2, alpha: 0.72 });
-        details.moveTo(centerX + 2, bounds.y + bounds.height * 0.6).lineTo(centerX + 2, bounds.y + bounds.height - 14).stroke({ color: "#e68a76", width: 2, alpha: 0.72 });
-      }
-    } else if (definition.kind === "game") {
-      details
-        .roundRect(bounds.x + 7, bounds.y + 7, bounds.width - 14, bounds.height - 14, 10)
-        .stroke({ color: variant.secondaryColor, width: 2, alpha: 0.64 });
-      const blockColors = ["#5b8def", "#f4b942", "#ff7a66", "#25b99a"];
-      [[1, 0], [0, 1], [1, 1], [2, 1]].forEach(([column = 0, row = 0], index) => {
-        details
-          .roundRect(centerX - 29 + column * 20, centerY - 22 + row * 20, 18, 18, 4)
-          .fill(blockColors[index]!)
-          .stroke({ color: "#ffffff", width: 1, alpha: 0.36 });
-      });
-    }
-
-    this.layoutLayer.addChild(details);
-  }
-
-  private drawGong(object: WorldObject, bounds: Rect, variant: AssetVariantDefinition): void {
-    const container = new Container();
-    container.position.set(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
-    const shadow = new Graphics()
-      .roundRect(-34, 31, 68, 7, 3)
-      .fill({ color: "#24212d", alpha: 0.16 });
-    shadow.position.set(3, 3);
-    const stand = new Graphics()
-      .roundRect(-32, -35, 64, 7, 3).fill(variant.accentColor)
-      .roundRect(-31, -31, 7, 64, 3).fill(variant.accentColor)
-      .roundRect(24, -31, 7, 64, 3).fill(variant.accentColor)
-      .roundRect(-38, 29, 22, 7, 3).fill(variant.color)
-      .roundRect(16, 29, 22, 7, 3).fill(variant.color)
-      .circle(0, -29, 3).fill(variant.secondaryColor);
-    const disc = new Container();
-    disc.addChild(
-      new Graphics()
-        .circle(0, 0, 24)
-        .fill(variant.color)
-        .stroke({ color: variant.secondaryColor, width: 3, alpha: 0.95 })
-        .circle(0, 0, 7)
-        .fill(variant.accentColor)
-        .stroke({ color: variant.secondaryColor, width: 2 })
-        .moveTo(-12, -12)
-        .lineTo(6, -18)
-        .stroke({ color: "#ffffff", width: 3, alpha: 0.42 }),
-    );
-    disc.pivot.set(0, -27);
-    disc.position.set(0, -27);
-    const mallet = new Container();
-    mallet.position.set(34, -5);
-    mallet.rotation = 0.38;
-    mallet.addChild(new Graphics()
-      .roundRect(-2, -15, 4, 29, 2).fill(variant.accentColor)
-      .circle(0, -16, 7).fill(variant.secondaryColor).stroke({ color: "#ffffff", width: 1, alpha: 0.32 }));
-    container.addChild(shadow, stand, disc, mallet);
-    this.layoutLayer.addChild(container);
-    this.gongViews.set(object.id, {
-      disc,
-      mallet,
-      ringStartedAt: 0,
-      ringUntil: 0,
-    });
   }
 
   private createPlayerView(member: Member, current: boolean): PlayerView {
     const container = new Container();
-    const proximity = new Graphics();
     const wave = new Graphics().circle(0, 0, 24).stroke({ color: member.color, width: 3 });
     wave.alpha = 0;
-    const shadow = new Graphics().roundRect(-14, -11, 32, 32, 7).fill({ color: "#24212d", alpha: 0.18 });
-    const square = new Graphics().roundRect(-16, -16, 32, 32, 7).fill(member.color).stroke({ color: current ? "#ffffff" : "#ffffffcc", width: current ? 3 : 2 });
+    const shadow = new Graphics().ellipse(0, 1, 10, 3).fill({ color: "#24212d", alpha: 0.22 });
+    const square = new Graphics().ellipse(0, 0, 11, 4).stroke({ color: current ? "#ffffff" : member.color, width: 1.5 });
+    const ground = new Container();
+    ground.addChild(shadow, square);
     const avatarImage = new Container();
-    const initials = new Text({ text: member.initials, style: { fontFamily: "Inter, Segoe UI, sans-serif", fontSize: 10, fontWeight: "800", fill: "#ffffff" } });
-    initials.anchor.set(0.5);
-    const facing = new Graphics()
-      .poly([-4, -10, 0, -15, 4, -10])
-      .fill({ color: "#ffffff", alpha: 0.9 });
     const name = new Text({ text: current ? "You" : member.name.split(" ")[0] ?? member.name, style: { fontFamily: "Inter, Segoe UI, sans-serif", fontSize: 11, fontWeight: "600", fill: this.colorTheme === "dark" ? "#f4f1f8" : "#292731" } });
     name.anchor.set(0.5, 0);
-    name.position.set(0, 22);
+    name.position.set(0, 10);
     const status = new Graphics();
     const reactionBubble = new Container();
     reactionBubble.visible = false;
-    reactionBubble.position.set(0, -52);
+    reactionBubble.position.set(0, -CHARACTER_WORLD_SIZE - 22);
     const reactionShadow = new Graphics().roundRect(-22, -20, 44, 40, 15).fill({ color: "#24212d", alpha: 0.18 });
     reactionShadow.position.set(2, 3);
     const reactionBackground = new Graphics()
@@ -1392,17 +1121,19 @@ class OfficeRenderer {
     });
     reactionText.anchor.set(0.5);
     reactionBubble.addChild(reactionShadow, reactionBackground, reactionText);
-    container.addChild(proximity, wave, shadow, square, avatarImage, initials, facing, name, status, reactionBubble);
+    container.addChild(wave, ground, avatarImage, name, status, reactionBubble);
     const view: PlayerView = {
       container,
-      proximity,
       status,
-      facing,
       wave,
       avatarImage,
-      initials,
+      ground,
       name,
-      avatarUrl: member.avatarUrl,
+      characterKey: characterAppearanceKey(member.character),
+      characterSeat: new CharacterSeat(avatarImage, this.assetTextures, this.callbacks.current.onArtworkError),
+      canWalk: true,
+      seated: false,
+      seatOffsetY: 0,
       reactionBubble,
       reactionText,
       reactionStartedAt: 0,
@@ -1411,9 +1142,7 @@ class OfficeRenderer {
       targetY: 0,
       wavingUntil: 0,
     };
-    if (member.avatarUrl) {
-      void this.loadPlayerAvatar(view, member.avatarUrl);
-    }
+    void this.loadPlayerCharacter(view, member.character);
     return view;
   }
 
@@ -1424,29 +1153,20 @@ class OfficeRenderer {
     }
   }
 
-  private async loadPlayerAvatar(view: PlayerView, avatarUrl: string): Promise<void> {
+  private async loadPlayerCharacter(view: PlayerView, appearance: CharacterAppearance): Promise<void> {
     try {
-      const image = new Image();
-      image.crossOrigin = "use-credentials";
-      const texture = await new Promise<Texture>((resolve, reject) => {
-        image.onload = () => resolve(Texture.from(image));
-        image.onerror = () => reject(new Error("Avatar image request failed."));
-        image.src = resolveServerUrl(avatarUrl);
-      });
-      if (view.container.destroyed || view.avatarUrl !== avatarUrl) {
-        texture.destroy(true);
-        return;
-      }
-      const sprite = new Sprite(texture);
-      sprite.anchor.set(0.5);
-      sprite.width = 32;
-      sprite.height = 32;
-      const mask = new Graphics().roundRect(-16, -16, 32, 32, 7).fill("#ffffff");
-      sprite.mask = mask;
-      view.initials.visible = false;
-      view.avatarImage.addChild(sprite, mask);
+      const image = await renderCharacter(appearance);
+      if (view.container.destroyed || view.characterKey !== characterAppearanceKey(appearance)) return;
+      const character = new CharacterSprite(image);
+      const moving = view.canWalk && Math.hypot(view.targetX - view.container.x, view.targetY - view.container.y) > 0.4;
+      character.update(Date.now(), view.seated ? "sit" : moving ? "walk" : "idle", view.facingDirection ?? "down");
+      view.characterSprite?.sprite.destroy();
+      view.characterSprite = character;
+      view.avatarImage.addChild(view.characterSprite.sprite);
     } catch (error) {
-      console.error("Avatar could not be loaded.", error);
+      if (!view.container.destroyed && view.characterKey === characterAppearanceKey(appearance)) {
+        this.callbacks.current.onArtworkError(error instanceof Error ? error : new Error(String(error)));
+      }
     }
   }
 
@@ -1465,9 +1185,13 @@ class OfficeRenderer {
 
   private readonly renderFrame = (): void => {
     const now = Date.now();
+    const interpolation = 1 - Math.exp(-Math.min(this.app.ticker.deltaMS, 100) / 67);
     for (const view of this.playerViews.values()) {
-      view.container.x += (view.targetX - view.container.x) * 0.22;
-      view.container.y += (view.targetY - view.container.y) * 0.22;
+      const moving = view.canWalk && Math.hypot(view.targetX - view.container.x, view.targetY - view.container.y) > 0.4;
+      view.characterSprite?.update(now, view.seated ? "sit" : moving ? "walk" : "idle", view.facingDirection ?? "down");
+      view.container.x += (view.targetX - view.container.x) * interpolation;
+      view.container.y += (view.targetY - view.container.y) * interpolation;
+      view.characterSeat.align(view.container.x, view.container.y);
       const waving = view.wavingUntil > now;
       view.wave.alpha = waving ? 0.35 + Math.sin(now / 100) * 0.2 : 0;
       view.wave.scale.set(waving ? 1 + ((now / 700) % 0.4) : 1);
@@ -1479,7 +1203,7 @@ class OfficeRenderer {
         const scale = 0.72 + 0.28 * (1 - Math.pow(1 - entrance, 3));
         view.reactionBubble.alpha = exit;
         view.reactionBubble.scale.set(scale);
-        view.reactionBubble.y = -49 - entrance * 5;
+        view.reactionBubble.y = (-CHARACTER_WORLD_SIZE - 22) + (view.seated ? SEATED_CHARACTER_OFFSET + view.seatOffsetY : 0) - entrance * 5;
       }
     }
     for (const view of this.highFiveViews.values()) {
@@ -1497,20 +1221,9 @@ class OfficeRenderer {
       view.ring.scale.set(1 + entrance * 0.12);
     }
     for (const view of this.gongViews.values()) {
-      if (now >= view.ringUntil) {
-        view.disc.rotation = 0;
-        view.disc.x = 0;
-        view.mallet.rotation = 0.38;
-        continue;
-      }
       const elapsed = now - view.ringStartedAt;
-      const decay = Math.max(0, 1 - elapsed / 1_650);
-      const swing = Math.sin(elapsed / 72) * decay;
-      view.disc.rotation = swing * 0.16;
-      view.disc.x = swing * 4;
-      const strike = Math.min(1, elapsed / 170);
-      const rebound = Math.max(0, Math.min(1, (elapsed - 170) / 360));
-      view.mallet.rotation = 0.38 - strike * 0.92 + rebound * 0.92;
+      const decay = now >= view.ringUntil ? 0 : Math.max(0, 1 - elapsed / 1_650);
+      view.body.x = Math.sin(elapsed / 72) * decay * 3;
     }
     for (const view of this.gongCelebrationViews.values()) {
       const elapsed = now - view.startedAt;
@@ -1712,7 +1425,7 @@ class OfficeRenderer {
       const valid = this.drawWallPreview(edit);
       delete this.buildStart;
       delete this.buildOrientation;
-      this.buildPreview.clear();
+      this.clearBuildPreview();
       this.panning = false;
       if (this.cameraMode === "follow") {
         this.cameraUserId = this.currentUserId;
@@ -1776,8 +1489,7 @@ class OfficeRenderer {
       ? 28
       : Math.max(28, touchTargetSize / 2);
     const player = [...this.playerViews.entries()].reverse().find(
-      ([userId, view]) => userId !== this.currentUserId
-        && Math.hypot(pointerPoint.x - view.container.x, pointerPoint.y - view.container.y) <= playerTargetRadius,
+        ([userId, view]) => userId !== this.currentUserId && isPointInWorldTarget(pointerPoint.x, pointerPoint.y, { x: view.container.x - 14, y: view.container.y - CHARACTER_WORLD_SIZE, width: 28, height: CHARACTER_WORLD_SIZE + 4 }, playerTargetRadius * 2),
     );
     if (player) {
       this.callbacks.current.onPlayerSelect(player[0], anchor);
@@ -1813,7 +1525,7 @@ class OfficeRenderer {
     if (this.activePointers.size === 0 && !this.touchPlacement) {
       delete this.hoverPoint;
       this.hoverPointIsTouch = false;
-      this.buildPreview.clear();
+      this.clearBuildPreview();
       this.updateAssetPreviewState(false, false);
     }
   };
@@ -1953,7 +1665,7 @@ class OfficeRenderer {
     delete this.buildOrientation;
     delete this.hoverPoint;
     this.hoverPointIsTouch = false;
-    this.buildPreview.clear();
+    this.clearBuildPreview();
     this.touchPlacement = false;
     this.updateAssetPreviewState(false, false);
     this.app.canvas.style.removeProperty("cursor");
@@ -2045,7 +1757,7 @@ class OfficeRenderer {
 
   private drawPlacementPreview(point: { x: number; y: number }): void {
     if (!this.editing) {
-      this.buildPreview.clear();
+      this.clearBuildPreview();
       this.updateAssetPreviewState(false, false);
       return;
     }
@@ -2096,13 +1808,13 @@ class OfficeRenderer {
         this.drawWallPreview(wallEdit(this.buildStart, point, this.buildOrientation));
         return;
       }
-      this.buildPreview.clear()
+      this.clearBuildPreview()
         .circle(snapToBuildGrid(point.x), snapToBuildGrid(point.y), 6)
         .fill({ color: "#5143bd", alpha: 0.75 })
         .stroke({ color: "#ffffff", width: 2, alpha: 0.95 });
       return;
     }
-    this.buildPreview.clear();
+    this.clearBuildPreview();
     this.updateAssetPreviewState(false, false);
   }
 
@@ -2130,7 +1842,7 @@ class OfficeRenderer {
 
   private drawAssetPreview(candidate: WorldObject): boolean {
     if (!this.layout || !this.floor) {
-      this.buildPreview.clear();
+      this.clearBuildPreview();
       this.updateAssetPreviewState(false, false);
       return false;
     }
@@ -2150,31 +1862,35 @@ class OfficeRenderer {
       })), candidate.id === "preview" ? undefined : candidate.id);
     this.buildPreview.clear();
     const definition = requireAssetDefinition(candidate.assetId);
-    const variant = requireAssetVariant(definition, candidate.variantId);
     const bounds = getPlacedAssetBounds(candidate);
     const indicatorColor = blocked ? "#b12f2f" : "#5143bd";
     if (definition.radius) {
       drawAssetRadius(this.buildPreview, bounds, definition.radius, indicatorColor, 0.06, 0.62);
     }
-    if (definition.kind === "floor-tile") {
+    const key = [candidate.assetId, candidate.variantId, candidate.rotation, this.colorTheme].join(":");
+    if (this.assetPreview?.key !== key) {
+      this.assetPreview?.container.destroy({ children: true });
+      const view = createWorldAssetView(this.assetTextures, candidate, this.colorTheme, this.callbacks.current.onArtworkError);
+      this.assetPreviewLayer.addChild(view.container);
+      this.assetPreview = { key, container: view.container };
+    }
+    this.assetPreview.container.position.set(candidate.x, candidate.y);
+    this.assetPreview.container.alpha = blocked ? 0.4 : 0.76;
+    for (const cell of cells) {
       this.buildPreview
-        .roundRect(bounds.x + 1, bounds.y + 1, bounds.width - 2, bounds.height - 2, 3)
-        .fill({ color: blocked ? "#d95555" : variant.color, alpha: blocked ? 0.44 : 0.76 })
-        .stroke({ color: indicatorColor, width: 2, alpha: 0.94 });
-      if (!blocked) {
-        drawFloorSurfacePattern(this.buildPreview, bounds, variant, candidate.rotation);
-      }
-    } else {
-      for (const cell of cells) {
-        this.buildPreview
-          .roundRect(cell.worldX + 1, cell.worldY + 1, ASSET_RASTER_SIZE - 2, ASSET_RASTER_SIZE - 2, cell.type === "foliage" ? 5 : 2)
-          .fill({ color: blocked ? "#d95555" : variant.color, alpha: blocked ? 0.4 : 0.62 })
-          .stroke({ color: indicatorColor, width: 1.5, alpha: 0.9 });
-      }
+        .roundRect(cell.worldX + 1, cell.worldY + 1, ASSET_RASTER_SIZE - 2, ASSET_RASTER_SIZE - 2, 2)
+        .fill({ color: indicatorColor, alpha: blocked ? 0.18 : 0.04 })
+        .stroke({ color: indicatorColor, width: 1.5, alpha: 0.9 });
     }
     drawAssetDirectionIndicators(this.buildPreview, getAssetDirectionIndicators(candidate, this.zoom), indicatorColor);
     this.updateAssetPreviewState(true, !blocked);
     return !blocked;
+  }
+
+  private clearBuildPreview(): Graphics {
+    this.assetPreview?.container.destroy({ children: true });
+    this.assetPreview = undefined;
+    return this.buildPreview.clear();
   }
 
   private updateAssetPreviewState(hasPoint: boolean, canPlace: boolean): void {
@@ -2191,7 +1907,7 @@ class OfficeRenderer {
 
   private drawWallCandidate(wall: Wall, ignoredWallIds: ReadonlySet<string> = new Set()): boolean {
     if (!this.layout || !this.placementLayout || !this.floor) {
-      this.buildPreview.clear();
+      this.clearBuildPreview();
       return false;
     }
     const wallOpenings = wall.id === "preview"
@@ -2213,7 +1929,7 @@ class OfficeRenderer {
       || openingIsInvalid
       || this.placementOverlapsPlayers(solidRects);
     const color = blocked ? "#c93636" : "#5143bd";
-    this.buildPreview.clear();
+    this.clearBuildPreview();
     for (const rect of solidRects) {
       this.buildPreview
         .rect(rect.x, rect.y, rect.width, rect.height)
@@ -2235,7 +1951,7 @@ class OfficeRenderer {
     ignoredOpeningIds: ReadonlySet<string> = new Set(),
   ): boolean {
     if (!this.placementLayout) {
-      this.buildPreview.clear();
+      this.clearBuildPreview();
       return false;
     }
     const placement = getWallOpeningPlacement(this.placementLayout, type, point, ignoredOpeningIds);
@@ -2257,7 +1973,7 @@ class OfficeRenderer {
       blocked ||= this.placementOverlapsPlayers(solidRects);
     }
     const color = blocked ? "#c93636" : "#5143bd";
-    this.buildPreview.clear();
+    this.clearBuildPreview();
     if (!placement.wall || !placement.opening) {
       const x = snapToBuildGrid(point.x);
       const y = snapToBuildGrid(point.y);
@@ -2483,7 +2199,7 @@ class OfficeRenderer {
   private placementOverlapsPlayers(rects: Rect[], ignoredSeatObjectId?: string): boolean {
     return this.players.some((player) => (
       player.connected
-      && player.seat?.objectId !== ignoredSeatObjectId
+      && (!ignoredSeatObjectId || player.seat?.objectId !== ignoredSeatObjectId)
       && rects.some((rect) => pointInRect(player.x, player.y, {
         x: rect.x - 16,
         y: rect.y - 16,
@@ -2522,64 +2238,6 @@ function closestPointOnWall(wallInput: Wall, point: { x: number; y: number }): {
         y: Math.max(wall.start.y, Math.min(wall.end.y, point.y)),
       };
   return { point: closest, distance: Math.hypot(point.x - closest.x, point.y - closest.y) };
-}
-
-function drawFloorSurfacePattern(
-  graphics: Graphics,
-  bounds: Rect,
-  variant: AssetVariantDefinition,
-  rotation: AssetRotation,
-): void {
-  if (variant.pattern === "wood") {
-    const horizontal = rotation === 0 || rotation === 180;
-    const plankSize = 16;
-    if (horizontal) {
-      for (let y = bounds.y + plankSize; y < bounds.y + bounds.height; y += plankSize) {
-        graphics.moveTo(bounds.x + 2, y).lineTo(bounds.x + bounds.width - 2, y);
-      }
-      for (let row = 0, y = bounds.y; y < bounds.y + bounds.height; y += plankSize, row += 1) {
-        const offset = row % 2 === 0 ? bounds.width * 0.36 : bounds.width * 0.68;
-        graphics.moveTo(bounds.x + offset, y + 2).lineTo(bounds.x + offset, Math.min(y + plankSize - 2, bounds.y + bounds.height - 2));
-      }
-    } else {
-      for (let x = bounds.x + plankSize; x < bounds.x + bounds.width; x += plankSize) {
-        graphics.moveTo(x, bounds.y + 2).lineTo(x, bounds.y + bounds.height - 2);
-      }
-      for (let column = 0, x = bounds.x; x < bounds.x + bounds.width; x += plankSize, column += 1) {
-        const offset = column % 2 === 0 ? bounds.height * 0.36 : bounds.height * 0.68;
-        graphics.moveTo(x + 2, bounds.y + offset).lineTo(Math.min(x + plankSize - 2, bounds.x + bounds.width - 2), bounds.y + offset);
-      }
-    }
-    graphics.stroke({ color: variant.accentColor, width: 1.25, alpha: 0.58 });
-    return;
-  }
-  if (variant.pattern === "stone") {
-    const slab = 24;
-    for (let row = 0, y = bounds.y + slab; y < bounds.y + bounds.height; y += slab, row += 1) {
-      graphics.moveTo(bounds.x + 2, y).lineTo(bounds.x + bounds.width - 2, y);
-      const seamX = bounds.x + (row % 2 === 0 ? bounds.width * 0.38 : bounds.width * 0.64);
-      graphics.moveTo(seamX, y - slab + 2).lineTo(seamX, y - 2);
-    }
-    graphics
-      .stroke({ color: variant.accentColor, width: 1.5, alpha: 0.62 })
-      .circle(bounds.x + bounds.width * 0.22, bounds.y + bounds.height * 0.24, 2.5)
-      .fill({ color: variant.secondaryColor, alpha: 0.55 })
-      .circle(bounds.x + bounds.width * 0.73, bounds.y + bounds.height * 0.67, 3)
-      .fill({ color: variant.secondaryColor, alpha: 0.5 });
-    return;
-  }
-  if (variant.pattern === "grass") {
-    for (let y = bounds.y + 10, row = 0; y < bounds.y + bounds.height - 4; y += 14, row += 1) {
-      for (let x = bounds.x + 9 + row % 2 * 6; x < bounds.x + bounds.width - 5; x += 18) {
-        graphics
-          .moveTo(x, y + 4)
-          .lineTo(x - 3, y - 3)
-          .moveTo(x, y + 4)
-          .lineTo(x + 3, y - 4);
-      }
-    }
-    graphics.stroke({ color: variant.accentColor, width: 1.5, alpha: 0.68 });
-  }
 }
 
 function getBuildSelectionCandidates(objects: WorldObject[]): WorldObject[] {
@@ -2656,30 +2314,6 @@ function drawAssetRadius(
     .stroke({ color, width: 2, alpha: strokeAlpha });
 }
 
-function drawCellOutline(cells: PlacedAssetCell[]): Graphics {
-  const occupied = new Set(cells.map((cell) => `${cell.worldX}:${cell.worldY}`));
-  const outline = new Graphics();
-  for (const cell of cells) {
-    const left = cell.worldX;
-    const top = cell.worldY;
-    const right = left + ASSET_RASTER_SIZE;
-    const bottom = top + ASSET_RASTER_SIZE;
-    if (!occupied.has(`${left}:${top - ASSET_RASTER_SIZE}`)) {
-      outline.moveTo(left, top).lineTo(right, top);
-    }
-    if (!occupied.has(`${left + ASSET_RASTER_SIZE}:${top}`)) {
-      outline.moveTo(right, top).lineTo(right, bottom);
-    }
-    if (!occupied.has(`${left}:${top + ASSET_RASTER_SIZE}`)) {
-      outline.moveTo(right, bottom).lineTo(left, bottom);
-    }
-    if (!occupied.has(`${left - ASSET_RASTER_SIZE}:${top}`)) {
-      outline.moveTo(left, bottom).lineTo(left, top);
-    }
-  }
-  return outline.stroke({ color: "#ffffff", width: 1.25, alpha: 0.24 });
-}
-
 function wallEdit(
   rawStart: { x: number; y: number },
   rawEnd: { x: number; y: number },
@@ -2723,18 +2357,5 @@ function directionVector(direction: WorldPlayer["facing"]): { x: number; y: numb
       return { x: -1, y: 0 };
     case "right":
       return { x: 1, y: 0 };
-  }
-}
-
-function facingRotation(direction: WorldPlayer["facing"]): number {
-  switch (direction) {
-    case "up":
-      return 0;
-    case "right":
-      return Math.PI / 2;
-    case "down":
-      return Math.PI;
-    case "left":
-      return -Math.PI / 2;
   }
 }

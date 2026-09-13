@@ -1,4 +1,5 @@
 import type { AssetRotation } from "./assets.js";
+import type { CharacterAppearance } from "./character.js";
 import type { FloorLayout, LayoutEdit, RoomSettings } from "./building.js";
 import type { CoinTransaction, GameCoinReward, GameSettings, PlayerEconomy } from "./economy.js";
 import type { Position } from "./geometry.js";
@@ -10,6 +11,7 @@ import type {
 } from "./kidnapping.js";
 
 export * from "./building.js";
+export * from "./character.js";
 export * from "./assets.js";
 export * from "./asset-placement.js";
 export * from "./layout-placement.js";
@@ -145,7 +147,7 @@ export interface Member {
   id: string;
   name: string;
   initials: string;
-  avatarUrl?: string;
+  character: CharacterAppearance;
   email: string;
   title: string;
   role: MemberRole;

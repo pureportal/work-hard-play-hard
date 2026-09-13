@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import {
+  CHARACTER_WALK_SPEED,
   ASSET_RASTER_SIZE,
   BUILD_GRID_SIZE,
   GONG_COOLDOWN_MS,
@@ -78,6 +79,7 @@ import {
 } from "./floor-navigation.js";
 import { findPath } from "./pathfinding.js";
 import { reconcileProximityGroups } from "./proximity-groups.js";
+import { canReachSeat } from "./seat-reachability.js";
 
 const TICK_MS = 50;
 const SNAPSHOT_INTERVAL_TICKS = 2;
@@ -119,7 +121,6 @@ const SPATIAL_COMMAND_TYPES = new Set<ClientCommand["type"]>([
   "seat.leave",
   "room.update_settings",
 ]);
-const SPEED_PER_SECOND = 260;
 const CALL_RANGE = 480;
 const WALK_UP_CALL_RANGE = 110;
 const CALL_TIMEOUT_MS = 20_000;
@@ -335,8 +336,10 @@ export class WorldRuntime {
     } else if (locationChanged) {
       this.broadcast({ type: "presence.changed", member: connectedMember });
     }
-    this.movements.set(userId, { dx: 0, dy: 0, path: [] });
-    this.activeMovementUserIds.delete(userId);
+    if (!this.movements.has(userId)) {
+      this.movements.set(userId, { dx: 0, dy: 0, path: [] });
+      this.activeMovementUserIds.delete(userId);
+    }
     send({ type: "session.ready", userId, floorId: floor.id });
     this.sendSnapshot(peer);
     const activeMeetingId = this.activeMeetings.get(userId);
@@ -693,7 +696,7 @@ export class WorldRuntime {
     let dx = movement.dx;
     let dy = movement.dy;
     let pathTarget: { x: number; y: number } | undefined;
-    let distance = SPEED_PER_SECOND * deltaSeconds;
+    let distance = CHARACTER_WALK_SPEED * deltaSeconds;
     if (dx !== 0 || dy !== 0) {
       movement.path = [];
       delete movement.destinationRequestId;
@@ -2181,7 +2184,8 @@ export class WorldRuntime {
       return;
     }
     this.assertSeatAvailable(player.userId, objectId, interactionId);
-    if (this.getDistanceToBounds(player.x, player.y, interaction.bounds) <= ASSET_INTERACTION_RANGE) {
+    if (this.getDistanceToBounds(player.x, player.y, interaction.bounds) <= ASSET_INTERACTION_RANGE
+      && canReachSeat(layout, player, interaction.center)) {
       this.seatPlayer(player, objectId, interactionId, interaction.center, interaction.direction);
       return;
     }
@@ -2195,7 +2199,9 @@ export class WorldRuntime {
     delete movement.approachRequestId;
     delete movement.kidnappingTargetUserId;
     delete movement.kidnappingRequestId;
-    movement.path = this.findAssetInteractionPath(layout, floor, player, interaction.bounds);
+    delete movement.assetInteraction;
+    movement.path = this.findAssetInteractionPath(layout, floor, player, interaction.bounds,
+      (point) => canReachSeat(layout, point, interaction.center));
     this.activeMovementUserIds.delete(peer.userId);
     const destination = movement.path.at(-1);
     if (!destination || this.getDistanceToBounds(destination.x, destination.y, interaction.bounds) > ASSET_INTERACTION_RANGE) {
@@ -2206,7 +2212,10 @@ export class WorldRuntime {
     this.activeMovementUserIds.add(peer.userId);
   }
 
-  private findAssetInteractionPath(layout: FloorLayout, floor: Floor, player: WorldPlayer, bounds: Rect): { x: number; y: number }[] {
+  private findAssetInteractionPath(
+    layout: FloorLayout, floor: Floor, player: WorldPlayer, bounds: Rect,
+    acceptsDestination: (point: { x: number; y: number }) => boolean = () => true,
+  ): { x: number; y: number }[] {
     const navigationBounds = getOutdoorBounds(floor);
     const roomAccessIds = this.getRoomAccessIds(player.userId, layout);
     const fullRoomIds = this.getFullRoomIds(player);
@@ -2222,7 +2231,7 @@ export class WorldRuntime {
     });
     let shortest: { x: number; y: number }[] = [];
     for (const candidate of candidates) {
-      if (!canOccupy(
+      if (!acceptsDestination(candidate) || !canOccupy(
         layout,
         navigationBounds,
         player.userId,
@@ -2248,6 +2257,7 @@ export class WorldRuntime {
       const endpoint = path.at(-1);
       if (
         endpoint
+        && acceptsDestination(endpoint)
         && this.getDistanceToBounds(endpoint.x, endpoint.y, bounds) <= ASSET_INTERACTION_RANGE
         && (shortest.length === 0 || path.length < shortest.length)
       ) {
@@ -2265,11 +2275,12 @@ export class WorldRuntime {
     const layout = this.store.getLayout(player.floorId);
     const object = layout?.objects.find((candidate) => candidate.id === pending.objectId);
     const interaction = object ? getPlacedAssetInteraction(object, pending.interactionId) : undefined;
-    if (!object || !interaction) {
+    if (!layout || !object || !interaction) {
       this.cancelAssetInteraction(player.userId, movement, "ASSET_INTERACTION_INVALID");
       return;
     }
-    if (this.getDistanceToBounds(player.x, player.y, interaction.bounds) > ASSET_INTERACTION_RANGE) {
+    if (this.getDistanceToBounds(player.x, player.y, interaction.bounds) > ASSET_INTERACTION_RANGE
+      || !canReachSeat(layout, player, interaction.center)) {
       this.cancelAssetInteraction(player.userId, movement, "DESTINATION_BLOCKED");
       return;
     }
@@ -2393,7 +2404,7 @@ export class WorldRuntime {
     const overlaps = [...this.players.values()].some(
       (player) => player.connected
         && player.floorId === floorId
-        && player.seat?.objectId !== ignoredSeatObjectId
+        && (!ignoredSeatObjectId || player.seat?.objectId !== ignoredSeatObjectId)
         && rects.some((rect) => pointInRect(player.x, player.y, {
           x: rect.x - 16,
           y: rect.y - 16,

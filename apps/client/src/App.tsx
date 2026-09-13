@@ -43,6 +43,7 @@ import type {
   RoomKnock,
   RoomSettings,
   BootstrapData,
+  CharacterAppearance,
   ClientCommand,
   CorporateIdentity,
   CorporateIdentitySettings,
@@ -63,7 +64,7 @@ import type {
   WorldObject,
   WorldPlayer,
 } from "@workhard/shared";
-import { acceptInvitation, ApiError, changeMemberAccess, createDirectConversation, fetchBootstrap, fetchSession, inviteMember, isConnectionError, logout, removeCorporateLogo, removePlayerAvatar, revokeInvitation, updateCorporateIdentity, updateRegistrationSettings, uploadChatImage, uploadCorporateLogo, uploadPlayerAvatar, verifyMagicLink } from "./api";
+import { acceptInvitation, ApiError, changeMemberAccess, createDirectConversation, fetchBootstrap, fetchSession, inviteMember, isConnectionError, logout, removeCorporateLogo, revokeInvitation, updateCorporateIdentity, updatePlayerCharacter, updateRegistrationSettings, uploadChatImage, uploadCorporateLogo, verifyMagicLink } from "./api";
 import { applyCorporateIdentity } from "./branding";
 import { Avatar } from "./components/Avatar";
 import { AvatarDialog } from "./components/AvatarDialog";
@@ -1512,16 +1513,8 @@ export function Workspace({
     onCorporateIdentityChange(updated);
   };
 
-  const updateAvatar = async (file: File) => {
-    const member = await uploadPlayerAvatar(file);
-    setData((current) => ({
-      ...current,
-      members: current.members.map((item) => item.id === member.id ? member : item),
-    }));
-  };
-
-  const removeAvatar = async () => {
-    const member = await removePlayerAvatar();
+  const updateCharacter = async (appearance: CharacterAppearance) => {
+    const member = await updatePlayerCharacter(appearance);
     setData((current) => ({
       ...current,
       members: current.members.map((item) => item.id === member.id ? member : item),
@@ -2384,8 +2377,7 @@ export function Workspace({
         <AvatarDialog
           currentUser={currentUser}
           onClose={() => setAvatarDialogOpen(false)}
-          onUpload={updateAvatar}
-          onRemove={removeAvatar}
+          onSaveCharacter={updateCharacter}
         />
       )}
       {activePanel !== "build" && gameOpen && gameRound && (

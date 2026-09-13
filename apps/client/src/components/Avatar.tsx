@@ -1,9 +1,10 @@
 import type { Member } from "@workhard/shared";
 import type { ReactNode } from "react";
-import { resolveServerUrl } from "../server-url";
+import { CharacterPreview } from "./CharacterPreview";
+import "../character.css";
 
 interface AvatarProps {
-  member: Pick<Member, "avatarUrl" | "color" | "initials"> | undefined;
+  member: Pick<Member, "color" | "character"> | undefined;
   className: string;
   children?: ReactNode;
   decorative?: boolean;
@@ -12,19 +13,8 @@ interface AvatarProps {
 export function Avatar({ member, className, children, decorative = true }: AvatarProps) {
   return (
     <span className={`avatar ${className}`} style={{ backgroundColor: member?.color ?? "#817b89" }} aria-hidden={decorative || undefined}>
-      <span className="avatar-initials">{member?.initials ?? "?"}</span>
-      {member?.avatarUrl && (
-        <img
-          key={member.avatarUrl}
-          className="avatar-image"
-          src={resolveServerUrl(member.avatarUrl)}
-          alt=""
-          draggable={false}
-          onError={(event) => {
-            event.currentTarget.hidden = true;
-          }}
-        />
-      )}
+      {member ? <CharacterPreview appearance={member.character} crop="portrait" className="avatar-character" />
+        : <span className="avatar-initials">?</span>}
       {children}
     </span>
   );

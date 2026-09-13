@@ -1,3 +1,4 @@
+import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BootstrapData, Meeting, WorldPlayer, WorldSnapshot } from "@workhard/shared";
@@ -67,7 +68,7 @@ const workspace: BootstrapData = {
   members: [{
     id: "user-one",
     name: "Maya",
-    initials: "MC",
+    initials: "MC", character: { ...DEFAULT_CHARACTER_APPEARANCE },
     email: "maya@example.com",
     title: "Lead",
     role: "owner",

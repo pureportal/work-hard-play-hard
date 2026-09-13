@@ -1,25 +1,35 @@
 import {
+  Armchair,
+  Archive,
+  Boxes,
+  BrickWall,
   DoorOpen,
+  Coffee,
   Eraser,
   Flower2,
+  Grid2X2,
+  LampDesk,
+  Lightbulb,
   Move,
+  MousePointer2,
   PanelsTopLeft,
   RectangleHorizontal,
   RotateCw,
-  Sofa,
   Square,
+  Table2,
   Trash2,
-  Waves,
+  TreePine,
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ASSET_CATALOG, getDefaultAssetVariantId } from "@workhard/shared";
-import type { AssetRotation, FloorLayout, GameSettings, LayoutItemReference, LayoutTool, Member, Room, RoomSettings } from "@workhard/shared";
+import type { AssetRarity, AssetRotation, FloorLayout, GameSettings, LayoutItemReference, LayoutTool, Member, Room, RoomSettings } from "@workhard/shared";
 import type { LucideIcon } from "lucide-react";
 import { getAssetOrientationLabel, rotateAssetClockwise } from "../asset-orientation";
 import { IconButton } from "./IconButton";
 import { AssetShape } from "./AssetShape";
 import { AssetVariantPicker } from "./AssetVariantPicker";
+import { AssetRarityFilter } from "./AssetRarityFilter";
 
 interface BuildPanelProps {
   layout: FloorLayout;
@@ -45,8 +55,8 @@ interface BuildPanelProps {
 }
 
 const tools: { id: LayoutTool | null; label: string; icon: LucideIcon }[] = [
-  { id: null, label: "Select", icon: PanelsTopLeft },
-  { id: "wall", label: "Wall", icon: Square },
+  { id: null, label: "Select", icon: MousePointer2 },
+  { id: "wall", label: "Wall", icon: BrickWall },
   { id: "door", label: "Door", icon: DoorOpen },
   { id: "window", label: "Window", icon: RectangleHorizontal },
   { id: "erase", label: "Erase", icon: Eraser },
@@ -54,13 +64,16 @@ const tools: { id: LayoutTool | null; label: string; icon: LucideIcon }[] = [
 
 const categoryIcons: Record<string, LucideIcon> = {
   desks: PanelsTopLeft,
-  seating: Sofa,
-  tables: RectangleHorizontal,
+  seating: Armchair,
+  tables: Table2,
   plants: Flower2,
-  outdoor: Waves,
-  decor: Square,
-  equipment: PanelsTopLeft,
-  surfaces: Square,
+  outdoor: TreePine,
+  decor: LampDesk,
+  equipment: Boxes,
+  surfaces: Grid2X2,
+  storage: Archive,
+  lighting: Lightbulb,
+  breakroom: Coffee,
 };
 
 const buildableCategories = ASSET_CATALOG.categories.filter((category) => category.buildable);
@@ -89,7 +102,8 @@ export function BuildPanel({
 }: BuildPanelProps) {
   const selectedDefinition = ASSET_CATALOG.assets.find((asset) => asset.id === assetId);
   const [categoryId, setCategoryId] = useState(selectedDefinition?.category ?? buildableCategories[0]!.id);
-  const categoryAssets = ASSET_CATALOG.assets.filter((asset) => asset.buildable && asset.category === categoryId);
+  const [rarity, setRarity] = useState<AssetRarity | "all">("all");
+  const categoryAssets = ASSET_CATALOG.assets.filter((asset) => asset.buildable && asset.category === categoryId && (rarity === "all" || asset.rarity === rarity));
   const selectedObject = selectedItem?.type === "asset" ? layout.objects.find((object) => object.id === selectedItem.id) : undefined;
   const selectedOpening = selectedItem?.type === "opening" ? layout.openings.find((opening) => opening.id === selectedItem.id) : undefined;
   const selectedItemName = selectedObject
@@ -152,7 +166,9 @@ export function BuildPanel({
               );
             })}
           </div>
+          <AssetRarityFilter value={rarity} onChange={setRarity} />
           <div className="asset-grid" role="tabpanel">
+            {categoryAssets.length === 0 && <span className="asset-filter-empty">No assets match.</span>}
             {categoryAssets.map((asset) => (
               <button
                 key={asset.id}
@@ -163,14 +179,14 @@ export function BuildPanel({
                   onToolChange("asset");
                 }}
               >
-                <AssetShape asset={asset} variantId={asset.id === assetId ? assetVariantId : getDefaultAssetVariantId(asset)} />
+                <AssetShape asset={asset} rotation={asset.id === assetId ? assetRotation : 0} variantId={asset.id === assetId ? assetVariantId : getDefaultAssetVariantId(asset)} />
                 <span>{asset.name}</span>
               </button>
             ))}
           </div>
           {(tool === "asset" || movingItem?.type === "asset") && selectedDefinition && (
-            <>
-              <AssetVariantPicker asset={selectedDefinition} value={assetVariantId} onChange={onAssetVariantChange} />
+            <div className="asset-placement-options">
+              <AssetVariantPicker asset={selectedDefinition} rotation={assetRotation} value={assetVariantId} onChange={onAssetVariantChange} />
               <button
                 className="asset-rotate"
                 aria-label={`Rotate asset clockwise, currently facing ${getAssetOrientationLabel(assetRotation)}`}
@@ -180,7 +196,7 @@ export function BuildPanel({
                 <span>Rotate · {getAssetOrientationLabel(assetRotation)}</span>
                 <kbd>R</kbd>
               </button>
-            </>
+            </div>
           )}
         </section>
 

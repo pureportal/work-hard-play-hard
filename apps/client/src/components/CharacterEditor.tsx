@@ -1,0 +1,126 @@
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Shuffle } from "lucide-react";
+import { useState } from "react";
+import {
+  CHARACTER_BREAST_SIZES, CHARACTER_FACES, CHARACTER_GENDERS, CHARACTER_HAIRSTYLES,
+  CHARACTER_HEADWEAR, CHARACTER_OUTFITS, characterAppearanceKey, randomCharacterAppearance,
+  type CharacterAppearance, type CharacterDirection, type CharacterMotion,
+} from "@workhard/shared";
+import { CharacterPreview } from "./CharacterPreview";
+
+const categories = [
+  { id: "face", label: "Face", crop: "face", options: CHARACTER_FACES, names: ["Calm", "Bright", "Fierce"] },
+  { id: "hairstyle", label: "Hair", crop: "hair", options: CHARACTER_HAIRSTYLES, names: ["Ruby bob", "Midnight spikes", "Lavender ponytail"] },
+  { id: "upperBody", label: "Tops", crop: "upper", options: CHARACTER_OUTFITS, names: ["Bomber jacket", "Ranger vest", "Moon armor"] },
+  { id: "lowerBody", label: "Bottoms", crop: "lower", options: CHARACTER_OUTFITS, names: ["Denim shorts", "Ranger breeches", "Moon breeches"] },
+  { id: "shoes", label: "Shoes", crop: "shoes", options: CHARACTER_OUTFITS, names: ["Sneakers", "Leather boots", "Moon boots"] },
+  { id: "headwear", label: "Headwear", crop: "headwear", options: CHARACTER_HEADWEAR, names: ["None", "Star cap", "Moon hat"] },
+] as const;
+
+interface CharacterEditorProps {
+  appearance: CharacterAppearance;
+  onSave: (appearance: CharacterAppearance) => Promise<void>;
+  onClose: () => void;
+}
+
+export function CharacterEditor({ appearance, onSave, onClose }: CharacterEditorProps) {
+  const [draft, setDraft] = useState<CharacterAppearance>(() => ({ ...appearance }));
+  const [categoryIndex, setCategoryIndex] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState("");
+  const [motion, setMotion] = useState<CharacterMotion>("idle");
+  const [direction, setDirection] = useState<CharacterDirection>("down");
+  const category = categories[categoryIndex]!;
+
+  const change = <K extends keyof CharacterAppearance>(key: K, value: CharacterAppearance[K]) => {
+    if (draft[key] === value) return;
+    setReady(false);
+    setDraft((current) => ({ ...current, [key]: value }));
+    setError("");
+  };
+
+  const randomize = () => {
+    const randomized = randomCharacterAppearance();
+    if (characterAppearanceKey(randomized) === characterAppearanceKey(draft)) return;
+    setReady(false);
+    setDraft(randomized);
+    setError("");
+  };
+
+  const save = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      await onSave(draft);
+      onClose();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Character could not be saved. Try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="character-editor" aria-busy={saving}>
+      <div className="character-studio">
+        <div className="character-stage">
+          <CharacterPreview appearance={draft} label="Character preview" motion={motion} direction={direction} onReady={setReady} />
+          <div className="character-playback">
+            <div className="character-segmented" role="group" aria-label="Animation">
+              {(["idle", "walk", "sit"] as const).map((value) => <button key={value} type="button" aria-pressed={motion === value} onClick={() => setMotion(value)}>{{ idle: "Idle", walk: "Walk", sit: "Sit" }[value]}</button>)}
+            </div>
+            <div className="character-directions" role="group" aria-label="Facing direction">
+              {([["down", "Front", ArrowDown], ["left", "Left", ArrowLeft], ["up", "Back", ArrowUp], ["right", "Right", ArrowRight]] as const).map(([value, label, Icon]) => (
+                <button key={value} type="button" aria-label={label} aria-pressed={direction === value} onClick={() => setDirection(value)}><Icon size={16} /></button>
+              ))}
+            </div>
+            <button type="button" className="character-shuffle secondary-button" disabled={saving} onClick={randomize}>
+              <Shuffle size={15} />Randomize
+            </button>
+          </div>
+        </div>
+        <div className="character-controls">
+          <fieldset disabled={saving} className="character-body-controls">
+            <legend>Gender</legend>
+            <div className="character-segmented">
+              {CHARACTER_GENDERS.map((gender) => <button key={gender} type="button" aria-pressed={draft.gender === gender} onClick={() => change("gender", gender)}>{gender === "female" ? "Female" : "Male"}</button>)}
+            </div>
+          </fieldset>
+          <fieldset disabled={saving} className="character-body-controls">
+            <legend>Breast size</legend>
+            <div className="character-segmented">
+              {CHARACTER_BREAST_SIZES.map((size) => <button key={size} type="button" aria-pressed={draft.breastSize === size} onClick={() => change("breastSize", size)}>{size === "none" ? "No Breast" : size[0]!.toUpperCase() + size.slice(1)}</button>)}
+            </div>
+          </fieldset>
+          <div className="character-categories" role="tablist" aria-label="Appearance">
+            {categories.map((item, index) => (
+              <button key={item.id} id={`character-tab-${item.id}`} type="button" disabled={saving} role="tab" aria-selected={index === categoryIndex}
+                aria-controls="character-options" tabIndex={index === categoryIndex ? 0 : -1}
+                onClick={() => setCategoryIndex(index)} onKeyDown={(event) => {
+                  const next = event.key === "ArrowRight" ? (index + 1) % categories.length : event.key === "ArrowLeft" ? (index + categories.length - 1) % categories.length : event.key === "Home" ? 0 : event.key === "End" ? categories.length - 1 : undefined;
+                  if (next === undefined) return;
+                  event.preventDefault();
+                  setCategoryIndex(next);
+                  document.getElementById(`character-tab-${categories[next]!.id}`)?.focus();
+                }}>{item.label}</button>
+            ))}
+          </div>
+          <div className="character-options" id="character-options" role="tabpanel" aria-labelledby={`character-tab-${category.id}`}>
+            {category.options.map((option, index) => (
+              <button key={option} type="button" disabled={saving} className="character-option" aria-pressed={draft[category.id] === option}
+                onClick={() => change(category.id, option)}>
+                <CharacterPreview appearance={{ ...draft, [category.id]: option }} crop={category.crop} direction={direction} />
+                <span>{category.names[index]}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      {error && <p className="avatar-dialog-error" role="alert">{error}</p>}
+      <footer className="character-editor-actions">
+        <button type="button" className="secondary-button" disabled={saving} onClick={onClose}>Cancel</button>
+        <button type="button" className="primary-button" disabled={saving || !ready} onClick={() => void save()}>{saving ? "Saving…" : "Use character"}</button>
+      </footer>
+    </div>
+  );
+}

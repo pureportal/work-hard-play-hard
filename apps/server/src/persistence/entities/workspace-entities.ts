@@ -3,6 +3,7 @@ import type {
   AssignableMemberPermission,
   Availability,
   ChatAttachment,
+  CharacterAppearance,
   ConversationType,
   FloorLayout,
   GameSettings,
@@ -22,6 +23,7 @@ export class MemberEntity {
   id!: string;
   name!: string;
   initials!: string;
+  character!: CharacterAppearance;
   email!: string;
   title!: string;
   role!: MemberRole;
@@ -192,7 +194,8 @@ export const memberSchema = new EntitySchema({
   properties: {
     id: { type: String, primary: true },
     name: { type: String },
-    initials: { type: String },
+      initials: { type: String },
+      character: { type: "json" },
     email: { type: String, index: true },
     title: { type: String },
     role: { type: String },

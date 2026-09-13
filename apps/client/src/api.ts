@@ -3,6 +3,7 @@ import type {
   AuthUser,
   BootstrapData,
   ChatMessage,
+  CharacterAppearance,
   Conversation,
   CorporateIdentity,
   CorporateIdentitySettings,
@@ -226,18 +227,13 @@ export async function uploadChatImage(conversationId: string, file: File): Promi
   return readResponse<ChatMessage>(response, "Image could not be sent.");
 }
 
-export async function uploadPlayerAvatar(file: File): Promise<Member> {
-  const response = await fetchWithTimeout("/v1/members/me/avatar", {
+export async function updatePlayerCharacter(appearance: CharacterAppearance): Promise<Member> {
+  const response = await fetchWithTimeout("/v1/members/me/character", {
     method: "PUT",
-    headers: { "content-type": file.type },
-    body: file,
-  }, UPLOAD_TIMEOUT_MS);
-  return readResponse<Member>(response, "Avatar could not be updated.");
-}
-
-export async function removePlayerAvatar(): Promise<Member> {
-  const response = await fetchWithTimeout("/v1/members/me/avatar", { method: "DELETE" });
-  return readResponse<Member>(response, "Avatar could not be removed.");
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(appearance),
+  });
+  return readResponse<Member>(response, "Character could not be saved. Try again.");
 }
 
 export async function createDirectConversation(targetUserId: string): Promise<Conversation> {

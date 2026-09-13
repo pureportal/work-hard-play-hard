@@ -1,10 +1,11 @@
 import { Coins, Move, RotateCw, ShoppingBag, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ASSET_CATALOG, MAX_LAYOUT_OBJECTS_PER_FLOOR, MAX_OWNED_ASSETS, getDefaultAssetVariantId } from "@workhard/shared";
-import type { AssetRotation, FloorLayout, GameSettings, LayoutItemReference, LayoutTool, PlayerEconomy } from "@workhard/shared";
+import type { AssetRarity, AssetRotation, FloorLayout, GameSettings, LayoutItemReference, LayoutTool, PlayerEconomy } from "@workhard/shared";
 import { getAssetOrientationLabel, rotateAssetClockwise } from "../asset-orientation";
 import { AssetShape } from "./AssetShape";
 import { AssetVariantPicker } from "./AssetVariantPicker";
+import { AssetRarityFilter } from "./AssetRarityFilter";
 import { IconButton } from "./IconButton";
 
 type EconomyRequest =
@@ -64,7 +65,8 @@ export function PlayerBuildPanel({
 }: PlayerBuildPanelProps) {
   const [view, setView] = useState<"inventory" | "shop">("inventory");
   const [categoryId, setCategoryId] = useState(shopCategories[0]!.id);
-  const categoryAssets = ASSET_CATALOG.assets.filter((asset) => asset.category === categoryId && asset.shop);
+  const [rarity, setRarity] = useState<AssetRarity | "all">("all");
+  const categoryAssets = ASSET_CATALOG.assets.filter((asset) => asset.category === categoryId && asset.shop && (rarity === "all" || asset.rarity === rarity));
   const selectedObject = selectedItem?.type === "asset"
     ? layout.objects.find((object) => object.id === selectedItem.id && object.ownerUserId === currentUserId)
     : undefined;
@@ -81,34 +83,39 @@ export function PlayerBuildPanel({
   }), [economy.inventory]);
   const inventoryFull = economy.inventory.length >= MAX_OWNED_ASSETS;
   const floorFull = layout.objects.length >= MAX_LAYOUT_OBJECTS_PER_FLOOR;
+  const dailyBonus = (
+    <section className="economy-summary" aria-label="Daily bonus">
+      <div className="daily-reward">
+        <div>
+          <strong>Daily bonus</strong>
+          {economy.dailyReward.streak > 0 && <span>{economy.dailyReward.streak}-day streak</span>}
+        </div>
+        <button
+          className="primary-button"
+          disabled={!economy.dailyReward.claimable || Boolean(pendingEconomyRequest)}
+          onClick={onClaimDaily}
+        >
+          {pendingEconomyRequest?.type === "daily"
+            ? "Claiming…"
+            : economy.dailyReward.claimable ? `Claim ${economy.dailyReward.amount}` : "Claimed"}
+        </button>
+      </div>
+    </section>
+  );
 
   return (
     <aside className="side-panel build-panel player-build-panel" aria-label="Build">
       <div className="panel-header">
         <h2>Build</h2>
-        <IconButton label="Close build tools" icon={X} onClick={onClose} />
-      </div>
-      <div className="panel-scroll build-panel-scroll">
-        <section className="economy-summary" aria-label="Coins and daily bonus">
+        <div className="build-panel-actions">
           <div className="coin-balance" aria-label={`${economy.coinBalance.toLocaleString()} coins`}>
             <Coins size={17} /><strong>{economy.coinBalance.toLocaleString()}</strong>
           </div>
-          <div className="daily-reward">
-            <div>
-              <strong>Daily bonus</strong>
-              {economy.dailyReward.streak > 0 && <span>{economy.dailyReward.streak}-day streak</span>}
-            </div>
-            <button
-              className="primary-button"
-              disabled={!economy.dailyReward.claimable || Boolean(pendingEconomyRequest)}
-              onClick={onClaimDaily}
-            >
-              {pendingEconomyRequest?.type === "daily"
-                ? "Claiming…"
-                : economy.dailyReward.claimable ? `Claim ${economy.dailyReward.amount}` : "Claimed"}
-            </button>
-          </div>
-        </section>
+          <IconButton label="Close build tools" icon={X} onClick={onClose} />
+        </div>
+      </div>
+      <div className="panel-scroll build-panel-scroll">
+        {view === "inventory" && dailyBonus}
 
         {selectedObject && selectedAsset && (
           <section className="build-selection" aria-label={`Selected ${selectedAsset.name}`}>
@@ -143,7 +150,9 @@ export function PlayerBuildPanel({
                 </button>
               ))}
             </div>
+            <AssetRarityFilter value={rarity} onChange={setRarity} />
             <div className="shop-grid" role="tabpanel">
+              {categoryAssets.length === 0 && <span className="asset-filter-empty">No assets match.</span>}
               {categoryAssets.map((asset) => {
                 const pending = pendingEconomyRequest?.type === "purchase" && pendingEconomyRequest.assetId === asset.id;
                 const unavailable = !asset.shop!.available;
@@ -188,7 +197,7 @@ export function PlayerBuildPanel({
                   const placing = instances.some((instance) => instance.id === placingOwnedAssetId);
                   return (
                     <article className={placing ? "inventory-asset active" : "inventory-asset"} key={asset.id}>
-                      <AssetShape asset={asset} variantId={asset.id === assetId ? assetVariantId : getDefaultAssetVariantId(asset)} />
+                      <AssetShape asset={asset} rotation={asset.id === assetId ? assetRotation : 0} variantId={asset.id === assetId ? assetVariantId : getDefaultAssetVariantId(asset)} />
                       <div><strong>{asset.name}</strong><span>{available.length} available · {instances.length - available.length} placed</span></div>
                       <button
                         disabled={available.length === 0 || !canPlaceOnFloor || floorFull}
@@ -208,7 +217,7 @@ export function PlayerBuildPanel({
         )}
         {((tool === "asset" && placingOwnedAssetId) || movingItem?.type === "asset") && editingAsset && (
           <section className="build-section asset-placement-options">
-            <AssetVariantPicker asset={editingAsset} value={assetVariantId} onChange={onAssetVariantChange} />
+            <AssetVariantPicker asset={editingAsset} rotation={assetRotation} value={assetVariantId} onChange={onAssetVariantChange} />
             <button
               className="asset-rotate"
               aria-label={`Rotate asset clockwise, currently facing ${getAssetOrientationLabel(assetRotation)}`}
@@ -218,6 +227,7 @@ export function PlayerBuildPanel({
             </button>
           </section>
         )}
+        {view === "shop" && dailyBonus}
       </div>
     </aside>
   );

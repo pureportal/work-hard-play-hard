@@ -1,3 +1,4 @@
+import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { TETRIS_DEFINITION_ID } from "@workhard/shared";
 import type { BootstrapData, ChatMessage, Conversation } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
@@ -55,7 +56,7 @@ describe("mergeWorkspaceSnapshot", () => {
       members: [{
         id: "leo",
         name: "Leo",
-        initials: "LM",
+        initials: "LM", character: { ...DEFAULT_CHARACTER_APPEARANCE },
         email: "leo@example.com",
         title: "Engineer",
         role: "member" as const,

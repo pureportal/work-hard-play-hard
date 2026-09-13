@@ -11,7 +11,6 @@ const migrationEntries = Object.fromEntries(
 export default defineConfig({
   entry: {
     index: "src/index.ts",
-    "avatar-image-worker": "src/avatar/avatar-image-worker.ts",
     ...migrationEntries,
   },
   format: ["esm"],

@@ -1,8 +1,14 @@
 import { getDefaultAssetVariantId, requireAssetDefinition, type WorldObject } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
-import { getAssetDirectionIndicators } from "./asset-orientation";
+import { getAssetDirectionIndicators, getAssetOrientationLabel } from "./asset-orientation";
 
 describe("asset direction indicators", () => {
+  it.each([0, 90, 180, 270] as const)("matches the seat and sprite facing at %s degrees", (rotation) => {
+    const directions = { down: "South", left: "West", up: "North", right: "East" };
+    const [indicator] = getAssetDirectionIndicators(object("chair-office", rotation));
+    expect(getAssetOrientationLabel(rotation)).toBe(directions[indicator!.direction]);
+  });
+
   it("returns every rotated sit direction for a sofa", () => {
     const indicators = getAssetDirectionIndicators(object("sofa-corner", 90), 0.78);
 
@@ -23,7 +29,7 @@ describe("asset direction indicators", () => {
     expect(indicators).toEqual([{
       center: { x: 56, y: 48 },
       bounds: { x: 0, y: 0, width: 112, height: 96 },
-      direction: "left",
+      direction: "right",
     }]);
     expect(requireAssetDefinition("equipment-tetris").radius).toBe(124);
   });
@@ -53,10 +59,10 @@ describe("asset direction indicators", () => {
     const indicators = getAssetDirectionIndicators(object("decor-lamp", 90), 1);
 
     expect(indicators).toEqual([{
-      center: { x: 52, y: 8 },
+      center: { x: -36, y: 8 },
       origin: { x: 8, y: 8 },
       bounds: { x: 0, y: 0, width: 16, height: 16 },
-      direction: "right",
+      direction: "left",
     }]);
   });
 });

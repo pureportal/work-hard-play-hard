@@ -1,3 +1,4 @@
+import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { cleanup, render, screen } from "@testing-library/react";
 import type { Member } from "@workhard/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -7,7 +8,7 @@ import { createTestCorporateIdentity } from "../test-fixtures";
 const currentUser: Member = {
   id: "user-one",
   name: "Maya Chen",
-  initials: "MC",
+  initials: "MC", character: { ...DEFAULT_CHARACTER_APPEARANCE },
   email: "maya@example.com",
   title: "Product Lead",
   role: "owner",

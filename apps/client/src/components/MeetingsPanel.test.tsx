@@ -1,3 +1,4 @@
+import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Floor, Meeting, Member } from "@workhard/shared";
@@ -17,7 +18,7 @@ const floor: Floor = {
 const member: Member = {
   id: "member",
   name: "Maya Chen",
-  initials: "MC",
+  initials: "MC", character: { ...DEFAULT_CHARACTER_APPEARANCE },
   email: "maya@example.com",
   title: "Product Lead",
   role: "owner",

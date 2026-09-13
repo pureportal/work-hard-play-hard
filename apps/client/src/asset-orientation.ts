@@ -6,10 +6,10 @@ import {
 import type { AssetRotation, FacingDirection, Position, Rect, WorldObject } from "@workhard/shared";
 
 const labels: Record<AssetRotation, string> = {
-  0: "North",
-  90: "East",
-  180: "South",
-  270: "West",
+  0: "South",
+  90: "West",
+  180: "North",
+  270: "East",
 };
 
 export function getAssetOrientationLabel(rotation: AssetRotation): string {
@@ -42,7 +42,7 @@ export function getAssetDirectionIndicators(object: WorldObject, pointerScale?: 
         y: bounds.y + bounds.height / 2,
       },
       bounds,
-      direction: rotateDirection("up", object.rotation),
+      direction: rotateDirection("down", object.rotation),
     }];
   if (indicators.length !== 1 || pointerScale === undefined) {
     return indicators;

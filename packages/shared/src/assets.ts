@@ -7,7 +7,9 @@ export type AssetRotation = typeof ASSET_ROTATIONS[number];
 export type AssetLayer = "ground" | "floor" | "surface";
 export type AssetPlacementTarget = "floor" | "decoration";
 export type AssetCellType = "flooring" | "body" | "surface" | "support" | "seat" | "foliage" | "decoration" | "passage";
-export type AssetKind = "floor-tile" | "desk" | "chair" | "sofa" | "table" | "plant" | "garden" | "pool" | "laptop" | "lamp" | "monitor" | "coffee" | "bookshelf" | "whiteboard" | "arcade" | "gong" | "game" | "portal";
+export type AssetKind = "floor-tile" | "desk" | "chair" | "sofa" | "table" | "plant" | "garden" | "pool" | "laptop" | "lamp" | "monitor" | "coffee" | "bookshelf" | "whiteboard" | "arcade" | "gong" | "game" | "portal" | "storage" | "appliance" | "decoration" | "rug" | "fountain";
+export const ASSET_RARITIES = ["common", "uncommon", "rare", "epic", "legendary"] as const;
+export type AssetRarity = typeof ASSET_RARITIES[number];
 export type AssetPattern = "wood" | "stone" | "grass";
 export type FacingDirection = "up" | "down" | "left" | "right";
 
@@ -45,6 +47,7 @@ export interface AssetDefinition {
   category: string;
   kind: AssetKind;
   themeSetId: string;
+  rarity: AssetRarity;
   buildable: boolean;
   radius?: number;
   shop?: {
@@ -120,7 +123,7 @@ export interface PlacedAssetInteraction {
   bounds: Rect;
 }
 
-const validAssetKinds = new Set<AssetKind>(["floor-tile", "desk", "chair", "sofa", "table", "plant", "garden", "pool", "laptop", "lamp", "monitor", "coffee", "bookshelf", "whiteboard", "arcade", "gong", "game", "portal"]);
+const validAssetKinds = new Set<AssetKind>(["floor-tile", "desk", "chair", "sofa", "table", "plant", "garden", "pool", "laptop", "lamp", "monitor", "coffee", "bookshelf", "whiteboard", "arcade", "gong", "game", "portal", "storage", "appliance", "decoration", "rug", "fountain"]);
 const validCellTypes = new Set<AssetCellType>(["flooring", "body", "surface", "support", "seat", "foliage", "decoration", "passage"]);
 const validPatterns = new Set<AssetPattern>(["wood", "stone", "grass"]);
 const validDirections = new Set<FacingDirection>(["up", "down", "left", "right"]);
@@ -421,6 +424,7 @@ function validateAssetCatalog(catalog: AssetCatalog): void {
       || assetIds.has(asset.id)
       || !categoryIds.has(asset.category)
       || !themeSetIds.has(asset.themeSetId)
+      || !ASSET_RARITIES.includes(asset.rarity)
       || typeof asset.buildable !== "boolean"
       || (asset.shop !== undefined && (
         !Number.isSafeInteger(asset.shop.price)

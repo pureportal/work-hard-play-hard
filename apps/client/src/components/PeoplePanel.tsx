@@ -117,76 +117,79 @@ export function PeoplePanel({
         </div>
       </div>
 
-      {inviting && (
-        <form className="invite-form" onSubmit={submitInvite}>
-          <label className="invite-email">
-            <span>Email</span>
-            <input
-              type="email"
-              value={email}
-              autoFocus
-              required
-              onChange={(event) => setEmail(event.target.value)}
-            />
-          </label>
-          <label>
-            <span>Role</span>
-            <select
-              value={invitationRole}
-              onChange={(event) => {
-                const role = event.target.value as Exclude<MemberRole, "owner">;
-                setInvitationRole(role);
-                if (role !== "member") {
-                  setInvitationCanBuild(false);
-                }
-              }}
-            >
-              {currentUser.role === "owner" && <option value="admin">Admin</option>}
-              <option value="member">Member</option>
-              <option value="guest">Guest</option>
-            </select>
-          </label>
-          {invitationRole === "member" && (
-            <label className="permission-toggle">
-              <input type="checkbox" checked={invitationCanBuild} onChange={(event) => setInvitationCanBuild(event.target.checked)} />
-              <span>Build office</span>
+      <div className="panel-scroll people-panel-content">
+        {inviting && (
+          <form className="invite-form" onSubmit={submitInvite}>
+            <label className="invite-email">
+              <span>Email</span>
+              <input
+                type="email"
+                value={email}
+                autoFocus
+                required
+                onChange={(event) => setEmail(event.target.value)}
+              />
             </label>
-          )}
-          <button type="submit" className="auth-submit" disabled={submitting}>
-            <Send size={16} />
-            Invite
-          </button>
-        </form>
-      )}
+            <label>
+              <span>Role</span>
+              <select
+                value={invitationRole}
+                onChange={(event) => {
+                  const role = event.target.value as Exclude<MemberRole, "owner">;
+                  setInvitationRole(role);
+                  if (role !== "member") {
+                    setInvitationCanBuild(false);
+                  }
+                }}
+              >
+                {currentUser.role === "owner" && <option value="admin">Admin</option>}
+                <option value="member">Member</option>
+                <option value="guest">Guest</option>
+              </select>
+            </label>
+            {invitationRole === "member" && (
+              <label className="permission-toggle">
+                <input type="checkbox" checked={invitationCanBuild} onChange={(event) => setInvitationCanBuild(event.target.checked)} />
+                <span>Build office</span>
+              </label>
+            )}
+            <button type="submit" className="auth-submit" disabled={submitting}>
+              <Send size={16} />
+              Invite
+            </button>
+          </form>
+        )}
 
-      <label className="panel-search">
-        <Search size={16} aria-hidden="true" />
-        <span className="sr-only">Search people</span>
-        <input value={query} placeholder="Search" onChange={(event) => setQuery(event.target.value)} />
-      </label>
+        <label className="panel-search">
+          <Search size={16} aria-hidden="true" />
+          <span className="sr-only">Search people</span>
+          <input value={query} placeholder="Search" onChange={(event) => setQuery(event.target.value)} />
+        </label>
 
-      <div className="panel-scroll">
-        <section className="people-section">
-          <div className="section-heading">
-            <span>Online</span>
-            <span>{online.length}</span>
-          </div>
-          {online.map((member) => (
-            <PersonRow
-              key={member.id}
-              member={member}
-              currentUser={currentUser}
-              expanded={selectedId === member.id}
-              accessUpdating={updatingAccessIds.has(member.id)}
-              onToggle={() => setSelectedId(selectedId === member.id ? undefined : member.id)}
-              onWave={onWave}
-              onMessage={onMessage}
-              onCall={onCall}
-              onLocate={onLocate}
-              onAccessChange={updateAccess}
-            />
-          ))}
-        </section>
+        {filtered.length === 0 && <p className="panel-empty" role="status">No people found.</p>}
+        {online.length > 0 && (
+          <section className="people-section">
+            <div className="section-heading">
+              <span>Online</span>
+              <span>{online.length}</span>
+            </div>
+            {online.map((member) => (
+              <PersonRow
+                key={member.id}
+                member={member}
+                currentUser={currentUser}
+                expanded={selectedId === member.id}
+                accessUpdating={updatingAccessIds.has(member.id)}
+                onToggle={() => setSelectedId(selectedId === member.id ? undefined : member.id)}
+                onWave={onWave}
+                onMessage={onMessage}
+                onCall={onCall}
+                onLocate={onLocate}
+                onAccessChange={updateAccess}
+              />
+            ))}
+          </section>
+        )}
 
         {offline.length > 0 && (
           <section className="people-section offline-section">

@@ -1,3 +1,4 @@
+import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TETRIS_DEFINITION_ID } from "@workhard/shared";
@@ -98,6 +99,7 @@ function member(id: string, name: string, initials: string, color: string): Memb
     id,
     name,
     initials,
+    character: DEFAULT_CHARACTER_APPEARANCE,
     color,
     email: `${id}@example.com`,
     title: "",

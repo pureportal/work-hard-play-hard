@@ -1,3 +1,4 @@
+import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BootstrapData, ClientCommand, LayoutEdit, ServerEvent, WorldSnapshot } from "@workhard/shared";
@@ -174,7 +175,7 @@ function workspace(): BootstrapData {
     members: [{
       id: "player",
       name: "Player",
-      initials: "PL",
+      initials: "PL", character: { ...DEFAULT_CHARACTER_APPEARANCE },
       email: "player@example.com",
       title: "",
       role: "member",

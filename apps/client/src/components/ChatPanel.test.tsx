@@ -1,3 +1,4 @@
+import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ChatMessage, Conversation, Member } from "@workhard/shared";
@@ -6,7 +7,7 @@ import { ChatPanel } from "./ChatPanel";
 const member: Member = {
   id: "user-maya",
   name: "Maya Chen",
-  initials: "MC",
+  initials: "MC", character: { ...DEFAULT_CHARACTER_APPEARANCE },
   email: "maya@example.com",
   title: "Product Lead",
   role: "owner",
@@ -86,7 +87,7 @@ describe("ChatPanel", () => {
       ...member,
       id: "user-leo",
       name: "Leo Martins",
-      initials: "LM",
+      initials: "LM", character: { ...DEFAULT_CHARACTER_APPEARANCE },
       email: "leo@example.com",
       role: "member",
       permissions: [],

@@ -1,0 +1,7254 @@
+{
+  "plant-palm": {
+    "elevation": 10.412698412698411,
+    "variants": {
+      "forest": {
+        "path": "/world-assets/plant-palm/forest.png",
+        "width": 783,
+        "height": 236,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 189,
+            "height": 230
+          },
+          {
+            "x": 195,
+            "y": 2,
+            "width": 191,
+            "height": 232
+          },
+          {
+            "x": 390,
+            "y": 10,
+            "width": 195,
+            "height": 215
+          },
+          {
+            "x": 589,
+            "y": 2,
+            "width": 192,
+            "height": 232
+          }
+        ]
+      },
+      "sage": {
+        "path": "/world-assets/plant-palm/sage.png",
+        "width": 783,
+        "height": 236,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 189,
+            "height": 230
+          },
+          {
+            "x": 195,
+            "y": 2,
+            "width": 191,
+            "height": 232
+          },
+          {
+            "x": 390,
+            "y": 10,
+            "width": 195,
+            "height": 215
+          },
+          {
+            "x": 589,
+            "y": 2,
+            "width": 192,
+            "height": 232
+          }
+        ]
+      },
+      "autumn": {
+        "path": "/world-assets/plant-palm/autumn.png",
+        "width": 783,
+        "height": 236,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 189,
+            "height": 230
+          },
+          {
+            "x": 195,
+            "y": 2,
+            "width": 191,
+            "height": 232
+          },
+          {
+            "x": 390,
+            "y": 10,
+            "width": 195,
+            "height": 215
+          },
+          {
+            "x": 589,
+            "y": 2,
+            "width": 192,
+            "height": 232
+          }
+        ]
+      }
+    }
+  },
+  "chair-office": {
+    "elevation": 21.411764705882355,
+    "variants": {
+      "white": {
+        "path": "/world-assets/chair-office/white.png",
+        "width": 514,
+        "height": 232,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 136,
+            "height": 227
+          },
+          {
+            "x": 142,
+            "y": 2,
+            "width": 113,
+            "height": 228
+          },
+          {
+            "x": 259,
+            "y": 2,
+            "width": 136,
+            "height": 228
+          },
+          {
+            "x": 399,
+            "y": 2,
+            "width": 113,
+            "height": 228
+          }
+        ]
+      },
+      "gray": {
+        "path": "/world-assets/chair-office/gray.png",
+        "width": 514,
+        "height": 232,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 136,
+            "height": 227
+          },
+          {
+            "x": 142,
+            "y": 2,
+            "width": 113,
+            "height": 228
+          },
+          {
+            "x": 259,
+            "y": 2,
+            "width": 136,
+            "height": 228
+          },
+          {
+            "x": 399,
+            "y": 2,
+            "width": 113,
+            "height": 228
+          }
+        ]
+      },
+      "blue": {
+        "path": "/world-assets/chair-office/blue.png",
+        "width": 514,
+        "height": 232,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 136,
+            "height": 227
+          },
+          {
+            "x": 142,
+            "y": 2,
+            "width": 113,
+            "height": 228
+          },
+          {
+            "x": 259,
+            "y": 2,
+            "width": 136,
+            "height": 228
+          },
+          {
+            "x": 399,
+            "y": 2,
+            "width": 113,
+            "height": 228
+          }
+        ]
+      }
+    }
+  },
+  "equipment-gong": {
+    "elevation": 0,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/equipment-gong/graphite.png",
+        "width": 574,
+        "height": 241,
+        "frames": [
+          {
+            "x": 2,
+            "y": 10,
+            "width": 233,
+            "height": 220
+          },
+          {
+            "x": 239,
+            "y": 2,
+            "width": 46,
+            "height": 237
+          },
+          {
+            "x": 289,
+            "y": 10,
+            "width": 233,
+            "height": 220
+          },
+          {
+            "x": 526,
+            "y": 2,
+            "width": 46,
+            "height": 237
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/equipment-gong/white.png",
+        "width": 574,
+        "height": 241,
+        "frames": [
+          {
+            "x": 2,
+            "y": 10,
+            "width": 233,
+            "height": 220
+          },
+          {
+            "x": 239,
+            "y": 2,
+            "width": 46,
+            "height": 237
+          },
+          {
+            "x": 289,
+            "y": 10,
+            "width": 233,
+            "height": 220
+          },
+          {
+            "x": 526,
+            "y": 2,
+            "width": 46,
+            "height": 237
+          }
+        ]
+      },
+      "violet": {
+        "path": "/world-assets/equipment-gong/violet.png",
+        "width": 574,
+        "height": 241,
+        "frames": [
+          {
+            "x": 2,
+            "y": 10,
+            "width": 233,
+            "height": 220
+          },
+          {
+            "x": 239,
+            "y": 2,
+            "width": 46,
+            "height": 237
+          },
+          {
+            "x": 289,
+            "y": 10,
+            "width": 233,
+            "height": 220
+          },
+          {
+            "x": 526,
+            "y": 2,
+            "width": 46,
+            "height": 237
+          }
+        ]
+      }
+    }
+  },
+  "desk-executive": {
+    "elevation": 33.16363636363636,
+    "variants": {
+      "sage": {
+        "path": "/world-assets/desk-executive/sage.png",
+        "width": 593,
+        "height": 220,
+        "frames": [
+          {
+            "x": 2,
+            "y": 26,
+            "width": 220,
+            "height": 167
+          },
+          {
+            "x": 226,
+            "y": 2,
+            "width": 76,
+            "height": 216
+          },
+          {
+            "x": 306,
+            "y": 28,
+            "width": 220,
+            "height": 163
+          },
+          {
+            "x": 530,
+            "y": 11,
+            "width": 61,
+            "height": 197
+          }
+        ]
+      },
+      "oak": {
+        "path": "/world-assets/desk-executive/oak.png",
+        "width": 593,
+        "height": 220,
+        "frames": [
+          {
+            "x": 2,
+            "y": 26,
+            "width": 220,
+            "height": 167
+          },
+          {
+            "x": 226,
+            "y": 2,
+            "width": 76,
+            "height": 216
+          },
+          {
+            "x": 306,
+            "y": 28,
+            "width": 220,
+            "height": 163
+          },
+          {
+            "x": 530,
+            "y": 11,
+            "width": 61,
+            "height": 197
+          }
+        ]
+      },
+      "navy": {
+        "path": "/world-assets/desk-executive/navy.png",
+        "width": 593,
+        "height": 220,
+        "frames": [
+          {
+            "x": 2,
+            "y": 26,
+            "width": 220,
+            "height": 167
+          },
+          {
+            "x": 226,
+            "y": 2,
+            "width": 76,
+            "height": 216
+          },
+          {
+            "x": 306,
+            "y": 28,
+            "width": 220,
+            "height": 163
+          },
+          {
+            "x": 530,
+            "y": 11,
+            "width": 61,
+            "height": 197
+          }
+        ]
+      }
+    }
+  },
+  "desk-compact": {
+    "elevation": 21.33333333333333,
+    "variants": {
+      "sage": {
+        "path": "/world-assets/desk-compact/sage.png",
+        "width": 700,
+        "height": 206,
+        "frames": [
+          {
+            "x": 2,
+            "y": 13,
+            "width": 216,
+            "height": 180
+          },
+          {
+            "x": 222,
+            "y": 3,
+            "width": 130,
+            "height": 200
+          },
+          {
+            "x": 356,
+            "y": 15,
+            "width": 210,
+            "height": 176
+          },
+          {
+            "x": 570,
+            "y": 2,
+            "width": 128,
+            "height": 202
+          }
+        ]
+      },
+      "oak": {
+        "path": "/world-assets/desk-compact/oak.png",
+        "width": 700,
+        "height": 206,
+        "frames": [
+          {
+            "x": 2,
+            "y": 13,
+            "width": 216,
+            "height": 180
+          },
+          {
+            "x": 222,
+            "y": 3,
+            "width": 130,
+            "height": 200
+          },
+          {
+            "x": 356,
+            "y": 15,
+            "width": 210,
+            "height": 176
+          },
+          {
+            "x": 570,
+            "y": 2,
+            "width": 128,
+            "height": 202
+          }
+        ]
+      },
+      "navy": {
+        "path": "/world-assets/desk-compact/navy.png",
+        "width": 700,
+        "height": 206,
+        "frames": [
+          {
+            "x": 2,
+            "y": 13,
+            "width": 216,
+            "height": 180
+          },
+          {
+            "x": 222,
+            "y": 3,
+            "width": 130,
+            "height": 200
+          },
+          {
+            "x": 356,
+            "y": 15,
+            "width": 210,
+            "height": 176
+          },
+          {
+            "x": 570,
+            "y": 2,
+            "width": 128,
+            "height": 202
+          }
+        ]
+      }
+    }
+  },
+  "sofa-corner": {
+    "elevation": 0,
+    "variants": {
+      "white": {
+        "path": "/world-assets/sofa-corner/white.png",
+        "width": 944,
+        "height": 236,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 232,
+            "height": 232
+          },
+          {
+            "x": 238,
+            "y": 2,
+            "width": 232,
+            "height": 232
+          },
+          {
+            "x": 474,
+            "y": 2,
+            "width": 232,
+            "height": 232
+          },
+          {
+            "x": 710,
+            "y": 2,
+            "width": 232,
+            "height": 232
+          }
+        ]
+      },
+      "gray": {
+        "path": "/world-assets/sofa-corner/gray.png",
+        "width": 944,
+        "height": 236,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 232,
+            "height": 232
+          },
+          {
+            "x": 238,
+            "y": 2,
+            "width": 232,
+            "height": 232
+          },
+          {
+            "x": 474,
+            "y": 2,
+            "width": 232,
+            "height": 232
+          },
+          {
+            "x": 710,
+            "y": 2,
+            "width": 232,
+            "height": 232
+          }
+        ]
+      },
+      "blue": {
+        "path": "/world-assets/sofa-corner/blue.png",
+        "width": 944,
+        "height": 236,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 232,
+            "height": 232
+          },
+          {
+            "x": 238,
+            "y": 2,
+            "width": 232,
+            "height": 232
+          },
+          {
+            "x": 474,
+            "y": 2,
+            "width": 232,
+            "height": 232
+          },
+          {
+            "x": 710,
+            "y": 2,
+            "width": 232,
+            "height": 232
+          }
+        ]
+      }
+    }
+  },
+  "light-crystal": {
+    "elevation": 102.66666666666666,
+    "variants": {
+      "brass": {
+        "path": "/world-assets/light-crystal/brass.png",
+        "width": 301,
+        "height": 232,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 72,
+            "height": 226
+          },
+          {
+            "x": 78,
+            "y": 2,
+            "width": 71,
+            "height": 228
+          },
+          {
+            "x": 153,
+            "y": 3,
+            "width": 71,
+            "height": 226
+          },
+          {
+            "x": 228,
+            "y": 2,
+            "width": 71,
+            "height": 227
+          }
+        ]
+      },
+      "copper": {
+        "path": "/world-assets/light-crystal/copper.png",
+        "width": 301,
+        "height": 232,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 72,
+            "height": 226
+          },
+          {
+            "x": 78,
+            "y": 2,
+            "width": 71,
+            "height": 228
+          },
+          {
+            "x": 153,
+            "y": 3,
+            "width": 71,
+            "height": 226
+          },
+          {
+            "x": 228,
+            "y": 2,
+            "width": 71,
+            "height": 227
+          }
+        ]
+      },
+      "silver": {
+        "path": "/world-assets/light-crystal/silver.png",
+        "width": 301,
+        "height": 232,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 72,
+            "height": 226
+          },
+          {
+            "x": 78,
+            "y": 2,
+            "width": 71,
+            "height": 228
+          },
+          {
+            "x": 153,
+            "y": 3,
+            "width": 71,
+            "height": 226
+          },
+          {
+            "x": 228,
+            "y": 2,
+            "width": 71,
+            "height": 227
+          }
+        ]
+      }
+    }
+  },
+  "desk-straight": {
+    "elevation": 13,
+    "variants": {
+      "sage": {
+        "path": "/world-assets/desk-straight/sage.png",
+        "width": 592,
+        "height": 158,
+        "frames": [
+          {
+            "x": 2,
+            "y": 18,
+            "width": 192,
+            "height": 122
+          },
+          {
+            "x": 198,
+            "y": 2,
+            "width": 96,
+            "height": 154
+          },
+          {
+            "x": 298,
+            "y": 15,
+            "width": 192,
+            "height": 127
+          },
+          {
+            "x": 494,
+            "y": 2,
+            "width": 96,
+            "height": 154
+          }
+        ]
+      },
+      "oak": {
+        "path": "/world-assets/desk-straight/oak.png",
+        "width": 592,
+        "height": 158,
+        "frames": [
+          {
+            "x": 2,
+            "y": 18,
+            "width": 192,
+            "height": 122
+          },
+          {
+            "x": 198,
+            "y": 2,
+            "width": 96,
+            "height": 154
+          },
+          {
+            "x": 298,
+            "y": 15,
+            "width": 192,
+            "height": 127
+          },
+          {
+            "x": 494,
+            "y": 2,
+            "width": 96,
+            "height": 154
+          }
+        ]
+      },
+      "navy": {
+        "path": "/world-assets/desk-straight/navy.png",
+        "width": 592,
+        "height": 158,
+        "frames": [
+          {
+            "x": 2,
+            "y": 18,
+            "width": 192,
+            "height": 122
+          },
+          {
+            "x": 198,
+            "y": 2,
+            "width": 96,
+            "height": 154
+          },
+          {
+            "x": 298,
+            "y": 15,
+            "width": 192,
+            "height": 127
+          },
+          {
+            "x": 494,
+            "y": 2,
+            "width": 96,
+            "height": 154
+          }
+        ]
+      }
+    }
+  },
+  "equipment-whiteboard": {
+    "elevation": 65.34579439252336,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/equipment-whiteboard/graphite.png",
+        "width": 790,
+        "height": 220,
+        "frames": [
+          {
+            "x": 2,
+            "y": 8,
+            "width": 321,
+            "height": 204
+          },
+          {
+            "x": 327,
+            "y": 2,
+            "width": 62,
+            "height": 216
+          },
+          {
+            "x": 393,
+            "y": 5,
+            "width": 328,
+            "height": 210
+          },
+          {
+            "x": 725,
+            "y": 2,
+            "width": 63,
+            "height": 215
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/equipment-whiteboard/white.png",
+        "width": 790,
+        "height": 220,
+        "frames": [
+          {
+            "x": 2,
+            "y": 8,
+            "width": 321,
+            "height": 204
+          },
+          {
+            "x": 327,
+            "y": 2,
+            "width": 62,
+            "height": 216
+          },
+          {
+            "x": 393,
+            "y": 5,
+            "width": 328,
+            "height": 210
+          },
+          {
+            "x": 725,
+            "y": 2,
+            "width": 63,
+            "height": 215
+          }
+        ]
+      },
+      "violet": {
+        "path": "/world-assets/equipment-whiteboard/violet.png",
+        "width": 790,
+        "height": 220,
+        "frames": [
+          {
+            "x": 2,
+            "y": 8,
+            "width": 321,
+            "height": 204
+          },
+          {
+            "x": 327,
+            "y": 2,
+            "width": 62,
+            "height": 216
+          },
+          {
+            "x": 393,
+            "y": 5,
+            "width": 328,
+            "height": 210
+          },
+          {
+            "x": 725,
+            "y": 2,
+            "width": 63,
+            "height": 215
+          }
+        ]
+      }
+    }
+  },
+  "desk-reception": {
+    "elevation": 17.213793103448268,
+    "variants": {
+      "sage": {
+        "path": "/world-assets/desk-reception/sage.png",
+        "width": 826,
+        "height": 228,
+        "frames": [
+          {
+            "x": 2,
+            "y": 22,
+            "width": 290,
+            "height": 184
+          },
+          {
+            "x": 296,
+            "y": 2,
+            "width": 112,
+            "height": 224
+          },
+          {
+            "x": 412,
+            "y": 2,
+            "width": 280,
+            "height": 224
+          },
+          {
+            "x": 696,
+            "y": 2,
+            "width": 128,
+            "height": 224
+          }
+        ]
+      },
+      "oak": {
+        "path": "/world-assets/desk-reception/oak.png",
+        "width": 826,
+        "height": 228,
+        "frames": [
+          {
+            "x": 2,
+            "y": 22,
+            "width": 290,
+            "height": 184
+          },
+          {
+            "x": 296,
+            "y": 2,
+            "width": 112,
+            "height": 224
+          },
+          {
+            "x": 412,
+            "y": 2,
+            "width": 280,
+            "height": 224
+          },
+          {
+            "x": 696,
+            "y": 2,
+            "width": 128,
+            "height": 224
+          }
+        ]
+      },
+      "navy": {
+        "path": "/world-assets/desk-reception/navy.png",
+        "width": 826,
+        "height": 228,
+        "frames": [
+          {
+            "x": 2,
+            "y": 22,
+            "width": 290,
+            "height": 184
+          },
+          {
+            "x": 296,
+            "y": 2,
+            "width": 112,
+            "height": 224
+          },
+          {
+            "x": 412,
+            "y": 2,
+            "width": 280,
+            "height": 224
+          },
+          {
+            "x": 696,
+            "y": 2,
+            "width": 128,
+            "height": 224
+          }
+        ]
+      }
+    }
+  },
+  "desk-atelier": {
+    "elevation": 27.870967741935488,
+    "variants": {
+      "sage": {
+        "path": "/world-assets/desk-atelier/sage.png",
+        "width": 764,
+        "height": 222,
+        "frames": [
+          {
+            "x": 2,
+            "y": 13,
+            "width": 248,
+            "height": 196
+          },
+          {
+            "x": 254,
+            "y": 4,
+            "width": 128,
+            "height": 214
+          },
+          {
+            "x": 386,
+            "y": 13,
+            "width": 248,
+            "height": 196
+          },
+          {
+            "x": 638,
+            "y": 2,
+            "width": 124,
+            "height": 218
+          }
+        ]
+      },
+      "oak": {
+        "path": "/world-assets/desk-atelier/oak.png",
+        "width": 764,
+        "height": 222,
+        "frames": [
+          {
+            "x": 2,
+            "y": 13,
+            "width": 248,
+            "height": 196
+          },
+          {
+            "x": 254,
+            "y": 4,
+            "width": 128,
+            "height": 214
+          },
+          {
+            "x": 386,
+            "y": 13,
+            "width": 248,
+            "height": 196
+          },
+          {
+            "x": 638,
+            "y": 2,
+            "width": 124,
+            "height": 218
+          }
+        ]
+      },
+      "navy": {
+        "path": "/world-assets/desk-atelier/navy.png",
+        "width": 764,
+        "height": 222,
+        "frames": [
+          {
+            "x": 2,
+            "y": 13,
+            "width": 248,
+            "height": 196
+          },
+          {
+            "x": 254,
+            "y": 4,
+            "width": 128,
+            "height": 214
+          },
+          {
+            "x": 386,
+            "y": 13,
+            "width": 248,
+            "height": 196
+          },
+          {
+            "x": 638,
+            "y": 2,
+            "width": 124,
+            "height": 218
+          }
+        ]
+      }
+    }
+  },
+  "table-workbench": {
+    "elevation": 34.54867256637168,
+    "variants": {
+      "oak": {
+        "path": "/world-assets/table-workbench/oak.png",
+        "width": 651,
+        "height": 227,
+        "frames": [
+          {
+            "x": 2,
+            "y": 55,
+            "width": 226,
+            "height": 116
+          },
+          {
+            "x": 232,
+            "y": 2,
+            "width": 92,
+            "height": 223
+          },
+          {
+            "x": 328,
+            "y": 57,
+            "width": 225,
+            "height": 113
+          },
+          {
+            "x": 557,
+            "y": 7,
+            "width": 92,
+            "height": 212
+          }
+        ]
+      },
+      "walnut": {
+        "path": "/world-assets/table-workbench/walnut.png",
+        "width": 651,
+        "height": 227,
+        "frames": [
+          {
+            "x": 2,
+            "y": 55,
+            "width": 226,
+            "height": 116
+          },
+          {
+            "x": 232,
+            "y": 2,
+            "width": 92,
+            "height": 223
+          },
+          {
+            "x": 328,
+            "y": 57,
+            "width": 225,
+            "height": 113
+          },
+          {
+            "x": 557,
+            "y": 7,
+            "width": 92,
+            "height": 212
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/table-workbench/white.png",
+        "width": 651,
+        "height": 227,
+        "frames": [
+          {
+            "x": 2,
+            "y": 55,
+            "width": 226,
+            "height": 116
+          },
+          {
+            "x": 232,
+            "y": 2,
+            "width": 92,
+            "height": 223
+          },
+          {
+            "x": 328,
+            "y": 57,
+            "width": 225,
+            "height": 113
+          },
+          {
+            "x": 557,
+            "y": 7,
+            "width": 92,
+            "height": 212
+          }
+        ]
+      }
+    }
+  },
+  "plant-floor": {
+    "elevation": 1.8640776699029118,
+    "variants": {
+      "forest": {
+        "path": "/world-assets/plant-floor/forest.png",
+        "width": 795,
+        "height": 224,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 206,
+            "height": 218
+          },
+          {
+            "x": 212,
+            "y": 2,
+            "width": 183,
+            "height": 220
+          },
+          {
+            "x": 399,
+            "y": 2,
+            "width": 211,
+            "height": 219
+          },
+          {
+            "x": 614,
+            "y": 2,
+            "width": 179,
+            "height": 219
+          }
+        ]
+      },
+      "sage": {
+        "path": "/world-assets/plant-floor/sage.png",
+        "width": 795,
+        "height": 224,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 206,
+            "height": 218
+          },
+          {
+            "x": 212,
+            "y": 2,
+            "width": 183,
+            "height": 220
+          },
+          {
+            "x": 399,
+            "y": 2,
+            "width": 211,
+            "height": 219
+          },
+          {
+            "x": 614,
+            "y": 2,
+            "width": 179,
+            "height": 219
+          }
+        ]
+      },
+      "autumn": {
+        "path": "/world-assets/plant-floor/autumn.png",
+        "width": 795,
+        "height": 224,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 206,
+            "height": 218
+          },
+          {
+            "x": 212,
+            "y": 2,
+            "width": 183,
+            "height": 220
+          },
+          {
+            "x": 399,
+            "y": 2,
+            "width": 211,
+            "height": 219
+          },
+          {
+            "x": 614,
+            "y": 2,
+            "width": 179,
+            "height": 219
+          }
+        ]
+      }
+    }
+  },
+  "desk-corner": {
+    "elevation": 0,
+    "variants": {
+      "sage": {
+        "path": "/world-assets/desk-corner/sage.png",
+        "width": 898,
+        "height": 232,
+        "frames": [
+          {
+            "x": 2,
+            "y": 6,
+            "width": 220,
+            "height": 220
+          },
+          {
+            "x": 226,
+            "y": 6,
+            "width": 221,
+            "height": 220
+          },
+          {
+            "x": 451,
+            "y": 2,
+            "width": 221,
+            "height": 228
+          },
+          {
+            "x": 676,
+            "y": 2,
+            "width": 220,
+            "height": 228
+          }
+        ]
+      },
+      "oak": {
+        "path": "/world-assets/desk-corner/oak.png",
+        "width": 898,
+        "height": 232,
+        "frames": [
+          {
+            "x": 2,
+            "y": 6,
+            "width": 220,
+            "height": 220
+          },
+          {
+            "x": 226,
+            "y": 6,
+            "width": 221,
+            "height": 220
+          },
+          {
+            "x": 451,
+            "y": 2,
+            "width": 221,
+            "height": 228
+          },
+          {
+            "x": 676,
+            "y": 2,
+            "width": 220,
+            "height": 228
+          }
+        ]
+      },
+      "navy": {
+        "path": "/world-assets/desk-corner/navy.png",
+        "width": 898,
+        "height": 232,
+        "frames": [
+          {
+            "x": 2,
+            "y": 6,
+            "width": 220,
+            "height": 220
+          },
+          {
+            "x": 226,
+            "y": 6,
+            "width": 221,
+            "height": 220
+          },
+          {
+            "x": 451,
+            "y": 2,
+            "width": 221,
+            "height": 228
+          },
+          {
+            "x": 676,
+            "y": 2,
+            "width": 220,
+            "height": 228
+          }
+        ]
+      }
+    }
+  },
+  "equipment-arcade": {
+    "elevation": 10.192592592592604,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/equipment-arcade/graphite.png",
+        "width": 594,
+        "height": 233,
+        "frames": [
+          {
+            "x": 2,
+            "y": 4,
+            "width": 135,
+            "height": 224
+          },
+          {
+            "x": 141,
+            "y": 2,
+            "width": 146,
+            "height": 229
+          },
+          {
+            "x": 291,
+            "y": 11,
+            "width": 153,
+            "height": 210
+          },
+          {
+            "x": 448,
+            "y": 2,
+            "width": 144,
+            "height": 229
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/equipment-arcade/white.png",
+        "width": 594,
+        "height": 233,
+        "frames": [
+          {
+            "x": 2,
+            "y": 4,
+            "width": 135,
+            "height": 224
+          },
+          {
+            "x": 141,
+            "y": 2,
+            "width": 146,
+            "height": 229
+          },
+          {
+            "x": 291,
+            "y": 11,
+            "width": 153,
+            "height": 210
+          },
+          {
+            "x": 448,
+            "y": 2,
+            "width": 144,
+            "height": 229
+          }
+        ]
+      },
+      "violet": {
+        "path": "/world-assets/equipment-arcade/violet.png",
+        "width": 594,
+        "height": 233,
+        "frames": [
+          {
+            "x": 2,
+            "y": 4,
+            "width": 135,
+            "height": 224
+          },
+          {
+            "x": 141,
+            "y": 2,
+            "width": 146,
+            "height": 229
+          },
+          {
+            "x": 291,
+            "y": 11,
+            "width": 153,
+            "height": 210
+          },
+          {
+            "x": 448,
+            "y": 2,
+            "width": 144,
+            "height": 229
+          }
+        ]
+      }
+    }
+  },
+  "sofa-straight": {
+    "elevation": 16.48979591836735,
+    "variants": {
+      "white": {
+        "path": "/world-assets/sofa-straight/white.png",
+        "width": 615,
+        "height": 152,
+        "frames": [
+          {
+            "x": 2,
+            "y": 26,
+            "width": 196,
+            "height": 99
+          },
+          {
+            "x": 202,
+            "y": 2,
+            "width": 107,
+            "height": 148
+          },
+          {
+            "x": 313,
+            "y": 35,
+            "width": 193,
+            "height": 81
+          },
+          {
+            "x": 510,
+            "y": 2,
+            "width": 103,
+            "height": 148
+          }
+        ]
+      },
+      "gray": {
+        "path": "/world-assets/sofa-straight/gray.png",
+        "width": 615,
+        "height": 152,
+        "frames": [
+          {
+            "x": 2,
+            "y": 26,
+            "width": 196,
+            "height": 99
+          },
+          {
+            "x": 202,
+            "y": 2,
+            "width": 107,
+            "height": 148
+          },
+          {
+            "x": 313,
+            "y": 35,
+            "width": 193,
+            "height": 81
+          },
+          {
+            "x": 510,
+            "y": 2,
+            "width": 103,
+            "height": 148
+          }
+        ]
+      },
+      "blue": {
+        "path": "/world-assets/sofa-straight/blue.png",
+        "width": 615,
+        "height": 152,
+        "frames": [
+          {
+            "x": 2,
+            "y": 26,
+            "width": 196,
+            "height": 99
+          },
+          {
+            "x": 202,
+            "y": 2,
+            "width": 107,
+            "height": 148
+          },
+          {
+            "x": 313,
+            "y": 35,
+            "width": 193,
+            "height": 81
+          },
+          {
+            "x": 510,
+            "y": 2,
+            "width": 103,
+            "height": 148
+          }
+        ]
+      }
+    }
+  },
+  "decor-desk-plant": {
+    "elevation": 2.949720670391063,
+    "variants": {
+      "forest": {
+        "path": "/world-assets/decor-desk-plant/forest.png",
+        "width": 732,
+        "height": 220,
+        "frames": [
+          {
+            "x": 2,
+            "y": 4,
+            "width": 179,
+            "height": 212
+          },
+          {
+            "x": 185,
+            "y": 2,
+            "width": 179,
+            "height": 216
+          },
+          {
+            "x": 368,
+            "y": 3,
+            "width": 179,
+            "height": 214
+          },
+          {
+            "x": 551,
+            "y": 4,
+            "width": 179,
+            "height": 212
+          }
+        ]
+      },
+      "sage": {
+        "path": "/world-assets/decor-desk-plant/sage.png",
+        "width": 732,
+        "height": 220,
+        "frames": [
+          {
+            "x": 2,
+            "y": 4,
+            "width": 179,
+            "height": 212
+          },
+          {
+            "x": 185,
+            "y": 2,
+            "width": 179,
+            "height": 216
+          },
+          {
+            "x": 368,
+            "y": 3,
+            "width": 179,
+            "height": 214
+          },
+          {
+            "x": 551,
+            "y": 4,
+            "width": 179,
+            "height": 212
+          }
+        ]
+      },
+      "autumn": {
+        "path": "/world-assets/decor-desk-plant/autumn.png",
+        "width": 732,
+        "height": 220,
+        "frames": [
+          {
+            "x": 2,
+            "y": 4,
+            "width": 179,
+            "height": 212
+          },
+          {
+            "x": 185,
+            "y": 2,
+            "width": 179,
+            "height": 216
+          },
+          {
+            "x": 368,
+            "y": 3,
+            "width": 179,
+            "height": 214
+          },
+          {
+            "x": 551,
+            "y": 4,
+            "width": 179,
+            "height": 212
+          }
+        ]
+      }
+    }
+  },
+  "table-cafe": {
+    "elevation": 13.05263157894737,
+    "variants": {
+      "oak": {
+        "path": "/world-assets/table-cafe/oak.png",
+        "width": 624,
+        "height": 187,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 152,
+            "height": 183
+          },
+          {
+            "x": 158,
+            "y": 2,
+            "width": 152,
+            "height": 183
+          },
+          {
+            "x": 314,
+            "y": 2,
+            "width": 152,
+            "height": 183
+          },
+          {
+            "x": 470,
+            "y": 2,
+            "width": 152,
+            "height": 183
+          }
+        ]
+      },
+      "walnut": {
+        "path": "/world-assets/table-cafe/walnut.png",
+        "width": 624,
+        "height": 187,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 152,
+            "height": 183
+          },
+          {
+            "x": 158,
+            "y": 2,
+            "width": 152,
+            "height": 183
+          },
+          {
+            "x": 314,
+            "y": 2,
+            "width": 152,
+            "height": 183
+          },
+          {
+            "x": 470,
+            "y": 2,
+            "width": 152,
+            "height": 183
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/table-cafe/white.png",
+        "width": 624,
+        "height": 187,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 152,
+            "height": 183
+          },
+          {
+            "x": 158,
+            "y": 2,
+            "width": 152,
+            "height": 183
+          },
+          {
+            "x": 314,
+            "y": 2,
+            "width": 152,
+            "height": 183
+          },
+          {
+            "x": 470,
+            "y": 2,
+            "width": 152,
+            "height": 183
+          }
+        ]
+      }
+    }
+  },
+  "decor-laptop": {
+    "elevation": 18.44705882352941,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/decor-laptop/graphite.png",
+        "width": 660,
+        "height": 203,
+        "frames": [
+          {
+            "x": 2,
+            "y": 10,
+            "width": 170,
+            "height": 183
+          },
+          {
+            "x": 176,
+            "y": 2,
+            "width": 150,
+            "height": 199
+          },
+          {
+            "x": 330,
+            "y": 45,
+            "width": 173,
+            "height": 113
+          },
+          {
+            "x": 507,
+            "y": 2,
+            "width": 151,
+            "height": 199
+          }
+        ]
+      },
+      "ivory": {
+        "path": "/world-assets/decor-laptop/ivory.png",
+        "width": 660,
+        "height": 203,
+        "frames": [
+          {
+            "x": 2,
+            "y": 10,
+            "width": 170,
+            "height": 183
+          },
+          {
+            "x": 176,
+            "y": 2,
+            "width": 150,
+            "height": 199
+          },
+          {
+            "x": 330,
+            "y": 45,
+            "width": 173,
+            "height": 113
+          },
+          {
+            "x": 507,
+            "y": 2,
+            "width": 151,
+            "height": 199
+          }
+        ]
+      },
+      "coral": {
+        "path": "/world-assets/decor-laptop/coral.png",
+        "width": 660,
+        "height": 203,
+        "frames": [
+          {
+            "x": 2,
+            "y": 10,
+            "width": 170,
+            "height": 183
+          },
+          {
+            "x": 176,
+            "y": 2,
+            "width": 150,
+            "height": 199
+          },
+          {
+            "x": 330,
+            "y": 45,
+            "width": 173,
+            "height": 113
+          },
+          {
+            "x": 507,
+            "y": 2,
+            "width": 151,
+            "height": 199
+          }
+        ]
+      }
+    }
+  },
+  "desk-gaming": {
+    "elevation": 37.5,
+    "variants": {
+      "sage": {
+        "path": "/world-assets/desk-gaming/sage.png",
+        "width": 739,
+        "height": 221,
+        "frames": [
+          {
+            "x": 2,
+            "y": 25,
+            "width": 224,
+            "height": 171
+          },
+          {
+            "x": 230,
+            "y": 2,
+            "width": 142,
+            "height": 217
+          },
+          {
+            "x": 376,
+            "y": 33,
+            "width": 215,
+            "height": 155
+          },
+          {
+            "x": 595,
+            "y": 2,
+            "width": 142,
+            "height": 217
+          }
+        ]
+      },
+      "oak": {
+        "path": "/world-assets/desk-gaming/oak.png",
+        "width": 739,
+        "height": 221,
+        "frames": [
+          {
+            "x": 2,
+            "y": 25,
+            "width": 224,
+            "height": 171
+          },
+          {
+            "x": 230,
+            "y": 2,
+            "width": 142,
+            "height": 217
+          },
+          {
+            "x": 376,
+            "y": 33,
+            "width": 215,
+            "height": 155
+          },
+          {
+            "x": 595,
+            "y": 2,
+            "width": 142,
+            "height": 217
+          }
+        ]
+      },
+      "navy": {
+        "path": "/world-assets/desk-gaming/navy.png",
+        "width": 739,
+        "height": 221,
+        "frames": [
+          {
+            "x": 2,
+            "y": 25,
+            "width": 224,
+            "height": 171
+          },
+          {
+            "x": 230,
+            "y": 2,
+            "width": 142,
+            "height": 217
+          },
+          {
+            "x": 376,
+            "y": 33,
+            "width": 215,
+            "height": 155
+          },
+          {
+            "x": 595,
+            "y": 2,
+            "width": 142,
+            "height": 217
+          }
+        ]
+      }
+    }
+  },
+  "chair-lounge": {
+    "elevation": 3.8399999999999963,
+    "variants": {
+      "white": {
+        "path": "/world-assets/chair-lounge/white.png",
+        "width": 730,
+        "height": 220,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 200,
+            "height": 216
+          },
+          {
+            "x": 206,
+            "y": 5,
+            "width": 157,
+            "height": 209
+          },
+          {
+            "x": 367,
+            "y": 26,
+            "width": 198,
+            "height": 167
+          },
+          {
+            "x": 569,
+            "y": 5,
+            "width": 159,
+            "height": 210
+          }
+        ]
+      },
+      "gray": {
+        "path": "/world-assets/chair-lounge/gray.png",
+        "width": 730,
+        "height": 220,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 200,
+            "height": 216
+          },
+          {
+            "x": 206,
+            "y": 5,
+            "width": 157,
+            "height": 209
+          },
+          {
+            "x": 367,
+            "y": 26,
+            "width": 198,
+            "height": 167
+          },
+          {
+            "x": 569,
+            "y": 5,
+            "width": 159,
+            "height": 210
+          }
+        ]
+      },
+      "blue": {
+        "path": "/world-assets/chair-lounge/blue.png",
+        "width": 730,
+        "height": 220,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 200,
+            "height": 216
+          },
+          {
+            "x": 206,
+            "y": 5,
+            "width": 157,
+            "height": 209
+          },
+          {
+            "x": 367,
+            "y": 26,
+            "width": 198,
+            "height": 167
+          },
+          {
+            "x": 569,
+            "y": 5,
+            "width": 159,
+            "height": 210
+          }
+        ]
+      }
+    }
+  },
+  "table-round": {
+    "elevation": 0,
+    "variants": {
+      "oak": {
+        "path": "/world-assets/table-round/oak.png",
+        "width": 868,
+        "height": 201,
+        "frames": [
+          {
+            "x": 2,
+            "y": 6,
+            "width": 214,
+            "height": 189
+          },
+          {
+            "x": 220,
+            "y": 6,
+            "width": 214,
+            "height": 189
+          },
+          {
+            "x": 438,
+            "y": 2,
+            "width": 212,
+            "height": 197
+          },
+          {
+            "x": 654,
+            "y": 2,
+            "width": 212,
+            "height": 197
+          }
+        ]
+      },
+      "walnut": {
+        "path": "/world-assets/table-round/walnut.png",
+        "width": 868,
+        "height": 201,
+        "frames": [
+          {
+            "x": 2,
+            "y": 6,
+            "width": 214,
+            "height": 189
+          },
+          {
+            "x": 220,
+            "y": 6,
+            "width": 214,
+            "height": 189
+          },
+          {
+            "x": 438,
+            "y": 2,
+            "width": 212,
+            "height": 197
+          },
+          {
+            "x": 654,
+            "y": 2,
+            "width": 212,
+            "height": 197
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/table-round/white.png",
+        "width": 868,
+        "height": 201,
+        "frames": [
+          {
+            "x": 2,
+            "y": 6,
+            "width": 214,
+            "height": 189
+          },
+          {
+            "x": 220,
+            "y": 6,
+            "width": 214,
+            "height": 189
+          },
+          {
+            "x": 438,
+            "y": 2,
+            "width": 212,
+            "height": 197
+          },
+          {
+            "x": 654,
+            "y": 2,
+            "width": 212,
+            "height": 197
+          }
+        ]
+      }
+    }
+  },
+  "outdoor-bench": {
+    "elevation": 28.907563025210088,
+    "variants": {
+      "white": {
+        "path": "/world-assets/outdoor-bench/white.png",
+        "width": 710,
+        "height": 206,
+        "frames": [
+          {
+            "x": 2,
+            "y": 27,
+            "width": 238,
+            "height": 151
+          },
+          {
+            "x": 244,
+            "y": 2,
+            "width": 113,
+            "height": 202
+          },
+          {
+            "x": 361,
+            "y": 43,
+            "width": 222,
+            "height": 119
+          },
+          {
+            "x": 587,
+            "y": 2,
+            "width": 121,
+            "height": 202
+          }
+        ]
+      },
+      "gray": {
+        "path": "/world-assets/outdoor-bench/gray.png",
+        "width": 710,
+        "height": 206,
+        "frames": [
+          {
+            "x": 2,
+            "y": 27,
+            "width": 238,
+            "height": 151
+          },
+          {
+            "x": 244,
+            "y": 2,
+            "width": 113,
+            "height": 202
+          },
+          {
+            "x": 361,
+            "y": 43,
+            "width": 222,
+            "height": 119
+          },
+          {
+            "x": 587,
+            "y": 2,
+            "width": 121,
+            "height": 202
+          }
+        ]
+      },
+      "blue": {
+        "path": "/world-assets/outdoor-bench/blue.png",
+        "width": 710,
+        "height": 206,
+        "frames": [
+          {
+            "x": 2,
+            "y": 27,
+            "width": 238,
+            "height": 151
+          },
+          {
+            "x": 244,
+            "y": 2,
+            "width": 113,
+            "height": 202
+          },
+          {
+            "x": 361,
+            "y": 43,
+            "width": 222,
+            "height": 119
+          },
+          {
+            "x": 587,
+            "y": 2,
+            "width": 121,
+            "height": 202
+          }
+        ]
+      }
+    }
+  },
+  "table-meeting": {
+    "elevation": 14.019047619047626,
+    "variants": {
+      "oak": {
+        "path": "/world-assets/table-meeting/oak.png",
+        "width": 627,
+        "height": 208,
+        "frames": [
+          {
+            "x": 2,
+            "y": 40,
+            "width": 210,
+            "height": 128
+          },
+          {
+            "x": 216,
+            "y": 5,
+            "width": 95,
+            "height": 198
+          },
+          {
+            "x": 315,
+            "y": 40,
+            "width": 210,
+            "height": 128
+          },
+          {
+            "x": 529,
+            "y": 2,
+            "width": 96,
+            "height": 204
+          }
+        ]
+      },
+      "walnut": {
+        "path": "/world-assets/table-meeting/walnut.png",
+        "width": 627,
+        "height": 208,
+        "frames": [
+          {
+            "x": 2,
+            "y": 40,
+            "width": 210,
+            "height": 128
+          },
+          {
+            "x": 216,
+            "y": 5,
+            "width": 95,
+            "height": 198
+          },
+          {
+            "x": 315,
+            "y": 40,
+            "width": 210,
+            "height": 128
+          },
+          {
+            "x": 529,
+            "y": 2,
+            "width": 96,
+            "height": 204
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/table-meeting/white.png",
+        "width": 627,
+        "height": 208,
+        "frames": [
+          {
+            "x": 2,
+            "y": 40,
+            "width": 210,
+            "height": 128
+          },
+          {
+            "x": 216,
+            "y": 5,
+            "width": 95,
+            "height": 198
+          },
+          {
+            "x": 315,
+            "y": 40,
+            "width": 210,
+            "height": 128
+          },
+          {
+            "x": 529,
+            "y": 2,
+            "width": 96,
+            "height": 204
+          }
+        ]
+      }
+    }
+  },
+  "decor-monitor": {
+    "elevation": 9.872340425531913,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/decor-monitor/graphite.png",
+        "width": 484,
+        "height": 166,
+        "frames": [
+          {
+            "x": 2,
+            "y": 7,
+            "width": 188,
+            "height": 152
+          },
+          {
+            "x": 194,
+            "y": 2,
+            "width": 42,
+            "height": 162
+          },
+          {
+            "x": 240,
+            "y": 10,
+            "width": 180,
+            "height": 146
+          },
+          {
+            "x": 424,
+            "y": 2,
+            "width": 58,
+            "height": 162
+          }
+        ]
+      },
+      "ivory": {
+        "path": "/world-assets/decor-monitor/ivory.png",
+        "width": 484,
+        "height": 166,
+        "frames": [
+          {
+            "x": 2,
+            "y": 7,
+            "width": 188,
+            "height": 152
+          },
+          {
+            "x": 194,
+            "y": 2,
+            "width": 42,
+            "height": 162
+          },
+          {
+            "x": 240,
+            "y": 10,
+            "width": 180,
+            "height": 146
+          },
+          {
+            "x": 424,
+            "y": 2,
+            "width": 58,
+            "height": 162
+          }
+        ]
+      },
+      "coral": {
+        "path": "/world-assets/decor-monitor/coral.png",
+        "width": 484,
+        "height": 166,
+        "frames": [
+          {
+            "x": 2,
+            "y": 7,
+            "width": 188,
+            "height": 152
+          },
+          {
+            "x": 194,
+            "y": 2,
+            "width": 42,
+            "height": 162
+          },
+          {
+            "x": 240,
+            "y": 10,
+            "width": 180,
+            "height": 146
+          },
+          {
+            "x": 424,
+            "y": 2,
+            "width": 58,
+            "height": 162
+          }
+        ]
+      }
+    }
+  },
+  "decor-coffee": {
+    "elevation": 0.41025641025641235,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/decor-coffee/graphite.png",
+        "width": 421,
+        "height": 126,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 117,
+            "height": 120
+          },
+          {
+            "x": 123,
+            "y": 2,
+            "width": 86,
+            "height": 122
+          },
+          {
+            "x": 213,
+            "y": 2,
+            "width": 116,
+            "height": 122
+          },
+          {
+            "x": 333,
+            "y": 2,
+            "width": 86,
+            "height": 122
+          }
+        ]
+      },
+      "ivory": {
+        "path": "/world-assets/decor-coffee/ivory.png",
+        "width": 421,
+        "height": 126,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 117,
+            "height": 120
+          },
+          {
+            "x": 123,
+            "y": 2,
+            "width": 86,
+            "height": 122
+          },
+          {
+            "x": 213,
+            "y": 2,
+            "width": 116,
+            "height": 122
+          },
+          {
+            "x": 333,
+            "y": 2,
+            "width": 86,
+            "height": 122
+          }
+        ]
+      },
+      "coral": {
+        "path": "/world-assets/decor-coffee/coral.png",
+        "width": 421,
+        "height": 126,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 117,
+            "height": 120
+          },
+          {
+            "x": 123,
+            "y": 2,
+            "width": 86,
+            "height": 122
+          },
+          {
+            "x": 213,
+            "y": 2,
+            "width": 116,
+            "height": 122
+          },
+          {
+            "x": 333,
+            "y": 2,
+            "width": 86,
+            "height": 122
+          }
+        ]
+      }
+    }
+  },
+  "chair-beanbag": {
+    "elevation": 3,
+    "variants": {
+      "white": {
+        "path": "/world-assets/chair-beanbag/white.png",
+        "width": 780,
+        "height": 208,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 192,
+            "height": 204
+          },
+          {
+            "x": 198,
+            "y": 7,
+            "width": 192,
+            "height": 194
+          },
+          {
+            "x": 394,
+            "y": 19,
+            "width": 188,
+            "height": 170
+          },
+          {
+            "x": 586,
+            "y": 7,
+            "width": 192,
+            "height": 194
+          }
+        ]
+      },
+      "gray": {
+        "path": "/world-assets/chair-beanbag/gray.png",
+        "width": 780,
+        "height": 208,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 192,
+            "height": 204
+          },
+          {
+            "x": 198,
+            "y": 7,
+            "width": 192,
+            "height": 194
+          },
+          {
+            "x": 394,
+            "y": 19,
+            "width": 188,
+            "height": 170
+          },
+          {
+            "x": 586,
+            "y": 7,
+            "width": 192,
+            "height": 194
+          }
+        ]
+      },
+      "blue": {
+        "path": "/world-assets/chair-beanbag/blue.png",
+        "width": 780,
+        "height": 208,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 192,
+            "height": 204
+          },
+          {
+            "x": 198,
+            "y": 7,
+            "width": 192,
+            "height": 194
+          },
+          {
+            "x": 394,
+            "y": 19,
+            "width": 188,
+            "height": 170
+          },
+          {
+            "x": 586,
+            "y": 7,
+            "width": 192,
+            "height": 194
+          }
+        ]
+      }
+    }
+  },
+  "sofa-loveseat": {
+    "elevation": 0,
+    "variants": {
+      "white": {
+        "path": "/world-assets/sofa-loveseat/white.png",
+        "width": 702,
+        "height": 206,
+        "frames": [
+          {
+            "x": 2,
+            "y": 19,
+            "width": 226,
+            "height": 168
+          },
+          {
+            "x": 232,
+            "y": 2,
+            "width": 126,
+            "height": 202
+          },
+          {
+            "x": 362,
+            "y": 35,
+            "width": 208,
+            "height": 136
+          },
+          {
+            "x": 574,
+            "y": 2,
+            "width": 126,
+            "height": 202
+          }
+        ]
+      },
+      "gray": {
+        "path": "/world-assets/sofa-loveseat/gray.png",
+        "width": 702,
+        "height": 206,
+        "frames": [
+          {
+            "x": 2,
+            "y": 19,
+            "width": 226,
+            "height": 168
+          },
+          {
+            "x": 232,
+            "y": 2,
+            "width": 126,
+            "height": 202
+          },
+          {
+            "x": 362,
+            "y": 35,
+            "width": 208,
+            "height": 136
+          },
+          {
+            "x": 574,
+            "y": 2,
+            "width": 126,
+            "height": 202
+          }
+        ]
+      },
+      "blue": {
+        "path": "/world-assets/sofa-loveseat/blue.png",
+        "width": 702,
+        "height": 206,
+        "frames": [
+          {
+            "x": 2,
+            "y": 19,
+            "width": 226,
+            "height": 168
+          },
+          {
+            "x": 232,
+            "y": 2,
+            "width": 126,
+            "height": 202
+          },
+          {
+            "x": 362,
+            "y": 35,
+            "width": 208,
+            "height": 136
+          },
+          {
+            "x": 574,
+            "y": 2,
+            "width": 126,
+            "height": 202
+          }
+        ]
+      }
+    }
+  },
+  "desk-drafting": {
+    "elevation": 32,
+    "variants": {
+      "sage": {
+        "path": "/world-assets/desk-drafting/sage.png",
+        "width": 729,
+        "height": 245,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 238,
+            "height": 238
+          },
+          {
+            "x": 244,
+            "y": 2,
+            "width": 121,
+            "height": 241
+          },
+          {
+            "x": 369,
+            "y": 2,
+            "width": 235,
+            "height": 241
+          },
+          {
+            "x": 608,
+            "y": 2,
+            "width": 119,
+            "height": 241
+          }
+        ]
+      },
+      "oak": {
+        "path": "/world-assets/desk-drafting/oak.png",
+        "width": 729,
+        "height": 245,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 238,
+            "height": 238
+          },
+          {
+            "x": 244,
+            "y": 2,
+            "width": 121,
+            "height": 241
+          },
+          {
+            "x": 369,
+            "y": 2,
+            "width": 235,
+            "height": 241
+          },
+          {
+            "x": 608,
+            "y": 2,
+            "width": 119,
+            "height": 241
+          }
+        ]
+      },
+      "navy": {
+        "path": "/world-assets/desk-drafting/navy.png",
+        "width": 729,
+        "height": 245,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 238,
+            "height": 238
+          },
+          {
+            "x": 244,
+            "y": 2,
+            "width": 121,
+            "height": 241
+          },
+          {
+            "x": 369,
+            "y": 2,
+            "width": 235,
+            "height": 241
+          },
+          {
+            "x": 608,
+            "y": 2,
+            "width": 119,
+            "height": 241
+          }
+        ]
+      }
+    }
+  },
+  "sofa-velvet": {
+    "elevation": 5.333333333333329,
+    "variants": {
+      "white": {
+        "path": "/world-assets/sofa-velvet/white.png",
+        "width": 814,
+        "height": 194,
+        "frames": [
+          {
+            "x": 2,
+            "y": 29,
+            "width": 243,
+            "height": 135
+          },
+          {
+            "x": 249,
+            "y": 2,
+            "width": 163,
+            "height": 190
+          },
+          {
+            "x": 416,
+            "y": 34,
+            "width": 228,
+            "height": 126
+          },
+          {
+            "x": 648,
+            "y": 2,
+            "width": 164,
+            "height": 190
+          }
+        ]
+      },
+      "gray": {
+        "path": "/world-assets/sofa-velvet/gray.png",
+        "width": 814,
+        "height": 194,
+        "frames": [
+          {
+            "x": 2,
+            "y": 29,
+            "width": 243,
+            "height": 135
+          },
+          {
+            "x": 249,
+            "y": 2,
+            "width": 163,
+            "height": 190
+          },
+          {
+            "x": 416,
+            "y": 34,
+            "width": 228,
+            "height": 126
+          },
+          {
+            "x": 648,
+            "y": 2,
+            "width": 164,
+            "height": 190
+          }
+        ]
+      },
+      "blue": {
+        "path": "/world-assets/sofa-velvet/blue.png",
+        "width": 814,
+        "height": 194,
+        "frames": [
+          {
+            "x": 2,
+            "y": 29,
+            "width": 243,
+            "height": 135
+          },
+          {
+            "x": 249,
+            "y": 2,
+            "width": 163,
+            "height": 190
+          },
+          {
+            "x": 416,
+            "y": 34,
+            "width": 228,
+            "height": 126
+          },
+          {
+            "x": 648,
+            "y": 2,
+            "width": 164,
+            "height": 190
+          }
+        ]
+      }
+    }
+  },
+  "table-marble": {
+    "elevation": 0,
+    "variants": {
+      "oak": {
+        "path": "/world-assets/table-marble/oak.png",
+        "width": 864,
+        "height": 208,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 212,
+            "height": 202
+          },
+          {
+            "x": 218,
+            "y": 2,
+            "width": 212,
+            "height": 204
+          },
+          {
+            "x": 434,
+            "y": 3,
+            "width": 212,
+            "height": 202
+          },
+          {
+            "x": 650,
+            "y": 2,
+            "width": 212,
+            "height": 204
+          }
+        ]
+      },
+      "walnut": {
+        "path": "/world-assets/table-marble/walnut.png",
+        "width": 864,
+        "height": 208,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 212,
+            "height": 202
+          },
+          {
+            "x": 218,
+            "y": 2,
+            "width": 212,
+            "height": 204
+          },
+          {
+            "x": 434,
+            "y": 3,
+            "width": 212,
+            "height": 202
+          },
+          {
+            "x": 650,
+            "y": 2,
+            "width": 212,
+            "height": 204
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/table-marble/white.png",
+        "width": 864,
+        "height": 208,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 212,
+            "height": 202
+          },
+          {
+            "x": 218,
+            "y": 2,
+            "width": 212,
+            "height": 204
+          },
+          {
+            "x": 434,
+            "y": 3,
+            "width": 212,
+            "height": 202
+          },
+          {
+            "x": 650,
+            "y": 2,
+            "width": 212,
+            "height": 204
+          }
+        ]
+      }
+    }
+  },
+  "floor-tile": {
+    "elevation": 0,
+    "variants": {
+      "wood": {
+        "path": "/world-assets/floor-tile/wood.png",
+        "width": 880,
+        "height": 220,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 216,
+            "height": 216
+          },
+          {
+            "x": 222,
+            "y": 2,
+            "width": 216,
+            "height": 216
+          },
+          {
+            "x": 442,
+            "y": 2,
+            "width": 216,
+            "height": 216
+          },
+          {
+            "x": 662,
+            "y": 2,
+            "width": 216,
+            "height": 216
+          }
+        ]
+      },
+      "stone": {
+        "path": "/world-assets/floor-tile/stone.png",
+        "width": 880,
+        "height": 220,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 216,
+            "height": 216
+          },
+          {
+            "x": 222,
+            "y": 2,
+            "width": 216,
+            "height": 216
+          },
+          {
+            "x": 442,
+            "y": 2,
+            "width": 216,
+            "height": 216
+          },
+          {
+            "x": 662,
+            "y": 2,
+            "width": 216,
+            "height": 216
+          }
+        ]
+      },
+      "grass": {
+        "path": "/world-assets/floor-tile/grass.png",
+        "width": 896,
+        "height": 222,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 220,
+            "height": 218
+          },
+          {
+            "x": 226,
+            "y": 2,
+            "width": 220,
+            "height": 218
+          },
+          {
+            "x": 450,
+            "y": 2,
+            "width": 220,
+            "height": 218
+          },
+          {
+            "x": 674,
+            "y": 2,
+            "width": 220,
+            "height": 218
+          }
+        ]
+      }
+    }
+  },
+  "plant-bonsai": {
+    "elevation": 21.195876288659797,
+    "variants": {
+      "forest": {
+        "path": "/world-assets/plant-bonsai/forest.png",
+        "width": 618,
+        "height": 219,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 194,
+            "height": 215
+          },
+          {
+            "x": 200,
+            "y": 2,
+            "width": 108,
+            "height": 215
+          },
+          {
+            "x": 312,
+            "y": 3,
+            "width": 194,
+            "height": 212
+          },
+          {
+            "x": 510,
+            "y": 2,
+            "width": 106,
+            "height": 215
+          }
+        ]
+      },
+      "sage": {
+        "path": "/world-assets/plant-bonsai/sage.png",
+        "width": 618,
+        "height": 219,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 194,
+            "height": 215
+          },
+          {
+            "x": 200,
+            "y": 2,
+            "width": 108,
+            "height": 215
+          },
+          {
+            "x": 312,
+            "y": 3,
+            "width": 194,
+            "height": 212
+          },
+          {
+            "x": 510,
+            "y": 2,
+            "width": 106,
+            "height": 215
+          }
+        ]
+      },
+      "autumn": {
+        "path": "/world-assets/plant-bonsai/autumn.png",
+        "width": 618,
+        "height": 219,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 194,
+            "height": 215
+          },
+          {
+            "x": 200,
+            "y": 2,
+            "width": 108,
+            "height": 215
+          },
+          {
+            "x": 312,
+            "y": 3,
+            "width": 194,
+            "height": 212
+          },
+          {
+            "x": 510,
+            "y": 2,
+            "width": 106,
+            "height": 215
+          }
+        ]
+      }
+    }
+  },
+  "plant-monstera": {
+    "elevation": 9.600000000000001,
+    "variants": {
+      "forest": {
+        "path": "/world-assets/plant-monstera/forest.png",
+        "width": 685,
+        "height": 229,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 185,
+            "height": 222
+          },
+          {
+            "x": 191,
+            "y": 2,
+            "width": 155,
+            "height": 225
+          },
+          {
+            "x": 350,
+            "y": 3,
+            "width": 185,
+            "height": 222
+          },
+          {
+            "x": 539,
+            "y": 2,
+            "width": 144,
+            "height": 225
+          }
+        ]
+      },
+      "sage": {
+        "path": "/world-assets/plant-monstera/sage.png",
+        "width": 685,
+        "height": 229,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 185,
+            "height": 222
+          },
+          {
+            "x": 191,
+            "y": 2,
+            "width": 155,
+            "height": 225
+          },
+          {
+            "x": 350,
+            "y": 3,
+            "width": 185,
+            "height": 222
+          },
+          {
+            "x": 539,
+            "y": 2,
+            "width": 144,
+            "height": 225
+          }
+        ]
+      },
+      "autumn": {
+        "path": "/world-assets/plant-monstera/autumn.png",
+        "width": 685,
+        "height": 229,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 185,
+            "height": 222
+          },
+          {
+            "x": 191,
+            "y": 2,
+            "width": 155,
+            "height": 225
+          },
+          {
+            "x": 350,
+            "y": 3,
+            "width": 185,
+            "height": 222
+          },
+          {
+            "x": 539,
+            "y": 2,
+            "width": 144,
+            "height": 225
+          }
+        ]
+      }
+    }
+  },
+  "decor-terrarium": {
+    "elevation": 8,
+    "variants": {
+      "forest": {
+        "path": "/world-assets/decor-terrarium/forest.png",
+        "width": 684,
+        "height": 214,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 168,
+            "height": 210
+          },
+          {
+            "x": 174,
+            "y": 4,
+            "width": 161,
+            "height": 205
+          },
+          {
+            "x": 339,
+            "y": 8,
+            "width": 171,
+            "height": 198
+          },
+          {
+            "x": 514,
+            "y": 3,
+            "width": 168,
+            "height": 207
+          }
+        ]
+      },
+      "sage": {
+        "path": "/world-assets/decor-terrarium/sage.png",
+        "width": 684,
+        "height": 214,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 168,
+            "height": 210
+          },
+          {
+            "x": 174,
+            "y": 4,
+            "width": 161,
+            "height": 205
+          },
+          {
+            "x": 339,
+            "y": 8,
+            "width": 171,
+            "height": 198
+          },
+          {
+            "x": 514,
+            "y": 3,
+            "width": 168,
+            "height": 207
+          }
+        ]
+      },
+      "autumn": {
+        "path": "/world-assets/decor-terrarium/autumn.png",
+        "width": 684,
+        "height": 214,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 168,
+            "height": 210
+          },
+          {
+            "x": 174,
+            "y": 4,
+            "width": 161,
+            "height": 205
+          },
+          {
+            "x": 339,
+            "y": 8,
+            "width": 171,
+            "height": 198
+          },
+          {
+            "x": 514,
+            "y": 3,
+            "width": 168,
+            "height": 207
+          }
+        ]
+      }
+    }
+  },
+  "plant-cactus": {
+    "elevation": 37.01960784313725,
+    "variants": {
+      "forest": {
+        "path": "/world-assets/plant-cactus/forest.png",
+        "width": 407,
+        "height": 228,
+        "frames": [
+          {
+            "x": 2,
+            "y": 4,
+            "width": 102,
+            "height": 220
+          },
+          {
+            "x": 108,
+            "y": 4,
+            "width": 92,
+            "height": 220
+          },
+          {
+            "x": 204,
+            "y": 2,
+            "width": 105,
+            "height": 224
+          },
+          {
+            "x": 313,
+            "y": 4,
+            "width": 92,
+            "height": 220
+          }
+        ]
+      },
+      "sage": {
+        "path": "/world-assets/plant-cactus/sage.png",
+        "width": 407,
+        "height": 228,
+        "frames": [
+          {
+            "x": 2,
+            "y": 4,
+            "width": 102,
+            "height": 220
+          },
+          {
+            "x": 108,
+            "y": 4,
+            "width": 92,
+            "height": 220
+          },
+          {
+            "x": 204,
+            "y": 2,
+            "width": 105,
+            "height": 224
+          },
+          {
+            "x": 313,
+            "y": 4,
+            "width": 92,
+            "height": 220
+          }
+        ]
+      },
+      "autumn": {
+        "path": "/world-assets/plant-cactus/autumn.png",
+        "width": 407,
+        "height": 228,
+        "frames": [
+          {
+            "x": 2,
+            "y": 4,
+            "width": 102,
+            "height": 220
+          },
+          {
+            "x": 108,
+            "y": 4,
+            "width": 92,
+            "height": 220
+          },
+          {
+            "x": 204,
+            "y": 2,
+            "width": 105,
+            "height": 224
+          },
+          {
+            "x": 313,
+            "y": 4,
+            "width": 92,
+            "height": 220
+          }
+        ]
+      }
+    }
+  },
+  "outdoor-fountain": {
+    "elevation": 21.149425287356323,
+    "variants": {
+      "coastal": {
+        "path": "/world-assets/outdoor-fountain/coastal.png",
+        "width": 711,
+        "height": 224,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 174,
+            "height": 220
+          },
+          {
+            "x": 180,
+            "y": 2,
+            "width": 174,
+            "height": 220
+          },
+          {
+            "x": 358,
+            "y": 2,
+            "width": 173,
+            "height": 220
+          },
+          {
+            "x": 535,
+            "y": 2,
+            "width": 174,
+            "height": 220
+          }
+        ]
+      },
+      "sand": {
+        "path": "/world-assets/outdoor-fountain/sand.png",
+        "width": 711,
+        "height": 224,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 174,
+            "height": 220
+          },
+          {
+            "x": 180,
+            "y": 2,
+            "width": 174,
+            "height": 220
+          },
+          {
+            "x": 358,
+            "y": 2,
+            "width": 173,
+            "height": 220
+          },
+          {
+            "x": 535,
+            "y": 2,
+            "width": 174,
+            "height": 220
+          }
+        ]
+      },
+      "slate": {
+        "path": "/world-assets/outdoor-fountain/slate.png",
+        "width": 711,
+        "height": 224,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 174,
+            "height": 220
+          },
+          {
+            "x": 180,
+            "y": 2,
+            "width": 174,
+            "height": 220
+          },
+          {
+            "x": 358,
+            "y": 2,
+            "width": 173,
+            "height": 220
+          },
+          {
+            "x": 535,
+            "y": 2,
+            "width": 174,
+            "height": 220
+          }
+        ]
+      }
+    }
+  },
+  "outdoor-lantern": {
+    "elevation": 27.851851851851848,
+    "variants": {
+      "coastal": {
+        "path": "/world-assets/outdoor-lantern/coastal.png",
+        "width": 382,
+        "height": 206,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 108,
+            "height": 202
+          },
+          {
+            "x": 114,
+            "y": 4,
+            "width": 88,
+            "height": 198
+          },
+          {
+            "x": 206,
+            "y": 5,
+            "width": 81,
+            "height": 196
+          },
+          {
+            "x": 291,
+            "y": 4,
+            "width": 89,
+            "height": 197
+          }
+        ]
+      },
+      "sand": {
+        "path": "/world-assets/outdoor-lantern/sand.png",
+        "width": 382,
+        "height": 206,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 108,
+            "height": 202
+          },
+          {
+            "x": 114,
+            "y": 4,
+            "width": 88,
+            "height": 198
+          },
+          {
+            "x": 206,
+            "y": 5,
+            "width": 81,
+            "height": 196
+          },
+          {
+            "x": 291,
+            "y": 4,
+            "width": 89,
+            "height": 197
+          }
+        ]
+      },
+      "slate": {
+        "path": "/world-assets/outdoor-lantern/slate.png",
+        "width": 382,
+        "height": 206,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 108,
+            "height": 202
+          },
+          {
+            "x": 114,
+            "y": 4,
+            "width": 88,
+            "height": 198
+          },
+          {
+            "x": 206,
+            "y": 5,
+            "width": 81,
+            "height": 196
+          },
+          {
+            "x": 291,
+            "y": 4,
+            "width": 89,
+            "height": 197
+          }
+        ]
+      }
+    }
+  },
+  "outdoor-topiary": {
+    "elevation": 83.42857142857142,
+    "variants": {
+      "forest": {
+        "path": "/world-assets/outdoor-topiary/forest.png",
+        "width": 338,
+        "height": 234,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 84,
+            "height": 230
+          },
+          {
+            "x": 90,
+            "y": 3,
+            "width": 80,
+            "height": 227
+          },
+          {
+            "x": 174,
+            "y": 6,
+            "width": 82,
+            "height": 222
+          },
+          {
+            "x": 260,
+            "y": 3,
+            "width": 76,
+            "height": 227
+          }
+        ]
+      },
+      "sage": {
+        "path": "/world-assets/outdoor-topiary/sage.png",
+        "width": 338,
+        "height": 234,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 84,
+            "height": 230
+          },
+          {
+            "x": 90,
+            "y": 3,
+            "width": 80,
+            "height": 227
+          },
+          {
+            "x": 174,
+            "y": 6,
+            "width": 82,
+            "height": 222
+          },
+          {
+            "x": 260,
+            "y": 3,
+            "width": 76,
+            "height": 227
+          }
+        ]
+      },
+      "autumn": {
+        "path": "/world-assets/outdoor-topiary/autumn.png",
+        "width": 338,
+        "height": 234,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 84,
+            "height": 230
+          },
+          {
+            "x": 90,
+            "y": 3,
+            "width": 80,
+            "height": 227
+          },
+          {
+            "x": 174,
+            "y": 6,
+            "width": 82,
+            "height": 222
+          },
+          {
+            "x": 260,
+            "y": 3,
+            "width": 76,
+            "height": 227
+          }
+        ]
+      }
+    }
+  },
+  "decor-books": {
+    "elevation": 16,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/decor-books/graphite.png",
+        "width": 603,
+        "height": 176,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 172,
+            "height": 172
+          },
+          {
+            "x": 178,
+            "y": 15,
+            "width": 116,
+            "height": 145
+          },
+          {
+            "x": 298,
+            "y": 15,
+            "width": 135,
+            "height": 145
+          },
+          {
+            "x": 437,
+            "y": 4,
+            "width": 164,
+            "height": 168
+          }
+        ]
+      },
+      "ivory": {
+        "path": "/world-assets/decor-books/ivory.png",
+        "width": 603,
+        "height": 176,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 172,
+            "height": 172
+          },
+          {
+            "x": 178,
+            "y": 15,
+            "width": 116,
+            "height": 145
+          },
+          {
+            "x": 298,
+            "y": 15,
+            "width": 135,
+            "height": 145
+          },
+          {
+            "x": 437,
+            "y": 4,
+            "width": 164,
+            "height": 168
+          }
+        ]
+      },
+      "coral": {
+        "path": "/world-assets/decor-books/coral.png",
+        "width": 603,
+        "height": 176,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 172,
+            "height": 172
+          },
+          {
+            "x": 178,
+            "y": 15,
+            "width": 116,
+            "height": 145
+          },
+          {
+            "x": 298,
+            "y": 15,
+            "width": 135,
+            "height": 145
+          },
+          {
+            "x": 437,
+            "y": 4,
+            "width": 164,
+            "height": 168
+          }
+        ]
+      }
+    }
+  },
+  "decor-vase": {
+    "elevation": 20.800000000000004,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/decor-vase/graphite.png",
+        "width": 377,
+        "height": 216,
+        "frames": [
+          {
+            "x": 2,
+            "y": 4,
+            "width": 90,
+            "height": 207
+          },
+          {
+            "x": 96,
+            "y": 6,
+            "width": 91,
+            "height": 204
+          },
+          {
+            "x": 191,
+            "y": 7,
+            "width": 90,
+            "height": 201
+          },
+          {
+            "x": 285,
+            "y": 2,
+            "width": 90,
+            "height": 212
+          }
+        ]
+      },
+      "ivory": {
+        "path": "/world-assets/decor-vase/ivory.png",
+        "width": 377,
+        "height": 216,
+        "frames": [
+          {
+            "x": 2,
+            "y": 4,
+            "width": 90,
+            "height": 207
+          },
+          {
+            "x": 96,
+            "y": 6,
+            "width": 91,
+            "height": 204
+          },
+          {
+            "x": 191,
+            "y": 7,
+            "width": 90,
+            "height": 201
+          },
+          {
+            "x": 285,
+            "y": 2,
+            "width": 90,
+            "height": 212
+          }
+        ]
+      },
+      "coral": {
+        "path": "/world-assets/decor-vase/coral.png",
+        "width": 377,
+        "height": 216,
+        "frames": [
+          {
+            "x": 2,
+            "y": 4,
+            "width": 90,
+            "height": 207
+          },
+          {
+            "x": 96,
+            "y": 6,
+            "width": 91,
+            "height": 204
+          },
+          {
+            "x": 191,
+            "y": 7,
+            "width": 90,
+            "height": 201
+          },
+          {
+            "x": 285,
+            "y": 2,
+            "width": 90,
+            "height": 212
+          }
+        ]
+      }
+    }
+  },
+  "equipment-bookshelf": {
+    "elevation": 32.390243902439025,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/equipment-bookshelf/graphite.png",
+        "width": 644,
+        "height": 222,
+        "frames": [
+          {
+            "x": 2,
+            "y": 12,
+            "width": 246,
+            "height": 198
+          },
+          {
+            "x": 252,
+            "y": 2,
+            "width": 60,
+            "height": 218
+          },
+          {
+            "x": 316,
+            "y": 11,
+            "width": 260,
+            "height": 200
+          },
+          {
+            "x": 580,
+            "y": 2,
+            "width": 62,
+            "height": 218
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/equipment-bookshelf/white.png",
+        "width": 644,
+        "height": 222,
+        "frames": [
+          {
+            "x": 2,
+            "y": 12,
+            "width": 246,
+            "height": 198
+          },
+          {
+            "x": 252,
+            "y": 2,
+            "width": 60,
+            "height": 218
+          },
+          {
+            "x": 316,
+            "y": 11,
+            "width": 260,
+            "height": 200
+          },
+          {
+            "x": 580,
+            "y": 2,
+            "width": 62,
+            "height": 218
+          }
+        ]
+      },
+      "violet": {
+        "path": "/world-assets/equipment-bookshelf/violet.png",
+        "width": 644,
+        "height": 222,
+        "frames": [
+          {
+            "x": 2,
+            "y": 12,
+            "width": 246,
+            "height": 198
+          },
+          {
+            "x": 252,
+            "y": 2,
+            "width": 60,
+            "height": 218
+          },
+          {
+            "x": 316,
+            "y": 11,
+            "width": 260,
+            "height": 200
+          },
+          {
+            "x": 580,
+            "y": 2,
+            "width": 62,
+            "height": 218
+          }
+        ]
+      }
+    }
+  },
+  "outdoor-pool": {
+    "elevation": 21.94285714285715,
+    "variants": {
+      "coastal": {
+        "path": "/world-assets/outdoor-pool/coastal.png",
+        "width": 764,
+        "height": 214,
+        "frames": [
+          {
+            "x": 2,
+            "y": 25,
+            "width": 210,
+            "height": 164
+          },
+          {
+            "x": 216,
+            "y": 2,
+            "width": 164,
+            "height": 210
+          },
+          {
+            "x": 384,
+            "y": 25,
+            "width": 210,
+            "height": 163
+          },
+          {
+            "x": 598,
+            "y": 2,
+            "width": 164,
+            "height": 210
+          }
+        ]
+      },
+      "sand": {
+        "path": "/world-assets/outdoor-pool/sand.png",
+        "width": 764,
+        "height": 214,
+        "frames": [
+          {
+            "x": 2,
+            "y": 25,
+            "width": 210,
+            "height": 164
+          },
+          {
+            "x": 216,
+            "y": 2,
+            "width": 164,
+            "height": 210
+          },
+          {
+            "x": 384,
+            "y": 25,
+            "width": 210,
+            "height": 163
+          },
+          {
+            "x": 598,
+            "y": 2,
+            "width": 164,
+            "height": 210
+          }
+        ]
+      },
+      "slate": {
+        "path": "/world-assets/outdoor-pool/slate.png",
+        "width": 764,
+        "height": 214,
+        "frames": [
+          {
+            "x": 2,
+            "y": 25,
+            "width": 210,
+            "height": 164
+          },
+          {
+            "x": 216,
+            "y": 2,
+            "width": 164,
+            "height": 210
+          },
+          {
+            "x": 384,
+            "y": 25,
+            "width": 210,
+            "height": 163
+          },
+          {
+            "x": 598,
+            "y": 2,
+            "width": 164,
+            "height": 210
+          }
+        ]
+      }
+    }
+  },
+  "rug-woven": {
+    "elevation": 0,
+    "variants": {
+      "oak": {
+        "path": "/world-assets/rug-woven/oak.png",
+        "width": 802,
+        "height": 243,
+        "frames": [
+          {
+            "x": 2,
+            "y": 44,
+            "width": 239,
+            "height": 154
+          },
+          {
+            "x": 245,
+            "y": 2,
+            "width": 154,
+            "height": 239
+          },
+          {
+            "x": 403,
+            "y": 44,
+            "width": 239,
+            "height": 154
+          },
+          {
+            "x": 646,
+            "y": 2,
+            "width": 154,
+            "height": 239
+          }
+        ]
+      },
+      "walnut": {
+        "path": "/world-assets/rug-woven/walnut.png",
+        "width": 802,
+        "height": 243,
+        "frames": [
+          {
+            "x": 2,
+            "y": 44,
+            "width": 239,
+            "height": 154
+          },
+          {
+            "x": 245,
+            "y": 2,
+            "width": 154,
+            "height": 239
+          },
+          {
+            "x": 403,
+            "y": 44,
+            "width": 239,
+            "height": 154
+          },
+          {
+            "x": 646,
+            "y": 2,
+            "width": 154,
+            "height": 239
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/rug-woven/white.png",
+        "width": 802,
+        "height": 243,
+        "frames": [
+          {
+            "x": 2,
+            "y": 44,
+            "width": 239,
+            "height": 154
+          },
+          {
+            "x": 245,
+            "y": 2,
+            "width": 154,
+            "height": 239
+          },
+          {
+            "x": 403,
+            "y": 44,
+            "width": 239,
+            "height": 154
+          },
+          {
+            "x": 646,
+            "y": 2,
+            "width": 154,
+            "height": 239
+          }
+        ]
+      }
+    }
+  },
+  "rug-round": {
+    "elevation": 0,
+    "variants": {
+      "oak": {
+        "path": "/world-assets/rug-round/oak.png",
+        "width": 960,
+        "height": 240,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 236,
+            "height": 236
+          },
+          {
+            "x": 242,
+            "y": 2,
+            "width": 236,
+            "height": 236
+          },
+          {
+            "x": 482,
+            "y": 2,
+            "width": 236,
+            "height": 236
+          },
+          {
+            "x": 722,
+            "y": 2,
+            "width": 236,
+            "height": 236
+          }
+        ]
+      },
+      "walnut": {
+        "path": "/world-assets/rug-round/walnut.png",
+        "width": 960,
+        "height": 240,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 236,
+            "height": 236
+          },
+          {
+            "x": 242,
+            "y": 2,
+            "width": 236,
+            "height": 236
+          },
+          {
+            "x": 482,
+            "y": 2,
+            "width": 236,
+            "height": 236
+          },
+          {
+            "x": 722,
+            "y": 2,
+            "width": 236,
+            "height": 236
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/rug-round/white.png",
+        "width": 960,
+        "height": 240,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 236,
+            "height": 236
+          },
+          {
+            "x": 242,
+            "y": 2,
+            "width": 236,
+            "height": 236
+          },
+          {
+            "x": 482,
+            "y": 2,
+            "width": 236,
+            "height": 236
+          },
+          {
+            "x": 722,
+            "y": 2,
+            "width": 236,
+            "height": 236
+          }
+        ]
+      }
+    }
+  },
+  "table-side": {
+    "elevation": 12,
+    "variants": {
+      "oak": {
+        "path": "/world-assets/table-side/oak.png",
+        "width": 663,
+        "height": 224,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 160,
+            "height": 220
+          },
+          {
+            "x": 166,
+            "y": 2,
+            "width": 165,
+            "height": 220
+          },
+          {
+            "x": 335,
+            "y": 3,
+            "width": 164,
+            "height": 218
+          },
+          {
+            "x": 503,
+            "y": 3,
+            "width": 158,
+            "height": 217
+          }
+        ]
+      },
+      "walnut": {
+        "path": "/world-assets/table-side/walnut.png",
+        "width": 663,
+        "height": 224,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 160,
+            "height": 220
+          },
+          {
+            "x": 166,
+            "y": 2,
+            "width": 165,
+            "height": 220
+          },
+          {
+            "x": 335,
+            "y": 3,
+            "width": 164,
+            "height": 218
+          },
+          {
+            "x": 503,
+            "y": 3,
+            "width": 158,
+            "height": 217
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/table-side/white.png",
+        "width": 663,
+        "height": 224,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 160,
+            "height": 220
+          },
+          {
+            "x": 166,
+            "y": 2,
+            "width": 165,
+            "height": 220
+          },
+          {
+            "x": 335,
+            "y": 3,
+            "width": 164,
+            "height": 218
+          },
+          {
+            "x": 503,
+            "y": 3,
+            "width": 158,
+            "height": 217
+          }
+        ]
+      }
+    }
+  },
+  "decor-clock": {
+    "elevation": 3.096774193548388,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/decor-clock/graphite.png",
+        "width": 448,
+        "height": 165,
+        "frames": [
+          {
+            "x": 2,
+            "y": 8,
+            "width": 124,
+            "height": 148
+          },
+          {
+            "x": 130,
+            "y": 2,
+            "width": 94,
+            "height": 161
+          },
+          {
+            "x": 228,
+            "y": 8,
+            "width": 122,
+            "height": 149
+          },
+          {
+            "x": 354,
+            "y": 2,
+            "width": 92,
+            "height": 161
+          }
+        ]
+      },
+      "ivory": {
+        "path": "/world-assets/decor-clock/ivory.png",
+        "width": 448,
+        "height": 165,
+        "frames": [
+          {
+            "x": 2,
+            "y": 8,
+            "width": 124,
+            "height": 148
+          },
+          {
+            "x": 130,
+            "y": 2,
+            "width": 94,
+            "height": 161
+          },
+          {
+            "x": 228,
+            "y": 8,
+            "width": 122,
+            "height": 149
+          },
+          {
+            "x": 354,
+            "y": 2,
+            "width": 92,
+            "height": 161
+          }
+        ]
+      },
+      "coral": {
+        "path": "/world-assets/decor-clock/coral.png",
+        "width": 448,
+        "height": 165,
+        "frames": [
+          {
+            "x": 2,
+            "y": 8,
+            "width": 124,
+            "height": 148
+          },
+          {
+            "x": 130,
+            "y": 2,
+            "width": 94,
+            "height": 161
+          },
+          {
+            "x": 228,
+            "y": 8,
+            "width": 122,
+            "height": 149
+          },
+          {
+            "x": 354,
+            "y": 2,
+            "width": 92,
+            "height": 161
+          }
+        ]
+      }
+    }
+  },
+  "decor-headphones": {
+    "elevation": 3.6455696202531627,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/decor-headphones/graphite.png",
+        "width": 522,
+        "height": 208,
+        "frames": [
+          {
+            "x": 2,
+            "y": 7,
+            "width": 158,
+            "height": 194
+          },
+          {
+            "x": 164,
+            "y": 2,
+            "width": 94,
+            "height": 204
+          },
+          {
+            "x": 262,
+            "y": 10,
+            "width": 158,
+            "height": 187
+          },
+          {
+            "x": 424,
+            "y": 2,
+            "width": 96,
+            "height": 204
+          }
+        ]
+      },
+      "ivory": {
+        "path": "/world-assets/decor-headphones/ivory.png",
+        "width": 522,
+        "height": 208,
+        "frames": [
+          {
+            "x": 2,
+            "y": 7,
+            "width": 158,
+            "height": 194
+          },
+          {
+            "x": 164,
+            "y": 2,
+            "width": 94,
+            "height": 204
+          },
+          {
+            "x": 262,
+            "y": 10,
+            "width": 158,
+            "height": 187
+          },
+          {
+            "x": 424,
+            "y": 2,
+            "width": 96,
+            "height": 204
+          }
+        ]
+      },
+      "coral": {
+        "path": "/world-assets/decor-headphones/coral.png",
+        "width": 522,
+        "height": 208,
+        "frames": [
+          {
+            "x": 2,
+            "y": 7,
+            "width": 158,
+            "height": 194
+          },
+          {
+            "x": 164,
+            "y": 2,
+            "width": 94,
+            "height": 204
+          },
+          {
+            "x": 262,
+            "y": 10,
+            "width": 158,
+            "height": 187
+          },
+          {
+            "x": 424,
+            "y": 2,
+            "width": 96,
+            "height": 204
+          }
+        ]
+      }
+    }
+  },
+  "decor-trophy": {
+    "elevation": 16.164948453608247,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/decor-trophy/graphite.png",
+        "width": 637,
+        "height": 214,
+        "frames": [
+          {
+            "x": 2,
+            "y": 9,
+            "width": 194,
+            "height": 195
+          },
+          {
+            "x": 200,
+            "y": 2,
+            "width": 117,
+            "height": 210
+          },
+          {
+            "x": 321,
+            "y": 9,
+            "width": 193,
+            "height": 195
+          },
+          {
+            "x": 518,
+            "y": 2,
+            "width": 117,
+            "height": 210
+          }
+        ]
+      },
+      "ivory": {
+        "path": "/world-assets/decor-trophy/ivory.png",
+        "width": 637,
+        "height": 214,
+        "frames": [
+          {
+            "x": 2,
+            "y": 9,
+            "width": 194,
+            "height": 195
+          },
+          {
+            "x": 200,
+            "y": 2,
+            "width": 117,
+            "height": 210
+          },
+          {
+            "x": 321,
+            "y": 9,
+            "width": 193,
+            "height": 195
+          },
+          {
+            "x": 518,
+            "y": 2,
+            "width": 117,
+            "height": 210
+          }
+        ]
+      },
+      "coral": {
+        "path": "/world-assets/decor-trophy/coral.png",
+        "width": 637,
+        "height": 214,
+        "frames": [
+          {
+            "x": 2,
+            "y": 9,
+            "width": 194,
+            "height": 195
+          },
+          {
+            "x": 200,
+            "y": 2,
+            "width": 117,
+            "height": 210
+          },
+          {
+            "x": 321,
+            "y": 9,
+            "width": 193,
+            "height": 195
+          },
+          {
+            "x": 518,
+            "y": 2,
+            "width": 117,
+            "height": 210
+          }
+        ]
+      }
+    }
+  },
+  "table-coffee": {
+    "elevation": 13.5929203539823,
+    "variants": {
+      "oak": {
+        "path": "/world-assets/table-coffee/oak.png",
+        "width": 772,
+        "height": 202,
+        "frames": [
+          {
+            "x": 2,
+            "y": 20,
+            "width": 226,
+            "height": 161
+          },
+          {
+            "x": 232,
+            "y": 17,
+            "width": 152,
+            "height": 168
+          },
+          {
+            "x": 388,
+            "y": 16,
+            "width": 226,
+            "height": 170
+          },
+          {
+            "x": 618,
+            "y": 2,
+            "width": 152,
+            "height": 198
+          }
+        ]
+      },
+      "walnut": {
+        "path": "/world-assets/table-coffee/walnut.png",
+        "width": 772,
+        "height": 202,
+        "frames": [
+          {
+            "x": 2,
+            "y": 20,
+            "width": 226,
+            "height": 161
+          },
+          {
+            "x": 232,
+            "y": 17,
+            "width": 152,
+            "height": 168
+          },
+          {
+            "x": 388,
+            "y": 16,
+            "width": 226,
+            "height": 170
+          },
+          {
+            "x": 618,
+            "y": 2,
+            "width": 152,
+            "height": 198
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/table-coffee/white.png",
+        "width": 772,
+        "height": 202,
+        "frames": [
+          {
+            "x": 2,
+            "y": 20,
+            "width": 226,
+            "height": 161
+          },
+          {
+            "x": 232,
+            "y": 17,
+            "width": 152,
+            "height": 168
+          },
+          {
+            "x": 388,
+            "y": 16,
+            "width": 226,
+            "height": 170
+          },
+          {
+            "x": 618,
+            "y": 2,
+            "width": 152,
+            "height": 198
+          }
+        ]
+      }
+    }
+  },
+  "light-floor": {
+    "elevation": 76.41791044776119,
+    "variants": {
+      "brass": {
+        "path": "/world-assets/light-floor/brass.png",
+        "width": 284,
+        "height": 232,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 67,
+            "height": 227
+          },
+          {
+            "x": 73,
+            "y": 2,
+            "width": 67,
+            "height": 227
+          },
+          {
+            "x": 144,
+            "y": 2,
+            "width": 67,
+            "height": 228
+          },
+          {
+            "x": 215,
+            "y": 3,
+            "width": 67,
+            "height": 226
+          }
+        ]
+      },
+      "copper": {
+        "path": "/world-assets/light-floor/copper.png",
+        "width": 284,
+        "height": 232,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 67,
+            "height": 227
+          },
+          {
+            "x": 73,
+            "y": 2,
+            "width": 67,
+            "height": 227
+          },
+          {
+            "x": 144,
+            "y": 2,
+            "width": 67,
+            "height": 228
+          },
+          {
+            "x": 215,
+            "y": 3,
+            "width": 67,
+            "height": 226
+          }
+        ]
+      },
+      "silver": {
+        "path": "/world-assets/light-floor/silver.png",
+        "width": 284,
+        "height": 232,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 67,
+            "height": 227
+          },
+          {
+            "x": 73,
+            "y": 2,
+            "width": 67,
+            "height": 227
+          },
+          {
+            "x": 144,
+            "y": 2,
+            "width": 67,
+            "height": 228
+          },
+          {
+            "x": 215,
+            "y": 3,
+            "width": 67,
+            "height": 226
+          }
+        ]
+      }
+    }
+  },
+  "light-arc": {
+    "elevation": 0,
+    "variants": {
+      "brass": {
+        "path": "/world-assets/light-arc/brass.png",
+        "width": 483,
+        "height": 225,
+        "frames": [
+          {
+            "x": 2,
+            "y": 4,
+            "width": 175,
+            "height": 217
+          },
+          {
+            "x": 181,
+            "y": 9,
+            "width": 59,
+            "height": 206
+          },
+          {
+            "x": 244,
+            "y": 4,
+            "width": 173,
+            "height": 217
+          },
+          {
+            "x": 421,
+            "y": 2,
+            "width": 60,
+            "height": 221
+          }
+        ]
+      },
+      "copper": {
+        "path": "/world-assets/light-arc/copper.png",
+        "width": 483,
+        "height": 225,
+        "frames": [
+          {
+            "x": 2,
+            "y": 4,
+            "width": 175,
+            "height": 217
+          },
+          {
+            "x": 181,
+            "y": 9,
+            "width": 59,
+            "height": 206
+          },
+          {
+            "x": 244,
+            "y": 4,
+            "width": 173,
+            "height": 217
+          },
+          {
+            "x": 421,
+            "y": 2,
+            "width": 60,
+            "height": 221
+          }
+        ]
+      },
+      "silver": {
+        "path": "/world-assets/light-arc/silver.png",
+        "width": 483,
+        "height": 225,
+        "frames": [
+          {
+            "x": 2,
+            "y": 4,
+            "width": 175,
+            "height": 217
+          },
+          {
+            "x": 181,
+            "y": 9,
+            "width": 59,
+            "height": 206
+          },
+          {
+            "x": 244,
+            "y": 4,
+            "width": 173,
+            "height": 217
+          },
+          {
+            "x": 421,
+            "y": 2,
+            "width": 60,
+            "height": 221
+          }
+        ]
+      }
+    }
+  },
+  "storage-display": {
+    "elevation": 70.84137931034482,
+    "variants": {
+      "oak": {
+        "path": "/world-assets/storage-display/oak.png",
+        "width": 441,
+        "height": 237,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 145,
+            "height": 233
+          },
+          {
+            "x": 151,
+            "y": 3,
+            "width": 77,
+            "height": 230
+          },
+          {
+            "x": 232,
+            "y": 15,
+            "width": 130,
+            "height": 206
+          },
+          {
+            "x": 366,
+            "y": 3,
+            "width": 73,
+            "height": 230
+          }
+        ]
+      },
+      "sage": {
+        "path": "/world-assets/storage-display/sage.png",
+        "width": 441,
+        "height": 237,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 145,
+            "height": 233
+          },
+          {
+            "x": 151,
+            "y": 3,
+            "width": 77,
+            "height": 230
+          },
+          {
+            "x": 232,
+            "y": 15,
+            "width": 130,
+            "height": 206
+          },
+          {
+            "x": 366,
+            "y": 3,
+            "width": 73,
+            "height": 230
+          }
+        ]
+      },
+      "ink": {
+        "path": "/world-assets/storage-display/ink.png",
+        "width": 441,
+        "height": 237,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 145,
+            "height": 233
+          },
+          {
+            "x": 151,
+            "y": 3,
+            "width": 77,
+            "height": 230
+          },
+          {
+            "x": 232,
+            "y": 15,
+            "width": 130,
+            "height": 206
+          },
+          {
+            "x": 366,
+            "y": 3,
+            "width": 73,
+            "height": 230
+          }
+        ]
+      }
+    }
+  },
+  "storage-filing": {
+    "elevation": 9.558441558441558,
+    "variants": {
+      "oak": {
+        "path": "/world-assets/storage-filing/oak.png",
+        "width": 636,
+        "height": 212,
+        "frames": [
+          {
+            "x": 2,
+            "y": 6,
+            "width": 154,
+            "height": 200
+          },
+          {
+            "x": 160,
+            "y": 2,
+            "width": 161,
+            "height": 208
+          },
+          {
+            "x": 325,
+            "y": 6,
+            "width": 150,
+            "height": 200
+          },
+          {
+            "x": 479,
+            "y": 3,
+            "width": 155,
+            "height": 206
+          }
+        ]
+      },
+      "sage": {
+        "path": "/world-assets/storage-filing/sage.png",
+        "width": 636,
+        "height": 212,
+        "frames": [
+          {
+            "x": 2,
+            "y": 6,
+            "width": 154,
+            "height": 200
+          },
+          {
+            "x": 160,
+            "y": 2,
+            "width": 161,
+            "height": 208
+          },
+          {
+            "x": 325,
+            "y": 6,
+            "width": 150,
+            "height": 200
+          },
+          {
+            "x": 479,
+            "y": 3,
+            "width": 155,
+            "height": 206
+          }
+        ]
+      },
+      "ink": {
+        "path": "/world-assets/storage-filing/ink.png",
+        "width": 636,
+        "height": 212,
+        "frames": [
+          {
+            "x": 2,
+            "y": 6,
+            "width": 154,
+            "height": 200
+          },
+          {
+            "x": 160,
+            "y": 2,
+            "width": 161,
+            "height": 208
+          },
+          {
+            "x": 325,
+            "y": 6,
+            "width": 150,
+            "height": 200
+          },
+          {
+            "x": 479,
+            "y": 3,
+            "width": 155,
+            "height": 206
+          }
+        ]
+      }
+    }
+  },
+  "storage-locker": {
+    "elevation": 75.28057553956835,
+    "variants": {
+      "oak": {
+        "path": "/world-assets/storage-locker/oak.png",
+        "width": 450,
+        "height": 241,
+        "frames": [
+          {
+            "x": 2,
+            "y": 4,
+            "width": 139,
+            "height": 233
+          },
+          {
+            "x": 145,
+            "y": 2,
+            "width": 88,
+            "height": 237
+          },
+          {
+            "x": 237,
+            "y": 9,
+            "width": 136,
+            "height": 222
+          },
+          {
+            "x": 377,
+            "y": 4,
+            "width": 71,
+            "height": 233
+          }
+        ]
+      },
+      "sage": {
+        "path": "/world-assets/storage-locker/sage.png",
+        "width": 450,
+        "height": 241,
+        "frames": [
+          {
+            "x": 2,
+            "y": 4,
+            "width": 139,
+            "height": 233
+          },
+          {
+            "x": 145,
+            "y": 2,
+            "width": 88,
+            "height": 237
+          },
+          {
+            "x": 237,
+            "y": 9,
+            "width": 136,
+            "height": 222
+          },
+          {
+            "x": 377,
+            "y": 4,
+            "width": 71,
+            "height": 233
+          }
+        ]
+      },
+      "ink": {
+        "path": "/world-assets/storage-locker/ink.png",
+        "width": 450,
+        "height": 241,
+        "frames": [
+          {
+            "x": 2,
+            "y": 4,
+            "width": 139,
+            "height": 233
+          },
+          {
+            "x": 145,
+            "y": 2,
+            "width": 88,
+            "height": 237
+          },
+          {
+            "x": 237,
+            "y": 9,
+            "width": 136,
+            "height": 222
+          },
+          {
+            "x": 377,
+            "y": 4,
+            "width": 71,
+            "height": 233
+          }
+        ]
+      }
+    }
+  },
+  "light-paper": {
+    "elevation": 33.63265306122449,
+    "variants": {
+      "brass": {
+        "path": "/world-assets/light-paper/brass.png",
+        "width": 403,
+        "height": 211,
+        "frames": [
+          {
+            "x": 2,
+            "y": 5,
+            "width": 98,
+            "height": 201
+          },
+          {
+            "x": 104,
+            "y": 2,
+            "width": 96,
+            "height": 207
+          },
+          {
+            "x": 204,
+            "y": 5,
+            "width": 97,
+            "height": 201
+          },
+          {
+            "x": 305,
+            "y": 2,
+            "width": 96,
+            "height": 207
+          }
+        ]
+      },
+      "copper": {
+        "path": "/world-assets/light-paper/copper.png",
+        "width": 403,
+        "height": 211,
+        "frames": [
+          {
+            "x": 2,
+            "y": 5,
+            "width": 98,
+            "height": 201
+          },
+          {
+            "x": 104,
+            "y": 2,
+            "width": 96,
+            "height": 207
+          },
+          {
+            "x": 204,
+            "y": 5,
+            "width": 97,
+            "height": 201
+          },
+          {
+            "x": 305,
+            "y": 2,
+            "width": 96,
+            "height": 207
+          }
+        ]
+      },
+      "silver": {
+        "path": "/world-assets/light-paper/silver.png",
+        "width": 403,
+        "height": 211,
+        "frames": [
+          {
+            "x": 2,
+            "y": 5,
+            "width": 98,
+            "height": 201
+          },
+          {
+            "x": 104,
+            "y": 2,
+            "width": 96,
+            "height": 207
+          },
+          {
+            "x": 204,
+            "y": 5,
+            "width": 97,
+            "height": 201
+          },
+          {
+            "x": 305,
+            "y": 2,
+            "width": 96,
+            "height": 207
+          }
+        ]
+      }
+    }
+  },
+  "storage-cubby": {
+    "elevation": 100.77922077922076,
+    "variants": {
+      "oak": {
+        "path": "/world-assets/storage-cubby/oak.png",
+        "width": 470,
+        "height": 225,
+        "frames": [
+          {
+            "x": 2,
+            "y": 6,
+            "width": 154,
+            "height": 213
+          },
+          {
+            "x": 160,
+            "y": 2,
+            "width": 95,
+            "height": 221
+          },
+          {
+            "x": 259,
+            "y": 18,
+            "width": 141,
+            "height": 188
+          },
+          {
+            "x": 404,
+            "y": 3,
+            "width": 64,
+            "height": 218
+          }
+        ]
+      },
+      "sage": {
+        "path": "/world-assets/storage-cubby/sage.png",
+        "width": 470,
+        "height": 225,
+        "frames": [
+          {
+            "x": 2,
+            "y": 6,
+            "width": 154,
+            "height": 213
+          },
+          {
+            "x": 160,
+            "y": 2,
+            "width": 95,
+            "height": 221
+          },
+          {
+            "x": 259,
+            "y": 18,
+            "width": 141,
+            "height": 188
+          },
+          {
+            "x": 404,
+            "y": 3,
+            "width": 64,
+            "height": 218
+          }
+        ]
+      },
+      "ink": {
+        "path": "/world-assets/storage-cubby/ink.png",
+        "width": 470,
+        "height": 225,
+        "frames": [
+          {
+            "x": 2,
+            "y": 6,
+            "width": 154,
+            "height": 213
+          },
+          {
+            "x": 160,
+            "y": 2,
+            "width": 95,
+            "height": 221
+          },
+          {
+            "x": 259,
+            "y": 18,
+            "width": 141,
+            "height": 188
+          },
+          {
+            "x": 404,
+            "y": 3,
+            "width": 64,
+            "height": 218
+          }
+        ]
+      }
+    }
+  },
+  "plant-planter-row": {
+    "elevation": 0,
+    "variants": {
+      "forest": {
+        "path": "/world-assets/plant-planter-row/forest.png",
+        "width": 611,
+        "height": 230,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 71,
+            "height": 226
+          },
+          {
+            "x": 77,
+            "y": 73,
+            "width": 226,
+            "height": 84
+          },
+          {
+            "x": 307,
+            "y": 2,
+            "width": 72,
+            "height": 226
+          },
+          {
+            "x": 383,
+            "y": 71,
+            "width": 226,
+            "height": 88
+          }
+        ]
+      },
+      "sage": {
+        "path": "/world-assets/plant-planter-row/sage.png",
+        "width": 611,
+        "height": 230,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 71,
+            "height": 226
+          },
+          {
+            "x": 77,
+            "y": 73,
+            "width": 226,
+            "height": 84
+          },
+          {
+            "x": 307,
+            "y": 2,
+            "width": 72,
+            "height": 226
+          },
+          {
+            "x": 383,
+            "y": 71,
+            "width": 226,
+            "height": 88
+          }
+        ]
+      },
+      "autumn": {
+        "path": "/world-assets/plant-planter-row/autumn.png",
+        "width": 611,
+        "height": 230,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 71,
+            "height": 226
+          },
+          {
+            "x": 77,
+            "y": 73,
+            "width": 226,
+            "height": 84
+          },
+          {
+            "x": 307,
+            "y": 2,
+            "width": 72,
+            "height": 226
+          },
+          {
+            "x": 383,
+            "y": 71,
+            "width": 226,
+            "height": 88
+          }
+        ]
+      }
+    }
+  },
+  "chair-dining": {
+    "elevation": 32,
+    "variants": {
+      "white": {
+        "path": "/world-assets/chair-dining/white.png",
+        "width": 436,
+        "height": 212,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 104,
+            "height": 208
+          },
+          {
+            "x": 110,
+            "y": 2,
+            "width": 104,
+            "height": 208
+          },
+          {
+            "x": 218,
+            "y": 15,
+            "width": 106,
+            "height": 182
+          },
+          {
+            "x": 328,
+            "y": 2,
+            "width": 106,
+            "height": 208
+          }
+        ]
+      },
+      "gray": {
+        "path": "/world-assets/chair-dining/gray.png",
+        "width": 436,
+        "height": 212,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 104,
+            "height": 208
+          },
+          {
+            "x": 110,
+            "y": 2,
+            "width": 104,
+            "height": 208
+          },
+          {
+            "x": 218,
+            "y": 15,
+            "width": 106,
+            "height": 182
+          },
+          {
+            "x": 328,
+            "y": 2,
+            "width": 106,
+            "height": 208
+          }
+        ]
+      },
+      "blue": {
+        "path": "/world-assets/chair-dining/blue.png",
+        "width": 436,
+        "height": 212,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 104,
+            "height": 208
+          },
+          {
+            "x": 110,
+            "y": 2,
+            "width": 104,
+            "height": 208
+          },
+          {
+            "x": 218,
+            "y": 15,
+            "width": 106,
+            "height": 182
+          },
+          {
+            "x": 328,
+            "y": 2,
+            "width": 106,
+            "height": 208
+          }
+        ]
+      }
+    }
+  },
+  "breakroom-fridge": {
+    "elevation": 40.91803278688525,
+    "variants": {
+      "mint": {
+        "path": "/world-assets/breakroom-fridge/mint.png",
+        "width": 519,
+        "height": 231,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 122,
+            "height": 226
+          },
+          {
+            "x": 128,
+            "y": 2,
+            "width": 134,
+            "height": 227
+          },
+          {
+            "x": 266,
+            "y": 2,
+            "width": 124,
+            "height": 227
+          },
+          {
+            "x": 394,
+            "y": 2,
+            "width": 123,
+            "height": 226
+          }
+        ]
+      },
+      "cream": {
+        "path": "/world-assets/breakroom-fridge/cream.png",
+        "width": 519,
+        "height": 231,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 122,
+            "height": 226
+          },
+          {
+            "x": 128,
+            "y": 2,
+            "width": 134,
+            "height": 227
+          },
+          {
+            "x": 266,
+            "y": 2,
+            "width": 124,
+            "height": 227
+          },
+          {
+            "x": 394,
+            "y": 2,
+            "width": 123,
+            "height": 226
+          }
+        ]
+      },
+      "cherry": {
+        "path": "/world-assets/breakroom-fridge/cherry.png",
+        "width": 519,
+        "height": 231,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 122,
+            "height": 226
+          },
+          {
+            "x": 128,
+            "y": 2,
+            "width": 134,
+            "height": 227
+          },
+          {
+            "x": 266,
+            "y": 2,
+            "width": 124,
+            "height": 227
+          },
+          {
+            "x": 394,
+            "y": 2,
+            "width": 123,
+            "height": 226
+          }
+        ]
+      }
+    }
+  },
+  "breakroom-coffee-bar": {
+    "elevation": 38.23728813559323,
+    "variants": {
+      "mint": {
+        "path": "/world-assets/breakroom-coffee-bar/mint.png",
+        "width": 783,
+        "height": 230,
+        "frames": [
+          {
+            "x": 2,
+            "y": 9,
+            "width": 236,
+            "height": 212
+          },
+          {
+            "x": 242,
+            "y": 10,
+            "width": 150,
+            "height": 209
+          },
+          {
+            "x": 396,
+            "y": 11,
+            "width": 229,
+            "height": 207
+          },
+          {
+            "x": 629,
+            "y": 2,
+            "width": 152,
+            "height": 226
+          }
+        ]
+      },
+      "cream": {
+        "path": "/world-assets/breakroom-coffee-bar/cream.png",
+        "width": 783,
+        "height": 230,
+        "frames": [
+          {
+            "x": 2,
+            "y": 9,
+            "width": 236,
+            "height": 212
+          },
+          {
+            "x": 242,
+            "y": 10,
+            "width": 150,
+            "height": 209
+          },
+          {
+            "x": 396,
+            "y": 11,
+            "width": 229,
+            "height": 207
+          },
+          {
+            "x": 629,
+            "y": 2,
+            "width": 152,
+            "height": 226
+          }
+        ]
+      },
+      "cherry": {
+        "path": "/world-assets/breakroom-coffee-bar/cherry.png",
+        "width": 783,
+        "height": 230,
+        "frames": [
+          {
+            "x": 2,
+            "y": 9,
+            "width": 236,
+            "height": 212
+          },
+          {
+            "x": 242,
+            "y": 10,
+            "width": 150,
+            "height": 209
+          },
+          {
+            "x": 396,
+            "y": 11,
+            "width": 229,
+            "height": 207
+          },
+          {
+            "x": 629,
+            "y": 2,
+            "width": 152,
+            "height": 226
+          }
+        ]
+      }
+    }
+  },
+  "breakroom-water-cooler": {
+    "elevation": 57.75609756097562,
+    "variants": {
+      "mint": {
+        "path": "/world-assets/breakroom-water-cooler/mint.png",
+        "width": 355,
+        "height": 234,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 82,
+            "height": 230
+          },
+          {
+            "x": 88,
+            "y": 2,
+            "width": 87,
+            "height": 230
+          },
+          {
+            "x": 179,
+            "y": 2,
+            "width": 86,
+            "height": 229
+          },
+          {
+            "x": 269,
+            "y": 2,
+            "width": 84,
+            "height": 230
+          }
+        ]
+      },
+      "cream": {
+        "path": "/world-assets/breakroom-water-cooler/cream.png",
+        "width": 355,
+        "height": 234,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 82,
+            "height": 230
+          },
+          {
+            "x": 88,
+            "y": 2,
+            "width": 87,
+            "height": 230
+          },
+          {
+            "x": 179,
+            "y": 2,
+            "width": 86,
+            "height": 229
+          },
+          {
+            "x": 269,
+            "y": 2,
+            "width": 84,
+            "height": 230
+          }
+        ]
+      },
+      "cherry": {
+        "path": "/world-assets/breakroom-water-cooler/cherry.png",
+        "width": 355,
+        "height": 234,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 82,
+            "height": 230
+          },
+          {
+            "x": 88,
+            "y": 2,
+            "width": 87,
+            "height": 230
+          },
+          {
+            "x": 179,
+            "y": 2,
+            "width": 86,
+            "height": 229
+          },
+          {
+            "x": 269,
+            "y": 2,
+            "width": 84,
+            "height": 230
+          }
+        ]
+      }
+    }
+  },
+  "chair-stool": {
+    "elevation": 24.32,
+    "variants": {
+      "white": {
+        "path": "/world-assets/chair-stool/white.png",
+        "width": 416,
+        "height": 180,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 100,
+            "height": 176
+          },
+          {
+            "x": 106,
+            "y": 2,
+            "width": 100,
+            "height": 176
+          },
+          {
+            "x": 210,
+            "y": 6,
+            "width": 100,
+            "height": 168
+          },
+          {
+            "x": 314,
+            "y": 3,
+            "width": 100,
+            "height": 174
+          }
+        ]
+      },
+      "gray": {
+        "path": "/world-assets/chair-stool/gray.png",
+        "width": 416,
+        "height": 180,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 100,
+            "height": 176
+          },
+          {
+            "x": 106,
+            "y": 2,
+            "width": 100,
+            "height": 176
+          },
+          {
+            "x": 210,
+            "y": 6,
+            "width": 100,
+            "height": 168
+          },
+          {
+            "x": 314,
+            "y": 3,
+            "width": 100,
+            "height": 174
+          }
+        ]
+      },
+      "blue": {
+        "path": "/world-assets/chair-stool/blue.png",
+        "width": 416,
+        "height": 180,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 100,
+            "height": 176
+          },
+          {
+            "x": 106,
+            "y": 2,
+            "width": 100,
+            "height": 176
+          },
+          {
+            "x": 210,
+            "y": 6,
+            "width": 100,
+            "height": 168
+          },
+          {
+            "x": 314,
+            "y": 3,
+            "width": 100,
+            "height": 174
+          }
+        ]
+      }
+    }
+  },
+  "table-picnic": {
+    "elevation": 36.436974789915965,
+    "variants": {
+      "oak": {
+        "path": "/world-assets/table-picnic/oak.png",
+        "width": 820,
+        "height": 216,
+        "frames": [
+          {
+            "x": 2,
+            "y": 29,
+            "width": 238,
+            "height": 157
+          },
+          {
+            "x": 244,
+            "y": 2,
+            "width": 160,
+            "height": 212
+          },
+          {
+            "x": 408,
+            "y": 22,
+            "width": 238,
+            "height": 172
+          },
+          {
+            "x": 650,
+            "y": 3,
+            "width": 168,
+            "height": 210
+          }
+        ]
+      },
+      "walnut": {
+        "path": "/world-assets/table-picnic/walnut.png",
+        "width": 820,
+        "height": 216,
+        "frames": [
+          {
+            "x": 2,
+            "y": 29,
+            "width": 238,
+            "height": 157
+          },
+          {
+            "x": 244,
+            "y": 2,
+            "width": 160,
+            "height": 212
+          },
+          {
+            "x": 408,
+            "y": 22,
+            "width": 238,
+            "height": 172
+          },
+          {
+            "x": 650,
+            "y": 3,
+            "width": 168,
+            "height": 210
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/table-picnic/white.png",
+        "width": 820,
+        "height": 216,
+        "frames": [
+          {
+            "x": 2,
+            "y": 29,
+            "width": 238,
+            "height": 157
+          },
+          {
+            "x": 244,
+            "y": 2,
+            "width": 160,
+            "height": 212
+          },
+          {
+            "x": 408,
+            "y": 22,
+            "width": 238,
+            "height": 172
+          },
+          {
+            "x": 650,
+            "y": 3,
+            "width": 168,
+            "height": 210
+          }
+        ]
+      }
+    }
+  },
+  "equipment-tic-tac-toe": {
+    "elevation": 2.3801652892561975,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/equipment-tic-tac-toe/graphite.png",
+        "width": 972,
+        "height": 253,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 242,
+            "height": 248
+          },
+          {
+            "x": 248,
+            "y": 2,
+            "width": 242,
+            "height": 249
+          },
+          {
+            "x": 494,
+            "y": 2,
+            "width": 236,
+            "height": 248
+          },
+          {
+            "x": 734,
+            "y": 2,
+            "width": 236,
+            "height": 248
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/equipment-tic-tac-toe/white.png",
+        "width": 972,
+        "height": 253,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 242,
+            "height": 248
+          },
+          {
+            "x": 248,
+            "y": 2,
+            "width": 242,
+            "height": 249
+          },
+          {
+            "x": 494,
+            "y": 2,
+            "width": 236,
+            "height": 248
+          },
+          {
+            "x": 734,
+            "y": 2,
+            "width": 236,
+            "height": 248
+          }
+        ]
+      },
+      "violet": {
+        "path": "/world-assets/equipment-tic-tac-toe/violet.png",
+        "width": 972,
+        "height": 253,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 242,
+            "height": 248
+          },
+          {
+            "x": 248,
+            "y": 2,
+            "width": 242,
+            "height": 249
+          },
+          {
+            "x": 494,
+            "y": 2,
+            "width": 236,
+            "height": 248
+          },
+          {
+            "x": 734,
+            "y": 2,
+            "width": 236,
+            "height": 248
+          }
+        ]
+      }
+    }
+  },
+  "outdoor-garden-bed": {
+    "elevation": 0,
+    "variants": {
+      "forest": {
+        "path": "/world-assets/outdoor-garden-bed/forest.png",
+        "width": 682,
+        "height": 225,
+        "frames": [
+          {
+            "x": 2,
+            "y": 54,
+            "width": 220,
+            "height": 116
+          },
+          {
+            "x": 226,
+            "y": 2,
+            "width": 110,
+            "height": 221
+          },
+          {
+            "x": 340,
+            "y": 52,
+            "width": 220,
+            "height": 120
+          },
+          {
+            "x": 564,
+            "y": 2,
+            "width": 116,
+            "height": 220
+          }
+        ]
+      },
+      "sage": {
+        "path": "/world-assets/outdoor-garden-bed/sage.png",
+        "width": 682,
+        "height": 225,
+        "frames": [
+          {
+            "x": 2,
+            "y": 54,
+            "width": 220,
+            "height": 116
+          },
+          {
+            "x": 226,
+            "y": 2,
+            "width": 110,
+            "height": 221
+          },
+          {
+            "x": 340,
+            "y": 52,
+            "width": 220,
+            "height": 120
+          },
+          {
+            "x": 564,
+            "y": 2,
+            "width": 116,
+            "height": 220
+          }
+        ]
+      },
+      "autumn": {
+        "path": "/world-assets/outdoor-garden-bed/autumn.png",
+        "width": 682,
+        "height": 225,
+        "frames": [
+          {
+            "x": 2,
+            "y": 54,
+            "width": 220,
+            "height": 116
+          },
+          {
+            "x": 226,
+            "y": 2,
+            "width": 110,
+            "height": 221
+          },
+          {
+            "x": 340,
+            "y": 52,
+            "width": 220,
+            "height": 120
+          },
+          {
+            "x": 564,
+            "y": 2,
+            "width": 116,
+            "height": 220
+          }
+        ]
+      }
+    }
+  },
+  "storage-credenza": {
+    "elevation": 27.21495327102803,
+    "variants": {
+      "oak": {
+        "path": "/world-assets/storage-credenza/oak.png",
+        "width": 880,
+        "height": 225,
+        "frames": [
+          {
+            "x": 2,
+            "y": 13,
+            "width": 321,
+            "height": 198
+          },
+          {
+            "x": 327,
+            "y": 2,
+            "width": 109,
+            "height": 220
+          },
+          {
+            "x": 440,
+            "y": 12,
+            "width": 324,
+            "height": 200
+          },
+          {
+            "x": 768,
+            "y": 2,
+            "width": 110,
+            "height": 221
+          }
+        ]
+      },
+      "sage": {
+        "path": "/world-assets/storage-credenza/sage.png",
+        "width": 880,
+        "height": 225,
+        "frames": [
+          {
+            "x": 2,
+            "y": 13,
+            "width": 321,
+            "height": 198
+          },
+          {
+            "x": 327,
+            "y": 2,
+            "width": 109,
+            "height": 220
+          },
+          {
+            "x": 440,
+            "y": 12,
+            "width": 324,
+            "height": 200
+          },
+          {
+            "x": 768,
+            "y": 2,
+            "width": 110,
+            "height": 221
+          }
+        ]
+      },
+      "ink": {
+        "path": "/world-assets/storage-credenza/ink.png",
+        "width": 880,
+        "height": 225,
+        "frames": [
+          {
+            "x": 2,
+            "y": 13,
+            "width": 321,
+            "height": 198
+          },
+          {
+            "x": 327,
+            "y": 2,
+            "width": 109,
+            "height": 220
+          },
+          {
+            "x": 440,
+            "y": 12,
+            "width": 324,
+            "height": 200
+          },
+          {
+            "x": 768,
+            "y": 2,
+            "width": 110,
+            "height": 221
+          }
+        ]
+      }
+    }
+  },
+  "decor-lamp": {
+    "elevation": 19.33333333333333,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/decor-lamp/graphite.png",
+        "width": 486,
+        "height": 220,
+        "frames": [
+          {
+            "x": 2,
+            "y": 4,
+            "width": 96,
+            "height": 212
+          },
+          {
+            "x": 102,
+            "y": 7,
+            "width": 138,
+            "height": 206
+          },
+          {
+            "x": 244,
+            "y": 2,
+            "width": 96,
+            "height": 216
+          },
+          {
+            "x": 344,
+            "y": 7,
+            "width": 140,
+            "height": 206
+          }
+        ]
+      },
+      "ivory": {
+        "path": "/world-assets/decor-lamp/ivory.png",
+        "width": 486,
+        "height": 220,
+        "frames": [
+          {
+            "x": 2,
+            "y": 4,
+            "width": 96,
+            "height": 212
+          },
+          {
+            "x": 102,
+            "y": 7,
+            "width": 138,
+            "height": 206
+          },
+          {
+            "x": 244,
+            "y": 2,
+            "width": 96,
+            "height": 216
+          },
+          {
+            "x": 344,
+            "y": 7,
+            "width": 140,
+            "height": 206
+          }
+        ]
+      },
+      "coral": {
+        "path": "/world-assets/decor-lamp/coral.png",
+        "width": 486,
+        "height": 220,
+        "frames": [
+          {
+            "x": 2,
+            "y": 4,
+            "width": 96,
+            "height": 212
+          },
+          {
+            "x": 102,
+            "y": 7,
+            "width": 138,
+            "height": 206
+          },
+          {
+            "x": 244,
+            "y": 2,
+            "width": 96,
+            "height": 216
+          },
+          {
+            "x": 344,
+            "y": 7,
+            "width": 140,
+            "height": 206
+          }
+        ]
+      }
+    }
+  },
+  "equipment-tetris": {
+    "elevation": 0,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/equipment-tetris/graphite.png",
+        "width": 625,
+        "height": 218,
+        "frames": [
+          {
+            "x": 2,
+            "y": 17,
+            "width": 216,
+            "height": 184
+          },
+          {
+            "x": 222,
+            "y": 2,
+            "width": 88,
+            "height": 214
+          },
+          {
+            "x": 314,
+            "y": 20,
+            "width": 214,
+            "height": 177
+          },
+          {
+            "x": 532,
+            "y": 2,
+            "width": 91,
+            "height": 214
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/equipment-tetris/white.png",
+        "width": 625,
+        "height": 218,
+        "frames": [
+          {
+            "x": 2,
+            "y": 17,
+            "width": 216,
+            "height": 184
+          },
+          {
+            "x": 222,
+            "y": 2,
+            "width": 88,
+            "height": 214
+          },
+          {
+            "x": 314,
+            "y": 20,
+            "width": 214,
+            "height": 177
+          },
+          {
+            "x": 532,
+            "y": 2,
+            "width": 91,
+            "height": 214
+          }
+        ]
+      },
+      "violet": {
+        "path": "/world-assets/equipment-tetris/violet.png",
+        "width": 625,
+        "height": 218,
+        "frames": [
+          {
+            "x": 2,
+            "y": 17,
+            "width": 216,
+            "height": 184
+          },
+          {
+            "x": 222,
+            "y": 2,
+            "width": 88,
+            "height": 214
+          },
+          {
+            "x": 314,
+            "y": 20,
+            "width": 214,
+            "height": 177
+          },
+          {
+            "x": 532,
+            "y": 2,
+            "width": 91,
+            "height": 214
+          }
+        ]
+      }
+    }
+  },
+  "infrastructure-portal": {
+    "elevation": 0,
+    "variants": {
+      "violet": {
+        "path": "/world-assets/infrastructure-portal/violet.png",
+        "width": 896,
+        "height": 223,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 220,
+            "height": 219
+          },
+          {
+            "x": 226,
+            "y": 2,
+            "width": 220,
+            "height": 219
+          },
+          {
+            "x": 450,
+            "y": 2,
+            "width": 220,
+            "height": 219
+          },
+          {
+            "x": 674,
+            "y": 2,
+            "width": 220,
+            "height": 219
+          }
+        ]
+      },
+      "blue": {
+        "path": "/world-assets/infrastructure-portal/blue.png",
+        "width": 896,
+        "height": 223,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 220,
+            "height": 219
+          },
+          {
+            "x": 226,
+            "y": 2,
+            "width": 220,
+            "height": 219
+          },
+          {
+            "x": 450,
+            "y": 2,
+            "width": 220,
+            "height": 219
+          },
+          {
+            "x": 674,
+            "y": 2,
+            "width": 220,
+            "height": 219
+          }
+        ]
+      },
+      "amber": {
+        "path": "/world-assets/infrastructure-portal/amber.png",
+        "width": 896,
+        "height": 223,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 220,
+            "height": 219
+          },
+          {
+            "x": 226,
+            "y": 2,
+            "width": 220,
+            "height": 219
+          },
+          {
+            "x": 450,
+            "y": 2,
+            "width": 220,
+            "height": 219
+          },
+          {
+            "x": 674,
+            "y": 2,
+            "width": 220,
+            "height": 219
+          }
+        ]
+      }
+    }
+  },
+  "desk-standing": {
+    "elevation": 17.860465116279073,
+    "variants": {
+      "sage": {
+        "path": "/world-assets/desk-standing/sage.png",
+        "width": 635,
+        "height": 219,
+        "frames": [
+          {
+            "x": 2,
+            "y": 21,
+            "width": 215,
+            "height": 177
+          },
+          {
+            "x": 221,
+            "y": 2,
+            "width": 92,
+            "height": 215
+          },
+          {
+            "x": 317,
+            "y": 16,
+            "width": 215,
+            "height": 187
+          },
+          {
+            "x": 536,
+            "y": 2,
+            "width": 97,
+            "height": 215
+          }
+        ]
+      },
+      "oak": {
+        "path": "/world-assets/desk-standing/oak.png",
+        "width": 635,
+        "height": 219,
+        "frames": [
+          {
+            "x": 2,
+            "y": 21,
+            "width": 215,
+            "height": 177
+          },
+          {
+            "x": 221,
+            "y": 2,
+            "width": 92,
+            "height": 215
+          },
+          {
+            "x": 317,
+            "y": 16,
+            "width": 215,
+            "height": 187
+          },
+          {
+            "x": 536,
+            "y": 2,
+            "width": 97,
+            "height": 215
+          }
+        ]
+      },
+      "navy": {
+        "path": "/world-assets/desk-standing/navy.png",
+        "width": 635,
+        "height": 219,
+        "frames": [
+          {
+            "x": 2,
+            "y": 21,
+            "width": 215,
+            "height": 177
+          },
+          {
+            "x": 221,
+            "y": 2,
+            "width": 92,
+            "height": 215
+          },
+          {
+            "x": 317,
+            "y": 16,
+            "width": 215,
+            "height": 187
+          },
+          {
+            "x": 536,
+            "y": 2,
+            "width": 97,
+            "height": 215
+          }
+        ]
+      }
+    }
+  },
+  "equipment-chess": {
+    "elevation": 10.770731707317083,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/equipment-chess/graphite.png",
+        "width": 836,
+        "height": 235,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 205,
+            "height": 228
+          },
+          {
+            "x": 211,
+            "y": 3,
+            "width": 205,
+            "height": 228
+          },
+          {
+            "x": 420,
+            "y": 2,
+            "width": 205,
+            "height": 231
+          },
+          {
+            "x": 629,
+            "y": 2,
+            "width": 205,
+            "height": 231
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/equipment-chess/white.png",
+        "width": 836,
+        "height": 235,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 205,
+            "height": 228
+          },
+          {
+            "x": 211,
+            "y": 3,
+            "width": 205,
+            "height": 228
+          },
+          {
+            "x": 420,
+            "y": 2,
+            "width": 205,
+            "height": 231
+          },
+          {
+            "x": 629,
+            "y": 2,
+            "width": 205,
+            "height": 231
+          }
+        ]
+      },
+      "violet": {
+        "path": "/world-assets/equipment-chess/violet.png",
+        "width": 836,
+        "height": 235,
+        "frames": [
+          {
+            "x": 2,
+            "y": 3,
+            "width": 205,
+            "height": 228
+          },
+          {
+            "x": 211,
+            "y": 3,
+            "width": 205,
+            "height": 228
+          },
+          {
+            "x": 420,
+            "y": 2,
+            "width": 205,
+            "height": 231
+          },
+          {
+            "x": 629,
+            "y": 2,
+            "width": 205,
+            "height": 231
+          }
+        ]
+      }
+    }
+  },
+  "equipment-checklist": {
+    "elevation": 65.34579439252336,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/equipment-checklist/graphite.png",
+        "width": 790,
+        "height": 220,
+        "frames": [
+          {
+            "x": 2,
+            "y": 8,
+            "width": 321,
+            "height": 204
+          },
+          {
+            "x": 327,
+            "y": 2,
+            "width": 62,
+            "height": 216
+          },
+          {
+            "x": 393,
+            "y": 5,
+            "width": 328,
+            "height": 210
+          },
+          {
+            "x": 725,
+            "y": 2,
+            "width": 63,
+            "height": 215
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/equipment-checklist/white.png",
+        "width": 790,
+        "height": 220,
+        "frames": [
+          {
+            "x": 2,
+            "y": 8,
+            "width": 321,
+            "height": 204
+          },
+          {
+            "x": 327,
+            "y": 2,
+            "width": 62,
+            "height": 216
+          },
+          {
+            "x": 393,
+            "y": 5,
+            "width": 328,
+            "height": 210
+          },
+          {
+            "x": 725,
+            "y": 2,
+            "width": 63,
+            "height": 215
+          }
+        ]
+      },
+      "violet": {
+        "path": "/world-assets/equipment-checklist/violet.png",
+        "width": 790,
+        "height": 220,
+        "frames": [
+          {
+            "x": 2,
+            "y": 8,
+            "width": 321,
+            "height": 204
+          },
+          {
+            "x": 327,
+            "y": 2,
+            "width": 62,
+            "height": 216
+          },
+          {
+            "x": 393,
+            "y": 5,
+            "width": 328,
+            "height": 210
+          },
+          {
+            "x": 725,
+            "y": 2,
+            "width": 63,
+            "height": 215
+          }
+        ]
+      }
+    }
+  },
+  "chair-ottoman": {
+    "elevation": 0,
+    "variants": {
+      "white": {
+        "path": "/world-assets/chair-ottoman/white.png",
+        "width": 376,
+        "height": 100,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 90,
+            "height": 96
+          },
+          {
+            "x": 96,
+            "y": 2,
+            "width": 90,
+            "height": 96
+          },
+          {
+            "x": 190,
+            "y": 2,
+            "width": 90,
+            "height": 96
+          },
+          {
+            "x": 284,
+            "y": 2,
+            "width": 90,
+            "height": 96
+          }
+        ]
+      },
+      "gray": {
+        "path": "/world-assets/chair-ottoman/gray.png",
+        "width": 376,
+        "height": 100,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 90,
+            "height": 96
+          },
+          {
+            "x": 96,
+            "y": 2,
+            "width": 90,
+            "height": 96
+          },
+          {
+            "x": 190,
+            "y": 2,
+            "width": 90,
+            "height": 96
+          },
+          {
+            "x": 284,
+            "y": 2,
+            "width": 90,
+            "height": 96
+          }
+        ]
+      },
+      "blue": {
+        "path": "/world-assets/chair-ottoman/blue.png",
+        "width": 376,
+        "height": 100,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 90,
+            "height": 96
+          },
+          {
+            "x": 96,
+            "y": 2,
+            "width": 90,
+            "height": 96
+          },
+          {
+            "x": 190,
+            "y": 2,
+            "width": 90,
+            "height": 96
+          },
+          {
+            "x": 284,
+            "y": 2,
+            "width": 90,
+            "height": 96
+          }
+        ]
+      }
+    }
+  }
+}

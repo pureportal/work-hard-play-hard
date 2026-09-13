@@ -4,8 +4,10 @@ import { DemoStore } from "../store.js";
 import { WorldRuntime } from "./world-runtime.js";
 
 describe("WorldRuntime asset seating", () => {
-  it("walks to a distant seat and sits automatically", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+  it.each(["chair-office", "chair-ottoman"])("walks to a distant %s and sits automatically", (assetId) => {
+    const store = new DemoStore();
+    store.getObject("object-commons-chair-left")!.assetId = assetId;
+    const runtime = new WorldRuntime(store);
     runtime.restorePlayers(runtime.serializePlayers().map((player) => player.userId === "user-maya"
       ? { ...player, x: 196, y: 400 }
       : player));
@@ -32,8 +34,10 @@ describe("WorldRuntime asset seating", () => {
     runtime.stop();
   });
 
-  it("centers one player across a multi-cell seat and rejects a second occupant", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+  it.each(["chair-office", "chair-ottoman"])("centers a player on %s and rejects a second occupant", (assetId) => {
+    const store = new DemoStore();
+    store.getObject("object-commons-chair-left")!.assetId = assetId;
+    const runtime = new WorldRuntime(store);
     runtime.restorePlayers(runtime.serializePlayers().map((player) => {
       if (player.userId === "user-maya") {
         return { ...player, x: 196, y: 256 };
@@ -79,8 +83,10 @@ describe("WorldRuntime asset seating", () => {
     runtime.stop();
   });
 
-  it("returns a seated player to a valid standing position before movement", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+  it.each(["chair-office", "chair-ottoman"])("returns a player from %s to a valid standing position before movement", (assetId) => {
+    const store = new DemoStore();
+    store.getObject("object-commons-chair-left")!.assetId = assetId;
+    const runtime = new WorldRuntime(store);
     runtime.restorePlayers(runtime.serializePlayers().map((player) => player.userId === "user-maya"
       ? { ...player, x: 196, y: 256 }
       : player));

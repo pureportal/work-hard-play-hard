@@ -1,7 +1,11 @@
+import { DEFAULT_CHARACTER_APPEARANCE, requireAssetDefinition } from "@workhard/shared";
+import type { Container, Sprite } from "pixi.js";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { getOutdoorBounds, type Floor, type FloorLayout, type Member, type WorldPlayer } from "@workhard/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WorldCanvas, type WorldCanvasProps } from "./WorldCanvas";
+import { getWorldAssetArtwork } from "../world-asset-artwork";
+import * as characterRenderer from "../character-renderer";
 
 const pixiState = vi.hoisted(() => ({ applications: [] as unknown[] }));
 
@@ -19,6 +23,7 @@ vi.mock("pixi.js", async (importOriginal) => {
     readonly canvas = document.createElement("canvas");
     readonly screen = { width: 800, height: 600 };
     readonly ticker = {
+      deltaMS: 1000 / 60,
       callback: undefined as (() => void) | undefined,
       add: (callback: () => void) => {
         this.ticker.callback = callback;
@@ -198,6 +203,21 @@ describe("WorldCanvas camera", () => {
     fireEvent.click(confirm);
 
     expect(onEdit).toHaveBeenCalledOnce();
+  });
+
+  it("blocks board placement over a standing player", async () => {
+    const props = createProps();
+    const onEdit = vi.fn();
+    const { container } = render(<WorldCanvas {...props} editing editingTool="asset" editingAssetId="equipment-whiteboard"
+      editingAssetVariantId="graphite" onEdit={onEdit} />);
+    const canvas = await findCanvas(container);
+    const player = props.players[0]!;
+    const point = getScreenPoint(getApplication(), player.x, player.y);
+    dispatchPointer(canvas, "pointerdown", point.x, point.y, { pointerType: "touch" });
+    dispatchPointer(canvas, "pointerup", point.x, point.y, { pointerType: "touch" });
+    const confirm = await screen.findByRole("button", { name: "Place" });
+    expect((confirm as HTMLButtonElement).disabled).toBe(true);
+    expect(onEdit).not.toHaveBeenCalled();
   });
 
   it.each(["mouse", "touch"] as const)("creates walls with two %s endpoint taps while reserving drag for the camera", async (pointerType) => {
@@ -489,6 +509,94 @@ describe("WorldCanvas camera", () => {
   });
 });
 
+describe("WorldCanvas artwork", () => {
+  const object = { id: "artwork-fixture", floorId: "floor", assetId: "storage-credenza", variantId: "ink", rotation: 90 as const, x: 96, y: 64 };
+  const artwork = getWorldAssetArtwork(requireAssetDefinition(object.assetId), object.variantId, object.rotation);
+  let images: HTMLImageElement[];
+
+  beforeEach(() => {
+    images = [];
+    vi.stubGlobal("Image", vi.fn(function () {
+      const image = document.createElement("img");
+      Object.defineProperties(image, {
+        naturalWidth: { value: artwork.atlasWidth },
+        naturalHeight: { value: artwork.atlasHeight },
+      });
+      images.push(image);
+      return image;
+    }));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("loads the selected design and rotation at the placed object's origin", async () => {
+    const { container } = render(<WorldCanvas {...createProps()} players={[]} members={[]} layout={{ ...layout, objects: [object] }} />);
+    await findCanvas(container);
+    expect(images).toHaveLength(1);
+    expect(images[0]!.getAttribute("src")).toBe("/world-assets/storage-credenza/ink.png");
+    images[0]!.dispatchEvent(new Event("load"));
+    const placed = getApplication().stage.getChildByLabel("world-asset:artwork-fixture", true)!;
+    const body = placed.getChildByLabel("artwork")!;
+    const sprite = body.children[1] as Sprite;
+    await waitFor(() => expect(sprite.visible).toBe(true));
+    expect([placed.x, placed.y]).toEqual([96, 64]);
+    expect(sprite.texture.frame.x).toBe(artwork.frame.x);
+    expect(sprite.width).toBeCloseTo(artwork.bounds.width);
+    expect(sprite.height).toBeCloseTo(artwork.bounds.height);
+  });
+
+  it("offers recovery when an artwork file fails to load", async () => {
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { container } = render(<WorldCanvas {...createProps()} players={[]} members={[]} layout={{ ...layout, objects: [object] }} />);
+    await findCanvas(container);
+    images[0]!.dispatchEvent(new Event("error"));
+    expect((await screen.findByRole("alert")).textContent).toContain("Artwork could not load.");
+    expect(screen.getByText("Artwork could not load.")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Reload" })).toBeTruthy();
+    expect(errorLog).toHaveBeenCalled();
+  });
+
+  it("offers recovery when a character atlas fails to load", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.spyOn(characterRenderer, "renderCharacter").mockRejectedValueOnce(new Error("Character could not load. Try again."));
+    render(<WorldCanvas {...createProps()} />);
+    expect((await screen.findByRole("alert")).textContent).toContain("Artwork could not load.");
+    expect(screen.getByRole("button", { name: "Reload" })).toBeTruthy();
+  });
+
+  it("ignores failed artwork for an appearance that has been replaced", async () => {
+    let rejectAppearance!: (error: Error) => void;
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const renderCharacter = vi.spyOn(characterRenderer, "renderCharacter")
+      .mockImplementation(() => new Promise(() => undefined))
+      .mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectAppearance = reject; }));
+    const { container, rerender } = render(<WorldCanvas {...createProps()} />);
+    await findCanvas(container);
+    rerender(<WorldCanvas {...createProps()} members={[{ ...member, character: { ...member.character, hairstyle: "spiky" } }]} />);
+    await waitFor(() => expect(renderCharacter).toHaveBeenCalledTimes(2));
+    rejectAppearance(new Error("Old appearance failed"));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("draws nearer objects after rear objects regardless of insertion order, with decorations above furniture", async () => {
+    const objects = [
+      { ...object, id: "near", y: 144, rotation: 0 as const },
+      { ...object, id: "surface", assetId: "decor-coffee", variantId: "graphite", y: 64 },
+      { ...object, id: "back", y: 64, rotation: 0 as const },
+      { ...object, id: "ground", assetId: "rug-round", variantId: "oak", y: 144 },
+    ];
+    const { container } = render(<WorldCanvas {...createProps()} players={[]} members={[]} layout={{ ...layout, objects }} />);
+    await findCanvas(container);
+    const placed = getApplication().stage.getChildByLabel("world-asset:near", true)!;
+    const order = placed.parent!.children.filter((child) => child.label.startsWith("world-asset:")).map((child) => child.label);
+    expect(order).toEqual(["world-asset:ground", "world-asset:back", "world-asset:near", "world-asset:surface"]);
+  });
+});
+
 function createProps(): WorldCanvasProps {
   return {
     floor,
@@ -555,7 +663,7 @@ function dispatchPointer(
 }
 
 interface TestApplication {
-  stage: { children: Array<{ x: number; y: number; scale: { x: number } }> };
+  stage: Container;
   ticker: { callback?: () => void };
 }
 
@@ -635,7 +743,7 @@ const layout: FloorLayout = {
 const member: Member = {
   id: "player",
   name: "Player One",
-  initials: "PO",
+  initials: "PO", character: { ...DEFAULT_CHARACTER_APPEARANCE },
   email: "player@example.com",
   title: "Developer",
   role: "member",

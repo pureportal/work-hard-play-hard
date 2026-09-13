@@ -1,3 +1,4 @@
+import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import type { Member } from "@workhard/shared";
@@ -7,7 +8,7 @@ const participants: Member[] = [
   {
     id: "maya",
     name: "Maya Chen",
-    initials: "MC",
+    initials: "MC", character: { ...DEFAULT_CHARACTER_APPEARANCE },
     email: "maya@example.com",
     title: "Product Lead",
     role: "owner",
@@ -19,7 +20,7 @@ const participants: Member[] = [
   {
     id: "leo",
     name: "Leo Martins",
-    initials: "LM",
+    initials: "LM", character: { ...DEFAULT_CHARACTER_APPEARANCE },
     email: "leo@example.com",
     title: "Design Engineer",
     role: "member",

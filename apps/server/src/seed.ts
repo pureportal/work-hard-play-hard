@@ -19,6 +19,7 @@ import {
   TETRIS_DEFINITION_ID,
   WELCOME_COIN_REWARD,
   getDailyRewardStatus,
+  randomCharacterAppearance,
 } from "@workhard/shared";
 import { createSeedWorld } from "./seed-world.js";
 
@@ -37,7 +38,7 @@ const office: Office = {
 
 const { floors, layouts } = createSeedWorld(office.id);
 
-const members: Member[] = [
+const members: Omit<Member, "character">[] = [
   {
     id: "user-maya",
     name: "Maya Chen",
@@ -321,7 +322,7 @@ export function createSeedData(currentUserId = "user-maya", now = new Date()): B
     team,
     office,
     floors,
-    members,
+    members: members.map((member) => ({ ...member, character: randomCharacterAppearance() })),
     layouts,
     conversations,
     messages: createMessages(now),

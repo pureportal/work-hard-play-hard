@@ -1,3 +1,4 @@
+import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Member } from "@workhard/shared";
@@ -6,7 +7,7 @@ import { CallNotice, type ActiveCall } from "./CallNotice";
 const peer: Member = {
   id: "leo",
   name: "Leo Martins",
-  initials: "LM",
+  initials: "LM", character: { ...DEFAULT_CHARACTER_APPEARANCE },
   email: "leo@example.com",
   title: "Engineer",
   role: "member",

@@ -7,6 +7,22 @@ import { PlayerBuildPanel } from "./PlayerBuildPanel";
 afterEach(cleanup);
 
 describe("PlayerBuildPanel", () => {
+  it("filters the expanded shop by rarity while retaining purchase limits", () => {
+    const onPurchase = vi.fn();
+    renderPanel({ onPurchase });
+    fireEvent.click(screen.getByRole("tab", { name: "Shop" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Lighting" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Rarity" }), { target: { value: "legendary" } });
+    expect(screen.queryByRole("button", { name: "Buy Drum floor lamp" })).toBeNull();
+    const expensive = screen.getByRole("button", { name: "Need 850 more coins for Crystal floor lamp" });
+    expect((expensive as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(expensive);
+    expect(onPurchase).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByRole("combobox", { name: "Rarity" }), { target: { value: "common" } });
+    fireEvent.click(screen.getByRole("button", { name: "Buy Drum floor lamp" }));
+    expect(onPurchase).toHaveBeenCalledWith("light-floor");
+  });
+
   it("shows the wallet and claims the daily bonus", () => {
     const onClaimDaily = vi.fn();
     renderPanel({ onClaimDaily });

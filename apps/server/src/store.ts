@@ -15,6 +15,7 @@ import {
   kidnappingPolicyAllows,
   normalizeEmailDomain,
   permissionsForMemberRole,
+  randomCharacterAppearance,
 } from "@workhard/shared";
 import type {
   AssignableMemberPermission,
@@ -22,6 +23,7 @@ import type {
   BootstrapData,
   ChatAttachment,
   ChatMessage,
+  CharacterAppearance,
   Conversation,
   CorporateIdentity,
   CorporateIdentitySettings,
@@ -328,6 +330,7 @@ export class DemoStore {
       id: user.id,
       name: user.username,
       initials: user.username.slice(0, 2).toUpperCase(),
+      character: randomCharacterAppearance(),
       email: user.email,
       title: "",
       role,
@@ -525,16 +528,9 @@ export class DemoStore {
     return structuredClone(member);
   }
 
-  updateMemberAvatar(userId: string, avatarUrl: string | undefined): Member {
+  updateMemberCharacter(userId: string, appearance: CharacterAppearance): Member {
     const member = this.requireMember(userId);
-    if (member.avatarUrl === avatarUrl) {
-      return structuredClone(member);
-    }
-    if (avatarUrl) {
-      member.avatarUrl = avatarUrl;
-    } else {
-      delete member.avatarUrl;
-    }
+    member.character = structuredClone(appearance);
     this.dirty = true;
     return structuredClone(member);
   }

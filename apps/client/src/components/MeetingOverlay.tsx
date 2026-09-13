@@ -98,7 +98,6 @@ export function MeetingOverlay({
       >
         <header className="meeting-overlay-header">
           <div>
-            <span className="live-pill"><span />Live</span>
             <h2 id="meeting-title">{meeting.title}</h2>
           </div>
           <div className="meeting-overlay-actions">

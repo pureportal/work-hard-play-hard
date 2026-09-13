@@ -1,4 +1,4 @@
-import type { ClientCommand, ServerEvent, WorldPlayer, WorldSnapshot } from "@workhard/shared";
+import { CHARACTER_WALK_SPEED, type ClientCommand, type ServerEvent, type WorldPlayer, type WorldSnapshot } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
 import { DemoStore } from "../store.js";
 import { WorldRuntime } from "./world-runtime.js";
@@ -100,18 +100,14 @@ describe("WorldRuntime proximity calls", () => {
     const callId = player(snapshot(runtime, events), "user-maya").proximity?.callId;
 
     send(runtime, leoPeer, { type: "movement.input", sequence: 1, dx: 1, dy: 0 });
-    for (let tick = 0; tick < 4; tick += 1) {
-      runtime.runTickForTest();
-    }
+    runtime.runTickForTest(50 / CHARACTER_WALK_SPEED * 1000);
     send(runtime, leoPeer, { type: "movement.input", sequence: 2, dx: 0, dy: 0 });
     let current = snapshot(runtime, events);
     expect(player(current, "user-maya").proximity?.callId).toBe(callId);
     expect(player(current, "user-leo").proximity?.callId).toBe(callId);
 
     send(runtime, leoPeer, { type: "movement.input", sequence: 3, dx: 1, dy: 0 });
-    for (let tick = 0; tick < 4; tick += 1) {
-      runtime.runTickForTest();
-    }
+    runtime.runTickForTest(50 / CHARACTER_WALK_SPEED * 1000);
     send(runtime, leoPeer, { type: "movement.input", sequence: 4, dx: 0, dy: 0 });
     current = snapshot(runtime, events);
     expect(player(current, "user-maya").proximity?.callId).toBeUndefined();

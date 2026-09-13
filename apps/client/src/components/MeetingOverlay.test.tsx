@@ -1,3 +1,4 @@
+import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Meeting, Member } from "@workhard/shared";
@@ -6,7 +7,7 @@ import { MeetingOverlay } from "./MeetingOverlay";
 const member: Member = {
   id: "user-maya",
   name: "Maya Chen",
-  initials: "MC",
+  initials: "MC", character: { ...DEFAULT_CHARACTER_APPEARANCE },
   email: "maya@example.com",
   title: "Product Lead",
   role: "owner",

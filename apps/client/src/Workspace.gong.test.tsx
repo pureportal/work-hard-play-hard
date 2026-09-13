@@ -1,3 +1,4 @@
+import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_CORPORATE_IDENTITY } from "@workhard/shared";
@@ -202,7 +203,7 @@ function workspace(availability: Availability = "available"): BootstrapData {
     members: [{
       id: "user-maya",
       name: "Maya Chen",
-      initials: "MC",
+      initials: "MC", character: { ...DEFAULT_CHARACTER_APPEARANCE },
       email: "maya@example.com",
       title: "Product Lead",
       role: "owner",
@@ -214,7 +215,7 @@ function workspace(availability: Availability = "available"): BootstrapData {
     }, {
       id: "user-leo",
       name: "Leo Martins",
-      initials: "LM",
+      initials: "LM", character: { ...DEFAULT_CHARACTER_APPEARANCE },
       email: "leo@example.com",
       title: "Design Engineer",
       role: "member",

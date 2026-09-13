@@ -1,3 +1,4 @@
+import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import type { FloorLayout, Member, Room, RoomSettings } from "@workhard/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -9,7 +10,7 @@ afterEach(cleanup);
 const member: Member = {
   id: "person-alex",
   name: "Alex Morgan",
-  initials: "AM",
+  initials: "AM", character: { ...DEFAULT_CHARACTER_APPEARANCE },
   email: "alex@example.com",
   title: "Engineer",
   role: "member",
@@ -57,6 +58,14 @@ describe("BuildPanel", () => {
     expect(onAssetChange).toHaveBeenCalledWith("chair-office");
     expect(onAssetVariantChange).toHaveBeenCalledWith("blue");
     expect(onAssetRotationChange).toHaveBeenCalledWith(180);
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Rarity" }), { target: { value: "legendary" } });
+    fireEvent.click(screen.getByRole("tab", { name: "Lighting" }));
+    expect(screen.queryByRole("button", { name: "Drum floor lamp" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Crystal floor lamp" }));
+    expect(onAssetChange).toHaveBeenCalledWith("light-crystal");
+    fireEvent.change(screen.getByRole("combobox", { name: "Rarity" }), { target: { value: "all" } });
+    expect(screen.getByRole("button", { name: "Drum floor lamp" })).toBeTruthy();
   });
 
   it("offers Floor Tile with wood, stone, and grass designs", () => {

@@ -1,0 +1,122 @@
+.asset-shape {
+  display: block;
+  width: 38px;
+  height: 38px;
+  place-self: center;
+  overflow: visible;
+  image-rendering: auto;
+}
+
+:root[data-theme="dark"] .asset-shape-artwork {
+  filter: brightness(0.9);
+}
+
+.world-artwork-error {
+  position: absolute;
+  top: calc(84px + env(safe-area-inset-top));
+  left: 50%;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  min-height: 48px;
+  padding: 8px 10px 8px 14px;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.4;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  transform: translateX(-50%);
+}
+
+.world-artwork-error button {
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 0 12px;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+
+.build-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.workspace-shell:has(.player-build-panel) .top-bar-coins { display: none; }
+
+.player-build-panel .build-panel-scroll > .economy-summary:last-child {
+  border-top: 1px solid var(--line);
+  border-bottom: 0;
+}
+
+@media (max-width: 700px), (max-width: 1000px) and (max-height: 550px) {
+  .side-panel.build-panel .panel-header {
+    min-height: 48px;
+    padding-block: 4px;
+  }
+
+  .build-panel .asset-view-tabs { margin: 8px 12px 0; }
+
+  .build-panel .economy-summary {
+    padding: 10px 12px;
+  }
+
+  .build-panel .daily-reward {
+    min-height: 0;
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .build-panel .asset-library {
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px 12px;
+  }
+
+  .build-panel .asset-category-tabs {
+    display: flex;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    padding: 3px;
+    margin: -3px;
+  }
+
+  .build-panel .asset-category-tabs button {
+    flex: 0 0 auto;
+    grid-auto-flow: column;
+    min-width: 72px;
+    min-height: 40px;
+    gap: 6px;
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+
+  .build-panel .asset-rarity-filter { margin: 0; }
+  .build-panel .asset-grid { grid-template-columns: 1fr; }
+  .build-panel .asset-grid > button { font-size: 12px; }
+
+  .build-panel .shop-asset strong,
+  .build-panel .inventory-asset strong {
+    font-size: 12px;
+    line-height: 1.3;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .build-panel .shop-asset span,
+  .build-panel .inventory-asset span {
+    font-size: 11px;
+    line-height: 1.4;
+  }
+}

@@ -1,3 +1,4 @@
+import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { Member, Room, RoomKnock } from "@workhard/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -28,7 +29,7 @@ const knock: RoomKnock = {
 const requester: Member = {
   id: "jonas",
   name: "Jonas Berg",
-  initials: "JB",
+  initials: "JB", character: { ...DEFAULT_CHARACTER_APPEARANCE },
   email: "jonas@example.com",
   title: "Engineer",
   role: "member",
