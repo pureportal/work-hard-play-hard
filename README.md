@@ -17,11 +17,11 @@ Northstar is a self-hosted virtual office for distributed teams. It combines a p
 - Keep private rooms assigned to specific people and let visitors knock for access.
 - Draw walls, add doors and windows, furnish rooms, change access rules, and edit the live office when you have build permission.
 - Customize your avatar and, as the owner, the application name, logo, colors, login layout, registration policy, roles, and permissions.
-- Play solo or multiplayer Tetris, earn coins, claim a daily reward, and use purchased items in rooms where placement is enabled.
+- Play solo or multiplayer games, including Falling Blocks and three Tic-Tac-Toe variants, earn coins, claim a daily reward, and use purchased items in rooms where placement is enabled.
 
 ## Use Northstar
 
-Open the web address supplied by the person hosting your office. On the sign-in screen you can use a password, create an account when registration permits it, or choose **Server** to connect a packaged client to another Northstar installation.
+Open the web address supplied by the person hosting your office. On the sign-in screen you can use a password or email sign-in link, create an account when registration permits it, or choose **Server** to connect a packaged client to another Northstar installation.
 
 The server value must be an origin such as `https://office.example.com`, without a path. Desktop installers for Windows, macOS, and Linux, plus the Android APK, are published on the [latest release](https://github.com/pureportal/work-hard-play-hard/releases/latest). Android 7.0 or newer is required. Packaged clients connect to an existing Northstar server; they do not include the server or database.
 
@@ -50,7 +50,7 @@ On Windows PowerShell, copy the settings file with:
 Copy-Item .env.example .env
 ```
 
-Open `.env`, replace `POSTGRES_DB_PASSWORD`, and set `NORTHSTAR_PUBLIC_URL` to the exact HTTPS origin people will use. The default `http://localhost:8080` is suitable for local use.
+Open `.env`, replace `POSTGRES_DB_PASSWORD`, and set `NORTHSTAR_PUBLIC_URL` to the exact HTTPS origin people will use. The default `http://localhost:8080` is suitable for local use. Set `SMTP_HOST` and `SMTP_FROM` to enable email sign-in links and invitation delivery.
 
 Start the application:
 
@@ -60,7 +60,7 @@ docker compose up --build --detach --wait
 
 Open [http://localhost:8080](http://localhost:8080). The first account created on an empty installation becomes the owner.
 
-New installations allow registration but require an invitation after the owner account is created. The production image does not currently provide email delivery, so invitation emails and email sign-in links are unavailable. To admit teammates, open **Settings → Registration** and either add their email domain under **Domains without invitations** or turn off **Require invitation**.
+New installations allow registration but require an invitation after the owner account is created. Without SMTP, email sign-in and invitation delivery remain unavailable. To admit teammates without email delivery, open **Settings → Registration** and either add their email domain under **Domains without invitations** or turn off **Require invitation**.
 
 To run the optional public landing page as well, enable its Compose profile:
 
@@ -99,6 +99,12 @@ The copied [`.env.example`](.env.example) contains the normal deployment setting
 | `NORTHSTAR_LANDING_PORT` | Host port for the optional landing site; defaults to `8081`. |
 | `NORTHSTAR_VERSION` | Tag used for the published Northstar container images; defaults to `latest`. |
 | `CLIENT_ORIGINS` | Comma-separated additional HTTP or HTTPS client origins allowed by the API. |
+| `SMTP_HOST` | SMTP server hostname. Setting this with `SMTP_FROM` enables email delivery. |
+| `SMTP_PORT` | SMTP server port; defaults to `587`, or `465` when `SMTP_SECURE=true` and the port is empty. |
+| `SMTP_SECURE` | Use TLS from connection start; set to `true` for port `465`. |
+| `SMTP_USERNAME` | SMTP username. Set this together with `SMTP_PASSWORD` when authentication is required. |
+| `SMTP_PASSWORD` | SMTP password. |
+| `SMTP_FROM` | Sender address, optionally with a display name, such as `Northstar <office@example.com>`. |
 
 When running the server directly, `HOST` defaults to `127.0.0.1`, `PORT` to `3001`, and `CLIENT_URL` to `http://127.0.0.1:5173`.
 
@@ -150,6 +156,7 @@ Useful development commands:
 | `pnpm dev:desktop` | Start the server and Tauri desktop client. |
 | `pnpm check` | Validate release metadata, lint, type-check, test, build, and run static UI checks. |
 | `pnpm e2e:auth` | Build the client and run the self-contained account and invitation browser flow. |
+| `pnpm e2e:chess` | Build the client and verify chess with three browser sessions, controlled clocks, and an isolated test application. Screenshots go to `artifacts/`. |
 | `pnpm e2e` | Run the seeded workspace browser checks against the active development services. |
 | `pnpm e2e:building` | Run the seeded building-system browser checks against the active development services. |
 
@@ -199,11 +206,11 @@ The required variables are `ANDROID_HOME`, `ANDROID_BUILD_TOOLS_VERSION`, `ANDRO
 | `apps/client` | React 19 and PixiJS client, Vite web build, and Tauri desktop/Android shell. |
 | `apps/server` | Fastify REST/WebSocket server, authoritative world runtime, MikroORM migrations, and PostgreSQL persistence. |
 | `apps/landing` | Small public Vite site that links to the office. |
-| `packages/shared` | Shared protocol, building, geometry, assets, economy, and Tetris types and rules. |
+| `packages/shared` | Shared protocol, building, geometry, assets, economy, and game types and rules. |
 | `scripts` | Release validation, static UI checks, browser checks, Android signing, and workspace capture tools. |
 | `docs` | Building-system notes and the product/technical specification. |
 
-The server owns movement, collision, room access, layout changes, calls, reactions, and game state. Clients exchange commands and snapshots over `/v1/realtime`; accounts, workspace state, conversations, layouts, economy, avatar images, and branding are stored in PostgreSQL. Chat image files are stored under `.data/chat-images` or the corresponding Docker volume.
+The server owns movement, collision, room access, layout changes, calls, reactions, and game state. Clients exchange commands and snapshots over `/v1/realtime`; accounts, workspace state, conversations, layouts, economy, character appearances, and branding are stored in PostgreSQL. Chat image files are stored under `.data/chat-images` or the corresponding Docker volume.
 
 See [Building system](docs/building-system.md) for the layout and room-detection model.
 

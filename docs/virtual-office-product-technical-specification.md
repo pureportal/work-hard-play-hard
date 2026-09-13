@@ -1097,7 +1097,7 @@ LiveKit adaptive stream should attach video through its supported track APIs so 
 - Provider webhooks are authenticated and idempotent. They reconcile transport state but cannot grant application membership.
 - Media quality telemetry contains technical measurements and pseudonymous IDs, not audio/video content.
 
-## 10. Extensible mini-game architecture, including the initial Tetris clone
+## 10. Extensible mini-game architecture, including Falling Blocks
 
 ### 10.1 Goals
 
@@ -1143,9 +1143,9 @@ The floor runtime records that a player is `PLAYING` but does not run game rules
 - A future public marketplace would require process/isolate sandboxing, package signing, capability review, resource accounting, and a separate threat model; the current registry does not pretend to provide that.
 - A faulty game room can be disposed without corrupting a floor. CPU time, state size, client count, message size, and checkpoint size are measured and capped per instance.
 
-### 10.5 Initial falling-block puzzle (“Tetris clone” requirement)
+### 10.5 Initial game: Falling Blocks
 
-The initial game should be described and branded as an original **falling-block puzzle** unless the Tetris name/trade dress is licensed. “Tetris” is used here only to trace the requested gameplay category.
+The initial game is named **Falling Blocks** and described as a falling-block puzzle. Its rules, presentation, art, and audio must remain original.
 
 #### MVP ruleset proposal
 
@@ -1679,7 +1679,7 @@ Every milestone includes:
 7. Does chat need custom channels/threads/files at launch, or are team/DM/area/meeting destinations sufficient?
 8. What chat, meeting metadata, audit, telemetry, and backup retention does the target market require?
 9. Should desks be assigned only by admins, claimed by members, or both?
-10. What product name and original rules/presentation will replace the Tetris trademark/trade dress?
+10. What original rules and presentation should distinguish Falling Blocks?
 
 #### Technical and operational
 
@@ -1715,7 +1715,7 @@ Every milestone includes:
 | Single application server creates downtime/blast radius. | High / Medium for MVP | Managed restart/health, backups, short RTO, graceful drain, room ownership boundary. Add a second process only when reliability target justifies placement/Redis complexity. |
 | Media cost grows faster than application cost. | Medium / High | Group/subscription limits, adaptive stream, camera defaults, provider usage metrics, load/cost model before pricing. |
 | Team presence becomes perceived surveillance. | Medium / High | No active-app/time tracking, minimal current-state data, no named work analytics by default, privacy review before any insight feature. |
-| Tetris-like branding/rules expose IP risk. | Medium / Medium–High | Original name/art/audio/scoring/rotation presentation and legal review before release; do not market under the Tetris mark without license. |
+| Falling-block puzzle presentation creates IP risk. | Medium / Medium–High | Use the Falling Blocks name with original art, audio, scoring, and rotation presentation; complete legal review before release. |
 | Community-host preparation expands into premature federation. | Medium / High | Limit current work to interfaces/versioning/config; treat distribution, official identity, federation, and plugins as separately approved phases. |
 | Tauri Android reuse is assumed but WebView media/UX is inadequate. | Medium / Medium | Treat Android as a fresh client decision using shared protocols; compare native Kotlin/LiveKit Android at that phase. |
 | Invitation/private password brute force or link leakage. | Medium / High | High-entropy single-use invite tokens, email binding, Argon2id, rate limits, expiry/revocation, audit, no secrets in logs. |
