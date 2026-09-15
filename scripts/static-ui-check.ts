@@ -216,11 +216,12 @@ try {
   await page.setViewport({ width: 844, height: 390, deviceScaleFactor: 1 });
   await assertViewport(page, [".meeting-overlay", ".meeting-overlay-header", ".meeting-controls"]);
   await assertFullyContained(page, ".meeting-chat", [".meeting-chat > header", ".meeting-message-list", ".meeting-chat form"]);
-  const videoGridScroll = await page.$eval(".video-grid", (element) => ({
+  const participantScroll = await page.$eval(".meeting-stage", (element) => ({
     clientHeight: element.clientHeight,
     scrollHeight: element.scrollHeight,
+    overflowY: getComputedStyle(element).overflowY,
   }));
-  assert(videoGridScroll.scrollHeight > videoGridScroll.clientHeight, "Meeting participants do not scroll in a constrained viewport.");
+  assert(participantScroll.overflowY === "auto" && participantScroll.scrollHeight > participantScroll.clientHeight, "Meeting participants do not scroll in a constrained viewport.");
   await page.click('.meeting-controls button[aria-label="React"]');
   await page.waitForSelector(".meeting-controls .reaction-popover", { visible: true });
   await assertViewport(page, [".meeting-controls .reaction-popover"]);
