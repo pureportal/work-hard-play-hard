@@ -1,35 +1,47 @@
 # Characters
 
-Open **Customize avatar** to preview and save a character. Gender, No Breast / Flat / Medium / Big, three faces, three hairstyles, tops, bottoms, shoes and headwear can be combined independently. Idle, Walk and Sit previews support front, left, right and back views. Option thumbnails follow the selected direction. Cancel discards the draft.
+The avatar creator and every in-game portrait use the same Blockbench chibi character. Appearance options include six faces, fourteen hairstyles, eight tops, eight bottoms, eight footwear styles and eight headwear choices, with both genders. Clothing pieces can be mixed independently. Saved appearance fields are validated by the server and published to connected players.
 
-Characters appear in the office and in profile portraits throughout the application. New registrations, invited members and seeded testing players receive a random appearance at creation. Registration and customization save before returning success. Reloads and restarts restore the saved appearance.
+## Artwork and animation
 
-## Artwork
+`pnpm assets:characters` builds 172 component designs from native Blockbench geometry and installs them in `apps/client/public/characters/blockbench`. Tops use the fixed Flat fit, with one component per gender/outfit pair. Each component has all four directions and five animations: idle, walk, sit, listen and sit-listen. The game displays an 80px sprite canvas from 120px native frames. Left and right views use a three-quarter angle so the face remains visible.
 
-`pnpm assets:characters` rebuilds 51 transparent animation atlases and 51 portrait strips from the source sheets in `scripts/characters/sources`. The revised artwork uses adult anime proportions, tapered faces, detailed eyes, fine outlines and cel shading. The reviewed base sheet remains as the style and proportion reference. Provenance and source hashes are recorded in `scripts/characters/anime-sources.json`.
+Faces use shaped lashes, layered irises, catchlights, blush and expression-specific brows. Hair cuts have distinct fringes, napes and lengths; their highlight meshes follow the locks. Warm key light and cool fill produce cel shading. Garment details are attached to the rig and fitted with the body so collars, straps and trim stay aligned during motion.
 
-Animation atlases use 180×180 frames with the standing foot anchor at (90, 172) and seated hip anchor at (90, 96). The first four rows contain idle frames in columns 0–3 and seated frames in columns 4–7; four walking rows follow. Portrait strips retain 720×720 artwork for each direction. The office renders an 80-pixel canvas. Walking travels at 96 world pixels per second; the eight-frame cycle uses 100 ms per frame. Idle and Sit use four frames at 400 ms. Stopped players stay idle. Carried players use the seated pose, follow the carrier's direction and render behind the carrier at shoulder height.
+The traveler jacket has an independently animated scarf, and the pearl braid has its own swinging bone. Both follow all five existing motions. The festival haori, indigo hakama and tabi sandals can mix with every clothing family. Blossom clips and goggles are generated for all fourteen hairstyles.
 
-The heads, clothing and footwear share scalp, chin, neck, waist, knee, ankle and foot coordinates. Tops are fitted for both genders and all four chest options. Isolated garment sheets include complete sleeves, forearms and hands, eliminating cuts through arms or leftover trouser fragments. Lower bodies and shoes remain independent of tops. Standalone footwear preserves complete heels in rear views.
+The generator writes editable `.bbmodel` files and a manifest in `scripts/characters/blockbench`. Models include native animation keyframes, textures and the complete rig. Generated files are overwritten on regeneration; geometry and material changes belong in the source modules.
 
-Each hairstyle has separately authored cap and moon-hat versions. Hair extraction preserves highlights and uses filtered resizing; moon-hat crowns reserve room for movement. The renderer stacks head, lower body, footwear, top, then the fitted hair/headwear layer. Walking and breathing use a shared rig; right-facing frames mirror the left. Head, hair and pelvis movement use the same fractional positioning as the torso. Walking includes opposing arm swing and a wider stride.
+Each 960x3840 PNG stores a 960x1920 color atlas above a matching 16-bit depth atlas. The renderer combines head, upper body, lower body, shoes and hair/headwear by depth at each pixel. This preserves hair, sleeves, hats and bent-leg overlap from every direction. Portraits and option thumbnails crop the composed animation atlas; there is no separate portrait pipeline.
 
-Seated poses bend the existing leg artwork and retain the interchangeable clothing. Cushion height follows the furniture artwork's elevation, with an additional lift for the tall stool; rear-facing furniture occludes the character using its alpha channel. Player coordinates, interaction footprints and collisions stay unchanged. Appearance updates replace the sprite after loading while keeping the player container, seating and effects.
+| Motion | Frames | Frame duration | Atlas rows | Columns |
+| --- | --- | --- | --- | --- |
+| Idle | 4 | 400ms | 0-3 | 0-3 |
+| Sit | 4 | 400ms | 0-3 | 4-7 |
+| Walk | 8 | 100ms | 4-7 | 0-7 |
+| Listen | 8 | 200ms | 8-11 | 0-7 |
+| Sit & listen | 8 | 200ms | 12-15 | 0-7 |
 
-The full-body creator preview uses a portrait-shaped canvas. Its preview and actions remain visible while options scroll on short screens. Playback preserves its phase when turning and responds immediately when the reduced-motion preference changes.
+Within each block, direction rows are front, left, right and back. Standing feet anchor at (60,114); seated hips anchor at (60,78). Seating elevation comes from the furniture model's cushion height. Carried players retain the seated pose and the carrier's facing direction. Walking takes precedence over music; seated listeners keep bent legs. Active music presence selects a listening animation, and stopped or expired presence restores idle or sit. Reduced motion freezes character and water playback.
 
-## Storage
-
-`Member.character` and the PostgreSQL `members.character` JSONB column are required. `PUT /v1/members/me/character` validates each option and publishes saved changes to connected members. `Migration20260907120000` initializes missing appearances, keeps existing selections, makes the column non-null, and removes the obsolete `player_avatars` table. Profile-photo upload and serving routes have been removed; chat images and corporate logos retain their separate upload flows.
+Decoded component and composed-character caches are bounded. Identical Pixi characters share a texture source that is released after the last player using it is destroyed. Removing one player cannot invalidate another player's artwork. Failed loads retain a retry path and prevent saving an unavailable preview.
 
 ## Verification
 
-Asset checks resolve all 5,832 combinations, inspect transparent margins in every frame and portrait strip, and compare chest fits under each outfit from the front and side. They also check hand visibility and neck, waist and ankle overlap across interchangeable parts in all four directions. API tests cover character creation, saving and restart persistence.
+```sh
+pnpm assets:characters:review
+pnpm e2e:characters
+node scripts/characters/blockbench/appearance-review.mjs
+node scripts/characters/blockbench/creator-review.mjs
+pnpm --filter @workhard/server test -- src/avatar
+pnpm --filter @workhard/server exec tsx ../../scripts/characters/playwright-states.ts chair-office chair-stool sofa-corner chair-beanbag outdoor-bench
+pnpm --filter @workhard/server exec tsx ../../scripts/characters/playwright-depth.ts
+```
 
-`pnpm assets:characters:review` produces front/side chest comparisons, every gender/face/hair/headwear combination in front/side/rear views, mixed outfits, walking and seated strips, and 80-pixel world sprites with 38/32-pixel portraits on light and dark backgrounds under `artifacts/characters/revision/artwork`.
+The review opens generated models in Blockbench, checks native animation loops and captures sixteen mixed appearances in the running client at 80px and 120px. It also captures all 112 hair/headwear pairings with and without headphones in four directions. Asset tests check all 172 layers and 22,016 component frames for coverage, transparency and clipping, and require the manifest, PNGs and editable models to match the current inventory. Composition tests exercise depth ordering independently of layer loading order.
 
-`pnpm e2e:characters` uses Playwright against the running client at `http://127.0.0.1:5173` (override with `CHARACTER_URL`). It does not start a server. HTTP and WebSocket routes use an isolated in-memory workspace, leaving live user data untouched. It uses Puppeteer's installed Chromium binary.
+The live creator check signs in to the existing demo instance, saves a mixed appearance, reloads it, checks all 20 motion/direction combinations and mobile layout, then restores the original appearance. The world state check uses an isolated in-memory workspace with the running client to exercise movement, seating, injected music presence and moving water. Neither command starts a development server. External Spotify playback requires a connected account and is separate from the injected presence checks.
 
-The browser checks 24 mixed appearances in four directions, all three animation loops, keyboard category navigation, randomization, saving, reload, cancellation, player and bot sprite dimensions, movement, and desktop/mobile light and dark layouts. Screenshots, frame strips and animated WebP recordings are written under `artifacts/characters/revision/after` unless `CHARACTER_SCREENSHOTS` overrides the directory. This suite exercises the running UI and in-memory save flow; separate live and state scripts extend its coverage.
+Screenshots and reports are in `artifacts/blockbench-migration`. See [the migration record](blockbench-migration.md).
 
-The subsequent state review and its verification limits are recorded in [Character state review](character-state-review.md). Current browser evidence is under `artifacts/characters/state-review`. The source artwork was retained; PixelLab's active Pixel Artisan account returned zero generations and zero credits, blocking new source artwork generation.
+The anime refinement uses `artifacts/avatar-anime` for its before/after captures. The expansion uses `artifacts/asset-expansion`. The creator review checks all 416 directional option previews across both genders and saves/reloads sixteen appearances, including both new clothing sets and headwear choices, comparing its preview with the actual game texture. It checks that saved data contains only current selections and that all requested tops use Flat. It restores the initial saved appearance when the review finishes.

@@ -3,7 +3,7 @@
 [![CI](https://github.com/pureportal/work-hard-play-hard/actions/workflows/ci.yml/badge.svg)](https://github.com/pureportal/work-hard-play-hard/actions/workflows/ci.yml)
 [![Release](https://github.com/pureportal/work-hard-play-hard/actions/workflows/release.yml/badge.svg)](https://github.com/pureportal/work-hard-play-hard/actions/workflows/release.yml)
 
-![Northstar virtual office](apps/client/src/assets/northstar-office.svg)
+![Northstar virtual office](apps/client/src/assets/blockbench-office.webp)
 
 Northstar is a self-hosted virtual office for distributed teams. It combines a persistent, shared workspace with realtime presence, conversations, configurable rooms, office building, and lightweight social activities. The same React client runs in the browser and in the desktop and Android applications.
 
@@ -110,9 +110,9 @@ When running the server directly, `HOST` defaults to `127.0.0.1`, `PORT` to `300
 
 ## Current scope
 
-Each Northstar server currently hosts one team and one persistent office. The included workspace has multiple connected floors, but there is no organization or office creation flow.
+Each Northstar server hosts one team and one persistent office. New installations start with an empty floor. Create the first account to set up the office.
 
-Call and meeting screens currently coordinate presence, participation, local device capture, and chat; remote audio/video transport is not integrated yet. Scheduled meeting examples are part of the development seed, and there is not yet a production meeting scheduler.
+Open calls form around coworkers; room meetings provide private conversations. Meeting scheduling is not implemented.
 
 ## Development
 
@@ -148,6 +148,8 @@ pnpm --filter @workhard/server migration:up
 
 Useful development commands:
 
+For an intentionally populated workplace, see [Workplace seeding](docs/workplace-seeding.md). New servers receive a minimal open studio and terrace without simulated people or activity.
+
 | Command | Result |
 | --- | --- |
 | `pnpm dev:server` | Start only the Fastify server in watch mode. |
@@ -157,18 +159,8 @@ Useful development commands:
 | `pnpm check` | Validate release metadata, lint, type-check, test, build, and run static UI checks. |
 | `pnpm e2e:auth` | Build the client and run the self-contained account and invitation browser flow. |
 | `pnpm e2e:chess` | Build the client and verify chess with three browser sessions, controlled clocks, and an isolated test application. Screenshots go to `artifacts/`. |
-| `pnpm e2e` | Run the seeded workspace browser checks against the active development services. |
-| `pnpm e2e:building` | Run the seeded building-system browser checks against the active development services. |
-
-### Development seed
-
-To populate a development database with two floors, sample coworkers, conversations, meetings, and scores:
-
-```bash
-pnpm seed
-```
-
-This command deletes all data in the configured database, including accounts and uploaded images, and is disabled when `NODE_ENV=production`. Restart the development server afterward, then sign in as `maya` with password `northstar`. All seeded accounts use that password.
+| `pnpm e2e` | Verify empty-workspace registration, building, and reload with an isolated test application. |
+| `pnpm e2e:building` | Run building-system browser checks with an isolated test application. |
 
 ### Build clients
 

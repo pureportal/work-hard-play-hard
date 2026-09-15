@@ -1,61 +1,47 @@
 # World assets
 
-The [2026-09-13 anime audit](world-assets-anime-audit.md) found that the catalog still falls short of the revised avatar style. Recreation is blocked by the remaining PixelLab balance; no new artwork was accepted in the retry. The technical checks below do not constitute anime-style approval.
+Every catalog asset uses native Blockbench artwork. The catalog contains 87 assets, 261 material designs and 1,404 rendered frames, including animation samples in four directions. This includes desks, seating, tables, plants, ground surfaces, outdoor objects, equipment, tabletop decorations, storage, lighting, breakroom furnishings and portals. Reading benches, low tea tables, bamboo planters, stone lanterns, wind chimes and desk pinwheels extend the Sakura, Matcha and Indigo material set.
 
-The catalog contains 73 assets and 219 designs. Every design has south, west, north and east artwork, in the same order as rotations 0, 90, 180 and 270 degrees. The [work objects](work-objects.md) add interactive notes to whiteboards and a checklist board that reuses the existing whiteboard artwork.
-
-The added storage, lighting and breakroom categories complement the existing office, lounge, outdoor and tabletop assets. Rarity belongs to the asset design; the three material choices remain variants of that asset. Build and Shop can filter by category and rarity, and their variant controls show the same artwork as the world.
+Walls, open door thresholds and windows have three additional native atlases and 12 directional views in `public/world-architecture`. They use the same renderer and importer, with their own manifest and model catalog.
 
 ## Geometry and rendering
 
-`packages/shared/src/asset-catalog.json` remains the authority for 16px raster cells, support surfaces, interactions, placement layers and collision. The building structure retains its 32px grid. Artwork does not create collision rectangles or change ownership, inventory or server placement validation. The original 31 asset footprints and placement rules are retained.
+`packages/shared/src/asset-catalog.json` defines 16px placement cells, footprints, support surfaces and interactions. The structural grid remains 32px. Artwork does not redefine collisions, placement ownership, inventory or prices.
 
-`apps/client/src/world-asset-artwork.json` describes locally served PNG atlases. Each design records its atlas width and height and four absolute crop rectangles. Directional crops are packed horizontally with transparent gutters, without resizing source pixels. The complete catalog uses approximately 115 MiB of decoded RGBA pixels, down from 172 MiB with square atlas cells. These figures describe the whole catalog; the renderer loads designs on demand.
+Every material has south, west, north and east views corresponding to 0, 90, 180 and 270 degrees. The fixed 45-degree orthographic renderer compensates ground depth after rotation, so both floor axes project to six rendered pixels per world unit. Vertical heights keep their original projection. Each image records its projected ground rectangle; the importer derives explicit display bounds from that rectangle and preserves uniform 1/6 image scale. Ground tiles crop to their exact footprint, while foliage and elevated objects can overhang naturally.
 
-Furniture, cabinets, appliances and ground surfaces map to their rotated footprint, with a common vertical overhang. Upright fixtures retain narrow profiles where the source permits. Every sprite is centered on its footprint and anchored to its lower edge. Ground artwork has no overhang or object shadow. Objects within each placement layer draw from rear to front using their footprint's lower edge, with surface decorations above furniture.
+Native Y rotation is negative to match the shared clockwise footprint rotation. The artwork check samples actual pixels at the corner desk/sofa cells and arc lamp base in all four views, so swapped east/west exports fail validation. The lamp's base blocks walking; its overhead reach reserves placement space without blocking players.
 
-Pixi textures use linear minification for small details and nearest-neighbor magnification. SVG selection previews use browser downsampling and the same crop and display bounds in their existing 38px controls. Design radios support arrow keys, Home and End, with one tab stop.
+Native transparent frames and editable models live in `scripts/world-assets/blockbench`. The importer packs each design into a PNG atlas under `apps/client/public/world-assets`, writes crop/display bounds into `apps/client/src/world-asset-artwork.json` and records local source provenance in `scripts/world-assets/artwork-sources.json`. Build, Shop, Inventory and placed objects all use this manifest. Production loads atlases on demand.
 
-Placement previews use the same artwork with cell and direction overlays. Loaded atlases and directional textures are shared across placed objects and previews. Cached frames appear synchronously when rebuilding a scene or changing rotation; teardown disposes their textures. A failed image load exposes a reload action. Gong celebrations animate the artwork and retain the expanding rings and confetti.
+Wind chimes and desk pinwheels have native 16-frame, 1.6-second loops. The exporter samples the Blockbench timeline in all four rotations. The importer uses the union of each direction's visible bounds for every pose, preserving a fixed anchor and scale. Frames are ordered by animation sample, then south/west/north/east. The world ticker advances both the object and its shadow; reduced motion freezes them. Selection includes opaque pixels from every pose, so moving details remain selectable.
 
-## PixelLab sources
+Animated atlases pack eight columns and stay within 4096px in either dimension. The chime atlas is 1608×3328 and the pinwheel atlas is 720×1504. Catalog thumbnails use the first pose at the existing 38×38 display size.
 
-Artwork was generated through PixelLab MCP on Tier 2, using the Pro model at its maximum square canvas of 512px. Four-view sheets and source sheets retain those original PNGs. Native V3 rotations reuse Pro artwork at the rotation tool's maximum 256px resolution. They do not use a newly generated Flash first frame. Some wide Pro sheet crops exceed 256px and are retained at their original resolution.
+Seat height and backrest presence are exported from each model. The avatar's hip anchor follows the cushion height; backrests occlude seated players facing away, while stools and ottomans keep the torso visible. Depth ordering handles players in front of and behind furniture. Pool and pond ripples, moving koi and fountain rings run in the world renderer and honor reduced motion. Existing gong effects remain integrated with the new artwork.
 
-The base artwork and directional repairs come from PixelLab. Most color variants are material palette transformations of those reviewed images, preserving silhouettes, outlines and small details. Wood, stone and grass floor materials have separate Pro artwork sets. The three color variants are not separate generation requests for every asset.
+Supporting furniture also exports `surfaceHeight`. Tabletop artwork and previews rise by that height's vertical projection, and pointer placement maps back to the original floor cells. Opaque artwork pixels participate in selection and erasing. Walls repeat 32-unit textures with cropped ends; door/window artwork uses the existing opening rectangles and collision rules.
 
-The September 13 polish used two 512px Pro edits, reviewed before integration. The standing desk now has a sage laminate finish, beveled highlights and clearer adjustable legs. The desktop monitor's west and east views now show a slim panel consistent with its front; its back includes the stand mount. Their three material variants were rebuilt from the refined sources. The monitor's ivory and coral variants preserve its blue glass while recoloring the casing.
+## Regeneration
 
-`scripts/world-assets/generations.json` records generation jobs, source crops and review decisions, including rejected attempts. `artwork-sources.json` is the canonical selection of reviewed frames; an asset can use different source jobs for individual directions when a repair replaces a poor result. Raw downloads are cached by URL hash in `raw/`. Native cropped frames live in `directions/`, and assembled source reviews in `sheets/`.
-
-## Preparing and checking artwork
-
-After reviewing a generation at native size, record its four source URLs and crop rectangles with `record-artwork.mjs`. For a complete reviewed native rotation set, `accept-rotations.mjs` records the four cardinal URLs from the generation ledger.
-
-```powershell
-node scripts/world-assets/prepare-images.mjs
-node scripts/world-assets/prepare-artwork.mjs
+```sh
+pnpm assets:world
 pnpm assets:world:check
 pnpm assets:world:review
 pnpm assets:world:ui
 ```
 
-The preparation commands accept optional asset IDs to rebuild a subset. They remove the magenta backdrop and trim transparent margins; they do not scale source artwork. Review guides are inputs for PixelLab edits, not finished directional artwork.
+To rebuild a subset:
 
-The image check requires complete catalog and variant coverage, four nonempty frames per atlas, cached PixelLab sources with valid native crop coordinates, transparent padding, no opaque backdrop pixels and distinct color variants. Palette variants must change at least 2% of visible pixels in each direction by a meaningful RGB difference; separately generated floor materials must have distinct frames. The check also runs as part of `pnpm check`. Background extraction targets the magenta hue range, preserving violet artwork details.
+```sh
+node scripts/world-assets/blockbench/generate.mjs decor-shoji-screen outdoor-koi-pond
+node scripts/world-assets/blockbench/import.mjs decor-shoji-screen outdoor-koi-pond
+node scripts/world-assets/blockbench/generate.mjs --architecture
+node scripts/world-assets/blockbench/import.mjs --architecture
+```
 
-The review command builds native contact sheets in `artifacts/world-assets/native/` and a Playwright gallery that intercepts local file requests without starting a server. It renders every direction on the placement raster and all 38px variant previews in light and dark themes. Screenshots are saved under `artifacts/world-assets/displayed/`; successful capture also requires visible canvas content and no image-loading or browser errors. Rows expand to include large assets without overlapping or clipping neighboring previews.
+Generation opens Blockbench's web app with Playwright using the project's installed Chromium. It needs internet access but starts no development server. The importer and artwork check operate locally. Generated `.bbmodel` files can be opened directly in Blockbench; persistent changes belong in the source model modules because regeneration replaces outputs.
 
-The UI command uses Playwright against an already running client at `http://127.0.0.1:5173`, or `WORLD_ASSET_URL`. HTTP and WebSocket traffic for workspace data uses an isolated `DemoStore` and the real `WorldRuntime`, with public-room placement enabled in the fixture. It exercises desktop Build and mobile Shop/Inventory controls without changing saved workspaces. Screenshots and the verification report live in `artifacts/world-assets/polish/`. Games are closed before static checks, and screenshot capture finishes CSS transitions.
+The artwork check requires exact catalog/variant coverage, four native views, textured model faces, calibrated footprints, transparent borders, visible material differences, support/cushion heights and backrest metadata. It checks both catalog and architecture artwork. The Playwright review uses the existing client at `http://127.0.0.1:5173`, captures the live world and creator, and draws every material/rotation at one world unit per CSS pixel on the placement grid. `--catalog --base` produces compact base-material sheets. Screenshots are written to `artifacts/blockbench-migration`.
 
-Server catalog tests cover every asset, variant and rotation, collision cells, surface decorations, ground layers and representative seats. Client tests cover atlas bounds, texture loading and disposal, previews and selection controls. Visual review remains necessary for generated geometry and material consistency; automated coverage cannot judge those qualities.
-
-## Verification on 2026-09-13
-
-The catalog was confirmed at 72 assets, 216 designs and 864 directional frames. Source review covered the four cardinal views of all 72 base designs. The new desk and monitor frames were also reviewed after background extraction. The 16px JSON footprints and the 32px structural grid were retained.
-
-The client suite passed 314 tests. The server suite passed 419 tests with two workers on rerun; its first run, concurrent with the client suite, hit one five-second realtime test timeout. Existing character preview tests print non-failing jsdom canvas warnings. Asset tests cover crop bounds, loading, cached frame reuse, disposal, depth order and keyboard selection.
-
-Release validation, artwork validation, lint, type checks, and client/server/landing builds passed. The Playwright gallery rendered every directional frame and every 38px material preview in both themes. Application checks passed at 1440×1000, 390×844, 320×568 and 844×390, covering categories, rarity filters, material selection, rotation, placement, collisions, moving/removing assets, and touch purchase-to-placement. The existing static production UI and landing checks also passed.
-
-Browser verification uses fixture sessions. Live authentication, persisted multiplayer sessions, native desktop builds and Android builds were not exercised. Generated pixel art still has minor stylistic variation between catalog families, and most material variants remain palette-derived.
+The UI check uses the running client with isolated in-memory workspace data to exercise Build and Shop/Inventory previews and placements. Asset tests cover texture loading/disposal, atlas bounds, selection previews, placement, rotations and collision rules. See [the follow-up audit](blockbench-asset-audit-2026-09-15.md) for browser collision, elevated placement and real server reload checks, including repeatable commands and limitations.
