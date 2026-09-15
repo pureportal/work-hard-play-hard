@@ -21,6 +21,7 @@ import {
   WorldPlayerEntity,
 } from "./entities/index.js";
 import { synchronizeRows } from "./synchronize-rows.js";
+import { lockWhiteboardImages, synchronizeWhiteboardImages } from "./postgresql-whiteboard-images.js";
 
 const WORKSPACE_SETTINGS_ID = "workspace";
 
@@ -28,7 +29,7 @@ export class PostgreSqlWorkspaceRepository {
   constructor(private readonly orm: MikroORM) {}
 
   async load(): Promise<WorkspacePersistenceState | undefined> {
-    return this.orm.em.fork().transactional(
+    return this.orm.em.fork({ keepTransactionContext: true }).transactional(
       (entityManager) => this.loadState(entityManager),
       {
         isolationLevel: IsolationLevel.REPEATABLE_READ,
@@ -90,6 +91,8 @@ export class PostgreSqlWorkspaceRepository {
         ...(player.wavingUntil ? { wavingUntil: player.wavingUntil.getTime() } : {}),
       })),
       store: {
+        floors: settings.floors,
+        organisation: settings.organisation,
         members: members.map((member) => ({
           id: member.id,
           name: member.name,
@@ -154,6 +157,7 @@ export class PostgreSqlWorkspaceRepository {
           placement: score.placement,
           won: score.won,
           playedAt: score.playedAt.toISOString(),
+          ...(score.fallingBlocks ? { fallingBlocks: score.fallingBlocks } : {}),
         })),
         gameStatistics: gameStatistics.map((statistics) => ({
           definitionId: statistics.definitionId,
@@ -165,6 +169,8 @@ export class PostgreSqlWorkspaceRepository {
           highestLines: statistics.highestLines,
           totalScore: statistics.totalScore,
           totalLines: statistics.totalLines,
+          ...(statistics.fallingBlocks ? { fallingBlocks: statistics.fallingBlocks } : {}),
+          ...(statistics.holdsCrown ? { holdsCrown: true as const } : {}),
         })),
         chessMatches: chessMatches.map((match) => match.state),
         economy: {
@@ -214,7 +220,8 @@ export class PostgreSqlWorkspaceRepository {
   }
 
   async save(state: WorkspacePersistenceState): Promise<void> {
-    await this.orm.em.fork().transactional(async (entityManager) => {
+    await this.orm.em.fork({ keepTransactionContext: true }).transactional(async (entityManager) => {
+      await lockWhiteboardImages(entityManager);
       await synchronizeRows(entityManager, MemberEntity, "id", state.store.members.map((member, sortOrder) => ({
         id: member.id,
         name: member.name,
@@ -237,6 +244,7 @@ export class PostgreSqlWorkspaceRepository {
         ...layout,
         sortOrder,
       })));
+      await synchronizeWhiteboardImages(entityManager, state.store.layouts);
 
       await synchronizeRows(entityManager, ConversationEntity, "id", state.store.conversations.map((conversation, sortOrder) => ({
         id: conversation.id,
@@ -312,12 +320,13 @@ export class PostgreSqlWorkspaceRepository {
         placement: score.placement,
         won: score.won,
         playedAt: new Date(score.playedAt),
+        fallingBlocks: score.fallingBlocks ?? null,
         sortOrder,
       })));
       await replaceRows(
         entityManager,
         PlayerGameStatisticsEntity,
-        state.store.gameStatistics.map((statistics, sortOrder) => ({ ...statistics, sortOrder })),
+        state.store.gameStatistics.map((statistics, sortOrder) => ({ ...statistics, holdsCrown: statistics.holdsCrown === true, sortOrder })),
       );
       await synchronizeRows(entityManager, ChessMatchEntity, "id", state.store.chessMatches.map((match, sortOrder) => ({
         id: match.id,
@@ -379,6 +388,8 @@ export class PostgreSqlWorkspaceRepository {
 
       await entityManager.upsert(WorkspaceSettingsEntity, {
         id: WORKSPACE_SETTINGS_ID,
+        floors: state.store.floors,
+        organisation: state.store.organisation,
         gameSettings: state.store.economy.gameSettings,
         kidnappingSettings: state.store.kidnapping.global,
         playerKidnappingSettings: state.store.kidnapping.players,

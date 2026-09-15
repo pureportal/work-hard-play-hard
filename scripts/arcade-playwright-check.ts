@@ -6,7 +6,7 @@ import { createArcadeReviewFixture } from "./arcade-review-fixture.js";
 
 const output = resolve(process.env.ARCADE_SCREENSHOTS ?? "../../artifacts/game-presentation/after");
 const baseline = process.env.ARCADE_BASELINE === "1";
-const sizes = [[1440, 1000], [390, 844], [320, 568], [844, 390]] as const;
+const sizes = [[1440, 1000], [768, 1024], [390, 844], [320, 568], [844, 390], [667, 375], [568, 320]] as const;
 const issues: string[] = [];
 const layouts: unknown[] = [];
 await mkdir(output, { recursive: true });
@@ -40,6 +40,10 @@ async function capture(page: Page, name: string) {
   });
   layouts.push({ name, ...measurements });
   assert.equal(measurements.pageOverflow, false, name);
+  if (!baseline && name.endsWith("-falling-blocks")) {
+    assert(await page.locator(".falling-blocks-stats").evaluate((element) =>
+      element.getBoundingClientRect().bottom <= element.closest("aside")!.getBoundingClientRect().bottom + 1), `${name}: statistics visible`);
+  }
   if (!baseline && measurements.dialog) {
     const { dialog, viewport, board } = measurements;
     assert(dialog.x >= 0 && dialog.y >= 0 && dialog.x + dialog.width <= viewport.width + 1 && dialog.y + dialog.height <= viewport.height + 1, `${name}: dialog bounds`);
@@ -50,8 +54,11 @@ async function capture(page: Page, name: string) {
       assert(boardColumn.y + boardColumn.height <= sidebar.y + 1, `${name}: chess sections overlap`);
     }
     for (const control of measurements.controls) {
-      assert(control.width! >= 40 && control.height! >= 40, `${name}: target ${control.name}`);
+      assert(control.width! >= 44 && control.height! >= 44, `${name}: target ${control.name}`);
       assert(control.y! >= 0 && control.y! + control.height! <= viewport.height + 1, `${name}: visible ${control.name}`);
+    }
+    if (board && /-(falling-blocks|classic|stacking|ultimate|ultimate-focused|chess|chess-selected)$/.test(name)) {
+      assert(board.y >= 0 && board.y + board.height <= viewport.height + 1, `${name}: full board visible`);
     }
   }
 }
@@ -94,8 +101,27 @@ try {
         await capture(page, `${prefix}-lobby`);
         await page.locator(".falling-blocks-lobby").getByRole("button", { name: "Play", exact: true }).click();
         await page.locator(".falling-blocks-game").waitFor();
-        for (const name of ["Move left", "Rotate", "Move right", "Soft drop", "Hold", "Drop"]) {
-          await page.locator(".falling-blocks-controls").getByRole("button", { name, exact: true }).click();
+        await page.getByRole("button", { name: "Show controls", exact: true }).click();
+        for (const name of ["Move left", "Rotate clockwise", "Rotate counterclockwise", "Move right", "Soft drop", "Hold", "Drop"]) {
+          const control = page.locator(".falling-blocks-controls").getByRole("button", { name, exact: true });
+          if (width < 1000) await control.tap();
+          else await control.click();
+        }
+        if (width < 1000) {
+          const left = page.getByRole("button", { name: "Move left", exact: true });
+          assert.equal(await left.evaluate((element) => getComputedStyle(element).touchAction), "none");
+          const box = (await left.boundingBox())!;
+          const touch = await context.newCDPSession(page);
+          const leftCount = () => fixture.commands.filter((command) => command.type === "game.command" && command.command === "left").length;
+          const before = leftCount();
+          await touch.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: box.x + box.width / 2, y: box.y + box.height / 2 }] });
+          await page.waitForTimeout(220);
+          await touch.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+          assert(leftCount() >= before + 2, "Touch hold repeats");
+          const released = leftCount();
+          await page.waitForTimeout(100);
+          assert.equal(leftCount(), released, "Touch release stops repeating");
+          await touch.detach();
         }
         await page.keyboard.press("ArrowLeft");
         await page.keyboard.press("Space");
@@ -117,7 +143,21 @@ try {
           await lobby.getByRole("button", { name: "Play", exact: true }).click();
           await page.locator(".tic-tac-toe-game").waitFor();
           if (variant === "Stacking") await page.getByRole("group", { name: "Pieces", exact: true }).getByRole("button", { name: "Large, 2 remaining" }).click();
-          await page.locator('.tic-tac-toe-game button[role="gridcell"]:not(:disabled)').first().click();
+          if (variant === "Ultimate" && width < 1000 && (width <= 700 || height <= 520)) {
+            await capture(page, `${prefix}-ultimate-overview`);
+            await page.getByRole("gridcell", { name: "Open top left board", exact: true }).tap();
+            await capture(page, `${prefix}-ultimate-focused`);
+            const cell = page.getByRole("gridcell", { name: "Play center in top left board", exact: true });
+            const bounds = await cell.boundingBox();
+            assert(bounds && bounds.width >= 44 && bounds.height >= 44, "Ultimate touch cells");
+            await page.getByRole("button", { name: "All boards", exact: true }).tap();
+            await page.getByRole("gridcell", { name: "Open top left board", exact: true }).tap();
+            await cell.tap();
+          } else {
+            const cell = page.locator('.tic-tac-toe-game button[role="gridcell"]:not(:disabled)').first();
+            if (width < 1000) await cell.tap();
+            else await cell.click();
+          }
           await page.getByRole("status").filter({ hasText: "Your turn" }).waitFor();
           await capture(page, `${prefix}-${variant.toLowerCase()}`);
           await page.getByRole("button", { name: "Rules", exact: true }).click();
@@ -133,9 +173,17 @@ try {
         await page.locator(".chess-lobby").getByRole("button", { name: "Play", exact: true }).click();
         await page.locator(".chess-game").waitFor();
         await page.getByRole("gridcell", { name: "white pawn on e2", exact: true }).click();
+        await page.keyboard.press("Escape");
+        assert.equal(await page.locator(".chess-square.is-selected").count(), 0);
+        await page.getByRole("gridcell", { name: "white pawn on e2", exact: true }).click();
         await capture(page, `${prefix}-chess-selected`);
-        await page.getByRole("gridcell", { name: "e4", exact: true }).click();
-        await page.waitForFunction(() => [...document.querySelectorAll(".chess-moves strong")].filter((node) => node.textContent).length === 2);
+        if (width < 1000) await page.getByRole("gridcell", { name: "e4", exact: true }).tap();
+        else {
+          await page.keyboard.press("ArrowUp");
+          await page.keyboard.press("ArrowUp");
+          await page.keyboard.press("Enter");
+        }
+        await page.locator(".chess-moves strong").filter({ hasText: /^e4$/ }).waitFor();
         await capture(page, `${prefix}-chess`);
         await page.getByRole("button", { name: "Close chess", exact: true }).click();
         await chooseArea(page, "object-chess", ".chess-lobby");
@@ -148,7 +196,7 @@ try {
         await page.locator(".game-result-actions").waitFor({ state: "hidden" });
         await page.getByRole("button", { name: "Close chess", exact: true }).click();
         assert.deepEqual(fixture.events.filter((event) => event.type === "command.error"), []);
-        console.log(`${prefix}: game controls, bot replies, rules, exit, chess resume and replay passed`);
+        console.log(`${prefix}: game controls, Tic-Tac-Toe bot replies, rules, exit, chess moves, resume and replay passed`);
       } catch (error) {
         await page.screenshot({ path: resolve(output, `${prefix}-failure.png`) });
         console.error(await page.locator("body").innerText());

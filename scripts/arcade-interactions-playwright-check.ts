@@ -42,7 +42,7 @@ async function turn(page: Page, cell: number) {
 
 try {
   for (const userId of ["user-maya", "user-leo"]) {
-    const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, hasTouch: true });
+    const context = await browser.newContext({ viewport: userId === "user-leo" ? { width: 390, height: 844 } : { width: 1440, height: 1000 }, hasTouch: true });
     await fixture.install(context, userId);
     const page = await context.newPage();
     pages.push(page);
@@ -64,12 +64,14 @@ try {
   await maya.locator(".falling-blocks-lobby").getByRole("button", { name: "Players", exact: true }).click();
   await maya.locator(".falling-blocks-lobby").getByRole("button", { name: "Play", exact: true }).click();
   await leo.locator(".falling-blocks-game").waitFor();
+  await leo.getByRole("button", { name: "Show controls", exact: true }).click();
   assert.equal(await maya.getByRole("button", { name: "Pause", exact: true }).count(), 0);
   await capture(maya, "falling-blocks-multiplayer");
+  await capture(leo, "falling-blocks-multiplayer-mobile");
   await leave(maya, "Close game");
   for (let drop = 0; drop < 40 && await leo.locator(".falling-blocks-controls").count(); drop++) {
     const score = await leo.locator(".falling-blocks-stats .score dd").textContent();
-    await leo.getByRole("button", { name: "Drop", exact: true }).click();
+    await leo.getByRole("button", { name: "Drop", exact: true }).tap();
     await leo.waitForFunction((previous) => !document.querySelector(".falling-blocks-controls")
       || document.querySelector(".falling-blocks-stats .score dd")?.textContent !== previous, score);
   }

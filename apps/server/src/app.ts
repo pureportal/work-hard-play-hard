@@ -35,9 +35,18 @@ import {
   registerBodySchema,
   registrationSettingsBodySchema,
 } from "./protocol.js";
-import { createInitialData, createSeedData } from "./seed.js";
-import { DemoStore } from "./store.js";
+import { createInitialData } from "./initial-data.js";
+import { WorkspaceStore } from "./store.js";
 import { WorldRuntime } from "./world/world-runtime.js";
+import { registerWhiteboardImageRoutes } from "./work/whiteboard-images.js";
+import { saveWorkObject } from "./work/work-object-commands.js";
+import { readSpotifyConfig, type SpotifyConfig } from "./spotify/spotify-config.js";
+import { SpotifyService } from "./spotify/spotify-service.js";
+import { registerSpotifyRoutes } from "./spotify/spotify-routes.js";
+import { readGitHubConfig, type GitHubConfig } from "./github/github-config.js";
+import { GitHubService } from "./github/github-service.js";
+import { registerGitHubRoutes } from "./github/github-routes.js";
+import { GITHUB_TRAY_ASSET_ID, canUseWorkObject } from "@workhard/shared";
 
 const SESSION_COOKIE_NAME = "whph_session";
 const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
@@ -55,6 +64,10 @@ interface RealtimeCommandWindow {
 }
 
 interface ApplicationOptions {
+  githubConfig?: GitHubConfig | null;
+  githubFetch?: typeof fetch;
+  spotifyConfig?: SpotifyConfig | null;
+  spotifyFetch?: typeof fetch;
   database?: ApplicationDatabase;
   chatImagePath?: string;
   clientUrl?: string;
@@ -63,14 +76,15 @@ interface ApplicationOptions {
   deliverMagicLink?: (email: string, link: string, applicationName: string) => Promise<void>;
   exposeInvitationLinks?: boolean;
   deliverInvitation?: (email: string, link: string, applicationName: string) => Promise<void>;
-  seeded?: boolean;
   logger?: boolean;
   chessNow?: () => Date;
 }
 
 export interface ApplicationContext {
+  github: GitHubService;
+  spotify: SpotifyService;
   app: FastifyInstance;
-  store: DemoStore;
+  store: WorkspaceStore;
   auth: AuthStore;
   runtime: WorldRuntime;
 }
@@ -80,15 +94,18 @@ const defaultChatImagePath = fileURLToPath(
 );
 
 export async function createApplication(options: ApplicationOptions = {}): Promise<ApplicationContext> {
+  const githubConfig = options.githubConfig === null ? undefined : options.githubConfig ?? readGitHubConfig();
+  const spotifyConfig = options.spotifyConfig === null ? undefined : options.spotifyConfig ?? readSpotifyConfig();
   const clientUrl = normalizeClientUrl(options.clientUrl ?? process.env.CLIENT_URL ?? "http://127.0.0.1:5173");
   const clientOrigins = resolveClientOrigins(clientUrl, options.clientOrigins ?? parseClientOrigins(process.env.CLIENT_ORIGINS));
   const app = Fastify({ logger: options.logger ?? false });
   const database = options.database ?? await PostgreSqlDatabase.connect();
-  const initialized = await initializePersistentState(database, options.seeded ?? false, options.chessNow).catch(async (error: unknown) => {
+  const initialized = await initializePersistentState(database, options.chessNow).catch(async (error: unknown) => {
     await database.close();
     throw error;
   });
   const { auth, brandingLogo, runtime, store } = initialized;
+  const github = await GitHubService.create(database, githubConfig, options.githubFetch);
   const chatImages = new ChatImageStore(options.chatImagePath ?? defaultChatImagePath);
   const authRateLimiter = new AuthRateLimiter();
   const exposeMagicLinks = options.exposeMagicLinks ?? process.env.NODE_ENV !== "production";
@@ -97,6 +114,16 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
   const realtimeSocketsBySession = new Map<string, Set<RealtimeSocket>>();
   const realtimeSocketsByUser = new Map<string, Set<RealtimeSocket>>();
   const realtimeCommandWindowsByUser = new Map<string, RealtimeCommandWindow>();
+  const spotify = await SpotifyService.create({
+    database, config: spotifyConfig,
+    ...(options.spotifyFetch ? { fetcher: options.spotifyFetch } : {}),
+    publish: (event) => {
+      for (const sockets of realtimeSocketsByUser.values()) {
+        for (const socket of sockets) sendEvent(socket, event);
+      }
+    },
+    reportError: (error) => app.log.error(error),
+  });
   let persistenceTimer: NodeJS.Timeout | undefined;
   let pendingPersistence: Promise<void> | undefined;
 
@@ -133,7 +160,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
 
   await app.register(websocket, {
     options: {
-      maxPayload: 64 * 1024,
+      maxPayload: 256 * 1024,
       perMessageDeflate: false,
     },
   });
@@ -181,6 +208,35 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
       done(null, body);
     });
   }
+
+  registerWhiteboardImageRoutes(app, {
+    database,
+    store, runtime, authenticate: (request) => getAuthenticatedUser(auth, request)?.id,
+  });
+
+  await registerGitHubRoutes(app, {
+    service: github, clientUrl, secureCookie: githubConfig?.redirectUri.startsWith("https:") ?? false,
+    authenticate: (request) => {
+      const sessionToken = getSessionToken(request.headers.cookie);
+      const user = auth.getUserFromSession(sessionToken);
+      return user && sessionToken ? { userId: user.id, sessionToken } : undefined;
+    },
+    canOpenTray: (userId, objectId) => {
+      const object = store.getObject(objectId);
+      const layout = object && store.getVisibleLayout(object.floorId, userId);
+      const player = runtime.serializePlayers().find((candidate) => candidate.userId === userId);
+      return Boolean(object?.assetId === GITHUB_TRAY_ASSET_ID && layout && player?.connected && canUseWorkObject(object, layout, player));
+    },
+  });
+
+  await registerSpotifyRoutes(app, {
+    service: spotify, clientUrl,
+    authenticate: (request) => {
+      const sessionToken = getSessionToken(request.headers.cookie);
+      const user = auth.getUserFromSession(sessionToken);
+      return user && sessionToken ? { userId: user.id, sessionToken } : undefined;
+    },
+  });
 
   app.get("/v1/health/live", async () => ({ status: "ok" }));
   app.get("/v1/health/ready", async (request, reply) => {
@@ -646,7 +702,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     if (!store.canIssueInvitation(user.id, parsed.data.email, parsed.data.role)) {
       return reply.code(403).send({ code: "FORBIDDEN", message: "You cannot assign this role." });
     }
-    let issued: ReturnType<DemoStore["issueInvitation"]>;
+    let issued: ReturnType<WorkspaceStore["issueInvitation"]>;
     try {
       issued = store.issueInvitation(parsed.data.email, parsed.data.role as Exclude<MemberRole, "owner">, parsed.data.permissions);
     } catch (error) {
@@ -809,17 +865,25 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
         });
         return;
       }
+      if (parsed.data.type === "work.update") {
+        const command = parsed.data as Extract<ClientCommand, { type: "work.update" }>;
+        void saveWorkObject(command, {
+          peerId, store, runtime, database, persist, send: (event) => sendEvent(socket, event),
+        }).catch((error: unknown) => {
+          app.log.error(error);
+          sendEvent(socket, { type: "command.error", requestId: command.requestId, code: "WORK_SAVE_FAILED", message: "Your board could not be saved. Try saving again." });
+        });
+        return;
+      }
       runtime.handleCommand(peerId, parsed.data as ClientCommand);
-      if (parsed.data.type.startsWith("chess.") || parsed.data.type === "work.update") {
+      if (parsed.data.type.startsWith("chess.")) {
         void persist().catch((error: unknown) => {
           app.log.error(error);
           sendEvent(socket, {
             type: "command.error",
             ...requestIdFromCandidate(candidate),
-            code: parsed.data.type === "work.update" ? "WORK_SAVE_FAILED" : "CHESS_SAVE_FAILED",
-            message: parsed.data.type === "work.update"
-              ? "Your board could not be saved. Reconnect to check its state."
-              : "Your game could not be saved. Reconnect to check its state.",
+            code: "CHESS_SAVE_FAILED",
+            message: "Your game could not be saved. Reconnect to check its state.",
           });
         });
       }
@@ -841,6 +905,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
       userSockets.delete(socket);
       if (userSockets.size === 0) {
         realtimeSocketsByUser.delete(user.id);
+        spotify.setOnline(user.id, false);
         const commandWindow = realtimeCommandWindowsByUser.get(user.id);
         if (commandWindow) {
           const remainingWindowMs = Math.max(0, commandWindow.startedAt + REALTIME_COMMAND_WINDOW_MS - Date.now());
@@ -863,15 +928,19 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
 
     try {
       peerId = runtime.connect(user.id, floorId, (event) => sendEvent(socket, event));
+      if (userSockets.size === 1) spotify.setOnline(user.id, true);
+      sendEvent(socket, { type: "spotify.snapshot", serverTime: Date.now(), activities: spotify.snapshot() });
     } catch {
       socket.close(AUTHENTICATION_CLOSE_CODE, "Session invalid");
     }
   });
 
   app.addHook("onReady", async () => {
+    spotify.start();
     runtime.start();
     persistenceTimer = setInterval(() => {
       void persist().catch((error) => app.log.error(error));
+      void database.cleanupWhiteboardImages().catch((error) => app.log.error(error));
     }, 10_000);
   });
 
@@ -880,6 +949,8 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
       clearInterval(persistenceTimer);
     }
     runtime.stop();
+    await spotify.close();
+    await github.close();
     try {
       await persist();
     } finally {
@@ -891,11 +962,11 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     }
   });
 
-  return { app, store, auth, runtime };
+  return { app, store, auth, runtime, spotify, github };
 }
 
-async function initializePersistentState(database: ApplicationDatabase, seeded: boolean, chessNow?: () => Date) {
-  const store = new DemoStore(seeded ? createSeedData() : createInitialData());
+async function initializePersistentState(database: ApplicationDatabase, chessNow?: () => Date) {
+  const store = new WorkspaceStore(createInitialData());
   const savedState = await database.loadWorkspaceState();
   if (savedState) {
     store.restoreMutableState(savedState.store);
@@ -904,7 +975,7 @@ async function initializePersistentState(database: ApplicationDatabase, seeded: 
   const brandingLogo = new BrandingLogoStore(database);
   store.updateCorporateIdentityLogo(brandingLogoUrl(await brandingLogo.getReference()), false);
 
-  const auth = await AuthStore.create({ database, members: store.getMembers() });
+  const auth = await AuthStore.create({ database });
   const runtime = new WorldRuntime(store, chessNow ? { chessNow } : {});
   if (savedState) {
     runtime.restorePlayers(savedState.players);

@@ -1,11 +1,11 @@
 import type { ClientCommand, Room, ServerEvent } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
-import { createSeedData } from "../seed.js";
-import { DemoStore } from "../store.js";
+import { createTestData } from "../testing/workspace-data.js";
+import { WorkspaceStore } from "../store.js";
 import { WorldRuntime } from "./world-runtime.js";
 
 interface RuntimeContext {
-  store: DemoStore;
+  store: WorkspaceStore;
   runtime: WorldRuntime;
   mayaEvents: ServerEvent[];
   leoEvents: ServerEvent[];
@@ -14,7 +14,7 @@ interface RuntimeContext {
 }
 
 function createRuntime(rooms: Room[] = []): RuntimeContext {
-  const data = createSeedData();
+  const data = createTestData();
   for (const member of data.members) {
     member.online = member.id === "user-maya" || member.id === "user-leo";
     if (member.id === "user-leo") {
@@ -31,7 +31,7 @@ function createRuntime(rooms: Room[] = []): RuntimeContext {
   layout.openings = [];
   layout.objects = [];
   layout.rooms = rooms;
-  const store = new DemoStore(data);
+  const store = new WorkspaceStore(data);
   const runtime = new WorldRuntime(store);
   const mayaEvents: ServerEvent[] = [];
   const leoEvents: ServerEvent[] = [];
@@ -318,7 +318,7 @@ describe("WorldRuntime kidnapping movement", () => {
   });
 
   it("keeps both players together through a floor portal", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const mayaEvents: ServerEvent[] = [];
     const mayaPeer = runtime.connect("user-maya", "floor-studio", (event) => mayaEvents.push(event));
@@ -363,7 +363,7 @@ describe("WorldRuntime kidnapping movement", () => {
 
 describe("WorldRuntime kidnapping consent", () => {
   it("applies global and player allow/block lists with Allow All defaults", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     expect(store.canKidnap("user-maya", "user-leo")).toBe(true);
 
     store.updateGlobalKidnappingSettings({

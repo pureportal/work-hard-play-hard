@@ -1,5 +1,5 @@
 import { Bot, CircleHelp, X as CloseIcon } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import {
   TIC_TAC_TOE_VARIANTS,
   GAME_BOT_USER_ID,
@@ -11,7 +11,8 @@ import { GameResultActions } from "./GameResultActions";
 import { GameExitPrompt } from "./GameExitPrompt";
 import { useModalFocus } from "../hooks/useModalFocus";
 import { IconButton } from "./IconButton";
-import { ClassicBoard, StackingBoard, UltimateBoard } from "./TicTacToeBoards";
+import { ClassicBoard, StackingBoard } from "./TicTacToeBoards";
+import { UltimateBoard } from "./TicTacToeUltimateBoard";
 import { TicTacToeMark } from "./TicTacToeMark";
 import { Avatar } from "./Avatar";
 
@@ -19,6 +20,7 @@ interface TicTacToeGameProps {
   state: TicTacToeGameState;
   members: Member[];
   currentUserId: string;
+  pending?: boolean;
   onCommand: (command: TicTacToeCommand) => void;
   onClose: () => void;
   onPlayAgain?: (() => void) | undefined;
@@ -36,8 +38,9 @@ const RULES: Record<TicTacToeGameState["variantId"], string[]> = {
   ],
 };
 
-export function TicTacToeGame({ state, members, currentUserId, onCommand, onClose, onPlayAgain }: TicTacToeGameProps) {
+export function TicTacToeGame({ state, members, currentUserId, pending = false, onCommand, onClose, onPlayAgain }: TicTacToeGameProps) {
   const [rulesOpen, setRulesOpen] = useState(false);
+  const rulesId = useId();
   const variantName = TIC_TAC_TOE_VARIANTS.find((variant) => variant.id === state.variantId)!.name;
   const status = getStatus(state, currentUserId, members);
   const [confirmingExit, setConfirmingExit] = useState(false);
@@ -56,7 +59,7 @@ export function TicTacToeGame({ state, members, currentUserId, onCommand, onClos
             </div>
           </div>
           <div className="tic-tac-toe-header-actions">
-            <button type="button" aria-expanded={rulesOpen} onClick={() => setRulesOpen((open) => !open)}>
+            <button type="button" aria-expanded={rulesOpen} aria-controls={rulesId} onClick={() => setRulesOpen((open) => !open)}>
               <CircleHelp size={16} />Rules
             </button>
             <IconButton label={state.status === "playing" ? "Forfeit game" : "Close game"} icon={CloseIcon} onClick={closeGame} />
@@ -71,8 +74,8 @@ export function TicTacToeGame({ state, members, currentUserId, onCommand, onClos
               return (
                 <div
                   key={player.userId}
-                  className={state.turnUserId === player.userId ? "is-active" : ""}
-                  aria-current={state.turnUserId === player.userId ? "true" : undefined}
+                  className={state.status === "playing" && state.turnUserId === player.userId ? "is-active" : ""}
+                  aria-current={state.status === "playing" && state.turnUserId === player.userId ? "true" : undefined}
                 >
                   {player.userId === GAME_BOT_USER_ID ? <span className="game-bot-avatar" aria-hidden="true"><Bot size={20} /></span>
                     : <Avatar member={member} className="tic-tac-toe-player-avatar" />}
@@ -86,12 +89,12 @@ export function TicTacToeGame({ state, members, currentUserId, onCommand, onClos
           <div className={`tic-tac-toe-status is-${state.status}`} role="status">{status}</div>
 
           {rulesOpen && (
-            <section className="tic-tac-toe-rules" aria-label={`${variantName} rules`}>
+            <section id={rulesId} className="tic-tac-toe-rules" aria-label={`${variantName} rules`}>
               {RULES[state.variantId].map((rule) => <p key={rule}>{rule}</p>)}
             </section>
           )}
 
-          <div className="tic-tac-toe-playfield">
+          <div className="tic-tac-toe-playfield" aria-busy={pending} inert={pending || (confirmingExit && state.status === "playing")}>
             {state.variantId === "classic" && (
               <ClassicBoard state={state} currentUserId={currentUserId} onCommand={onCommand} />
             )}

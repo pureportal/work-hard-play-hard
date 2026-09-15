@@ -2,7 +2,9 @@ import { ArrowDown, Hash, ImagePlus, LoaderCircle, MessageCircle, Send, UserRoun
 import { useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent, type KeyboardEvent } from "react";
 import type { ChatMessage, Conversation, Member } from "@workhard/shared";
 import { resolveServerUrl } from "../server-url";
+import { useHorizontalWheelScroll } from "../hooks/useHorizontalWheelScroll";
 import { Avatar } from "./Avatar";
+import { LinkedText } from "./LinkedText";
 import { IconButton } from "./IconButton";
 
 interface ChatPanelProps {
@@ -44,6 +46,7 @@ export function ChatPanel({
   const imageInputRef = useRef<HTMLInputElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
   const conversationTabsRef = useRef<HTMLDivElement>(null);
+  const scrollConversationTabs = useHorizontalWheelScroll(conversationTabsRef);
   const activeConversationTabRef = useRef<HTMLButtonElement>(null);
   const previousConversationIdRef = useRef<string | undefined>(undefined);
   const stickToBottomRef = useRef(true);
@@ -211,7 +214,7 @@ export function ChatPanel({
         <IconButton label="Close messages" icon={X} onClick={onClose} />
       </div>
 
-      <div ref={conversationTabsRef} className="conversation-tabs" role="tablist" aria-label="Conversations">
+      <div ref={scrollConversationTabs} className="conversation-tabs" role="tablist" aria-label="Conversations">
         {conversations.map((conversation, index) => {
           const Icon = conversationIcons[conversation.type];
           return (
@@ -273,7 +276,7 @@ export function ChatPanel({
                       <img src={resolveServerUrl(attachment.url)} alt={attachment.name} loading="lazy" crossOrigin="use-credentials" />
                     </a>
                   ))}
-                  {message.body && <p>{message.body}</p>}
+                  {message.body && <p><LinkedText text={message.body} /></p>}
                 </div>
               </div>
             );

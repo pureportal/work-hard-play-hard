@@ -1,9 +1,10 @@
+import { createTestData } from "../src/testing/workspace-data.js";
 import { MikroORM, type EntityManager } from "@mikro-orm/postgresql";
 import type { WorldObject } from "@workhard/shared";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { Migration20260906100000 } from "../src/migrations/Migration20260906100000.js";
 import { createDatabaseConfig } from "../src/persistence/database-config.js";
-import { DemoStore } from "../src/store.js";
+import { WorkspaceStore } from "../src/store.js";
 
 let orm: MikroORM;
 let entityManager: EntityManager;
@@ -61,7 +62,7 @@ async function migrate(): Promise<void> {
 
 describe("Falling Blocks database migration", () => {
   it("restores saved layouts while preserving object order, IDs, designs, and custom labels", async () => {
-    const state = new DemoStore().exportMutableState();
+    const state = new WorkspaceStore(createTestData()).exportMutableState();
     const studio = state.layouts.find((layout) => layout.floorId === "floor-studio")!;
     const table = studio.objects.find((object) => object.assetId === "equipment-falling-blocks")!;
     table.id = "object-tetris";
@@ -83,7 +84,7 @@ describe("Falling Blocks database migration", () => {
       );
     }
     await entityManager.execute('insert into "floor_layouts" values (?, ?, ?::jsonb)', ["empty", 3, "[]"]);
-    expect(() => new DemoStore().restoreMutableState(state)).toThrow("LAYOUT_STATE_INVALID");
+    expect(() => new WorkspaceStore(createTestData()).restoreMutableState(state)).toThrow("LAYOUT_STATE_INVALID");
 
     await migrate();
 
@@ -97,7 +98,7 @@ describe("Falling Blocks database migration", () => {
     }
     expect(state).toEqual(expected);
     expect(migrated.find((row) => row.floor_id === "empty")).toEqual({ floor_id: "empty", revision: 3, objects: [] });
-    const restored = new DemoStore();
+    const restored = new WorkspaceStore(createTestData());
     restored.restoreMutableState(state);
     expect(restored.exportMutableState()).toEqual(expected);
 

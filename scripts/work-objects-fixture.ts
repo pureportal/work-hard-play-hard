@@ -1,13 +1,14 @@
+import { createTestData } from "../apps/server/src/testing/workspace-data.js";
 import type { BrowserContext } from "playwright-core";
 import type { ClientCommand, ServerEvent } from "../packages/shared/src/index.js";
-import { DemoStore } from "../apps/server/src/store.js";
+import { WorkspaceStore } from "../apps/server/src/store.js";
 import { WorldRuntime } from "../apps/server/src/world/world-runtime.js";
 import { clientCommandSchema } from "../apps/server/src/protocol.js";
 import { MemoryDatabase } from "../apps/server/src/persistence/memory-database.js";
 
 export function createWorkFixture() {
-  const store = new DemoStore();
-  store.updateGameSettings({ allowPlayerAssetPlacementInPublicRooms: true });
+  const store = new WorkspaceStore(createTestData());
+  store.updateGameSettings({ roomAccess: { mode: "open", assignedPersonIds: [] }, roomBuild: { mode: "open", assignedPersonIds: [] } });
   const runtime = new WorldRuntime(store);
   const database = new MemoryDatabase();
   const commands: ClientCommand[] = [];
@@ -41,6 +42,9 @@ export function createWorkFixture() {
         runtime.handleCommand(peer, command);
         const checkpoint = { store: store.exportMutableState(), players: runtime.serializePlayers() };
         saving = saving.then(() => database.saveWorkspaceState(checkpoint));
+        if (command.type === "work.update" && !errors.some((event) => "requestId" in event && event.requestId === command.requestId)) {
+          void saving.then(() => socket.send(JSON.stringify({ type: "work.saved", requestId: command.requestId })));
+        }
       });
       socket.onClose(() => runtime.disconnect(peer));
     });

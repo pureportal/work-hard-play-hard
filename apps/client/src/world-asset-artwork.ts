@@ -1,10 +1,14 @@
-import { ASSET_RASTER_SIZE, getAssetRasterSize, requireAssetVariant } from "@workhard/shared";
-import type { AssetDefinition, AssetKind, AssetRotation, Rect } from "@workhard/shared";
+import { requireAssetVariant } from "@workhard/shared";
+import type { AssetDefinition, AssetRotation, Rect } from "@workhard/shared";
 import artworkSource from "./world-asset-artwork.json";
 
 interface AssetArtwork {
   elevation: number;
-  variants: Record<string, { path: string; width: number; height: number; frames: readonly Rect[] }>;
+  seatHeight?: number;
+  seatHasBack?: boolean;
+  surfaceHeight?: number;
+  animation?: { frames: number; frameDuration: number };
+  variants: Record<string, { path: string; width: number; height: number; frames: readonly Rect[]; bounds: readonly Rect[] }>;
 }
 
 export interface WorldAssetArtwork {
@@ -13,11 +17,18 @@ export interface WorldAssetArtwork {
   bounds: Rect;
   atlasWidth: number;
   atlasHeight: number;
+  seatOffset: number;
+  seatHasBack: boolean;
+  animation?: { frames: readonly Rect[]; frameDuration: number };
 }
 
 const artwork: Record<string, AssetArtwork> = artworkSource;
-const floorProjections = new Set<AssetKind>(["floor-tile", "desk", "sofa", "table", "garden", "pool", "rug", "storage", "bookshelf", "appliance"]);
-const flatObjects = new Set(["plant-planter-row", "decor-books"]);
+
+export function getWorldAssetSurfaceHeight(assetId: string): number {
+  const height = artwork[assetId]?.surfaceHeight;
+  if (height === undefined) throw new Error(`Missing surface height for ${assetId}`);
+  return height;
+}
 
 export function getWorldAssetArtwork(asset: AssetDefinition, variantId: string, rotation: AssetRotation): WorldAssetArtwork {
   requireAssetVariant(asset, variantId);
@@ -26,22 +37,10 @@ export function getWorldAssetArtwork(asset: AssetDefinition, variantId: string, 
   if (!entry || !variant) throw new Error(`Missing artwork for ${asset.id}/${variantId}`);
   const index = rotation / 90;
   const crop = variant.frames[index]!;
-  const size = getAssetRasterSize(asset, rotation);
-  const elevation = entry.elevation;
-  const width = size.width * ASSET_RASTER_SIZE;
-  const height = size.height * ASSET_RASTER_SIZE + elevation;
-  const projectsFootprint = floorProjections.has(asset.kind) || flatObjects.has(asset.id);
-  const displayWidth = projectsFootprint ? width : Math.min(width, crop.width * height / crop.height);
   return {
-    path: variant.path,
-    frame: crop,
-    bounds: {
-      x: (width - displayWidth) / 2,
-      y: -elevation,
-      width: displayWidth,
-      height,
-    },
-    atlasWidth: variant.width,
-    atlasHeight: variant.height,
+    path: variant.path, frame: crop, bounds: variant.bounds[index]!, atlasWidth: variant.width, atlasHeight: variant.height,
+    seatOffset: -(entry.seatHeight ?? 0) / Math.SQRT2,
+    seatHasBack: entry.seatHasBack === true,
+    ...(entry.animation ? { animation: { frames: variant.frames.filter((_, frameIndex) => frameIndex % 4 === index), frameDuration: entry.animation.frameDuration } } : {}),
   };
 }

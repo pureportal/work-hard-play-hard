@@ -98,6 +98,8 @@ export function reconcileRooms(
       windowIds: geometry.windowIds,
       privateEligible: geometry.privateEligible,
       access,
+      ...(identity?.build ? { build: structuredClone(identity.build) } : {}),
+      ...(identity?.organisationUnitId ? { organisationUnitId: identity.organisationUnitId } : {}),
     };
   });
 }
@@ -460,14 +462,9 @@ function footprintArea(footprint: Rect[]): number {
 }
 
 function normalizeAccess(access: RoomAccess | undefined, privateEligible: boolean): RoomAccess {
-  if (!access || !privateEligible || access.mode === "open" || access.assignedPersonIds.length === 0) {
-    return { mode: "open", assignedPersonIds: access?.assignedPersonIds ?? [], knockable: false };
-  }
-  return {
-    mode: "assigned",
-    assignedPersonIds: [...new Set(access.assignedPersonIds)],
-    knockable: access.knockable,
-  };
+  if (!access) return { mode: "default", assignedPersonIds: [], knockable: false };
+  if (!privateEligible && access.mode !== "default") return { ...structuredClone(access), mode: "open", knockable: false };
+  return { ...structuredClone(access), knockable: privateEligible && access.mode !== "open" && access.knockable };
 }
 
 function detectedRoomId(floorId: string, geometry: DetectedRoomGeometry): string {

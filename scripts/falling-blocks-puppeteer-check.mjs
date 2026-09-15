@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer";
 
 const baseUrl = process.env.BASE_URL ?? "http://127.0.0.1:5173";
+const gameMode = process.env.FALLING_BLOCKS_MODE ?? "classic";
 const artifactDirectory = new URL("../artifacts/", import.meta.url);
 
 function assert(condition, message) {
@@ -120,26 +121,24 @@ try {
   const originalPosition = await page.evaluate(() => globalThis.__fallingBlocksEvents.findLast((event) => event.type === "world.snapshot")?.players.find((player) => player.userId === "user-maya"));
   await moveTo(page, cabinets[0].x - 38, cabinets[0].y + 44);
   await selectCabinet(page, cabinets[0].id);
+  await page.select(".falling-blocks-settings select", gameMode);
   await page.screenshot({ path: fileURLToPath(new URL("falling-blocks-interaction.png", artifactDirectory)) });
   await page.click(".falling-blocks-start-button");
   await page.waitForSelector(".falling-blocks-game", { visible: true });
   process.stdout.write(`Playing ${cabinets[0].id}.\n`);
   await page.waitForSelector(".falling-blocks-piece-preview.has-piece", { visible: true });
-
-  const animationStyles = await page.evaluate(() => ({
-    game: getComputedStyle(document.querySelector(".falling-blocks-game")).animationName,
-    preview: getComputedStyle(document.querySelector(".falling-blocks-piece-preview.has-piece")).animationName,
-    activeCellTransition: getComputedStyle(document.querySelector(".falling-blocks-cell.is-active")).transitionDuration,
-  }));
-  assert(animationStyles.game !== "none", "The game entry animation is missing.");
-  assert(animationStyles.preview !== "none", "The piece preview animation is missing.");
-  assert(animationStyles.activeCellTransition !== "0s", "Active cell transitions are missing.");
+  const settings = await page.evaluate(() => globalThis.__fallingBlocksEvents.findLast((event) => event.type === "game.round_started")?.round.fallingBlocks?.settings);
+  assert(settings?.mode === gameMode, "The selected mode did not reach the shared round.");
 
   const desktopBoard = await page.$eval(".falling-blocks-board", (element) => {
     const bounds = element.getBoundingClientRect();
     return { width: bounds.width, height: bounds.height };
   });
   assert(desktopBoard.width >= 280 && desktopBoard.height >= 560, "The board does not use the desktop viewport.");
+  assert(await page.$(".falling-blocks-controls") === null, "Controls should start hidden.");
+  assert(await page.$(".falling-blocks-game kbd") === null, "Key hints should start hidden.");
+  await page.screenshot({ path: fileURLToPath(new URL("falling-blocks-controls-hidden.png", artifactDirectory)) });
+  await page.click('button[aria-label="Show controls"]');
   await assertContained(page, [".falling-blocks-left-rail", ".falling-blocks-board", ".falling-blocks-sidebar", ".falling-blocks-controls"]);
 
   const inputStart = await page.evaluate(() => globalThis.__fallingBlocksCommands.length);
@@ -174,14 +173,43 @@ try {
   await page.waitForFunction((previousCount) => globalThis.__fallingBlocksCommands
     .filter((command) => command.type === "game.command" && command.command === "hold").length > previousCount, {}, holdCountAfter);
 
-  await page.screenshot({ path: fileURLToPath(new URL("falling-blocks-desktop.png", artifactDirectory)) });
+  if (gameMode !== "classic") {
+    await page.waitForFunction((mode) => {
+      const state = globalThis.__fallingBlocksEvents.findLast((event) => event.type === "game.state");
+      return mode === "speed-up" ? state?.fallIntervalMs <= 610 : document.querySelectorAll(".falling-blocks-cell.is-hard").length >= 10;
+    }, { timeout: 45_000 }, gameMode);
+    process.stdout.write(`Verified ${gameMode} progression.\n`);
+  }
+  await page.screenshot({ path: fileURLToPath(new URL(`falling-blocks-${gameMode}-desktop.png`, artifactDirectory)) });
   await page.setViewport({ width: 844, height: 390, deviceScaleFactor: 1 });
   await assertContained(page, [".falling-blocks-left-rail", ".falling-blocks-board", ".falling-blocks-sidebar", ".falling-blocks-controls"]);
   await page.screenshot({ path: fileURLToPath(new URL("falling-blocks-landscape.png", artifactDirectory)) });
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+  const touchSession = await page.createCDPSession();
+  await touchSession.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 5 });
+  const touchPoints = await page.evaluate(() => ['button[aria-label="Move left"]', 'button[aria-label="Rotate clockwise"]'].map((selector, index) => {
+    const bounds = document.querySelector(selector).getBoundingClientRect();
+    return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2, id: index + 1 };
+  }));
+  const touchStart = await page.evaluate(() => globalThis.__fallingBlocksCommands.length);
+  await touchSession.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [touchPoints[0]] });
+  await touchSession.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints });
+  await new Promise((resolve) => setTimeout(resolve, 180));
+  await touchSession.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  const touchCommands = await gameCommands(page, touchStart);
+  assert(touchCommands.includes("rotate") && touchCommands.filter((command) => command === "left").length >= 3, "Touch hold and simultaneous rotation did not work.");
+  await new Promise((resolve) => setTimeout(resolve, 150));
+  assert((await gameCommands(page, touchStart)).length === touchCommands.length, "Touch movement continued after release.");
+  await page.screenshot({ path: fileURLToPath(new URL("falling-blocks-mobile.png", artifactDirectory)) });
   await page.setViewport({ width: 320, height: 568, deviceScaleFactor: 1 });
   await assertContained(page, [".falling-blocks-left-rail", ".falling-blocks-board", ".falling-blocks-sidebar", ".falling-blocks-controls"]);
   const compactOverflow = await page.$eval(".falling-blocks-content", (element) => element.scrollHeight - element.clientHeight);
   assert(compactOverflow <= 1, `The compact game overflows by ${compactOverflow}px.`);
+  const undersizedControls = await page.$$eval(".falling-blocks-controls button", (buttons) => buttons.filter((button) => {
+    const bounds = button.getBoundingClientRect();
+    return bounds.width < 44 || bounds.height < 44;
+  }).map((button) => button.getAttribute("aria-label")));
+  assert(undersizedControls.length === 0, `Touch controls too small: ${undersizedControls.join(", ")}`);
   await page.screenshot({ path: fileURLToPath(new URL("falling-blocks-compact.png", artifactDirectory)) });
 
   await page.click('button[aria-label="Close game"]');
@@ -225,7 +253,7 @@ try {
       const round = globalThis.__fallingBlocksEvents?.findLast((event) => event.type === "game.round_started")?.round;
       if (!round || globalThis.__fallingBlocksEvents.some((event) => event.type === "game.round_completed" && event.round.id === round.id)) return;
       const socket = globalThis.__fallingBlocksSockets.findLast((candidate) => candidate.readyState === WebSocket.OPEN && candidate.url.includes("/v1/realtime"));
-      socket?.send(JSON.stringify({ type: "game.end", requestId: crypto.randomUUID() }));
+      socket?.send(JSON.stringify({ type: "game.end", requestId: crypto.randomUUID(), roundId: round.id }));
     });
   }
   await browser.close();

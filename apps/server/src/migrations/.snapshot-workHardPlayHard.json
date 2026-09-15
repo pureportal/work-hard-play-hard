@@ -1791,6 +1791,23 @@
           "enumItems": [],
           "mappedType": "string"
         },
+        "falling_blocks": {
+          "name": "falling_blocks",
+          "type": "jsonb",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "json"
+        },
         "id": {
           "name": "id",
           "type": "varchar(255)",
@@ -2108,6 +2125,93 @@
       ],
       "triggers": [],
       "foreignKeys": {},
+      "comment": null
+    },
+    {
+      "name": "github_connections",
+      "schema": "public",
+      "columns": {
+        "encrypted_tokens": {
+          "name": "encrypted_tokens",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "login": {
+          "name": "login",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        }
+      },
+      "indexes": [
+        {
+          "columnNames": [
+            "user_id"
+          ],
+          "composite": false,
+          "constraint": true,
+          "keyName": "github_connections_pkey",
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [],
+      "triggers": [],
+      "foreignKeys": {
+        "github_connections_user_id_foreign": {
+          "columnNames": [
+            "user_id"
+          ],
+          "constraintName": "github_connections_user_id_foreign",
+          "localTableName": "public.github_connections",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "public.auth_accounts",
+          "updateRule": "cascade",
+          "deleteRule": "cascade"
+        }
+      },
       "comment": null
     },
     {
@@ -2575,6 +2679,12 @@
           "expression": "duration_minutes > 0",
           "definition": "CHECK ((duration_minutes > 0))",
           "columnName": "duration_minutes"
+        },
+        {
+          "name": "meetings_room_location_check",
+          "expression": "(COALESCE((location ->> 'type'::text), ''::text) = 'room'::text) AND (NULLIF((location ->> 'roomId'::text), ''::text) IS NOT NULL)",
+          "definition": "CHECK (((COALESCE((location ->> 'type'::text), ''::text) = 'room'::text) AND (NULLIF((location ->> 'roomId'::text), ''::text) IS NOT NULL)))",
+          "columnName": "location"
         },
         {
           "name": "meetings_sort_order_check",
@@ -3074,7 +3184,7 @@
           "autoincrement": false,
           "primary": true,
           "nullable": false,
-          "unique": false,
+          "unique": true,
           "length": 255,
           "precision": null,
           "scale": null,
@@ -3083,6 +3193,23 @@
           "collation": null,
           "enumItems": [],
           "mappedType": "string"
+        },
+        "falling_blocks": {
+          "name": "falling_blocks",
+          "type": "jsonb",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "json"
         },
         "games_played": {
           "name": "games_played",
@@ -3134,6 +3261,23 @@
           "collation": null,
           "enumItems": [],
           "mappedType": "integer"
+        },
+        "holds_crown": {
+          "name": "holds_crown",
+          "type": "boolean",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "false",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "boolean"
         },
         "multiplayer_games_played": {
           "name": "multiplayer_games_played",
@@ -3241,6 +3385,17 @@
       "indexes": [
         {
           "columnNames": [
+            "definition_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "player_game_statistics_crown_unique",
+          "primary": false,
+          "unique": true,
+          "where": "holds_crown = true"
+        },
+        {
+          "columnNames": [
             "definition_id",
             "user_id"
           ],
@@ -3306,11 +3461,310 @@
       "comment": null
     },
     {
+      "name": "spotify_connections",
+      "schema": "public",
+      "columns": {
+        "encrypted_tokens": {
+          "name": "encrypted_tokens",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "sharing": {
+          "name": "sharing",
+          "type": "boolean",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "boolean"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        }
+      },
+      "indexes": [
+        {
+          "columnNames": [
+            "user_id"
+          ],
+          "composite": false,
+          "constraint": true,
+          "keyName": "spotify_connections_pkey",
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [],
+      "triggers": [],
+      "foreignKeys": {
+        "spotify_connections_user_id_foreign": {
+          "columnNames": [
+            "user_id"
+          ],
+          "constraintName": "spotify_connections_user_id_foreign",
+          "localTableName": "public.spotify_connections",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "public.auth_accounts",
+          "updateRule": "cascade",
+          "deleteRule": "cascade"
+        }
+      },
+      "comment": null
+    },
+    {
+      "name": "whiteboard_image_references",
+      "schema": "public",
+      "columns": {
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "image_id": {
+          "name": "image_id",
+          "type": "varchar(64)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 64,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "object_id": {
+          "name": "object_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        }
+      },
+      "indexes": [
+        {
+          "columnNames": [
+            "expires_at"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "whiteboard_image_references_expires_at_index",
+          "primary": false,
+          "unique": false
+        },
+        {
+          "columnNames": [
+            "image_id",
+            "object_id"
+          ],
+          "composite": true,
+          "constraint": true,
+          "keyName": "whiteboard_image_references_pkey",
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [],
+      "triggers": [],
+      "foreignKeys": {
+        "whiteboard_image_references_image_id_foreign": {
+          "columnNames": [
+            "image_id"
+          ],
+          "constraintName": "whiteboard_image_references_image_id_foreign",
+          "localTableName": "public.whiteboard_image_references",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "public.whiteboard_images",
+          "updateRule": "cascade",
+          "deleteRule": "cascade"
+        }
+      },
+      "comment": null
+    },
+    {
+      "name": "whiteboard_images",
+      "schema": "public",
+      "columns": {
+        "height": {
+          "name": "height",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar(64)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 64,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "image": {
+          "name": "image",
+          "type": "bytea",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "blob"
+        },
+        "width": {
+          "name": "width",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        }
+      },
+      "indexes": [
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": true,
+          "keyName": "whiteboard_images_pkey",
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [
+        {
+          "name": "whiteboard_images_data_check",
+          "expression": "(octet_length(image) > 0) AND (width > 0) AND (height > 0)",
+          "definition": "CHECK (((octet_length(image) > 0) AND (width > 0) AND (height > 0)))",
+          "columnName": "height"
+        }
+      ],
+      "triggers": [],
+      "foreignKeys": {},
+      "comment": null
+    },
+    {
       "name": "workspace_settings",
       "schema": "public",
       "columns": {
         "corporate_identity": {
           "name": "corporate_identity",
+          "type": "jsonb",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "json"
+        },
+        "floors": {
+          "name": "floors",
           "type": "jsonb",
           "unsigned": false,
           "autoincrement": false,
@@ -3362,6 +3816,23 @@
         },
         "kidnapping_settings": {
           "name": "kidnapping_settings",
+          "type": "jsonb",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "json"
+        },
+        "organisation": {
+          "name": "organisation",
           "type": "jsonb",
           "unsigned": false,
           "autoincrement": false,

@@ -24,6 +24,7 @@ describe("ChessGame", () => {
 
   it("requires a promotion choice", () => {
     const onMove = vi.fn();
+    const onClose = vi.fn();
     render(game({
       ...initialMatch(),
       board: [
@@ -36,13 +37,36 @@ describe("ChessGame", () => {
         to: "b8" as const,
         promotion: promotion as "queen" | "rook" | "bishop" | "knight",
       })),
-    }, "user-maya", { onMove }));
+    }, "user-maya", { onMove, onClose }));
 
     fireEvent.click(screen.getByRole("gridcell", { name: "white pawn on b7" }));
     fireEvent.click(screen.getByRole("gridcell", { name: "b8" }));
     expect(onMove).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Promote to queen" }));
+    fireEvent.keyDown(document.activeElement!, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Cancel promotion" }));
+    fireEvent.keyDown(document.activeElement!, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Choose promotion" })).toBeNull();
+    expect(onClose).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("gridcell", { name: "b8" }));
     fireEvent.click(screen.getByRole("button", { name: "Promote to knight" }));
     expect(onMove).toHaveBeenCalledWith({ from: "b7", to: "b8", promotion: "knight" });
+  });
+
+  it("navigates the board with arrow keys and cancels a selection without closing the game", () => {
+    const onClose = vi.fn();
+    const { container } = render(game(initialMatch(), "user-maya", { onClose }));
+    expect(container.querySelectorAll('.chess-square[tabindex="0"]')).toHaveLength(1);
+    const pawn = screen.getByRole("gridcell", { name: "white pawn on e2" });
+    fireEvent.click(pawn);
+    fireEvent.keyDown(pawn, { key: "ArrowUp" });
+    expect(document.activeElement).toBe(screen.getByRole("gridcell", { name: "e3" }));
+    fireEvent.keyDown(document.activeElement!, { key: "Escape" });
+    expect(container.querySelector(".chess-square.is-selected")).toBeNull();
+    expect(onClose).not.toHaveBeenCalled();
+    fireEvent.click(pawn);
+    fireEvent.click(pawn);
+    expect(container.querySelector(".chess-square.is-selected")).toBeNull();
   });
 
   it("handles draw offers, resignation confirmation, and completed results", () => {
@@ -86,6 +110,16 @@ describe("ChessGame", () => {
     }, "user-maya"));
 
     expect(screen.getAllByText("24h 00m")).toHaveLength(2);
+  });
+
+  it("keeps resignation confirmation open when the turn changes", () => {
+    const onResign = vi.fn();
+    const { rerender } = render(game(initialMatch(), "user-maya", { onResign }));
+    fireEvent.click(screen.getByRole("button", { name: "Resign" }));
+    rerender(game({ ...initialMatch(), turn: "black" }, "user-maya", { onResign }));
+    expect(screen.getByText("Resign game?")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Resign" }));
+    expect(onResign).toHaveBeenCalledOnce();
   });
 
   it("claims a draw immediately or with a selected qualifying move", () => {

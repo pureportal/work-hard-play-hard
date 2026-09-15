@@ -1,5 +1,5 @@
 import { CalendarClock, LockKeyhole, Play, Plus, Timer, Trash2, Users, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { BotDifficulty, ChessLobbyState, ChessMatchSettings, ChessMatchSummary, Member } from "@workhard/shared";
 import { GameOpponentPicker } from "./GameOpponentPicker";
 import { Avatar } from "./Avatar";
@@ -9,6 +9,7 @@ interface ChessLobbyProps {
   lobby: ChessLobbyState;
   members: Member[];
   currentUserId: string;
+  pending?: boolean;
   onCreate: (settings: ChessMatchSettings) => void;
   onJoin: (matchId: string) => void;
   onOpen: (matchId: string) => void;
@@ -19,6 +20,7 @@ export function ChessLobby({
   lobby,
   members,
   currentUserId,
+  pending = false,
   onCreate,
   onJoin,
   onOpen,
@@ -38,6 +40,10 @@ export function ChessLobby({
 
   const ownMatches = lobby.matches.filter((match) => isParticipant(match, currentUserId));
   const activeBotMatch = ownMatches.find((match) => match.settings.bot && match.status === "active");
+  const hasWaitingMatch = ownMatches.some((match) => match.status === "waiting");
+  useEffect(() => {
+    if (hasWaitingMatch) setCreating(false);
+  }, [hasWaitingMatch]);
   const invitations = lobby.matches.filter((match) => (
     match.status === "waiting"
     && match.reservedBlackUserId === currentUserId
@@ -56,11 +62,10 @@ export function ChessLobby({
       access: mode === "solo" ? "locked" : access,
       ...(mode === "solo" ? { bot: { difficulty } } : access === "locked" ? { opponentUserId } : {}),
     });
-    setCreating(false);
   };
 
   return (
-    <aside className="game-lobby chess-lobby" aria-label="Chess lobby">
+    <aside className="game-lobby chess-lobby" aria-label="Chess lobby" aria-busy={pending}>
       <header>
         <ChessMark />
         <div>
@@ -76,8 +81,8 @@ export function ChessLobby({
       <GameOpponentPicker mode={mode} onModeChange={setMode} difficulty={difficulty} onDifficultyChange={setDifficulty} />
 
       {mode === "solo" && (
-        <button className="primary-button game-play-button" onClick={() => activeBotMatch ? onOpen(activeBotMatch.id) : createMatch()}>
-          <Play size={16} />{activeBotMatch ? "Resume" : "Play"}
+        <button className="primary-button game-play-button" disabled={pending} onClick={() => activeBotMatch ? onOpen(activeBotMatch.id) : createMatch()}>
+          <Play size={16} />{pending ? "Opening…" : activeBotMatch ? "Resume" : "Play"}
         </button>
       )}
 
@@ -132,12 +137,12 @@ export function ChessLobby({
             </label>
           )}
 
-          <button className="primary-button chess-create-button" disabled={access === "locked" && !opponentUserId} onClick={createMatch}>
-            Create game
+          <button className="primary-button chess-create-button" disabled={pending || (access === "locked" && !opponentUserId)} onClick={createMatch}>
+            {pending ? "Creating…" : "Create game"}
           </button>
         </section>
       ) : (
-        <div className="chess-lobby-lists">
+        <div className="chess-lobby-lists" inert={pending}>
           {ownMatches.length > 0 && (
             <MatchList
               title="Your games"

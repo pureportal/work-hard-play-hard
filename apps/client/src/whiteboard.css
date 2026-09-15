@@ -1,0 +1,253 @@
+.work-object-dialog.whiteboard-dialog {
+  width: min(1240px, 100%);
+  height: min(840px, 100%);
+}
+
+.whiteboard-dialog > header { flex-shrink: 0; }
+.whiteboard-dialog > header > svg { color: var(--accent); }
+.whiteboard-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.whiteboard-views {
+  display: flex;
+  padding: 4px;
+  gap: 2px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ink) 5%, var(--panel));
+}
+.whiteboard-views button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+}
+.whiteboard-views button[aria-pressed="true"] {
+  color: var(--ink);
+  background: var(--panel-strong);
+  box-shadow: 0 2px 6px #0000000d;
+}
+.whiteboard-history, .whiteboard-tools { display: flex; align-items: center; gap: 6px; }
+.whiteboard-tools { margin-left: auto; }
+.whiteboard-tools button { display: flex; align-items: center; gap: 7px; font-size: 13px; }
+.whiteboard-workspace { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+.whiteboard-surface { flex: 1; min-width: 0; min-height: 0; }
+.whiteboard-canvas-view { position: relative; height: 100%; }
+.whiteboard-canvas-scroll { height: 100%; overflow: auto; padding: 0 var(--horizontal-scroll-clearance) var(--horizontal-scroll-clearance) 0; scroll-padding: var(--horizontal-scroll-clearance); overscroll-behavior: contain; scrollbar-width: thin; background: color-mix(in srgb, var(--panel) 92%, var(--accent)); }
+.whiteboard-canvas-size { position: relative; }
+.whiteboard-canvas { position: relative; transform-origin: top left; background-image: radial-gradient(var(--line) 1.5px, transparent 1.5px); background-size: 24px 24px; }
+.whiteboard-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  color: #302d39;
+  background: var(--card-color);
+  border: 1px solid #302d3910;
+  border-radius: 6px;
+  box-shadow: 0 3px 8px #2721300c, 0 10px 20px #2721300a;
+}
+.color-yellow { --card-color: #fff0b0; }
+.color-mint { --card-color: #d4efdc; }
+.color-blue { --card-color: #d9eafa; }
+.color-pink { --card-color: #fbdce5; }
+.color-lavender { --card-color: #e6dffb; }
+.canvas-card { position: absolute; padding: 36px 18px 16px; }
+.canvas-card.kind-note::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #302d3910 50%, #ffffff80 51%);
+  border-radius: 0 0 6px 0;
+  pointer-events: none;
+}
+.canvas-card.kind-image { padding: 34px 12px 14px; background: color-mix(in srgb, var(--card-color) 25%, white); }
+.canvas-card.kind-image::before {
+  content: "";
+  position: absolute;
+  left: calc(50% - 36px);
+  top: -8px;
+  width: 72px;
+  height: 24px;
+  background: color-mix(in srgb, var(--card-color) 75%, transparent);
+  transform: rotate(-3deg);
+  pointer-events: none;
+}
+.whiteboard-card.selected { outline: 2px solid var(--accent); outline-offset: 3px; }
+.canvas-card:focus-within, .canvas-card.selected { z-index: 1; }
+.canvas-card.dragging { z-index: 2; box-shadow: 0 14px 24px #27213025; }
+.whiteboard-drag-handle, .whiteboard-resize-handle {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #302d397f;
+  touch-action: none;
+  user-select: none;
+}
+.whiteboard-drag-handle { left: 0; top: 0; width: 100%; height: 36px; cursor: grab; }
+.whiteboard-drag-handle:active { cursor: grabbing; }
+.whiteboard-resize-handle { right: 0; bottom: 0; width: 40px; height: 40px; cursor: nwse-resize; z-index: 1; }
+.whiteboard-card-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  min-height: 0;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  line-height: 1.5;
+}
+.whiteboard-card-open { display: flex; flex-direction: column; gap: 8px; min-height: 0; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; }
+.whiteboard-card-open:has(img) { flex: 1; }
+.whiteboard-card-content a { color: inherit; text-decoration: underline; }
+.whiteboard-card-content strong { font-size: 16px; line-height: 1.4; overflow-wrap: anywhere; white-space: pre-wrap; }
+.whiteboard-card-content img { display: block; flex: 1; min-height: 0; width: 100%; object-fit: contain; border-radius: 4px; }
+.whiteboard-card-text { display: -webkit-box; -webkit-line-clamp: 8; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; }
+.whiteboard-card-placeholder { color: #302d3999; font-size: 16px; }
+.whiteboard-card-meta { display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap; padding-top: 12px; padding-right: 8px; font-size: 11px; }
+.whiteboard-card-status, .whiteboard-card-meta time { display: inline-flex; gap: 4px; align-items: center; }
+.whiteboard-card-status { color: #302d39b3; }
+.whiteboard-card-status.status-done { color: #22613d; }
+.whiteboard-card-meta .overdue { color: #982e3b; font-weight: 600; }
+.whiteboard-image-error { display: grid; flex: 1; gap: 8px; place-content: center; justify-items: center; min-height: 70px; color: #625b68; font-size: 12px; }
+.whiteboard-zoom {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  padding: 3px;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px #00000010;
+}
+.whiteboard-zoom output { width: 45px; text-align: center; font-size: 12px; font-variant-numeric: tabular-nums; }
+.whiteboard-columns { display: flex; align-items: stretch; gap: 16px; height: 100%; padding: 20px; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; background: color-mix(in srgb, var(--panel) 96%, var(--accent)); }
+.whiteboard-column { flex: 1 0 240px; display: flex; flex-direction: column; min-width: 0; max-width: 440px; min-height: min-content; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: color-mix(in srgb, var(--panel-strong) 60%, transparent); }
+.whiteboard-column > header { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; min-height: 26px; }
+.whiteboard-column h3 { margin: 0; font-size: 13px; font-weight: 650; }
+.whiteboard-column-dot { width: 8px; height: 8px; border-radius: 50%; background: #9492ab; }
+.column-doing .whiteboard-column-dot { background: #9b80f4; }
+.column-done .whiteboard-column-dot { background: #5aaa87; }
+.whiteboard-column-count { margin-left: auto; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.whiteboard-column-cards { display: flex; flex-direction: column; gap: 12px; }
+.board-card { flex-shrink: 0; padding: 16px 14px; border-top: 4px solid var(--card-color); background: color-mix(in srgb, var(--card-color) 28%, var(--panel-strong)); color: var(--ink); border-radius: 8px; }
+.board-card .whiteboard-drag-handle { left: auto; right: 0; top: 0; width: 32px; color: var(--muted); }
+.board-card .whiteboard-card-content { padding-right: 14px; }
+.board-card .whiteboard-card-content strong { font-size: 14px; }
+.board-card .whiteboard-card-content img { flex: none; max-height: 180px; }
+.board-card .whiteboard-card-text { font-size: 12px; -webkit-line-clamp: 4; color: var(--muted); }
+.board-card .whiteboard-card-placeholder { font-size: 14px; color: var(--muted); }
+.board-card .whiteboard-image-error { color: var(--muted); }
+:root[data-theme="dark"] .board-card { background: color-mix(in srgb, var(--card-color) 8%, var(--panel-strong)); }
+.board-card .whiteboard-card-meta time { color: var(--muted); }
+.board-card .whiteboard-card-meta time.overdue { color: var(--danger); }
+.board-card.dragging { opacity: 0.45; }
+.whiteboard-column.drop-target { border-color: var(--accent); background: var(--accent-soft); }
+.board-card.insert-before { box-shadow: 0 -4px 0 var(--accent); }
+.whiteboard-add-card { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 12px; padding: 8px; border: 1px dashed var(--line); border-radius: 8px; background: transparent; color: var(--muted); font-size: 12px; }
+.whiteboard-add-card:hover:enabled { background: var(--panel-strong); color: var(--ink); }
+.whiteboard-card-editor { flex: 0 0 280px; min-height: 0; overflow: auto; border-left: 1px solid var(--line); padding: 12px 16px 20px; background: var(--panel-strong); }
+.whiteboard-card-editor > header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.whiteboard-card-editor h3 { margin: 0; font-size: 14px; }
+.whiteboard-card-editor fieldset { display: flex; flex-direction: column; gap: 16px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.whiteboard-card-editor label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 600; }
+.whiteboard-card-editor input, .whiteboard-card-editor textarea, .whiteboard-card-editor select, .whiteboard-image-picker input:not([type="file"]) { width: 100%; min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); font: inherit; font-size: 14px; }
+.whiteboard-card-editor textarea { resize: vertical; min-height: 80px; }
+.whiteboard-colors { display: flex; justify-content: space-between; gap: 7px; }
+.whiteboard-color { flex: 0 0 36px; width: 36px; height: 36px; padding: 0; border: 2px solid transparent; border-radius: 50%; background: var(--card-color); background-clip: padding-box; }
+.whiteboard-color[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 3px var(--panel-strong); }
+.whiteboard-editor-actions { display: flex; gap: 6px; padding-top: 8px; border-top: 1px solid var(--line); }
+.whiteboard-editor-actions button:last-child { margin-left: auto; color: var(--danger); }
+.whiteboard-dialog .whiteboard-notes { height: 100%; max-height: none; min-height: 0; border: 0; border-radius: 0; padding: 28px; resize: none; background: repeating-linear-gradient(transparent, transparent 31px, var(--line) 32px); background-origin: content-box; line-height: 32px; }
+.whiteboard-dialog > footer { flex-shrink: 0; max-height: 45%; overflow: auto; }
+.whiteboard-progress { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+.whiteboard-progress progress { width: 70px; height: 5px; accent-color: var(--success); }
+.whiteboard-dialog .work-object-conflict { margin: 0 0 12px; padding: 10px 12px; }
+.whiteboard-latest { max-height: 120px; overflow: auto; }
+.whiteboard-image-picker { padding: 12px 20px; border-bottom: 1px solid var(--line); }
+.whiteboard-image-picker form { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.whiteboard-image-picker input:not([type="file"]) { flex: 1 1 160px; }
+.whiteboard-image-picker .work-object-error { margin: 8px 0 0; }
+.whiteboard-upload { position: relative; display: flex; align-items: center; gap: 6px; min-height: 40px; cursor: pointer; font-size: 13px; }
+.whiteboard-upload:focus-within { outline: 3px solid var(--accent); outline-offset: 2px; }
+.whiteboard-upload.disabled { opacity: 0.5; cursor: default; }
+.whiteboard-dialog textarea:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+.whiteboard-stickers { display: flex; gap: 12px; padding: 14px 20px var(--horizontal-scroll-clearance); overflow: auto; scrollbar-width: thin; border-bottom: 1px solid var(--line); }
+.whiteboard-stickers button { display: flex; flex: 1 0 175px; flex-direction: column; gap: 6px; padding: 14px; text-align: left; border: 0; border-radius: 6px; color: #302d39; background: var(--card-color); }
+.whiteboard-stickers strong { font-size: 14px; }
+.whiteboard-stickers span { font-size: 12px; line-height: 1.5; }
+.whiteboard-conflicts { padding-bottom: 12px; }
+.whiteboard-conflicts > p { margin: 0 0 10px; font-size: 13px; }
+.whiteboard-conflicts h3 { margin: 0 0 6px; font-size: 12px; }
+.whiteboard-conflict-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.whiteboard-conflict-options > div { min-width: 0; }
+.whiteboard-conflict-options pre { max-height: 90px; min-height: 32px; margin: 0 0 8px; padding: 8px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; font: inherit; font-size: 12px; }
+.whiteboard-conflict-options img { display: block; width: 100%; height: 90px; object-fit: contain; margin-bottom: 8px; }
+.whiteboard-conflict-position { display: block; width: 160px; max-width: 100%; margin-bottom: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+.whiteboard-conflict-position rect { fill: var(--card-color); stroke: var(--ink); stroke-width: 8px; }
+
+@media (pointer: coarse) {
+  .canvas-card .whiteboard-drag-handle { height: calc(44px / var(--canvas-zoom)); }
+  .canvas-card { padding-top: calc(44px / var(--canvas-zoom)); }
+  .canvas-card .whiteboard-resize-handle { width: calc(44px / var(--canvas-zoom)); height: calc(44px / var(--canvas-zoom)); }
+  .board-card .whiteboard-drag-handle { width: 44px; height: 44px; }
+  .board-card .whiteboard-card-content { padding-right: 30px; }
+  .whiteboard-color { flex-basis: 44px; width: 44px; height: 44px; }
+  .whiteboard-views button, .whiteboard-tools button, .whiteboard-color, .whiteboard-editor-actions button { min-height: 44px; }
+}
+
+@media (max-width: 760px) {
+  .whiteboard-toolbar { gap: 8px; padding: 8px 12px; }
+  .whiteboard-views { flex: 1; }
+  .whiteboard-views button { flex: 1; padding: 8px 9px; }
+  .whiteboard-history { margin-left: auto; }
+  .whiteboard-tools { width: 100%; margin-left: 0; }
+  .whiteboard-tools button { flex: 1; justify-content: center; }
+  .whiteboard-columns { padding: 12px 12px var(--horizontal-scroll-clearance); gap: 12px; }
+  .whiteboard-column { flex-basis: min(260px, 78vw); }
+  .whiteboard-workspace.has-editor .whiteboard-surface { display: none; }
+  .whiteboard-card-editor { flex: 1; border-left: 0; padding: 8px 16px 20px; }
+  .whiteboard-card-editor input, .whiteboard-card-editor textarea, .whiteboard-card-editor select { font-size: 16px; }
+  .whiteboard-dialog .whiteboard-notes { padding: 16px; }
+  .whiteboard-progress progress { width: 40px; }
+  .whiteboard-image-picker { padding: 10px 12px; }
+}
+@media (max-width: 380px) {
+  .whiteboard-views button { padding: 8px; gap: 5px; }
+  .whiteboard-views button svg { display: none; }
+  .whiteboard-progress { display: none; }
+  .whiteboard-dialog .work-object-save-state { font-size: 11px; }
+}
+@media (max-height: 500px) {
+  .whiteboard-dialog > header { padding: 6px 12px; }
+  .whiteboard-toolbar { padding: 4px 12px; gap: 6px; }
+  .whiteboard-dialog > footer { padding: 6px 12px; }
+  .whiteboard-tools { width: auto; margin-left: auto; }
+  .whiteboard-card-editor fieldset { gap: 10px; }
+}

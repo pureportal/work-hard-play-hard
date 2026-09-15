@@ -4,6 +4,8 @@ import {
   Boxes,
   BrickWall,
   DoorOpen,
+  Diamond,
+  KeyRound,
   Coffee,
   Eraser,
   Flower2,
@@ -21,27 +23,27 @@ import {
   TreePine,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { ASSET_CATALOG, getDefaultAssetVariantId } from "@workhard/shared";
-import type { AssetRarity, AssetRotation, FloorLayout, GameSettings, LayoutItemReference, LayoutTool, Member, Room, RoomSettings } from "@workhard/shared";
+import { useId, useRef, useState } from "react";
+import { ASSET_CATALOG, ASSET_RARITIES, getDefaultAssetVariantId } from "@workhard/shared";
+import type { AssetRarity, AssetRotation, FloorLayout, LayoutItemReference, LayoutTool } from "@workhard/shared";
 import type { LucideIcon } from "lucide-react";
 import { getAssetOrientationLabel, rotateAssetClockwise } from "../asset-orientation";
+import { useHorizontalWheelScroll } from "../hooks/useHorizontalWheelScroll";
+import { useSelectedTabVisibility } from "../hooks/useSelectedTabVisibility";
 import { IconButton } from "./IconButton";
 import { AssetShape } from "./AssetShape";
 import { AssetVariantPicker } from "./AssetVariantPicker";
 import { AssetRarityFilter } from "./AssetRarityFilter";
+import "../build-panel.css";
 
 interface BuildPanelProps {
   layout: FloorLayout;
-  members: Member[];
   tool: LayoutTool | null;
   assetId: string;
   assetVariantId: string;
   assetRotation: AssetRotation;
   selectedItem?: LayoutItemReference | undefined;
   movingItem?: LayoutItemReference | undefined;
-  gameSettings: GameSettings;
-  canManageGameSettings: boolean;
   onToolChange: (tool: LayoutTool | null) => void;
   onAssetChange: (assetId: string) => void;
   onAssetVariantChange: (variantId: string) => void;
@@ -49,8 +51,8 @@ interface BuildPanelProps {
   onMoveSelected: () => void;
   onRotateSelected: () => void;
   onRemoveSelected: () => void;
-  onUpdateRoom: (roomId: string, settings: RoomSettings) => void;
-  onUpdateGameSettings: (settings: GameSettings) => void;
+  onInspectAccess: () => void;
+  onOpenRooms: () => void;
   onClose: () => void;
 }
 
@@ -59,6 +61,7 @@ const tools: { id: LayoutTool | null; label: string; icon: LucideIcon }[] = [
   { id: "wall", label: "Wall", icon: BrickWall },
   { id: "door", label: "Door", icon: DoorOpen },
   { id: "window", label: "Window", icon: RectangleHorizontal },
+  { id: "spawn", label: "Start point", icon: Diamond },
   { id: "erase", label: "Erase", icon: Eraser },
 ];
 
@@ -70,7 +73,8 @@ const categoryIcons: Record<string, LucideIcon> = {
   outdoor: TreePine,
   decor: LampDesk,
   equipment: Boxes,
-  surfaces: Grid2X2,
+  "floor-types": Grid2X2,
+  "floor-decorations": RectangleHorizontal,
   storage: Archive,
   lighting: Lightbulb,
   breakroom: Coffee,
@@ -80,15 +84,12 @@ const buildableCategories = ASSET_CATALOG.categories.filter((category) => catego
 
 export function BuildPanel({
   layout,
-  members,
   tool,
   assetId,
   assetVariantId,
   assetRotation,
   selectedItem,
   movingItem,
-  gameSettings,
-  canManageGameSettings,
   onToolChange,
   onAssetChange,
   onAssetVariantChange,
@@ -96,69 +97,84 @@ export function BuildPanel({
   onMoveSelected,
   onRotateSelected,
   onRemoveSelected,
-  onUpdateRoom,
-  onUpdateGameSettings,
+  onInspectAccess,
+  onOpenRooms,
   onClose,
 }: BuildPanelProps) {
   const selectedDefinition = ASSET_CATALOG.assets.find((asset) => asset.id === assetId);
+  const panelId = useId();
+  const categoryTabsRef = useRef<HTMLDivElement>(null);
+  const scrollCategoryTabs = useHorizontalWheelScroll(categoryTabsRef);
   const [categoryId, setCategoryId] = useState(selectedDefinition?.category ?? buildableCategories[0]!.id);
   const [rarity, setRarity] = useState<AssetRarity | "all">("all");
-  const categoryAssets = ASSET_CATALOG.assets.filter((asset) => asset.buildable && asset.category === categoryId && (rarity === "all" || asset.rarity === rarity));
+  const categoryAssets = ASSET_CATALOG.assets
+    .filter((asset) => asset.buildable && asset.category === categoryId && (rarity === "all" || asset.rarity === rarity))
+    .sort((left, right) => ASSET_RARITIES.indexOf(left.rarity) - ASSET_RARITIES.indexOf(right.rarity));
   const selectedObject = selectedItem?.type === "asset" ? layout.objects.find((object) => object.id === selectedItem.id) : undefined;
   const selectedOpening = selectedItem?.type === "opening" ? layout.openings.find((opening) => opening.id === selectedItem.id) : undefined;
   const selectedItemName = selectedObject
     ? getAssetName(selectedObject.assetId)
     : selectedItem?.type === "wall" ? "Wall" : selectedOpening?.type === "door" ? "Door" : selectedOpening ? "Window" : undefined;
 
+  useSelectedTabVisibility(categoryTabsRef, categoryId);
+
   return (
-    <aside className="side-panel build-panel" aria-label="Build">
+    <aside className="side-panel build-panel build-layout-panel" aria-label="Build">
       <div className="panel-header">
         <h2>Build</h2>
-        <IconButton label="Close build tools" icon={X} onClick={onClose} />
+        <div className="build-panel-actions">
+          <button className="secondary-button build-access-button" onClick={onOpenRooms}>Room settings</button>
+          <IconButton label="Room access" icon={KeyRound} onClick={onInspectAccess} />
+          <IconButton label="Close build tools" icon={X} onClick={onClose} />
+        </div>
       </div>
 
-      <div className="panel-scroll build-panel-scroll">
-        <div className="build-tools" role="toolbar" aria-label="Layout tools">
-          {tools.map(({ id, label, icon: Icon }) => (
-            <button
-              key={label}
-              className={tool === id ? "active" : ""}
-              aria-pressed={tool === id}
-              onClick={() => onToolChange(id)}
-            >
-              <Icon size={19} />
-              <span>{label}</span>
-            </button>
-          ))}
-        </div>
+      <div className="build-tools layout-tools" role="toolbar" aria-label="Layout tools">
+        {tools.map(({ id, label, icon: Icon }) => (
+          <button
+            key={label}
+            className={tool === id ? "active" : ""}
+            aria-pressed={tool === id}
+            onClick={() => onToolChange(id)}
+          >
+            <Icon size={19} />
+            <span>{label}</span>
+          </button>
+        ))}
+      </div>
 
-        {selectedItem && selectedItemName && (
-          <section className="build-selection" aria-label={`Selected ${selectedItemName}`}>
-            <strong>{selectedItemName}</strong>
-            <div>
-              <button className={itemMatches(selectedItem, movingItem) ? "active" : ""} onClick={onMoveSelected}>
-                <Move size={16} />Move
-              </button>
-              {selectedItem.type !== "opening" && (
-                <button onClick={onRotateSelected}><RotateCw size={16} />Rotate</button>
-              )}
-              <button className="danger" onClick={onRemoveSelected}><Trash2 size={16} />Remove</button>
-            </div>
-          </section>
-        )}
-
-        <section className="build-section asset-library">
-          <h3>Assets</h3>
-          <div className="asset-category-tabs" role="tablist" aria-label="Asset categories">
-            {buildableCategories.map((category) => {
+      <div className="build-workspace">
+        <section className="build-section asset-library" aria-labelledby={`${panelId}-assets`}>
+          <div className="build-assets-header">
+            <h3 id={`${panelId}-assets`}>Assets</h3>
+            <AssetRarityFilter value={rarity} onChange={setRarity} />
+          </div>
+          <div ref={scrollCategoryTabs} className="asset-category-tabs" role="tablist" aria-label="Asset categories">
+            {buildableCategories.map((category, index) => {
               const Icon = categoryIcons[category.id] ?? Square;
               return (
                 <button
                   key={category.id}
+                  id={`${panelId}-category-${category.id}`}
                   role="tab"
                   aria-selected={category.id === categoryId}
+                  aria-controls={`${panelId}-asset-list`}
+                  tabIndex={category.id === categoryId ? 0 : -1}
                   className={category.id === categoryId ? "active" : ""}
                   onClick={() => setCategoryId(category.id)}
+                  onKeyDown={(event) => {
+                    let next: number;
+                    switch (event.key) {
+                      case "ArrowRight": next = (index + 1) % buildableCategories.length; break;
+                      case "ArrowLeft": next = (index + buildableCategories.length - 1) % buildableCategories.length; break;
+                      case "Home": next = 0; break;
+                      case "End": next = buildableCategories.length - 1; break;
+                      default: return;
+                    }
+                    event.preventDefault();
+                    setCategoryId(buildableCategories[next]!.id);
+                    categoryTabsRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
+                  }}
                 >
                   <Icon size={15} />
                   <span>{category.name}</span>
@@ -166,23 +182,40 @@ export function BuildPanel({
               );
             })}
           </div>
-          <AssetRarityFilter value={rarity} onChange={setRarity} />
-          <div className="asset-grid" role="tabpanel">
-            {categoryAssets.length === 0 && <span className="asset-filter-empty">No assets match.</span>}
-            {categoryAssets.map((asset) => (
-              <button
-                key={asset.id}
-                className={tool === "asset" && asset.id === assetId ? "active" : ""}
-                aria-pressed={tool === "asset" && asset.id === assetId}
-                onClick={() => {
-                  onAssetChange(asset.id);
-                  onToolChange("asset");
-                }}
-              >
-                <AssetShape asset={asset} rotation={asset.id === assetId ? assetRotation : 0} variantId={asset.id === assetId ? assetVariantId : getDefaultAssetVariantId(asset)} />
-                <span>{asset.name}</span>
-              </button>
-            ))}
+          <div className="build-asset-scroll build-section-scroll" key={`${categoryId}-${rarity}`} id={`${panelId}-asset-list`} role="tabpanel" aria-labelledby={`${panelId}-category-${categoryId}`} tabIndex={0}>
+            {selectedItem && selectedItemName && (
+              <section className="build-selection" aria-label={`Selected ${selectedItemName}`}>
+                <strong>{selectedItemName}</strong>
+                <div>
+                  <button className={itemMatches(selectedItem, movingItem) ? "active" : ""} onClick={onMoveSelected}>
+                    <Move size={16} />Move
+                  </button>
+                  {selectedItem.type !== "opening" && (
+                    <button onClick={onRotateSelected}><RotateCw size={16} />Rotate</button>
+                  )}
+                  <button className="danger" onClick={onRemoveSelected}><Trash2 size={16} />Remove</button>
+                </div>
+              </section>
+            )}
+            <div className="asset-grid">
+              {categoryAssets.length === 0 && <span className="asset-filter-empty">No assets match.</span>}
+              {categoryAssets.map((asset) => (
+                <button
+                  key={asset.id}
+                  className={tool === "asset" && asset.id === assetId ? "active" : ""}
+                  aria-pressed={tool === "asset" && asset.id === assetId}
+                  aria-description={asset.rarity[0]!.toUpperCase() + asset.rarity.slice(1)}
+                  data-rarity={asset.rarity}
+                  onClick={() => {
+                    onAssetChange(asset.id);
+                    onToolChange("asset");
+                  }}
+                >
+                  <AssetShape asset={asset} rotation={asset.id === assetId ? assetRotation : 0} variantId={asset.id === assetId ? assetVariantId : getDefaultAssetVariantId(asset)} />
+                  <span>{asset.name}</span>
+                </button>
+              ))}
+            </div>
           </div>
           {(tool === "asset" || movingItem?.type === "asset") && selectedDefinition && (
             <div className="asset-placement-options">
@@ -200,30 +233,6 @@ export function BuildPanel({
           )}
         </section>
 
-        <section className="build-section">
-          <h3>Rooms</h3>
-          <div className="room-list">
-            {layout.rooms.map((room) => (
-              <RoomEditor key={room.id} room={room} members={members} onSave={onUpdateRoom} />
-            ))}
-          </div>
-        </section>
-
-        {canManageGameSettings && (
-          <section className="build-section">
-            <h3>Game</h3>
-            <label className="build-toggle">
-              <input
-                type="checkbox"
-                checked={gameSettings.allowPlayerAssetPlacementInPublicRooms}
-                onChange={(event) => onUpdateGameSettings({
-                  allowPlayerAssetPlacementInPublicRooms: event.target.checked,
-                })}
-              />
-              <span>Player assets in open rooms</span>
-            </label>
-          </section>
-        )}
       </div>
     </aside>
   );
@@ -235,107 +244,4 @@ function getAssetName(assetId: string): string {
 
 function itemMatches(left?: LayoutItemReference, right?: LayoutItemReference): boolean {
   return Boolean(left && right && left.type === right.type && left.id === right.id);
-}
-
-interface RoomEditorProps {
-  room: Room;
-  members: Member[];
-  onSave: (roomId: string, settings: RoomSettings) => void;
-}
-
-function RoomEditor({ room, members, onSave }: RoomEditorProps) {
-  const [name, setName] = useState(room.name);
-  const [color, setColor] = useState(room.color);
-  const [accessMode, setAccessMode] = useState(room.access.mode);
-  const [assignedPersonIds, setAssignedPersonIds] = useState(room.access.assignedPersonIds);
-  const [knockable, setKnockable] = useState(room.access.knockable);
-
-  useEffect(() => {
-    setName(room.name);
-    setColor(room.color);
-    setAccessMode(room.access.mode);
-    setAssignedPersonIds(room.access.assignedPersonIds);
-    setKnockable(room.access.knockable);
-  }, [room]);
-
-  const missingAssignee = accessMode === "assigned" && assignedPersonIds.length === 0;
-  const save = () => {
-    if (!name.trim() || missingAssignee) {
-      return;
-    }
-    onSave(room.id, {
-      name: name.trim(),
-      color,
-      access: {
-        mode: accessMode,
-        assignedPersonIds,
-        knockable: accessMode === "assigned" && knockable,
-      },
-    });
-  };
-
-  const togglePerson = (personId: string, assigned: boolean) => {
-    setAssignedPersonIds((current) => assigned
-      ? [...current, personId]
-      : current.filter((candidate) => candidate !== personId));
-  };
-
-  return (
-    <details className="room-control">
-      <summary>
-        <span className="room-swatch" style={{ background: color }} />
-        <span>{name}</span>
-      </summary>
-      <div className="room-fields">
-        <label>
-          <span>Name</span>
-          <input value={name} maxLength={60} onChange={(event) => setName(event.target.value)} />
-        </label>
-        <label className="room-color-field">
-          <span>Color</span>
-          <input type="color" value={color} onChange={(event) => setColor(event.target.value)} />
-        </label>
-        <label>
-          <span>Access</span>
-          <select
-            value={accessMode}
-            onChange={(event) => {
-              const mode = event.target.value as RoomSettings["access"]["mode"];
-              setAccessMode(mode);
-              if (mode === "open") {
-                setKnockable(false);
-              }
-            }}
-          >
-            <option value="open">Open</option>
-            <option value="assigned" disabled={!room.privateEligible}>Assigned people</option>
-          </select>
-        </label>
-        {!room.privateEligible && <span className="room-validation">Add a door to make private.</span>}
-        <fieldset>
-          <legend>People</legend>
-          <div className="room-people">
-            {members.map((member) => (
-              <label key={member.id}>
-                <input
-                  type="checkbox"
-                  checked={assignedPersonIds.includes(member.id)}
-                  onChange={(event) => togglePerson(member.id, event.target.checked)}
-                />
-                <span>{member.name}</span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
-        {accessMode === "assigned" && (
-          <label className="room-knockable">
-            <input type="checkbox" checked={knockable} onChange={(event) => setKnockable(event.target.checked)} />
-            <span>Allow knocking</span>
-          </label>
-        )}
-        {missingAssignee && <span className="room-validation">Choose at least one person.</span>}
-        <button className="primary-button room-save" disabled={!name.trim() || missingAssignee} onClick={save}>Save</button>
-      </div>
-    </details>
-  );
 }

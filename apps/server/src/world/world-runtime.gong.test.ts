@@ -1,6 +1,7 @@
+import { createTestData } from "../testing/workspace-data.js";
 import { GONG_COOLDOWN_MS, type ClientCommand, type ServerEvent } from "@workhard/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DemoStore } from "../store.js";
+import { WorkspaceStore } from "../store.js";
 import { WorldRuntime } from "./world-runtime.js";
 
 afterEach(() => {
@@ -95,7 +96,7 @@ describe("WorldRuntime celebration gong", () => {
   });
 
   it("requires the ringer to move within range", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const events: ServerEvent[] = [];
     const peer = runtime.connect("user-maya", "floor-studio", (event) => events.push(event));
     events.length = 0;
@@ -148,7 +149,7 @@ function ring(runtime: WorldRuntime, peerId: string, requestId: string): void {
 }
 
 function createRuntimeWithPositions(positions: Record<string, { x: number; y: number }>): WorldRuntime {
-  const runtime = new WorldRuntime(new DemoStore());
+  const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
   runtime.restorePlayers(runtime.serializePlayers().map((player) => ({
     ...player,
     ...positions[player.userId],

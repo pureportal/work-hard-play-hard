@@ -1,0 +1,42 @@
+.room-access-player {
+  display: grid;
+  gap: 8px;
+  margin: 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.room-access-player select {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-strong);
+  color: inherit;
+  font: inherit;
+}
+
+.room-access-list {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.room-access-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13px;
+}
+
+.room-entry-status {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 6px;
+  font-size: 12px;
+}

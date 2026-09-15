@@ -1,5 +1,6 @@
 import {
   ASSET_CATALOG,
+  DEFAULT_GAME_SETTINGS,
   TIC_TAC_TOE_DEFINITION_ID,
   detectRooms,
   getAssetDefinition,
@@ -12,7 +13,8 @@ import {
   type FloorLayout,
 } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
-import { createInitialData, createSeedData } from "./seed.js";
+import { createInitialData } from "./initial-data.js";
+import { createTestData } from "./testing/workspace-data.js";
 import { canOccupy } from "./world/collision.js";
 
 const seedTime = new Date("2026-08-29T12:00:00.000Z");
@@ -26,17 +28,22 @@ describe("development seed", () => {
     expect(data.messages).toEqual([]);
     expect(data.meetings).toEqual([]);
     expect(data.scores).toEqual([]);
+    expect(data.organisation).toEqual({ revision: 0, ceoIds: [], units: [], assignments: [], removalVotes: [] });
+    expect(data.gameSettings).toEqual(DEFAULT_GAME_SETTINGS);
     expect(data.layouts.flatMap((layout) => layout.rooms).every((room) => (
       room.access.mode === "open"
       && room.access.assignedPersonIds.length === 0
       && !room.access.knockable
+      && room.build?.mode === "default"
+      && room.build.assignedPersonIds.length === 0
+      && !room.organisationUnitId
     ))).toBe(true);
     expect(data.layouts.flatMap((layout) => layout.objects).filter((object) => object.id.startsWith("object-desk-")))
       .not.toContainEqual(expect.objectContaining({ label: expect.any(String) }));
   });
 
   it("covers the virtual-office states used during development", () => {
-    const data = createSeedData("user-maya", seedTime);
+    const data = createTestData("user-maya", seedTime);
     const rooms = data.layouts.flatMap((layout) => layout.rooms);
     const objects = data.layouts.flatMap((layout) => layout.objects);
 
@@ -46,11 +53,7 @@ describe("development seed", () => {
     expect([...new Set(data.members.map((member) => member.availability))].sort()).toEqual(["available", "away", "busy", "dnd"]);
     expect(rooms).toHaveLength(9);
     expect([...new Set(data.meetings.map((meeting) => meeting.status))].sort()).toEqual(["ended", "live", "scheduled"]);
-    expect(data.meetings).toContainEqual(expect.objectContaining({
-      id: "meeting-open-huddle",
-      location: expect.objectContaining({ type: "public" }),
-      participantIds: ["user-theo"],
-    }));
+    expect(data.meetings.every((meeting) => meeting.location.type === "room")).toBe(true);
     expect(rooms).toContainEqual(expect.objectContaining({
       id: "room-focus",
       access: expect.objectContaining({
@@ -84,13 +87,15 @@ describe("development seed", () => {
     const seededAssetIds = new Set(objects.map((object) => object.assetId));
     expect(seededAssetIds.size).toBeGreaterThanOrEqual(30);
     expect([...seededAssetIds].every((assetId) => ASSET_CATALOG.assets.some((asset) => asset.id === assetId))).toBe(true);
-    expect(new Set(objects.filter((object) => object.assetId === "floor-tile").map((object) => object.variantId)))
-      .toEqual(new Set(["grass", "stone", "wood"]));
+    expect(new Set(objects.filter((object) => object.assetId.startsWith("floor-")).map((object) => object.assetId)))
+      .toEqual(new Set(["floor-grass", "floor-stone-tiles", "floor-decking"]));
     expect(objects).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: "object-studio-commons-rug-1-1", variantId: "wood" }),
-      expect.objectContaining({ id: "object-studio-entry-step-1-1", variantId: "stone" }),
+      expect.objectContaining({ id: "object-commons-rug", assetId: "rug-woven" }),
+      expect.objectContaining({ id: "object-product-rug", assetId: "rug-round" }),
+      expect.objectContaining({ id: "object-studio-entry-step-1-1", assetId: "floor-stone-tiles", variantId: "limestone" }),
       expect.objectContaining({ id: "object-south-garden-bed", assetId: "outdoor-garden-bed" }),
-      expect.objectContaining({ id: "object-rooftop-garden-rug-1-1", variantId: "wood" }),
+      expect.objectContaining({ id: "object-garden-mat", assetId: "rug-tatami" }),
+      expect.objectContaining({ id: "object-rooftop-deck-1-1", assetId: "floor-decking", variantId: "cedar" }),
       expect.objectContaining({ id: "object-rooftop-deck-cafe-table", assetId: "table-cafe" }),
     ]));
 
@@ -129,7 +134,7 @@ describe("development seed", () => {
   });
 
   it("keeps fixture references, positions, and message sequences valid", () => {
-    const data = createSeedData("user-maya", seedTime);
+    const data = createTestData("user-maya", seedTime);
     const memberIds = new Set(data.members.map((member) => member.id));
     const floorIds = new Set(data.floors.map((floor) => floor.id));
     const rooms = data.layouts.flatMap((layout) => layout.rooms);
@@ -235,11 +240,7 @@ describe("development seed", () => {
       for (const participantId of meeting.participantIds) {
         expect(memberIds.has(participantId)).toBe(true);
       }
-      if (meeting.location.type === "room") {
-        expect(roomIds.has(meeting.location.roomId)).toBe(true);
-      } else {
-        expect(floorIds.has(meeting.location.floorId)).toBe(true);
-      }
+      expect(roomIds.has(meeting.location.roomId)).toBe(true);
     }
 
     for (const game of data.miniGames) {

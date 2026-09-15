@@ -18,6 +18,10 @@ interface TicTacToeLobbyProps {
   members: Member[];
   statistics: PlayerGameStatistics[];
   currentUserId: string;
+  pending?: boolean;
+  initialMode?: "solo" | "multiplayer" | undefined;
+  initialVariant?: TicTacToeVariantId | undefined;
+  initialDifficulty?: BotDifficulty | undefined;
   onStart: (variantId: TicTacToeVariantId, bot?: GameBot) => void;
 }
 
@@ -26,11 +30,15 @@ export function TicTacToeLobby({
   members,
   statistics,
   currentUserId,
+  pending = false,
+  initialMode = "solo",
+  initialVariant = "classic",
+  initialDifficulty = "medium",
   onStart,
 }: TicTacToeLobbyProps) {
-  const [mode, setMode] = useState<"solo" | "multiplayer">("solo");
-  const [difficulty, setDifficulty] = useState<BotDifficulty>("medium");
-  const [variantId, setVariantId] = useState<TicTacToeVariantId>("classic");
+  const [mode, setMode] = useState(initialMode);
+  const [difficulty, setDifficulty] = useState(initialDifficulty);
+  const [variantId, setVariantId] = useState(initialVariant);
   const participants = lobby.participantIds.flatMap((userId) => {
     const member = members.find((candidate) => candidate.id === userId);
     return member ? [member] : [];
@@ -38,10 +46,10 @@ export function TicTacToeLobby({
   const playerStatistics = statistics.find(
     (candidate) => candidate.definitionId === lobby.definitionId && candidate.userId === currentUserId,
   );
-  const ready = mode === "solo" || participants.length >= lobby.capacity;
+  const ready = lobby.participantIds.includes(currentUserId) && (mode === "solo" || participants.length >= lobby.capacity);
 
   return (
-    <aside className="game-lobby tic-tac-toe-lobby" aria-label="Tic-Tac-Toe lobby">
+    <aside className="game-lobby tic-tac-toe-lobby" aria-label="Tic-Tac-Toe lobby" aria-busy={pending}>
       <header>
         <TicTacToeMark />
         <div>
@@ -78,11 +86,11 @@ export function TicTacToeLobby({
 
       <button
         className="primary-button tic-tac-toe-start-button"
-        disabled={!ready}
+        disabled={pending || !ready}
         onClick={() => onStart(variantId, mode === "solo" ? { difficulty } : undefined)}
       >
         <Play size={16} fill="currentColor" />
-        {ready ? "Play" : "Waiting for player"}
+        {pending ? "Starting…" : ready ? "Play" : "Waiting for player"}
       </button>
 
       {mode === "multiplayer" && <dl className="tic-tac-toe-player-stats" aria-label="Your Tic-Tac-Toe statistics">

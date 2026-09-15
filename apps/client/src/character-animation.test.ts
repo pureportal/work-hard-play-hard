@@ -1,8 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { CHARACTER_CANVAS_SIZE, getCharacterFrame } from "@workhard/shared";
+import { CHARACTER_CANVAS_SIZE, getCharacterFrame, getCharacterMotion } from "@workhard/shared";
 import { CharacterAnimation } from "./character-animation";
 
 describe("character animation playback", () => {
+  it("keeps walking and seating consistent when music starts or stops", () => {
+    expect(getCharacterMotion(false, false, true)).toBe("listen");
+    expect(getCharacterMotion(false, true, true)).toBe("walk");
+    expect(getCharacterMotion(true, false, true)).toBe("sit-listen");
+    expect(getCharacterMotion(true, false, false)).toBe("sit");
+    expect(getCharacterMotion(false, false, false)).toBe("idle");
+  });
   it("starts walking on movement, loops, and returns to idle when movement ends", () => {
     const animation = new CharacterAnimation();
     expect(animation.frame(1000, "idle", "down")).toEqual(getCharacterFrame("idle", "down", 0));

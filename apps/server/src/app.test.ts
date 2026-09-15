@@ -3,10 +3,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_CORPORATE_IDENTITY } from "@workhard/shared";
-import { createApplication } from "./app.js";
+import { createTestApplication } from "./testing/application.js";
 import { MemoryDatabase } from "./persistence/memory-database.js";
 
-const applications: Awaited<ReturnType<typeof createApplication>>[] = [];
+const applications: Awaited<ReturnType<typeof createTestApplication>>[] = [];
 const temporaryDirectories: string[] = [];
 const defaultRegistrationAvailability = { enabled: true, invitationRequired: true };
 
@@ -18,13 +18,13 @@ afterEach(async () => {
 });
 
 async function application() {
-  const context = await createApplication({ database: new MemoryDatabase(), exposeMagicLinks: true, seeded: true });
+  const context = await createTestApplication({ database: new MemoryDatabase(), exposeMagicLinks: true, fixture: true });
   applications.push(context);
   return context;
 }
 
 async function freshApplication() {
-  const context = await createApplication({ database: new MemoryDatabase(), exposeMagicLinks: true });
+  const context = await createTestApplication({ database: new MemoryDatabase(), exposeMagicLinks: true });
   applications.push(context);
   return context;
 }
@@ -32,18 +32,18 @@ async function freshApplication() {
 async function applicationWithImages() {
   const directory = await mkdtemp(join(tmpdir(), "workhard-chat-images-"));
   temporaryDirectories.push(directory);
-  const context = await createApplication({
+  const context = await createTestApplication({
     database: new MemoryDatabase(),
     exposeMagicLinks: true,
     chatImagePath: directory,
-    seeded: true,
+    fixture: true,
   });
   applications.push(context);
   return context;
 }
 
 async function loginCookie(
-  context: Awaited<ReturnType<typeof createApplication>>,
+  context: Awaited<ReturnType<typeof createTestApplication>>,
   identifier = "maya",
   password = "northstar",
 ): Promise<string> {
@@ -207,13 +207,13 @@ describe("authentication API", () => {
     const database = new MemoryDatabase();
     const options = {
       database,
-      seeded: true,
+      fixture: true,
     } as const;
-    const first = await createApplication(options);
+    const first = await createTestApplication(options);
     const cookie = await loginCookie(first);
     await first.app.close();
 
-    const restored = await createApplication(options);
+    const restored = await createTestApplication(options);
     applications.push(restored);
     const session = await restored.app.inject({
       method: "GET",
@@ -229,7 +229,7 @@ describe("authentication API", () => {
     const options = {
       database,
     } as const;
-    const first = await createApplication(options);
+    const first = await createTestApplication(options);
     const registration = await first.app.inject({
       method: "POST",
       url: "/v1/auth/register",
@@ -238,7 +238,7 @@ describe("authentication API", () => {
     const cookie = cookieHeader(registration.headers["set-cookie"]);
     await first.app.close();
 
-    const restored = await createApplication(options);
+    const restored = await createTestApplication(options);
     applications.push(restored);
     const session = await restored.app.inject({ method: "GET", url: "/v1/auth/session", headers: { cookie } });
     const bootstrap = await restored.app.inject({ method: "GET", url: "/v1/bootstrap", headers: { cookie } });
@@ -325,11 +325,11 @@ describe("authentication API", () => {
 
   it("delivers branded magic links without exposing account existence", async () => {
     const deliverMagicLink = vi.fn(async () => undefined);
-    const context = await createApplication({
+    const context = await createTestApplication({
       database: new MemoryDatabase(),
       exposeMagicLinks: false,
       deliverMagicLink,
-      seeded: true,
+      fixture: true,
     });
     applications.push(context);
     context.store.updateCorporateIdentity({
@@ -364,13 +364,13 @@ describe("authentication API", () => {
 
   it("removes an undelivered magic link", async () => {
     const database = new MemoryDatabase();
-    const context = await createApplication({
+    const context = await createTestApplication({
       database,
       exposeMagicLinks: false,
       deliverMagicLink: async () => {
         throw new Error("MAIL_UNAVAILABLE");
       },
-      seeded: true,
+      fixture: true,
     });
     applications.push(context);
 
@@ -386,10 +386,10 @@ describe("authentication API", () => {
   });
 
   it("disables magic-link requests when links cannot be delivered", async () => {
-    const context = await createApplication({
+    const context = await createTestApplication({
       database: new MemoryDatabase(),
       exposeMagicLinks: false,
-      seeded: true,
+      fixture: true,
     });
     applications.push(context);
 
@@ -526,7 +526,7 @@ describe("registration administration", () => {
     const ownerCookie = await loginCookie(context);
     const invitation = await context.app.inject({
       method: "POST",
-      url: "/v1/teams/team-northstar/invitations",
+      url: "/v1/teams/team/invitations",
       headers: { cookie: ownerCookie },
       payload: { email: "invited-disabled@example.com", role: "member" },
     });
@@ -629,7 +629,7 @@ describe("registration administration", () => {
     const ownerCookie = await loginCookie(context);
     const invitation = await context.app.inject({
       method: "POST",
-      url: "/v1/teams/team-northstar/invitations",
+      url: "/v1/teams/team/invitations",
       headers: { cookie: ownerCookie },
       payload: { email: "invitation-role@example.com", role: "guest" },
     });
@@ -664,18 +664,18 @@ describe("registration administration", () => {
 
 describe("application API", () => {
   it("rejects invalid client URLs and origins", async () => {
-    await expect(createApplication({
+    await expect(createTestApplication({
       database: new MemoryDatabase(),
       clientUrl: "file:///northstar/index.html",
     })).rejects.toThrow("CLIENT_URL must be an HTTP or HTTPS URL");
-    await expect(createApplication({
+    await expect(createTestApplication({
       database: new MemoryDatabase(),
       clientOrigins: ["https://northstar.example/preview"],
     })).rejects.toThrow("CLIENT_ORIGINS must contain HTTP or HTTPS origins");
   });
 
   it("accepts configured browser clients and rejects unknown origins", async () => {
-    const context = await createApplication({
+    const context = await createTestApplication({
       database: new MemoryDatabase(),
       clientUrl: "https://northstar.example",
       clientOrigins: ["https://preview.northstar.example"],
@@ -716,7 +716,7 @@ describe("application API", () => {
 
     expect(anonymous.statusCode).toBe(401);
     expect(response.statusCode).toBe(200);
-    expect(body.team.name).toBe("Northstar");
+    expect(body.team.name).toBe("Team");
     expect(body.floors).toHaveLength(2);
     expect(body.members.length).toBeGreaterThan(5);
     expect(body.layouts[0].objects.length).toBeGreaterThan(10);
@@ -807,7 +807,7 @@ describe("application API", () => {
     const ownerCookie = await loginCookie(context);
     const issued = await context.app.inject({
       method: "POST",
-      url: "/v1/teams/team-northstar/invitations",
+      url: "/v1/teams/team/invitations",
       headers: { cookie: ownerCookie },
       payload: { email: "invited@northstar.studio", role: "guest" },
     });
@@ -863,7 +863,7 @@ describe("application API", () => {
     const ownerCookie = await loginCookie(context);
     const issued = await context.app.inject({
       method: "POST",
-      url: "/v1/teams/team-northstar/invitations",
+      url: "/v1/teams/team/invitations",
       headers: { cookie: ownerCookie },
       payload: { email: "builder@example.com", role: "member", permissions: ["build"] },
     });
@@ -894,7 +894,7 @@ describe("application API", () => {
     const ownerCookie = await loginCookie(context);
     const issued = await context.app.inject({
       method: "POST",
-      url: "/v1/teams/team-northstar/invitations",
+      url: "/v1/teams/team/invitations",
       headers: { cookie: ownerCookie },
       payload: { email: "existing@example.com", role: "admin" },
     });
@@ -930,14 +930,14 @@ describe("application API", () => {
     const options = {
       database,
       exposeInvitationLinks: true,
-      seeded: true,
+      fixture: true,
     } as const;
-    const first = await createApplication(options);
+    const first = await createTestApplication(options);
     applications.push(first);
     const ownerCookie = await loginCookie(first);
     const issued = await first.app.inject({
       method: "POST",
-      url: "/v1/teams/team-northstar/invitations",
+      url: "/v1/teams/team/invitations",
       headers: { cookie: ownerCookie },
       payload: { email: "restart-invite@example.com", role: "guest" },
     });
@@ -945,7 +945,7 @@ describe("application API", () => {
     await first.app.close();
     applications.splice(applications.indexOf(first), 1);
 
-    const restored = await createApplication(options);
+    const restored = await createTestApplication(options);
     applications.push(restored);
     const registration = await restored.app.inject({
       method: "POST",
@@ -971,7 +971,7 @@ describe("application API", () => {
     const ownerCookie = await loginCookie(context);
     const issue = (email: string) => context.app.inject({
       method: "POST",
-      url: "/v1/teams/team-northstar/invitations",
+      url: "/v1/teams/team/invitations",
       headers: { cookie: ownerCookie },
       payload: { email, role: "member" },
     });
@@ -994,7 +994,7 @@ describe("application API", () => {
     });
     await context.app.inject({
       method: "DELETE",
-      url: `/v1/teams/team-northstar/invitations/${replacement.json().id}`,
+      url: `/v1/teams/team/invitations/${replacement.json().id}`,
       headers: { cookie: ownerCookie },
     });
     const revoked = await context.app.inject({
@@ -1035,20 +1035,20 @@ describe("application API", () => {
   }, 15_000);
 
   it("does not retain an invitation when delivery fails", async () => {
-    const context = await createApplication({
+    const context = await createTestApplication({
       database: new MemoryDatabase(),
       exposeInvitationLinks: false,
       deliverInvitation: async () => {
         throw new Error("MAIL_UNAVAILABLE");
       },
-      seeded: true,
+      fixture: true,
     });
     applications.push(context);
     const cookie = await loginCookie(context);
     const before = context.store.getBootstrap("user-maya").invitations;
     const response = await context.app.inject({
       method: "POST",
-      url: "/v1/teams/team-northstar/invitations",
+      url: "/v1/teams/team/invitations",
       headers: { cookie },
       payload: { email: "delivery@example.com", role: "member" },
     });
@@ -1064,12 +1064,12 @@ describe("application API", () => {
     const payload = { email: "restricted@example.com", role: "member" };
     const anonymous = await context.app.inject({
       method: "POST",
-      url: "/v1/teams/team-northstar/invitations",
+      url: "/v1/teams/team/invitations",
       payload,
     });
     const member = await context.app.inject({
       method: "POST",
-      url: "/v1/teams/team-northstar/invitations",
+      url: "/v1/teams/team/invitations",
       headers: { cookie: memberCookie },
       payload,
     });
@@ -1102,25 +1102,25 @@ describe("application API", () => {
     const adminCookie = await loginCookie(context, "leo");
     const ownerGrant = await context.app.inject({
       method: "PATCH",
-      url: "/v1/teams/team-northstar/members/user-jonas",
+      url: "/v1/teams/team/members/user-jonas",
       headers: { cookie: ownerCookie },
       payload: { role: "member", permissions: ["build"] },
     });
     const adminGrant = await context.app.inject({
       method: "PATCH",
-      url: "/v1/teams/team-northstar/members/user-priya",
+      url: "/v1/teams/team/members/user-priya",
       headers: { cookie: adminCookie },
       payload: { role: "member", permissions: ["build"] },
     });
     const adminPromotion = await context.app.inject({
       method: "PATCH",
-      url: "/v1/teams/team-northstar/members/user-priya",
+      url: "/v1/teams/team/members/user-priya",
       headers: { cookie: adminCookie },
       payload: { role: "admin", permissions: [] },
     });
     const invalidGuestPermission = await context.app.inject({
       method: "PATCH",
-      url: "/v1/teams/team-northstar/members/user-priya",
+      url: "/v1/teams/team/members/user-priya",
       headers: { cookie: ownerCookie },
       payload: { role: "guest", permissions: ["build"] },
     });
@@ -1141,19 +1141,19 @@ describe("application API", () => {
     const adminCookie = await loginCookie(context, "leo");
     const adminInvite = await context.app.inject({
       method: "POST",
-      url: "/v1/teams/team-northstar/invitations",
+      url: "/v1/teams/team/invitations",
       headers: { cookie: adminCookie },
       payload: { email: "another-admin@example.com", role: "admin" },
     });
     const ownerPromotion = await context.app.inject({
       method: "PATCH",
-      url: "/v1/teams/team-northstar/members/user-jonas",
+      url: "/v1/teams/team/members/user-jonas",
       headers: { cookie: ownerCookie },
       payload: { role: "admin", permissions: [] },
     });
     const ownerDemotion = await context.app.inject({
       method: "PATCH",
-      url: "/v1/teams/team-northstar/members/user-maya",
+      url: "/v1/teams/team/members/user-maya",
       headers: { cookie: ownerCookie },
       payload: { role: "member", permissions: [] },
     });
@@ -1174,19 +1174,19 @@ describe("application API", () => {
     const adminCookie = await loginCookie(context, "leo");
     const issued = await context.app.inject({
       method: "POST",
-      url: "/v1/teams/team-northstar/invitations",
+      url: "/v1/teams/team/invitations",
       headers: { cookie: ownerCookie },
       payload: { email: "protected-admin@example.com", role: "admin" },
     });
     const replacement = await context.app.inject({
       method: "POST",
-      url: "/v1/teams/team-northstar/invitations",
+      url: "/v1/teams/team/invitations",
       headers: { cookie: adminCookie },
       payload: { email: "protected-admin@example.com", role: "member" },
     });
     const revocation = await context.app.inject({
       method: "DELETE",
-      url: `/v1/teams/team-northstar/invitations/${issued.json().id}`,
+      url: `/v1/teams/team/invitations/${issued.json().id}`,
       headers: { cookie: adminCookie },
     });
     const adminBootstrap = await context.app.inject({
@@ -1210,7 +1210,7 @@ describe("application API", () => {
     const cookie = await loginCookie(context, "jonas");
     const response = await context.app.inject({
       method: "PATCH",
-      url: "/v1/teams/team-northstar/members/user-leo",
+      url: "/v1/teams/team/members/user-leo",
       headers: { cookie },
       payload: { role: "member", permissions: [] },
     });

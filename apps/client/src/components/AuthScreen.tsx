@@ -2,7 +2,7 @@ import { ArrowLeft, Eye, EyeOff, Mail, ServerCog } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import type { CorporateIdentity } from "@workhard/shared";
 import { login, registerAccount, requestMagicLink } from "../api";
-import officePreview from "../assets/northstar-office.svg";
+import officePreview from "../assets/blockbench-office.webp";
 import { clearServerOrigin, getDefaultServerOrigin, getServerOrigin, setServerOrigin } from "../server-url";
 import { BrandMark } from "./BrandMark";
 

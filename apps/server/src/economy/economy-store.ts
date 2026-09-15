@@ -1,3 +1,4 @@
+import { gameSettingsSchema } from "../organisation/organisation-schema.js";
 import { randomUUID } from "node:crypto";
 import {
   DEFAULT_GAME_SETTINGS,
@@ -557,8 +558,7 @@ function validatePersistenceState(state: EconomyPersistenceState): void {
     || typeof state !== "object"
     || !Array.isArray(state.accounts)
     || !Array.isArray(state.transactions)
-    || typeof state.gameSettings?.allowPlayerAssetPlacementInPublicRooms !== "boolean"
-    || Object.keys(state.gameSettings).some((key) => key !== "allowPlayerAssetPlacementInPublicRooms")
+    || !gameSettingsSchema.safeParse(state.gameSettings).success
   ) {
     throw new Error("ECONOMY_STATE_INVALID");
   }

@@ -5,7 +5,8 @@ import { extname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer, { type Page } from "puppeteer";
 import type { ChessClockView, ChessMatchRecord, ServerEvent } from "@workhard/shared";
-import { createApplication, type ApplicationContext } from "../apps/server/src/app.js";
+import type { ApplicationContext } from "../apps/server/src/app.js";
+import { createTestApplication } from "../apps/server/src/testing/application.js";
 import { MemoryDatabase } from "../apps/server/src/persistence/memory-database.js";
 
 interface ChessBrowserTracker {
@@ -272,9 +273,9 @@ try {
 }
 
 async function startApplication(database: MemoryDatabase, origin: string, port: number): Promise<ApplicationContext> {
-  const context = await createApplication({
+  const context = await createTestApplication({
     database,
-    seeded: true,
+    fixture: true,
     clientUrl: origin,
     clientOrigins: [origin],
     chessNow: () => new Date(chessTime),

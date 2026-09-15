@@ -1,10 +1,16 @@
+import type { OrganisationState } from "@workhard/shared";
 import { ArrowUp, Check, LocateFixed, Minus, Plus, RotateCw, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Application, Container, Graphics, Text } from "pixi.js";
 import { CharacterSprite } from "../character-sprite";
-import { CharacterSeat } from "../character-seat";
+import { MusicIndicator } from "../spotify/music-indicator";
+import type { SpotifyActivity } from "@workhard/shared";
+import { getCharacterSeatLayout } from "../character-seat";
 import { createWorldAssetView } from "../world-asset-view";
 import { WorldAssetTextures } from "../world-asset-textures";
+import { getPlacedWorldAssetArtwork, getPlacedWorldAssetBounds, getWorldAssetPlacementPosition, getWorldAssetSurfaceOffset } from "../world-asset-placement";
+import { createWorldArchitecture } from "../world-architecture";
+import { getWorldAssetDepth, WorldDepth } from "../world-depth";
 import "../world-asset.css";
 import {
   ASSET_RASTER_SIZE,
@@ -15,17 +21,22 @@ import {
   CHARACTER_SEAT_ANCHOR,
   CHARACTER_SEATED_FOOT_Y,
   characterAppearanceKey,
+  getCharacterMotion,
   WALL_THICKNESS,
   getAssetDefinition,
   getAssetPlacementError,
-  getCenteredAssetPosition,
+  getAssetsSupportedBy,
+  getFlooringVisibleRects,
   getOpeningCenter,
   getOpeningRect,
   getOutdoorBounds,
   getOutdoorWindowLights,
   getPlacedAssetBounds,
   getPlacedAssetCells,
+  getPlacedAssetCellRects,
+  getPlacedAssetInteraction,
   getPlayerAssetRoomError,
+  getSpawnPlacementError,
   getWallOpeningPlacement,
   getWallPlacementError,
   getWallRect,
@@ -46,10 +57,10 @@ import type {
   LayoutEdit,
   LayoutItemReference,
   LayoutTool,
-  Meeting,
   Member,
   OpeningType,
   PlacedAssetInteraction,
+  PlayerRoomAccessibility,
   Rect,
   Wall,
   WorldObject,
@@ -62,14 +73,15 @@ import { REACTION_EMOJI, type DisplayHighFive, type DisplayReaction } from "../r
 import type { ColorTheme } from "../theme";
 import { isPointInWorldTarget, resolveWorldPointTarget } from "../world-point-target";
 import { IconButton } from "./IconButton";
+import { roomEntryAppearance } from "../room-accessibility";
 import type { InteractionHighlight } from "../hooks/useInteractionAreas";
 
 export interface WorldCanvasProps {
+  listeningActivities?: Readonly<Record<string, SpotifyActivity>>;
   activeInteraction?: InteractionHighlight | undefined;
   floor: Floor;
   layout: FloorLayout;
   members: Member[];
-  meetings: Meeting[];
   players: WorldPlayer[];
   reactions: DisplayReaction[];
   highFives: DisplayHighFive[];
@@ -81,7 +93,8 @@ export interface WorldCanvasProps {
   editingAssetRotation: AssetRotation;
   selectedBuildItem?: LayoutItemReference | undefined;
   movingBuildItem?: LayoutItemReference | undefined;
-  playerAssetPlacement?: { userId: string; settings: GameSettings } | undefined;
+  playerAssetPlacement?: { userId: string; settings: GameSettings; organisation: OrganisationState; officeBuilder: boolean } | undefined;
+  roomAccessibility?: PlayerRoomAccessibility | undefined;
   colorTheme: ColorTheme;
   editing: boolean;
   inputEnabled: boolean;
@@ -109,12 +122,12 @@ interface RendererCallbacks {
   onObjectSelect: WorldCanvasProps["onObjectSelect"];
   onBuildItemSelect: WorldCanvasProps["onBuildItemSelect"];
   onGongOffscreen: WorldCanvasProps["onGongOffscreen"];
-  onAssetPreviewStateChange: (state: AssetPreviewState) => void;
+  onPlacementPreviewStateChange: (state: PlacementPreviewState) => void;
   onCameraModeChange: (mode: CameraMode) => void;
   onArtworkError: (error: Error) => void;
 }
 
-interface AssetPreviewState {
+interface PlacementPreviewState {
   hasPoint: boolean;
   canPlace: boolean;
 }
@@ -140,6 +153,7 @@ const SEATED_CHARACTER_OFFSET = (CHARACTER_FOOT_ANCHOR.y - CHARACTER_SEAT_ANCHOR
 const SEATED_FEET_OFFSET = (CHARACTER_SEATED_FOOT_Y - CHARACTER_SEAT_ANCHOR.y) / CHARACTER_CANVAS_SIZE * CHARACTER_WORLD_SIZE;
 
 interface PlayerView {
+  music: MusicIndicator;
   container: Container;
   status: Graphics;
   wave: Graphics;
@@ -148,10 +162,10 @@ interface PlayerView {
   name: Text;
   characterKey: string;
   characterSprite?: CharacterSprite;
-  characterSeat: CharacterSeat;
   canWalk: boolean;
   seated: boolean;
   seatOffsetY: number;
+  seatHasBack: boolean;
   reactionBubble: Container;
   reactionText: Text;
   reactionId?: string;
@@ -216,7 +230,7 @@ const statusColors: Record<Member["availability"], string> = {
 export function WorldCanvas(props: WorldCanvasProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<OfficeRenderer | undefined>(undefined);
-  const [assetPreviewState, setAssetPreviewState] = useState<AssetPreviewState>({ hasPoint: false, canPlace: false });
+  const [placementPreviewState, setPlacementPreviewState] = useState<PlacementPreviewState>({ hasPoint: false, canPlace: false });
   const [cameraMode, setCameraMode] = useState<CameraMode>("follow");
   const [artworkFailed, setArtworkFailed] = useState(false);
   const lifecycleRef = useRef<PixiLifecycle | undefined>(undefined);
@@ -228,7 +242,7 @@ export function WorldCanvas(props: WorldCanvasProps) {
     onObjectSelect: props.onObjectSelect,
     onBuildItemSelect: props.onBuildItemSelect,
     onGongOffscreen: props.onGongOffscreen,
-    onAssetPreviewStateChange: setAssetPreviewState,
+    onPlacementPreviewStateChange: setPlacementPreviewState,
     onCameraModeChange: setCameraMode,
     onArtworkError: (error) => {
       console.error("World artwork could not load.", error);
@@ -246,7 +260,7 @@ export function WorldCanvas(props: WorldCanvasProps) {
     onObjectSelect: props.onObjectSelect,
     onBuildItemSelect: props.onBuildItemSelect,
     onGongOffscreen: props.onGongOffscreen,
-    onAssetPreviewStateChange: setAssetPreviewState,
+    onPlacementPreviewStateChange: setPlacementPreviewState,
     onCameraModeChange: setCameraMode,
     onArtworkError: (error) => {
       console.error("World artwork could not load.", error);
@@ -290,10 +304,10 @@ export function WorldCanvas(props: WorldCanvasProps) {
         createdLifecycle.renderer = renderer;
         rendererRef.current = renderer;
         const current = propsRef.current;
+        renderer.setRoomAccessibility(current.roomAccessibility);
         renderer.setScene(
           current.floor,
           current.layout,
-          current.meetings,
           current.editing,
           current.editingTool,
           current.editingAssetId,
@@ -305,6 +319,7 @@ export function WorldCanvas(props: WorldCanvasProps) {
           current.colorTheme,
         );
         renderer.setPlayers(current.players, current.members, current.currentUserId);
+        renderer.setListeningActivities(current.listeningActivities ?? {});
         renderer.setActiveInteraction(current.editing ? undefined : current.activeInteraction);
         renderer.setReactions(current.reactions);
         renderer.setHighFives(current.highFives);
@@ -324,7 +339,14 @@ export function WorldCanvas(props: WorldCanvasProps) {
         delete lifecycle.cleanupTimer;
       }
     }
+    const resizeObserver = new ResizeObserver(() => {
+      if (lifecycle.initialized && !lifecycle.destroyed) {
+        lifecycle.app.resize();
+      }
+    });
+    resizeObserver.observe(host);
     return () => {
+      resizeObserver.disconnect();
       lifecycle.active = false;
       lifecycle.cleanupTimer = window.setTimeout(() => {
         if (lifecycle.active || lifecycle.destroyed) {
@@ -352,7 +374,6 @@ export function WorldCanvas(props: WorldCanvasProps) {
     rendererRef.current?.setScene(
       props.floor,
       props.layout,
-      props.meetings,
       props.editing,
       props.editingTool,
       props.editingAssetId,
@@ -363,20 +384,24 @@ export function WorldCanvas(props: WorldCanvasProps) {
       props.playerAssetPlacement,
       props.colorTheme,
     );
-  }, [props.colorTheme, props.editing, props.editingAssetId, props.editingAssetRotation, props.editingAssetVariantId, props.editingTool, props.floor, props.layout, props.meetings, props.movingBuildItem, props.playerAssetPlacement, props.selectedBuildItem]);
+  }, [props.colorTheme, props.editing, props.editingAssetId, props.editingAssetRotation, props.editingAssetVariantId, props.editingTool, props.floor, props.layout, props.movingBuildItem, props.playerAssetPlacement, props.selectedBuildItem]);
 
-  const assetPlacementActive = props.editing
-    && (props.editingTool === "asset" || props.movingBuildItem?.type === "asset");
+  const pointPlacementActive = props.editing
+    && (props.editingTool === "asset" || props.editingTool === "spawn" || props.movingBuildItem?.type === "asset");
+
+  useEffect(() => {
+    rendererRef.current?.setRoomAccessibility(props.roomAccessibility);
+  }, [props.roomAccessibility]);
 
   useEffect(() => {
     rendererRef.current?.setActiveInteraction(props.editing ? undefined : props.activeInteraction);
   }, [props.activeInteraction, props.editing]);
 
   useEffect(() => {
-    if (!assetPlacementActive) {
-      setAssetPreviewState({ hasPoint: false, canPlace: false });
+    if (!pointPlacementActive) {
+      setPlacementPreviewState({ hasPoint: false, canPlace: false });
     }
-  }, [assetPlacementActive]);
+  }, [pointPlacementActive]);
 
   useEffect(() => {
     rendererRef.current?.setPlayers(props.players, props.members, props.currentUserId);
@@ -385,6 +410,10 @@ export function WorldCanvas(props: WorldCanvasProps) {
   useEffect(() => {
     rendererRef.current?.setReactions(props.reactions);
   }, [props.reactions]);
+
+  useEffect(() => {
+    rendererRef.current?.setListeningActivities(props.listeningActivities ?? {});
+  }, [props.listeningActivities]);
 
   useEffect(() => {
     rendererRef.current?.setHighFives(props.highFives);
@@ -427,12 +456,12 @@ export function WorldCanvas(props: WorldCanvasProps) {
       directionCallbackRef.current(++sequenceRef.current, Math.max(-1, Math.min(1, dx)), Math.max(-1, Math.min(1, dy)));
     };
 
-    const isTyping = (target: EventTarget | null) =>
-      target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement || target instanceof HTMLButtonElement;
+    const isInterfaceTarget = (target: EventTarget | null) =>
+      target instanceof Element && target !== document.body && !hostRef.current?.contains(target);
 
     const keyDown = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
-      if (!props.inputEnabled || isTyping(event.target) || !keyMap[key] || pressed.has(key)) {
+      if (!props.inputEnabled || event.defaultPrevented || isInterfaceTarget(event.target) || !keyMap[key] || pressed.has(key)) {
         return;
       }
       event.preventDefault();
@@ -489,8 +518,9 @@ export function WorldCanvas(props: WorldCanvasProps) {
           </button>
         )}
       </div>
-      {assetPlacementActive && (
-        <div className="placement-controls" role="toolbar" aria-label="Asset placement">
+      {pointPlacementActive && (
+        <div className="placement-controls" role="toolbar" aria-label={props.editingTool === "spawn" ? "Start point placement" : "Asset placement"}>
+          {props.editingTool !== "spawn" && <>
           <span className="placement-orientation" aria-label={`Facing ${getAssetOrientationLabel(props.editingAssetRotation)}`}>
             <ArrowUp
               size={16}
@@ -504,13 +534,14 @@ export function WorldCanvas(props: WorldCanvasProps) {
             icon={RotateCw}
             onClick={() => props.onAssetRotationChange(rotateAssetClockwise(props.editingAssetRotation))}
           />
+          </>}
           <button
             className="placement-confirm"
-            disabled={!assetPreviewState.hasPoint || !assetPreviewState.canPlace}
-            onClick={() => rendererRef.current?.commitAssetPlacement()}
+            disabled={!placementPreviewState.hasPoint || !placementPreviewState.canPlace}
+            onClick={() => rendererRef.current?.commitPlacement()}
           >
             <Check size={16} aria-hidden="true" />
-            {props.movingBuildItem?.type === "asset" ? "Move here" : "Place"}
+            {props.movingBuildItem?.type === "asset" || props.editingTool === "spawn" ? "Move here" : "Place"}
           </button>
           <IconButton label="Cancel placement" icon={X} onClick={props.onPlacementCancel} />
         </div>
@@ -524,11 +555,15 @@ class OfficeRenderer {
   private readonly layoutLayer = new Container();
   private readonly selectionOverlay = new Graphics();
   private readonly interactionOverlay = new Graphics();
+  private readonly accessibilityOverlay = new Graphics();
+  private roomAccessibility: PlayerRoomAccessibility | undefined;
   private readonly buildPreview = new Graphics();
   private readonly assetPreviewLayer = new Container();
   private readonly assetTextures = new WorldAssetTextures();
   private assetPreview: { key: string; container: Container } | undefined;
-  private readonly playerLayer = new Container();
+  private readonly depth = new WorldDepth();
+  private readonly objectViews = new Map<string, Container>();
+  private readonly assetAnimations = new Map<Container, (now: number) => void>();
   private readonly celebrationLayer = new Container();
   private readonly playerViews = new Map<string, PlayerView>();
   private readonly highFiveViews = new Map<string, HighFiveView>();
@@ -541,7 +576,6 @@ class OfficeRenderer {
   private floor?: Floor;
   private layout?: FloorLayout;
   private placementLayout: FloorLayout | undefined;
-  private meetings: Meeting[] = [];
   private players: WorldPlayer[] = [];
   private editing = false;
   private editingTool: LayoutTool | null = null;
@@ -550,7 +584,7 @@ class OfficeRenderer {
   private editingAssetRotation: AssetRotation = 0;
   private selectedBuildItem: LayoutItemReference | undefined;
   private movingBuildItem: LayoutItemReference | undefined;
-  private playerAssetPlacement: { userId: string; settings: GameSettings } | undefined;
+  private playerAssetPlacement: { userId: string; settings: GameSettings; organisation: OrganisationState; officeBuilder: boolean } | undefined;
   private currentUserId = "";
   private cameraUserId = "";
   private cameraMode: CameraMode = "follow";
@@ -569,7 +603,7 @@ class OfficeRenderer {
   private buildStart?: { x: number; y: number };
   private buildOrientation?: "horizontal" | "vertical";
   private colorTheme: ColorTheme = "light";
-  private assetPreviewState: AssetPreviewState = { hasPoint: false, canPlace: false };
+  private placementPreviewState: PlacementPreviewState = { hasPoint: false, canPlace: false };
   private touchPlacement = false;
 
   constructor(
@@ -578,8 +612,7 @@ class OfficeRenderer {
   ) {
     this.app.stage.addChild(this.world);
     this.world.scale.set(this.zoom);
-    this.playerLayer.sortableChildren = true;
-    this.world.addChild(this.layoutLayer, this.interactionOverlay, this.selectionOverlay, this.assetPreviewLayer, this.buildPreview, this.playerLayer, this.celebrationLayer);
+    this.world.addChild(this.layoutLayer, this.accessibilityOverlay, this.interactionOverlay, this.depth.container, this.selectionOverlay, this.assetPreviewLayer, this.buildPreview, this.celebrationLayer);
     this.app.canvas.addEventListener("pointerdown", this.handlePointerDown);
     this.app.canvas.addEventListener("pointermove", this.handlePointerMove);
     this.app.canvas.addEventListener("pointerup", this.handlePointerUp);
@@ -593,7 +626,6 @@ class OfficeRenderer {
   setScene(
     floor: Floor,
     layout: FloorLayout,
-    meetings: Meeting[],
     editing: boolean,
     editingTool: LayoutTool | null,
     editingAssetId: string,
@@ -601,18 +633,15 @@ class OfficeRenderer {
     editingAssetRotation: AssetRotation,
     selectedBuildItem?: LayoutItemReference,
     movingBuildItem?: LayoutItemReference,
-    playerAssetPlacement?: { userId: string; settings: GameSettings },
+    playerAssetPlacement?: { userId: string; settings: GameSettings; organisation: OrganisationState; officeBuilder: boolean },
     colorTheme: ColorTheme = "light",
   ): void {
     const floorChanged = this.floor?.id !== floor.id;
     const structureChanged = this.floor !== floor || this.layout !== layout;
-    const meetingsChanged = this.meetings.length !== meetings.length
-      || this.meetings.some((meeting, index) => meeting !== meetings[index]);
     const editingGridChanged = this.editing !== editing
       || (editing && (this.editingTool === "asset") !== (editingTool === "asset"));
     const themeChanged = this.colorTheme !== colorTheme;
     const layoutChanged = structureChanged
-      || meetingsChanged
       || editingGridChanged
       || themeChanged;
     const toolChanged = this.editing !== editing
@@ -624,7 +653,6 @@ class OfficeRenderer {
       const mergedSegments = mergeWallSegments(layout.walls, layout.openings);
       this.placementLayout = { ...layout, walls: mergedSegments.walls, openings: mergedSegments.openings };
     }
-    this.meetings = meetings;
     this.editing = editing;
     this.editingTool = editingTool;
     this.editingAssetId = editingAssetId;
@@ -639,7 +667,7 @@ class OfficeRenderer {
       delete this.buildStart;
       delete this.buildOrientation;
       this.touchPlacement = false;
-      this.updateAssetPreviewState(false, false);
+      this.updatePlacementPreviewState(false, false);
     }
     if (floorChanged) {
       this.cancelPointerInteraction();
@@ -652,14 +680,23 @@ class OfficeRenderer {
     }
     if (layoutChanged) {
       this.drawLayout();
+      this.setPlayers(this.players, this.members ?? [], this.currentUserId);
     }
     if (themeChanged) {
       this.applyPlayerTheme();
     }
     this.drawBuildSelection();
+    this.drawRoomAccessibility();
     if (this.editing && this.hoverPoint && !this.buildStart && (!this.hoverPointIsTouch || this.touchPlacement)) {
       this.drawPlacementPreview(this.hoverPoint);
     }
+  }
+
+  private listeningActivities: Readonly<Record<string, SpotifyActivity>> = {};
+  private readonly musicReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  setListeningActivities(activities: Readonly<Record<string, SpotifyActivity>>): void {
+    this.listeningActivities = activities;
   }
 
   setPlayers(players: WorldPlayer[], members: Member[], currentUserId: string): void {
@@ -697,13 +734,15 @@ class OfficeRenderer {
         view = this.createPlayerView(member, player.userId === currentUserId);
         view.container.position.set(player.x, player.y);
         this.playerViews.set(player.userId, view);
-        this.playerLayer.addChild(view.container);
         this.applyReaction(view, this.reactions.get(player.userId));
       }
       const carrier = player.carriedByUserId ? playerMap.get(player.carriedByUserId) : undefined;
       view.seated = Boolean(player.seat || carrier);
       const seat = player.seat && !carrier ? this.layout?.objects.find((object) => object.id === player.seat!.objectId) : undefined;
-      view.seatOffsetY = view.characterSeat.update(seat, player.facing);
+      const interaction = seat && player.seat && getPlacedAssetInteraction(seat, player.seat.interactionId);
+      const seatLayout = getCharacterSeatLayout(seat);
+      view.seatOffsetY = seatLayout.offsetY;
+      view.seatHasBack = seatLayout.hasBack;
       view.avatarImage.y = view.seatOffsetY;
       view.canWalk = !view.seated;
       view.ground.visible = view.canWalk;
@@ -712,14 +751,23 @@ class OfficeRenderer {
       view.status.y = view.seated ? SEATED_CHARACTER_OFFSET + view.seatOffsetY : 0;
       view.targetX = carrier?.x ?? player.x;
       view.targetY = (carrier?.y ?? player.y) - (carrier ? CHARACTER_WORLD_SIZE * 0.7 : 0);
-      view.container.zIndex = carrier ? -1 : 0;
+      this.depth.setPosition(view.container, view.container.x, view.container.y);
       view.wavingUntil = player.wavingUntil ?? 0;
       if (view.availability !== player.availability) {
         view.availability = player.availability;
         view.status.clear().circle(10, -CHARACTER_WORLD_SIZE + 8, 4).fill(statusColors[player.availability]).stroke({ color: "#ffffff", width: 2 });
       }
-      view.facingDirection = carrier?.facing ?? player.facing;
+      view.facingDirection = carrier?.facing ?? interaction?.direction ?? player.facing;
     }
+    for (const player of players) {
+      const view = this.playerViews.get(player.userId);
+      if (!view) continue;
+      const support = player.carriedByUserId
+        ? this.playerViews.get(player.carriedByUserId)?.container
+        : player.seat ? this.objectViews.get(player.seat.objectId) : undefined;
+      this.depth.attach(view.container, support, Boolean(player.carriedByUserId) || view.seatHasBack && view.facingDirection === "up");
+    }
+    this.depth.sort();
   }
 
   setActiveInteraction(area: InteractionHighlight | undefined): void {
@@ -880,11 +928,16 @@ class OfficeRenderer {
         this.app.screen.height / 2 - center.y * this.zoom,
       );
     }
-    this.refreshPlacementPreview();
+    this.refreshBuildOverlays();
   }
 
-  commitAssetPlacement(): boolean {
+  commitPlacement(): boolean {
     const point = this.hoverPoint;
+    if (point && this.editing && this.editingTool === "spawn" && this.playerAssetPlacement?.officeBuilder !== false) {
+      if (!this.drawSpawnPreview(point)) return false;
+      this.callbacks.current.onEdit({ tool: "spawn", position: { x: snapToBuildGrid(point.x), y: snapToBuildGrid(point.y) } });
+      return true;
+    }
     if (!point || !this.editing || (this.editingTool !== "asset" && this.movingBuildItem?.type !== "asset")) {
       return false;
     }
@@ -928,6 +981,8 @@ class OfficeRenderer {
       return;
     }
     this.gongViews.clear();
+    for (const view of this.objectViews.values()) view.destroy({ children: true });
+    this.objectViews.clear();
     for (const child of this.layoutLayer.removeChildren()) {
       child.destroy({ children: true });
     }
@@ -981,11 +1036,9 @@ class OfficeRenderer {
       this.layoutLayer.addChild(roomGraphic);
     }
 
-    for (const object of this.layout.objects) {
-      if (requireAssetDefinition(object.assetId).placement.layer === "ground") {
-        this.drawObject(object);
-      }
-    }
+    const groundObjects = this.layout.objects.filter(object => requireAssetDefinition(object.assetId).placement.layer === "ground")
+      .sort((left, right) => Number(requireAssetDefinition(left.assetId).kind === "rug") - Number(requireAssetDefinition(right.assetId).kind === "rug"));
+    for (const object of groundObjects) this.drawObject(object);
 
     for (const room of this.layout.rooms) {
       const label = new Text({
@@ -1018,61 +1071,19 @@ class OfficeRenderer {
       ]).fill({ color: light.color, alpha: light.intensity }));
     }
 
-    for (const meeting of this.meetings) {
-      if (meeting.status === "ended" || meeting.location.type !== "public" || meeting.location.floorId !== this.floor.id) {
-        continue;
-      }
-      const center = new Graphics()
-        .circle(meeting.location.x, meeting.location.y, 5)
-        .fill({ color: "#6c5ce7", alpha: 0.78 });
-      this.layoutLayer.addChild(center);
-    }
-
-    const walls = this.placementLayout?.walls ?? this.layout.walls;
-    const openings = this.placementLayout?.openings ?? this.layout.openings;
-    const wallShadows = new Graphics();
-    const wallBodies = new Graphics();
-    for (const wall of walls) {
-      for (const rect of getWallSolidRects(wall, openings)) {
-        wallShadows.rect(rect.x + 3, rect.y + 4, rect.width, rect.height).fill({ color: "#11121a", alpha: dark ? 0.34 : 0.14 });
-        wallBodies
-          .roundRect(rect.x, rect.y, rect.width, rect.height, 3)
-          .fill(dark ? "#555461" : "#4b4853")
-          .stroke({ color: "#ffffff", width: 1, alpha: dark ? 0.16 : 0.1 });
-      }
-    }
-    this.layoutLayer.addChild(wallShadows, wallBodies);
-    const wallsById = new Map(walls.map((wall) => [wall.id, wall]));
-    for (const opening of openings) {
-      const wall = wallsById.get(opening.wallId);
-      if (!wall) {
-        continue;
-      }
-      const rect = getOpeningRect(wall, opening, opening.type === "door" ? 8 : WALL_THICKNESS + 4);
-      if (opening.type === "window") {
-        this.layoutLayer.addChild(new Graphics()
-          .roundRect(rect.x, rect.y, rect.width, rect.height, 2)
-          .fill({ color: dark ? "#5994ad" : "#a9d8f1", alpha: 0.94 })
-          .stroke({ color: "#f3fbff", width: 2, alpha: 0.95 }));
-      } else {
-        const restricted = this.layout.rooms.some((room) => room.doorIds.includes(opening.id) && room.access.mode === "assigned");
-        this.layoutLayer.addChild(new Graphics()
-          .roundRect(rect.x, rect.y, rect.width, rect.height, 2)
-          .fill(restricted ? dark ? "#806f98" : "#746588" : dark ? "#8c8992" : "#d8d0c5")
-          .stroke({ color: restricted ? "#3f354d" : dark ? "#51505a" : "#817970", width: 1 }));
-      }
-    }
+    this.layoutLayer.addChild(createWorldArchitecture(this.assetTextures, this.placementLayout ?? this.layout, this.colorTheme, this.callbacks.current.onArtworkError));
     const objects = this.layout.objects.filter((object) => requireAssetDefinition(object.assetId).placement.layer !== "ground").sort((left, right) => {
-      const leftLayer = requireAssetDefinition(left.assetId).placement.layer === "surface" ? 1 : 0;
-      const rightLayer = requireAssetDefinition(right.assetId).placement.layer === "surface" ? 1 : 0;
-      const leftBounds = getPlacedAssetBounds(left);
-      const rightBounds = getPlacedAssetBounds(right);
-      return leftLayer - rightLayer
-        || leftBounds.y + leftBounds.height - rightBounds.y - rightBounds.height
-        || leftBounds.x - rightBounds.x;
+      const leftDepth = getWorldAssetDepth(left);
+      const rightDepth = getWorldAssetDepth(right);
+      return leftDepth.y - rightDepth.y || leftDepth.x - rightDepth.x || left.id.localeCompare(right.id);
     });
     for (const object of objects) {
       this.drawObject(object);
+    }
+    for (const object of objects) {
+      for (const supported of getAssetsSupportedBy(this.layout, object)) {
+        this.depth.attach(this.objectViews.get(supported.id)!, this.objectViews.get(object.id)!);
+      }
     }
 
     const spawn = new Graphics()
@@ -1086,15 +1097,25 @@ class OfficeRenderer {
   }
 
   private drawObject(object: WorldObject): void {
-    const view = createWorldAssetView(this.assetTextures, object, this.colorTheme, this.callbacks.current.onArtworkError);
-    this.layoutLayer.addChild(view.container);
+    const view = createWorldAssetView(this.assetTextures, object, this.layout!, this.colorTheme, this.callbacks.current.onArtworkError);
+    if (view.animate) {
+      this.assetAnimations.set(view.container, view.animate);
+      view.container.once("destroyed", () => this.assetAnimations.delete(view.container));
+    }
+    if (requireAssetDefinition(object.assetId).placement.layer === "ground") {
+      this.layoutLayer.addChild(view.container);
+    } else {
+      const position = getWorldAssetDepth(object);
+      this.depth.setPosition(view.container, position.x, position.y);
+      this.objectViews.set(object.id, view.container);
+    }
     if (requireAssetDefinition(object.assetId).kind === "gong") {
       this.gongViews.set(object.id, { body: view.body, ringStartedAt: 0, ringUntil: 0 });
     }
   }
 
   private createPlayerView(member: Member, current: boolean): PlayerView {
-    const container = new Container();
+    const container = new Container({ label: `world-player:${member.id}` });
     const wave = new Graphics().circle(0, 0, 24).stroke({ color: member.color, width: 3 });
     wave.alpha = 0;
     const shadow = new Graphics().ellipse(0, 1, 10, 3).fill({ color: "#24212d", alpha: 0.22 });
@@ -1121,8 +1142,10 @@ class OfficeRenderer {
     });
     reactionText.anchor.set(0.5);
     reactionBubble.addChild(reactionShadow, reactionBackground, reactionText);
-    container.addChild(wave, ground, avatarImage, name, status, reactionBubble);
+    const music = new MusicIndicator();
+    container.addChild(wave, ground, avatarImage, name, status, music.container, reactionBubble);
     const view: PlayerView = {
+      music,
       container,
       status,
       wave,
@@ -1130,10 +1153,10 @@ class OfficeRenderer {
       ground,
       name,
       characterKey: characterAppearanceKey(member.character),
-      characterSeat: new CharacterSeat(avatarImage, this.assetTextures, this.callbacks.current.onArtworkError),
       canWalk: true,
       seated: false,
       seatOffsetY: 0,
+      seatHasBack: false,
       reactionBubble,
       reactionText,
       reactionStartedAt: 0,
@@ -1159,7 +1182,7 @@ class OfficeRenderer {
       if (view.container.destroyed || view.characterKey !== characterAppearanceKey(appearance)) return;
       const character = new CharacterSprite(image);
       const moving = view.canWalk && Math.hypot(view.targetX - view.container.x, view.targetY - view.container.y) > 0.4;
-      character.update(Date.now(), view.seated ? "sit" : moving ? "walk" : "idle", view.facingDirection ?? "down");
+      character.update(Date.now(), getCharacterMotion(view.seated, moving, false), view.facingDirection ?? "down");
       view.characterSprite?.sprite.destroy();
       view.characterSprite = character;
       view.avatarImage.addChild(view.characterSprite.sprite);
@@ -1185,17 +1208,22 @@ class OfficeRenderer {
 
   private readonly renderFrame = (): void => {
     const now = Date.now();
+    for (const animate of this.assetAnimations.values()) animate(this.musicReducedMotion.matches ? 0 : now);
     const interpolation = 1 - Math.exp(-Math.min(this.app.ticker.deltaMS, 100) / 67);
-    for (const view of this.playerViews.values()) {
+    for (const [userId, view] of this.playerViews) {
       const moving = view.canWalk && Math.hypot(view.targetX - view.container.x, view.targetY - view.container.y) > 0.4;
-      view.characterSprite?.update(now, view.seated ? "sit" : moving ? "walk" : "idle", view.facingDirection ?? "down");
+      const listening = (this.listeningActivities[userId]?.expiresAt ?? 0) > now;
+      view.characterSprite?.update(this.musicReducedMotion.matches ? 0 : now, getCharacterMotion(view.seated, moving, listening), view.facingDirection ?? "down");
       view.container.x += (view.targetX - view.container.x) * interpolation;
       view.container.y += (view.targetY - view.container.y) * interpolation;
-      view.characterSeat.align(view.container.x, view.container.y);
+      this.depth.setPosition(view.container, view.container.x, view.container.y);
       const waving = view.wavingUntil > now;
       view.wave.alpha = waving ? 0.35 + Math.sin(now / 100) * 0.2 : 0;
       view.wave.scale.set(waving ? 1 + ((now / 700) % 0.4) : 1);
       const reacting = view.reactionUntil > now;
+      view.music.update(now, this.listeningActivities[userId]?.expiresAt ?? 0,
+        -CHARACTER_WORLD_SIZE + (view.seated ? SEATED_CHARACTER_OFFSET + view.seatOffsetY : 0),
+        this.musicReducedMotion.matches, reacting);
       view.reactionBubble.visible = reacting;
       if (reacting) {
         const entrance = Math.min(1, (now - view.reactionStartedAt) / 180);
@@ -1206,6 +1234,7 @@ class OfficeRenderer {
         view.reactionBubble.y = (-CHARACTER_WORLD_SIZE - 22) + (view.seated ? SEATED_CHARACTER_OFFSET + view.seatOffsetY : 0) - entrance * 5;
       }
     }
+    this.depth.sort();
     for (const view of this.highFiveViews.values()) {
       const left = this.playerViews.get(view.userIds[0]);
       const right = this.playerViews.get(view.userIds[1]);
@@ -1458,13 +1487,13 @@ class OfficeRenderer {
         this.placeMovingItem(point);
         return;
       }
-      if (this.editingTool === "asset") {
+      if (this.editingTool === "asset" || this.editingTool === "spawn") {
         if (event.pointerType !== "mouse") {
           this.touchPlacement = true;
           return;
         }
         this.touchPlacement = false;
-        this.commitAssetPlacement();
+        this.commitPlacement();
       } else if (this.editingTool === "wall") {
         this.buildStart = {
           x: snapToBuildGrid(point.x),
@@ -1477,7 +1506,8 @@ class OfficeRenderer {
           this.callbacks.current.onEdit({ tool: this.editingTool, position: point });
         }
       } else if (this.editingTool === "erase") {
-        this.callbacks.current.onEdit({ tool: this.editingTool, position: point });
+        const object = getBuildSelectionCandidates(this.layout.objects).find(object => this.hitAssetArtwork(object, pointerPoint));
+        this.callbacks.current.onEdit(object ? { tool: "item.remove", item: { type: "asset", id: object.id } } : { tool: this.editingTool, position: point });
       } else if (!this.editingTool) {
         this.selectBuildItem(point, event.pointerType === "mouse" ? 0 : this.getTouchTargetWorldSize());
       }
@@ -1500,6 +1530,7 @@ class OfficeRenderer {
       pointerPoint.x,
       pointerPoint.y,
       event.pointerType === "mouse" ? 0 : touchTargetSize,
+      object => this.hitAssetArtwork(object, pointerPoint),
     );
     if (target.type === "object") {
       this.callbacks.current.onObjectSelect(target.object, target.interactionId, anchor);
@@ -1526,7 +1557,7 @@ class OfficeRenderer {
       delete this.hoverPoint;
       this.hoverPointIsTouch = false;
       this.clearBuildPreview();
-      this.updateAssetPreviewState(false, false);
+      this.updatePlacementPreviewState(false, false);
     }
   };
 
@@ -1550,7 +1581,7 @@ class OfficeRenderer {
     this.freeCameraX = worldPoint.x - (screenPoint.x - this.app.screen.width / 2) / this.zoom;
     this.freeCameraY = worldPoint.y - (screenPoint.y - this.app.screen.height / 2) / this.zoom;
     this.applyFreeCameraTransform();
-    this.refreshPlacementPreview();
+    this.refreshBuildOverlays();
   };
 
   private getPointer(event: PointerEvent): ActivePointer {
@@ -1615,7 +1646,7 @@ class OfficeRenderer {
       this.freeCameraY = worldPoint.y - (center.y - this.app.screen.height / 2) / this.zoom;
       this.applyFreeCameraTransform();
       if (this.zoom !== previousZoom) {
-        this.refreshPlacementPreview();
+        this.refreshBuildOverlays();
       }
       this.panning = true;
     }
@@ -1667,7 +1698,7 @@ class OfficeRenderer {
     this.hoverPointIsTouch = false;
     this.clearBuildPreview();
     this.touchPlacement = false;
-    this.updateAssetPreviewState(false, false);
+    this.updatePlacementPreviewState(false, false);
     this.app.canvas.style.removeProperty("cursor");
   }
 
@@ -1706,7 +1737,8 @@ class OfficeRenderer {
     };
   }
 
-  private refreshPlacementPreview(): void {
+  private refreshBuildOverlays(): void {
+    this.drawBuildSelection();
     if (this.editing && this.hoverPoint) {
       this.drawPlacementPreview(this.hoverPoint);
     }
@@ -1758,7 +1790,11 @@ class OfficeRenderer {
   private drawPlacementPreview(point: { x: number; y: number }): void {
     if (!this.editing) {
       this.clearBuildPreview();
-      this.updateAssetPreviewState(false, false);
+      this.updatePlacementPreviewState(false, false);
+      return;
+    }
+    if (this.editingTool === "spawn") {
+      this.drawSpawnPreview(point);
       return;
     }
     if (this.movingBuildItem?.type === "asset") {
@@ -1766,7 +1802,7 @@ class OfficeRenderer {
       if (candidate) {
         this.drawAssetPreview(candidate);
       } else {
-        this.updateAssetPreviewState(false, false);
+        this.updatePlacementPreviewState(false, false);
       }
       return;
     }
@@ -1789,7 +1825,7 @@ class OfficeRenderer {
       if (candidate) {
         this.drawAssetPreview(candidate);
       } else {
-        this.updateAssetPreviewState(false, false);
+        this.updatePlacementPreviewState(false, false);
       }
       return;
     }
@@ -1798,7 +1834,7 @@ class OfficeRenderer {
       return;
     }
     if (this.editingTool === "wall") {
-      this.updateAssetPreviewState(false, false);
+      this.updatePlacementPreviewState(false, false);
       if (this.buildStart) {
         const deltaX = point.x - this.buildStart.x;
         const deltaY = point.y - this.buildStart.y;
@@ -1815,7 +1851,41 @@ class OfficeRenderer {
       return;
     }
     this.clearBuildPreview();
-    this.updateAssetPreviewState(false, false);
+    this.updatePlacementPreviewState(false, false);
+  }
+
+  private drawSpawnPreview(point: { x: number; y: number }): boolean {
+    if (!this.layout || !this.floor || this.playerAssetPlacement?.officeBuilder === false) return false;
+    const position = { x: snapToBuildGrid(point.x), y: snapToBuildGrid(point.y) };
+    const blocked = Boolean(getSpawnPlacementError(this.layout, getOutdoorBounds(this.floor), position, this.players, this.playerAssetPlacement?.settings.roomAccess.mode));
+    const color = blocked ? "#c93636" : "#5143bd";
+    const { x, y } = position;
+    this.clearBuildPreview()
+      .circle(x, y, 13).fill({ color, alpha: 0.15 }).stroke({ color, width: 2 })
+      .moveTo(x, y - 8).lineTo(x + 8, y).lineTo(x, y + 8).lineTo(x - 8, y)
+      .closePath().fill({ color, alpha: 0.8 });
+    this.updatePlacementPreviewState(true, !blocked);
+    return !blocked;
+  }
+
+  setRoomAccessibility(accessibility: PlayerRoomAccessibility | undefined): void {
+    this.roomAccessibility = accessibility;
+    this.drawRoomAccessibility();
+  }
+
+  private drawRoomAccessibility(): void {
+    this.accessibilityOverlay.clear();
+    const result = this.roomAccessibility?.floors.find((floor) => floor.floorId === this.floor?.id);
+    if (!result || !this.floor || !this.layout) return;
+    for (const room of this.layout.rooms) {
+      const entry = result.rooms.find((item) => item.roomId === room.id);
+      if (!entry) continue;
+      const { color } = roomEntryAppearance[entry.status];
+      for (const rect of room.footprint) {
+        this.accessibilityOverlay.rect(rect.x, rect.y, rect.width, rect.height)
+          .fill({ color, alpha: 0.22 }).stroke({ color, width: 2, alpha: 0.8 });
+      }
+    }
   }
 
   private createAssetCandidate(point: { x: number; y: number }): WorldObject | undefined {
@@ -1830,7 +1900,7 @@ class OfficeRenderer {
     if (!definition) {
       return undefined;
     }
-    const position = getCenteredAssetPosition(definition, this.editingAssetRotation, point);
+    const position = getWorldAssetPlacementPosition(this.layout, definition, this.editingAssetRotation, point);
     return {
       ...(movingObject ?? { id: "preview", floorId: this.floor.id, assetId }),
       x: position.x,
@@ -1843,7 +1913,7 @@ class OfficeRenderer {
   private drawAssetPreview(candidate: WorldObject): boolean {
     if (!this.layout || !this.floor) {
       this.clearBuildPreview();
-      this.updateAssetPreviewState(false, false);
+      this.updatePlacementPreviewState(false, false);
       return false;
     }
     const cells = getPlacedAssetCells(candidate);
@@ -1853,6 +1923,8 @@ class OfficeRenderer {
         candidate,
         this.playerAssetPlacement.userId,
         this.playerAssetPlacement.settings,
+        this.playerAssetPlacement.organisation,
+        this.playerAssetPlacement.officeBuilder,
       ))
       || this.placementOverlapsPlayers(cells.filter((cell) => cell.solid).map((cell) => ({
         x: cell.worldX,
@@ -1867,23 +1939,34 @@ class OfficeRenderer {
     if (definition.radius) {
       drawAssetRadius(this.buildPreview, bounds, definition.radius, indicatorColor, 0.06, 0.62);
     }
-    const key = [candidate.assetId, candidate.variantId, candidate.rotation, this.colorTheme].join(":");
+    const key = [candidate.assetId, candidate.variantId, candidate.rotation, this.colorTheme, getWorldAssetSurfaceOffset(this.layout, candidate),
+      ...(definition.kind === "floor-tile" ? [candidate.x, candidate.y, this.layout.revision] : [])].join(":");
     if (this.assetPreview?.key !== key) {
       this.assetPreview?.container.destroy({ children: true });
-      const view = createWorldAssetView(this.assetTextures, candidate, this.colorTheme, this.callbacks.current.onArtworkError);
+      const view = createWorldAssetView(this.assetTextures, candidate, this.layout, this.colorTheme, this.callbacks.current.onArtworkError);
       this.assetPreviewLayer.addChild(view.container);
       this.assetPreview = { key, container: view.container };
     }
     this.assetPreview.container.position.set(candidate.x, candidate.y);
     this.assetPreview.container.alpha = blocked ? 0.4 : 0.76;
-    for (const cell of cells) {
+    if (definition.placement.layer === "surface") {
+      const artworkBounds = getPlacedWorldAssetBounds(this.layout, candidate);
       this.buildPreview
-        .roundRect(cell.worldX + 1, cell.worldY + 1, ASSET_RASTER_SIZE - 2, ASSET_RASTER_SIZE - 2, 2)
+        .rect(artworkBounds.x - 1, artworkBounds.y - 1, artworkBounds.width + 2, artworkBounds.height + 2)
         .fill({ color: indicatorColor, alpha: blocked ? 0.18 : 0.04 })
         .stroke({ color: indicatorColor, width: 1.5, alpha: 0.9 });
+    } else {
+      const cellRects = getPlacedAssetCellRects(candidate);
+      const previewRects = definition.kind === "floor-tile" ? getFlooringVisibleRects(this.layout, cellRects) : cellRects;
+      for (const rect of previewRects) {
+        this.buildPreview
+          .roundRect(rect.x + 1, rect.y + 1, rect.width - 2, rect.height - 2, 2)
+          .fill({ color: indicatorColor, alpha: blocked ? 0.18 : 0.04 })
+          .stroke({ color: indicatorColor, width: 1.5, alpha: 0.9 });
+      }
     }
-    drawAssetDirectionIndicators(this.buildPreview, getAssetDirectionIndicators(candidate, this.zoom), indicatorColor);
-    this.updateAssetPreviewState(true, !blocked);
+    drawAssetDirectionIndicators(this.buildPreview, getAssetDirectionIndicators(candidate, this.layout, this.zoom), indicatorColor);
+    this.updatePlacementPreviewState(true, !blocked);
     return !blocked;
   }
 
@@ -1893,12 +1976,12 @@ class OfficeRenderer {
     return this.buildPreview.clear();
   }
 
-  private updateAssetPreviewState(hasPoint: boolean, canPlace: boolean): void {
-    if (this.assetPreviewState.hasPoint === hasPoint && this.assetPreviewState.canPlace === canPlace) {
+  private updatePlacementPreviewState(hasPoint: boolean, canPlace: boolean): void {
+    if (this.placementPreviewState.hasPoint === hasPoint && this.placementPreviewState.canPlace === canPlace) {
       return;
     }
-    this.assetPreviewState = { hasPoint, canPlace };
-    this.callbacks.current.onAssetPreviewStateChange(this.assetPreviewState);
+    this.placementPreviewState = { hasPoint, canPlace };
+    this.callbacks.current.onPlacementPreviewStateChange(this.placementPreviewState);
   }
 
   private drawWallPreview(edit: Extract<LayoutEdit, { tool: "wall" }>): boolean {
@@ -2108,18 +2191,31 @@ class OfficeRenderer {
     return point;
   }
 
+  private hitAssetArtwork(object: WorldObject, point: { x: number; y: number }): boolean {
+    if (!this.layout) return false;
+    return this.assetTextures.isPointVisible(getPlacedWorldAssetArtwork(this.layout, object), point.x - object.x, point.y - object.y);
+  }
+
+  private hitBuildAsset(object: WorldObject, point: { x: number; y: number }, minimumTargetSize: number): boolean {
+    if (this.layout && requireAssetDefinition(object.assetId).kind === "floor-tile") {
+      return getFlooringVisibleRects(this.layout, [getPlacedAssetBounds(object)]).some((rect) => pointInRect(point.x, point.y, rect));
+    }
+    if (this.hitAssetArtwork(object, point)) return true;
+    const surface = requireAssetDefinition(object.assetId).placement.layer === "surface";
+    if (!surface && isPointInPlacedAsset(point.x, point.y, object)) return true;
+    if (minimumTargetSize <= 0 || !this.layout) return false;
+    const bounds = surface ? getPlacedWorldAssetBounds(this.layout, object) : getPlacedAssetBounds(object);
+    return isPointInWorldTarget(point.x, point.y, bounds, minimumTargetSize);
+  }
+
   private selectBuildItem(point: { x: number; y: number }, minimumTargetSize: number): void {
     if (!this.placementLayout) {
       return;
     }
-    if (this.playerAssetPlacement) {
+    if (this.playerAssetPlacement && !this.playerAssetPlacement.officeBuilder) {
       const ownedObject = getBuildSelectionCandidates(this.placementLayout.objects).find((candidate) =>
         candidate.ownerUserId === this.playerAssetPlacement?.userId
-        && (
-          isPointInPlacedAsset(point.x, point.y, candidate)
-          || (minimumTargetSize > 0
-            && isPointInWorldTarget(point.x, point.y, getPlacedAssetBounds(candidate), minimumTargetSize))
-        ),
+        && this.hitBuildAsset(candidate, point, minimumTargetSize),
       );
       this.callbacks.current.onBuildItemSelect(ownedObject ? { type: "asset", id: ownedObject.id } : undefined);
       return;
@@ -2138,11 +2234,7 @@ class OfficeRenderer {
       return;
     }
     const object = getBuildSelectionCandidates(this.placementLayout.objects)
-      .find((candidate) => (
-        isPointInPlacedAsset(point.x, point.y, candidate)
-        || (minimumTargetSize > 0
-          && isPointInWorldTarget(point.x, point.y, getPlacedAssetBounds(candidate), minimumTargetSize))
-      ));
+      .find((candidate) => this.hitBuildAsset(candidate, point, minimumTargetSize));
     if (object) {
       this.callbacks.current.onBuildItemSelect({ type: "asset", id: object.id });
       return;
@@ -2171,13 +2263,16 @@ class OfficeRenderer {
       if (definition.radius) {
         drawAssetRadius(this.selectionOverlay, bounds, definition.radius, "#5143bd", 0.04, 0.5);
       }
-      for (const cell of getPlacedAssetCells(object)) {
+      const artworkBounds = getPlacedWorldAssetBounds(this.placementLayout, object);
+      const flooring = definition.kind === "floor-tile";
+      const selectionRects = flooring ? getFlooringVisibleRects(this.placementLayout, [artworkBounds]) : [artworkBounds];
+      const inset = flooring ? 1 : -1;
+      for (const rect of selectionRects) {
         this.selectionOverlay
-          .rect(cell.worldX - 1, cell.worldY - 1, ASSET_RASTER_SIZE + 2, ASSET_RASTER_SIZE + 2)
-          .fill({ color: "#5143bd", alpha: 0.1 })
+          .rect(rect.x + inset, rect.y + inset, rect.width - inset * 2, rect.height - inset * 2)
           .stroke({ color: "#5143bd", width: 2, alpha: 0.9 });
       }
-      drawAssetDirectionIndicators(this.selectionOverlay, getAssetDirectionIndicators(object), "#5143bd");
+      drawAssetDirectionIndicators(this.selectionOverlay, getAssetDirectionIndicators(object, this.placementLayout, this.zoom), "#5143bd");
       return;
     }
     if (this.selectedBuildItem.type === "wall") {
@@ -2247,6 +2342,8 @@ function getBuildSelectionCandidates(objects: WorldObject[]): WorldObject[] {
     .sort((left, right) => (
       layerPriority[requireAssetDefinition(right.object.assetId).placement.layer]
       - layerPriority[requireAssetDefinition(left.object.assetId).placement.layer]
+      || Number(requireAssetDefinition(right.object.assetId).kind === "rug") - Number(requireAssetDefinition(left.object.assetId).kind === "rug")
+      || getWorldAssetDepth(right.object).y - getWorldAssetDepth(left.object).y
       || right.index - left.index
     ))
     .map(({ object }) => object);

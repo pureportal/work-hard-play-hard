@@ -1,3 +1,4 @@
+import { createOrganisation } from "@workhard/shared";
 import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -130,7 +131,7 @@ describe("Workspace floor navigation", () => {
     }));
   });
 
-  it("stops movement and hides gameplay controls in Build Mode", () => {
+  it("stops movement and hides gameplay controls in Build Mode", async () => {
     renderWorkspace();
 
     expect(screen.getByLabelText("Controls")).toBeTruthy();
@@ -139,13 +140,13 @@ describe("Workspace floor navigation", () => {
     expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({ type: "movement.stop" }));
     expect(screen.getByTestId("world").getAttribute("data-input-enabled")).toBe("false");
     expect(screen.queryByLabelText("Controls")).toBeNull();
-    expect(screen.getByRole("heading", { name: "Build" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Build" }, { timeout: 5_000 })).toBeTruthy();
   });
 
-  it("rotates the active placement with R even while its catalog button has focus", () => {
+  it("rotates the active placement with R even while its catalog button has focus", async () => {
     renderWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "Build" }));
-    fireEvent.click(screen.getByRole("tab", { name: "Seating" }));
+    fireEvent.click(await screen.findByRole("tab", { name: "Seating" }));
     const chairButton = screen.getByRole("button", { name: "Office chair" });
     fireEvent.click(chairButton);
 
@@ -279,23 +280,27 @@ describe("Workspace floor navigation", () => {
     expect(screen.getByLabelText("Focus room door")).toBeTruthy();
   });
 
-  it("keeps a door prompt open while a knock is pending", () => {
+  it("dismisses a door prompt while a knock is pending and restores it after a failed request", () => {
     realtime.snapshot = snapshot("floor-1", 200, 100);
     renderWorkspace(workspaceWithDoor(false));
 
     fireEvent.click(screen.getByRole("button", { name: "Knock" }));
 
+    expect(screen.queryByLabelText("Focus room door")).toBeNull();
+    const command = realtime.send.mock.calls.at(-1)![0] as Extract<ClientCommand, { type: "room.knock" }>;
+    act(() => realtime.handler?.({ type: "command.error", requestId: command.requestId,
+      code: "KNOCK_NO_OCCUPANTS", message: "No one is inside." }));
     expect(screen.getByLabelText("Focus room door")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Waiting" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Knock" })).toBeTruthy();
   });
 
-  it("moves, rotates, and removes an item selected on the build canvas", () => {
+  it("moves, rotates, and removes an item selected on the build canvas", async () => {
     renderWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "Build" }));
     fireEvent.click(screen.getByRole("button", { name: "Select build item" }));
 
     fireEvent.keyDown(window, { key: "r" });
-    fireEvent.click(screen.getByRole("button", { name: "Move" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Move" }));
     expect(screen.getByTestId("world").getAttribute("data-moving")).toBe("asset:chair");
     fireEvent.click(screen.getByRole("button", { name: "Place selected item" }));
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
@@ -351,6 +356,7 @@ function workspace(): BootstrapData {
   return {
     currentUserId: "user-maya",
     corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
+    organisation: createOrganisation(),
     team: { id: "team", name: "Northstar", slug: "northstar", accent: "#6c5ce7" },
     office: { id: "office", teamId: "team", name: "Northstar" },
     floors,

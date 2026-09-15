@@ -113,13 +113,13 @@ describe("EconomyStore", () => {
     const source = new EconomyStore(["player"], firstDay);
     source.claimDailyReward("player", "claim-daily", firstDay);
     source.purchaseAsset("player", "plant-floor", "purchase-plant", firstDay);
-    source.updateGameSettings({ allowPlayerAssetPlacementInPublicRooms: true });
+    source.updateGameSettings({ roomAccess: { mode: "open", assignedPersonIds: [] }, roomBuild: { mode: "open", assignedPersonIds: [] } });
 
     const restored = new EconomyStore([]);
     restored.restoreState(source.exportState());
 
     expect(restored.getPlayerEconomy("player", firstDay)).toEqual(source.getPlayerEconomy("player", firstDay));
-    expect(restored.getGameSettings()).toEqual({ allowPlayerAssetPlacementInPublicRooms: true });
+    expect(restored.getGameSettings()).toEqual({ roomAccess: { mode: "open", assignedPersonIds: [] }, roomBuild: { mode: "open", assignedPersonIds: [] } });
     expect(restored.purchaseAsset("player", "plant-floor", "purchase-plant", firstDay).replayed).toBe(true);
   });
 

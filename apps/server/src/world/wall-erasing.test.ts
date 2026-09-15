@@ -1,17 +1,18 @@
+import { createTestData } from "../testing/workspace-data.js";
 import { type ServerEvent, type Wall, type WallOpening } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
-import { DemoStore } from "../store.js";
+import { WorkspaceStore } from "../store.js";
 import { WorldRuntime } from "./world-runtime.js";
 
 interface EditorSession {
-  store: DemoStore;
+  store: WorkspaceStore;
   runtime: WorldRuntime;
   peerId: string;
   events: ServerEvent[];
 }
 
 function createEditorSession(walls: Wall[], openings: WallOpening[] = []): EditorSession {
-  const store = new DemoStore();
+  const store = new WorkspaceStore(createTestData());
   const layout = store.getLayout("floor-studio");
   if (!layout) {
     throw new Error("Test floor is missing");

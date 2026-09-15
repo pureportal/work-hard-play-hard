@@ -15,15 +15,15 @@ vi.mock("./CharacterPreview", () => ({
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe("CharacterEditor", () => {
-  it("offers No Breast independently of Flat for either gender and saves the selection", async () => {
+  it("offers gender without a size selector and saves the appearance", async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(<CharacterEditor appearance={DEFAULT_CHARACTER_APPEARANCE} onSave={onSave} onClose={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "No Breast" }));
-    expect(screen.getByRole("button", { name: "Flat" }).getAttribute("aria-pressed")).toBe("false");
+    expect(screen.queryByRole("group", { name: /breast size/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^(No Breast|Flat|Medium|Big)$/ })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Male" }));
-    expect(screen.getByRole("button", { name: "No Breast" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.queryByRole("group", { name: /breast size/i })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Use character" }));
-    await waitFor(() => expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ gender: "male", breastSize: "none" })));
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith({ ...DEFAULT_CHARACTER_APPEARANCE, gender: "male" }));
   });
 
   it("previews interchangeable options, preserves them across gender changes and saves only on request", async () => {
@@ -31,14 +31,13 @@ describe("CharacterEditor", () => {
     const onClose = vi.fn();
     render(<CharacterEditor appearance={DEFAULT_CHARACTER_APPEARANCE} onSave={onSave} onClose={onClose} />);
     fireEvent.click(screen.getByRole("button", { name: "Male" }));
-    fireEvent.click(screen.getByRole("button", { name: "Big" }));
     fireEvent.click(screen.getByRole("button", { name: "Fierce" }));
-    for (const [tab, option] of [["Hair", "Lavender ponytail"], ["Tops", "Moon armor"], ["Bottoms", "Ranger breeches"], ["Shoes", "Leather boots"], ["Headwear", "Star cap"]] as const) {
+    for (const [tab, option] of [["Hair", "Silver tousle"], ["Tops", "Moon armor"], ["Bottoms", "Ranger breeches"], ["Shoes", "Leather boots"], ["Headwear", "Star cap"]] as const) {
       fireEvent.click(screen.getByRole("tab", { name: tab }));
       fireEvent.click(screen.getByRole("button", { name: option }));
     }
     fireEvent.click(screen.getByRole("button", { name: "Female" }));
-    const expected: CharacterAppearance = { gender: "female", breastSize: "big", face: "fierce", hairstyle: "ponytail", upperBody: "arcane", lowerBody: "ranger", shoes: "ranger", headwear: "cap" };
+    const expected: CharacterAppearance = { gender: "female", face: "fierce", hairstyle: "tousled", upperBody: "arcane", lowerBody: "ranger", shoes: "ranger", headwear: "cap" };
     expect(JSON.parse(screen.getByTestId("character-preview").textContent!)).toEqual(expected);
     expect(onSave).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Use character" }));
@@ -86,6 +85,6 @@ describe("CharacterEditor", () => {
     fireEvent.click(screen.getByRole("button", { name: "Randomize" }));
     fireEvent.click(screen.getByRole("button", { name: "Randomize" }));
     fireEvent.click(screen.getByRole("button", { name: "Use character" }));
-    await waitFor(() => expect(onSave).toHaveBeenCalledWith({ ...DEFAULT_CHARACTER_APPEARANCE, breastSize: "none" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith(DEFAULT_CHARACTER_APPEARANCE));
   });
 });

@@ -11,7 +11,6 @@ export type AssetCellType = "flooring" | "body" | "surface" | "support" | "seat"
 export type AssetKind = "floor-tile" | "desk" | "chair" | "sofa" | "table" | "plant" | "garden" | "pool" | "laptop" | "lamp" | "monitor" | "coffee" | "bookshelf" | "whiteboard" | "arcade" | "gong" | "game" | "portal" | "storage" | "appliance" | "decoration" | "rug" | "fountain";
 export const ASSET_RARITIES = ["common", "uncommon", "rare", "epic", "legendary"] as const;
 export type AssetRarity = typeof ASSET_RARITIES[number];
-export type AssetPattern = "wood" | "stone" | "grass";
 export type FacingDirection = "up" | "down" | "left" | "right";
 
 export interface RasterCell {
@@ -70,7 +69,6 @@ export interface AssetVariantDefinition {
   color: string;
   secondaryColor: string;
   accentColor: string;
-  pattern?: AssetPattern;
 }
 
 export interface AssetThemeSet {
@@ -128,7 +126,6 @@ export interface PlacedAssetInteraction {
 
 const validAssetKinds = new Set<AssetKind>(["floor-tile", "desk", "chair", "sofa", "table", "plant", "garden", "pool", "laptop", "lamp", "monitor", "coffee", "bookshelf", "whiteboard", "arcade", "gong", "game", "portal", "storage", "appliance", "decoration", "rug", "fountain"]);
 const validCellTypes = new Set<AssetCellType>(["flooring", "body", "surface", "support", "seat", "foliage", "decoration", "passage"]);
-const validPatterns = new Set<AssetPattern>(["wood", "stone", "grass"]);
 const validDirections = new Set<FacingDirection>(["up", "down", "left", "right"]);
 const validLayers = new Set<AssetLayer>(["ground", "floor", "surface"]);
 const validPlacementTargets = new Set<AssetPlacementTarget>(["floor", "decoration"]);
@@ -405,7 +402,6 @@ function validateAssetCatalog(catalog: AssetCatalog): void {
         || !isHexColor(variant.color)
         || !isHexColor(variant.secondaryColor)
         || !isHexColor(variant.accentColor)
-        || (variant.pattern !== undefined && !validPatterns.has(variant.pattern))
       ) {
         throw new Error("ASSET_VARIANT_INVALID");
       }
@@ -448,10 +444,6 @@ function validateAssetCatalog(catalog: AssetCatalog): void {
     assetIds.add(asset.id);
     if (asset.footprint.length === 0) {
       throw new Error("ASSET_DEFINITION_INVALID");
-    }
-    const variants = catalog.themeSets.find((themeSet) => themeSet.id === asset.themeSetId)!.variants;
-    if (asset.kind === "floor-tile" && variants.some((variant) => !variant.pattern)) {
-      throw new Error("ASSET_VARIANT_INVALID");
     }
     for (const region of asset.footprint) {
       validateRasterSelector(region);

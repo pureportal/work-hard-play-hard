@@ -1,5 +1,7 @@
 import {
   FALLING_BLOCKS_DEFINITION_ID,
+  FALLING_BLOCKS_GARBAGE_CELL,
+  FALLING_BLOCKS_HARD_CELL,
   TETROMINO_COLOR_IDS,
   TETROMINO_SHAPES,
   TETROMINO_TYPES,
@@ -7,7 +9,19 @@ import {
   type TetrominoType,
   type FallingBlocksCellPosition,
   type FallingBlocksCommand,
+  type FallingBlocksMode,
+  type FallingBlocksClear,
+  type FallingBlocksLineCount,
+  type FallingBlocksSpin,
 } from "@workhard/shared";
+import {
+  FALLING_BLOCKS_HEIGHT as HEIGHT,
+  FALLING_BLOCKS_WIDTH as WIDTH,
+  FALLING_BLOCKS_SPEED_STEP_MS,
+  FALLING_BLOCKS_HARD_ROW_INTERVAL_MS,
+} from "./falling-blocks-rules.js";
+import { rotateCells, rotationKicks, type FallingBlocksRotation } from "./falling-blocks-rotation.js";
+import { FallingBlocksScoring } from "./falling-blocks-scoring.js";
 
 interface Piece {
   type: TetrominoType;
@@ -15,10 +29,9 @@ interface Piece {
   cells: number[][];
   x: number;
   y: number;
+  rotation: FallingBlocksRotation;
 }
 
-const WIDTH = 10;
-const HEIGHT = 20;
 const NEXT_PREVIEW_COUNT = 5;
 const LOCK_DELAY_MS = 500;
 const MAX_LOCK_RESETS = 15;
@@ -31,6 +44,10 @@ export class FallingBlocksGame {
   private heldPiece: TetrominoType | undefined;
   private holdAvailable = true;
   private accumulatedMs = 0;
+  private elapsedMs = 0;
+  private clears: FallingBlocksClear[] = [];
+  private readonly scoring = new FallingBlocksScoring();
+  private lastRotationKick: number | null = null;
   private groundedMs = 0;
   private lockResetCount = 0;
   private score = 0;
@@ -39,7 +56,7 @@ export class FallingBlocksGame {
   private paused = false;
   private changed = true;
 
-  constructor(private readonly roundId: string) {
+  constructor(private readonly roundId: string, private readonly mode: FallingBlocksMode = "classic") {
     this.random = createSeededRandom(roundId);
     this.spawnPiece();
   }
@@ -49,28 +66,43 @@ export class FallingBlocksGame {
       return false;
     }
 
-    if (this.isGrounded()) {
-      this.groundedMs += deltaMs;
-      if (this.groundedMs >= LOCK_DELAY_MS) {
-        this.lockPiece();
-        this.changed = true;
-        return true;
+    let remainingMs = deltaMs;
+    let changed = false;
+    while (remainingMs > 0 && this.running && this.piece) {
+      const previousLevel = this.level;
+      const grounded = this.isGrounded();
+      const untilAction = grounded
+        ? this.lockResetCount >= MAX_LOCK_RESETS ? 0 : LOCK_DELAY_MS - this.groundedMs
+        : this.fallIntervalMs - this.accumulatedMs;
+      const modeInterval = this.mode === "speed-up" ? FALLING_BLOCKS_SPEED_STEP_MS
+        : this.mode === "sudden-death" ? FALLING_BLOCKS_HARD_ROW_INTERVAL_MS : Infinity;
+      const untilModeStep = modeInterval - this.elapsedMs % modeInterval;
+      const stepMs = Math.min(remainingMs, Math.max(0, untilAction), untilModeStep);
+      this.elapsedMs += stepMs;
+      remainingMs -= stepMs;
+      if (grounded) {
+        this.groundedMs += stepMs;
+      } else {
+        this.groundedMs = 0;
+        this.accumulatedMs += stepMs;
       }
-      return false;
-    }
 
-    this.groundedMs = 0;
-    this.accumulatedMs += deltaMs;
-    const fallInterval = Math.max(140, 720 - this.level * 55);
-    let moved = false;
-    while (this.accumulatedMs >= fallInterval && this.piece && !this.isGrounded()) {
-      this.accumulatedMs -= fallInterval;
-      moved = this.tryMove(0, 1) || moved;
+      if (this.mode === "sudden-death" && stepMs > 0 && this.elapsedMs % modeInterval === 0) {
+        this.raiseRow(Array<number>(WIDTH).fill(FALLING_BLOCKS_HARD_CELL), HEIGHT);
+        changed = true;
+      }
+      changed = this.level !== previousLevel || changed;
+      if (!this.running) break;
+      if ((this.groundedMs >= LOCK_DELAY_MS || this.lockResetCount >= MAX_LOCK_RESETS) && this.isGrounded()) {
+        this.lockPiece();
+        changed = true;
+      } else if (this.accumulatedMs >= this.fallIntervalMs && !this.isGrounded()) {
+        this.accumulatedMs -= this.fallIntervalMs;
+        changed = this.tryMove(0, 1) || changed;
+      }
     }
-    if (moved) {
-      this.changed = true;
-    }
-    return moved;
+    this.changed = this.changed || changed;
+    return changed;
   }
 
   command(command: FallingBlocksCommand): boolean {
@@ -97,8 +129,8 @@ export class FallingBlocksGame {
         this.score += 1;
         this.groundedMs = 0;
       }
-    } else if (command === "rotate") {
-      didChange = this.tryPlayerRotate();
+    } else if (command === "rotate" || command === "rotate-counterclockwise") {
+      didChange = this.tryPlayerRotate(command === "rotate" ? 1 : -1);
     } else if (command === "drop") {
       let dropped = 0;
       while (this.tryMove(0, 1)) {
@@ -135,6 +167,7 @@ export class FallingBlocksGame {
       score: this.score,
       lines: this.lines,
       level: this.level,
+      fallIntervalMs: this.fallIntervalMs,
       running: this.running,
       paused: this.paused,
       activePiece: this.piece?.type ?? null,
@@ -145,6 +178,8 @@ export class FallingBlocksGame {
       heldPiece: this.heldPiece ?? null,
       nextPieces: this.pieceQueue.slice(0, NEXT_PREVIEW_COUNT),
       canHold: this.holdAvailable && this.running,
+      specials: { ...this.scoring.specials },
+      lastClear: this.scoring.lastClear ? { ...this.scoring.lastClear } : null,
     };
   }
 
@@ -152,8 +187,8 @@ export class FallingBlocksGame {
     return !this.running;
   }
 
-  get result(): { score: number; lines: number; level: number } {
-    return { score: this.score, lines: this.lines, level: this.level };
+  get result() {
+    return { score: this.score, lines: this.lines, level: this.level, fallingBlocks: { ...this.scoring.specials } };
   }
 
   end(): void {
@@ -171,8 +206,47 @@ export class FallingBlocksGame {
     return wasChanged;
   }
 
+  consumeClears(): FallingBlocksClear[] {
+    const clears = this.clears;
+    this.clears = [];
+    return clears;
+  }
+
+  get stoneCount(): number {
+    return this.board.reduce((count, row) => count + row.filter((cell) => cell !== 0).length, 0);
+  }
+
+  addGarbageRows(count: number, holeColumn: number): void {
+    const hardRows = this.board.filter((row) => row.every((cell) => cell === FALLING_BLOCKS_HARD_CELL)).length;
+    for (let index = 0; index < count && this.running; index += 1) {
+      const row = Array.from({ length: WIDTH }, (_, column) => column === holeColumn ? 0 : FALLING_BLOCKS_GARBAGE_CELL);
+      this.raiseRow(row, HEIGHT - hardRows);
+    }
+  }
+
   private get level(): number {
-    return Math.floor(this.lines / 8) + 1;
+    const timeLevels = this.mode === "speed-up" ? Math.floor(this.elapsedMs / FALLING_BLOCKS_SPEED_STEP_MS) : 0;
+    return Math.floor(this.lines / 8) + timeLevels + 1;
+  }
+
+  private get fallIntervalMs(): number {
+    return Math.max(140, 720 - this.level * 55);
+  }
+
+  private raiseRow(row: number[], insertionRow: number): void {
+    const overflow = this.board[0]!.some((cell) => cell !== 0);
+    this.board = [...this.board.slice(1, insertionRow), row, ...this.board.slice(insertionRow)];
+    this.lastRotationKick = null;
+    this.changed = true;
+    if (this.piece) {
+      while (this.collides(this.piece)) {
+        this.piece = { ...this.piece, y: this.piece.y - 1 };
+      }
+    }
+    if (overflow || (this.piece && this.cellPositions(this.piece).some(({ row: cellRow }) => cellRow < 0))) {
+      this.end();
+      this.piece = undefined;
+    }
   }
 
   private spawnPiece(type = this.takeNextPiece()): void {
@@ -182,11 +256,13 @@ export class FallingBlocksGame {
       color: TETROMINO_COLOR_IDS[type],
       cells: definition.map((row) => [...row]),
       x: Math.floor((WIDTH - definition[0]!.length) / 2),
-      y: 0,
+      y: type === "I" ? -1 : 0,
+      rotation: 0,
     };
     this.accumulatedMs = 0;
     this.groundedMs = 0;
     this.lockResetCount = 0;
+    this.lastRotationKick = null;
     if (this.collides(piece)) {
       this.running = false;
       this.piece = undefined;
@@ -247,21 +323,23 @@ export class FallingBlocksGame {
       return false;
     }
     this.piece = moved;
+    this.lastRotationKick = null;
     return true;
   }
 
-  private tryPlayerRotate(): boolean {
-    if (!this.piece) {
+  private tryPlayerRotate(direction: 1 | -1): boolean {
+    if (!this.piece || this.piece.type === "O") {
       return false;
     }
     const wasGrounded = this.isGrounded();
-    const rotatedCells = this.piece.cells[0]?.map((_, columnIndex) =>
-      this.piece?.cells.map((row) => row[columnIndex] ?? 0).reverse() ?? [],
-    ) ?? [];
-    for (const offset of [0, -1, 1, -2, 2]) {
-      const rotated = { ...this.piece, cells: rotatedCells, x: this.piece.x + offset };
+    const rotation = (this.piece.rotation + direction + 4) % 4 as FallingBlocksRotation;
+    const rotatedCells = rotateCells(this.piece.cells, direction);
+    const kicks = rotationKicks(this.piece.type, this.piece.rotation, rotation);
+    for (const [index, [offsetX, offsetY]] of kicks.entries()) {
+      const rotated = { ...this.piece, cells: rotatedCells, rotation, x: this.piece.x + offsetX, y: this.piece.y + offsetY };
       if (!this.collides(rotated)) {
         this.piece = rotated;
+        this.lastRotationKick = index;
         this.resetLockDelay(wasGrounded);
         return true;
       }
@@ -318,24 +396,48 @@ export class FallingBlocksGame {
     if (!this.piece) {
       return;
     }
-    for (const { row, column } of this.cellPositions(this.piece)) {
+    const positions = this.cellPositions(this.piece);
+    if (positions.some(({ row }) => row < 0)) {
+      this.end();
+      this.piece = undefined;
+      return;
+    }
+    const spin = this.detectSpin();
+    const scoringLevel = this.level;
+    for (const { row, column } of positions) {
       if (row >= 0 && row < HEIGHT && column >= 0 && column < WIDTH) {
         this.board[row]![column] = this.piece.color;
       }
     }
 
-    const remainingRows = this.board.filter((row) => row.some((value) => value === 0));
-    const cleared = HEIGHT - remainingRows.length;
+    const remainingRows = this.board.filter((row) => row.some((value) => value === 0 || value === FALLING_BLOCKS_HARD_CELL));
+    const cleared = (HEIGHT - remainingRows.length) as FallingBlocksLineCount;
     if (cleared > 0) {
       this.board = [
         ...Array.from({ length: cleared }, () => Array<number>(WIDTH).fill(0)),
         ...remainingRows,
       ];
       this.lines += cleared;
-      this.score += [0, 100, 300, 500, 800][cleared]! * this.level;
     }
+    const perfectClear = cleared > 0 && this.board.every((row) => row.every((cell) => cell === 0));
+    const clear = this.scoring.lock(cleared, spin, perfectClear, scoringLevel);
+    this.score += clear.points;
+    if (cleared > 0 || spin !== "none") this.clears.push(clear);
     this.holdAvailable = true;
     this.spawnPiece();
+  }
+
+  private detectSpin(): FallingBlocksSpin {
+    if (!this.piece || this.piece.type !== "T" || this.lastRotationKick === null) return "none";
+    const { x, y, rotation } = this.piece;
+    const offsets = [[0, 0], [2, 0], [2, 2], [0, 2]] as const;
+    const corners = offsets.map(([offsetX, offsetY]) => {
+      const column = x + offsetX;
+      const row = y + offsetY;
+      return column < 0 || column >= WIDTH || row >= HEIGHT || (row >= 0 && this.board[row]![column] !== 0);
+    });
+    if (corners.filter(Boolean).length < 3) return "none";
+    return (corners[rotation] && corners[(rotation + 1) % 4]) || this.lastRotationKick === 4 ? "full" : "mini";
   }
 }
 

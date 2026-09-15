@@ -1,11 +1,12 @@
+import { createTestData } from "../testing/workspace-data.js";
 import type { ClientCommand, ServerEvent, WorldPlayer } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
-import { DemoStore } from "../store.js";
+import { WorkspaceStore } from "../store.js";
 import { WorldRuntime } from "./world-runtime.js";
 
 describe("WorldRuntime asset seating", () => {
   it.each(["chair-office", "chair-ottoman"])("walks to a distant %s and sits automatically", (assetId) => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     store.getObject("object-commons-chair-left")!.assetId = assetId;
     const runtime = new WorldRuntime(store);
     runtime.restorePlayers(runtime.serializePlayers().map((player) => player.userId === "user-maya"
@@ -35,7 +36,7 @@ describe("WorldRuntime asset seating", () => {
   });
 
   it.each(["chair-office", "chair-ottoman"])("centers a player on %s and rejects a second occupant", (assetId) => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     store.getObject("object-commons-chair-left")!.assetId = assetId;
     const runtime = new WorldRuntime(store);
     runtime.restorePlayers(runtime.serializePlayers().map((player) => {
@@ -84,7 +85,7 @@ describe("WorldRuntime asset seating", () => {
   });
 
   it.each(["chair-office", "chair-ottoman"])("returns a player from %s to a valid standing position before movement", (assetId) => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     store.getObject("object-commons-chair-left")!.assetId = assetId;
     const runtime = new WorldRuntime(store);
     runtime.restorePlayers(runtime.serializePlayers().map((player) => player.userId === "user-maya"
@@ -112,7 +113,7 @@ describe("WorldRuntime asset seating", () => {
 
 describe("WorldRuntime asset placement", () => {
   it("places supported decorations and rejects invalid stacking", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const events: ServerEvent[] = [];
     const peer = runtime.connect("user-maya", "floor-studio", (event) => events.push(event));
@@ -121,21 +122,21 @@ describe("WorldRuntime asset placement", () => {
       type: "layout.apply",
       requestId: "place-laptop",
       baseRevision: store.getLayout("floor-studio")!.revision,
-      edit: { tool: "asset", assetId: "decor-laptop", variantId: "graphite", rotation: 0, position: { x: 272, y: 240 } },
+      edit: { tool: "asset", assetId: "decor-laptop", variantId: "graphite", rotation: 0, position: { x: 288, y: 608 } },
     });
 
     expect(events.some((event) => event.type === "command.error" && event.requestId === "place-laptop")).toBe(false);
     expect(store.getLayout("floor-studio")?.objects).toContainEqual(expect.objectContaining({
       assetId: "decor-laptop",
-      x: 272,
-      y: 240,
+      x: 288,
+      y: 608,
     }));
 
     send(runtime, peer, {
       type: "layout.apply",
       requestId: "stack-lamp",
       baseRevision: store.getLayout("floor-studio")!.revision,
-      edit: { tool: "asset", assetId: "decor-lamp", variantId: "graphite", rotation: 0, position: { x: 272, y: 240 } },
+      edit: { tool: "asset", assetId: "decor-lamp", variantId: "graphite", rotation: 0, position: { x: 288, y: 608 } },
     });
     expect(events.at(-1)).toMatchObject({ type: "command.error", requestId: "stack-lamp", code: "ASSET_BLOCKED" });
 

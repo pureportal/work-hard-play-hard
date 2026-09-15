@@ -1,13 +1,14 @@
+import { createTestData } from "../testing/workspace-data.js";
 import { FALLING_BLOCKS_DEFINITION_ID, getGameArea } from "@workhard/shared";
 import type { GameEventDelivery } from "./falling-blocks-multiplayer.js";
 import type { ServerEvent, WorldPlayer } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
-import { DemoStore } from "../store.js";
+import { WorkspaceStore } from "../store.js";
 import { FallingBlocksMultiplayerRuntime } from "./falling-blocks-multiplayer.js";
 
 describe("FallingBlocksMultiplayerRuntime", () => {
   it.each(["object-tetris", "saved-cabinet"])("plays a restored cabinet with the ID %s", (objectId) => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const saved = store.exportMutableState();
     const object = saved.layouts.flatMap((layout) => layout.objects).find((candidate) => candidate.assetId === "equipment-falling-blocks")!;
     object.id = objectId;
@@ -30,7 +31,7 @@ describe("FallingBlocksMultiplayerRuntime", () => {
   });
 
   it("keeps overlapping cabinets distinct and starts only the selected cabinet's participants", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const object = store.getObject("object-falling-blocks")!;
     const second = { ...object, id: "placed-blocks", x: object.x - 176 };
     store.getLayout(object.floorId)!.objects.push(second);
@@ -41,7 +42,7 @@ describe("FallingBlocksMultiplayerRuntime", () => {
     runtime.syncLobbies(players, connected);
 
     expect(runtime.getSessionEvents("user-maya").filter((event) => event.type === "game.lobby_updated")).toHaveLength(2);
-    const started = runtime.start("user-maya", second.id);
+    const started = runtime.start("user-maya", second.id, true);
     expect(started.participantIds).toEqual(["user-maya"]);
     expect(runtime.getSessionEvents("user-leo")).toContainEqual(expect.objectContaining({
       type: "game.lobby_updated", lobby: expect.objectContaining({ objectId: object.id, participantIds: ["user-leo"] }),
@@ -50,7 +51,7 @@ describe("FallingBlocksMultiplayerRuntime", () => {
   });
 
   it("closes removed cabinets and rejects unrelated or distant equipment", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const object = store.getObject("object-falling-blocks")!;
     const runtime = new FallingBlocksMultiplayerRuntime(store);
     const player = nearbyPlayer("user-maya", 1050, 620);
@@ -68,7 +69,7 @@ describe("FallingBlocksMultiplayerRuntime", () => {
   });
 
   it("forms one proximity lobby and starts every gathered player in the same round", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new FallingBlocksMultiplayerRuntime(store);
     const players = [nearbyPlayer("user-maya", 1_050, 620), nearbyPlayer("user-leo", 1_250, 620)];
 
@@ -95,7 +96,7 @@ describe("FallingBlocksMultiplayerRuntime", () => {
   });
 
   it("records authoritative multiplayer scores and awards exactly one non-solo win", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new FallingBlocksMultiplayerRuntime(store);
     const players = [nearbyPlayer("user-maya", 1_050, 620), nearbyPlayer("user-leo", 1_250, 620)];
     const startingBalances = new Map(players.map((player) => [player.userId, store.getPlayerEconomy(player.userId).coinBalance]));
@@ -146,18 +147,18 @@ describe("FallingBlocksMultiplayerRuntime", () => {
   });
 
   it("keeps a solo high score without counting it as a multiplayer win", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new FallingBlocksMultiplayerRuntime(store);
     const maya = nearbyPlayer("user-maya", 1_050, 620);
 
     runtime.syncLobbies([maya], new Set([maya.userId]));
-    runtime.start(maya.userId, "object-falling-blocks");
+    runtime.start(maya.userId, "object-falling-blocks", true);
     runtime.command(maya.userId, "drop");
     runtime.leave(maya.userId);
     const firstScore = store.getScores().find((score) => score.userId === maya.userId)!;
 
     runtime.syncLobbies([maya], new Set([maya.userId]));
-    runtime.start(maya.userId, "object-falling-blocks");
+    runtime.start(maya.userId, "object-falling-blocks", true);
     runtime.leave(maya.userId);
     const statistics = store.getGameStatistics().find((candidate) => candidate.userId === maya.userId);
 

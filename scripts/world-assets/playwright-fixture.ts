@@ -1,15 +1,19 @@
+import { createTestData } from "../../apps/server/src/testing/workspace-data.js";
 import type { BrowserContext } from "playwright-core";
-import type { ClientCommand, Position, WorldPlayer } from "../../packages/shared/src/index.js";
-import { DemoStore } from "../../apps/server/src/store.js";
+import type { ClientCommand, Position, ServerEvent, WorldPlayer } from "../../packages/shared/src/index.js";
+import type { WebSocketRoute } from "playwright-core";
+import { WorkspaceStore } from "../../apps/server/src/store.js";
 import { WorldRuntime } from "../../apps/server/src/world/world-runtime.js";
 
-export async function installAssetFixture(context: BrowserContext, userId = "user-maya", position?: Position) {
-  const store = new DemoStore();
-  store.updateGameSettings({ allowPlayerAssetPlacementInPublicRooms: true });
+export async function installAssetFixture(context: BrowserContext, userId = "user-maya", position?: Position, options: { currentPlayerOnly?: boolean } = {}) {
+  const store = new WorkspaceStore(createTestData());
+  store.updateGameSettings({ roomAccess: { mode: "open", assignedPersonIds: [] }, roomBuild: { mode: "open", assignedPersonIds: [] } });
   if (position) store.getMember(userId)!.position = { ...position };
+  if (options.currentPlayerOnly) for (const member of store.getMembers()) if (member.id !== userId) member.online = false;
   const runtime = new WorldRuntime(store);
   const commands: ClientCommand[] = [];
   let players: WorldPlayer[] = [];
+  let connection: WebSocketRoute | undefined;
   await context.route("**/v1/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
     const headers = { "access-control-allow-origin": route.request().headers().origin ?? "*", "access-control-allow-credentials": "true" };
@@ -24,6 +28,7 @@ export async function installAssetFixture(context: BrowserContext, userId = "use
     }
   });
   await context.routeWebSocket(/\/v1\//, (socket) => {
+    connection = socket;
     const peer = runtime.connect(userId, "floor-studio", (event) => {
       if (event.type === "world.snapshot") players = event.players;
       socket.send(JSON.stringify(event));
@@ -36,5 +41,8 @@ export async function installAssetFixture(context: BrowserContext, userId = "use
     socket.onClose(() => runtime.disconnect(peer));
   });
   runtime.start();
-  return { store, commands, getPlayer: (id: string) => players.find((player) => player.userId === id), stop: () => runtime.stop() };
+  return { store, commands, getPlayer: (id: string) => players.find((player) => player.userId === id), publish: (event: ServerEvent) => {
+    if (!connection) throw new Error("World review is not connected");
+    connection.send(JSON.stringify(event));
+  }, stop: () => runtime.stop() };
 }

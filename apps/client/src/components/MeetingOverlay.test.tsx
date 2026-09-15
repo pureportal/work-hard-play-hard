@@ -1,8 +1,10 @@
 import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Meeting, Member } from "@workhard/shared";
+import { MediaConnection } from "../media-connection";
 import { MeetingOverlay } from "./MeetingOverlay";
+import { MeetingSwitchDialog } from "./MeetingSwitchDialog";
 
 const member: Member = {
   id: "user-maya",
@@ -24,15 +26,47 @@ const meeting: Meeting = {
   durationMinutes: 30,
   status: "live",
   participantIds: [member.id],
-  location: { type: "public", floorId: "floor", x: 100, y: 100, radius: 60 },
+  location: { type: "room", roomId: "room" },
 };
+
+const connections: MediaConnection[] = [];
+
+function connectionProps() {
+  const connection = new MediaConnection({ sessionId: "session", meetingId: meeting.id, hostUserId: member.id, locked: false, iceServers: [],
+    participants: [{ sessionId: "session", userId: member.id, microphone: false, camera: false, screen: false }] }, () => true);
+  connections.push(connection);
+  return { connection, assets: [], onOpenAsset: vi.fn(), onInvite: vi.fn(), onLock: vi.fn() };
+}
+
+beforeEach(() => { vi.stubGlobal("RTCPeerConnection", vi.fn()); });
 
 afterEach(() => {
   cleanup();
+  connections.splice(0).forEach((connection) => connection.close());
   vi.restoreAllMocks();
 });
 
 describe("MeetingOverlay media", () => {
+  it("cancels a meeting switch without leaving the current meeting or trapping focus behind it", () => {
+    const onLeave = vi.fn();
+    const onCancel = vi.fn();
+    const view = render(<MeetingOverlay {...connectionProps()} small={false} meeting={meeting} members={[member]}
+      currentUserId={member.id} messages={[]} muted cameraOn={false} leaving={false} reactions={[]}
+      onMutedChange={vi.fn()} onCameraChange={vi.fn()} onReact={vi.fn()} onSendMessage={vi.fn()}
+      onViewChange={vi.fn()} onLeave={onLeave} />);
+    const confirmation = render(<MeetingSwitchDialog meetingTitle="Planning" consequence="This will leave Review."
+      actionLabel="Open" onCancel={onCancel} onConfirm={vi.fn()} />);
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(document.activeElement).toBe(confirmation.getByRole("button", { name: "Cancel" }));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onCancel).toHaveBeenCalledOnce();
+    expect(onLeave).not.toHaveBeenCalled();
+    confirmation.unmount();
+    expect(document.activeElement).toBe(view.getByRole("dialog"));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onLeave).toHaveBeenCalledOnce();
+  });
+
   it("does not capture media on entry and stops explicitly enabled tracks on leave", async () => {
     const stop = vi.fn();
     const getUserMedia = vi.fn().mockResolvedValue({ getTracks: () => [{ stop }] } as unknown as MediaStream);
@@ -56,11 +90,11 @@ describe("MeetingOverlay media", () => {
       onViewChange: vi.fn(),
       onLeave: vi.fn(),
     };
-    const view = render(<MeetingOverlay {...commonProps} muted />);
+    const view = render(<MeetingOverlay {...connectionProps()} {...commonProps} muted />);
 
     expect(getUserMedia).not.toHaveBeenCalled();
-    view.rerender(<MeetingOverlay {...commonProps} muted={false} />);
-    await waitFor(() => expect(getUserMedia).toHaveBeenCalledWith({ audio: true, video: false }));
+    view.rerender(<MeetingOverlay {...connectionProps()} {...commonProps} muted={false} />);
+    await waitFor(() => expect(getUserMedia).toHaveBeenCalledWith({ audio: expect.objectContaining({ echoCancellation: true, noiseSuppression: true, autoGainControl: true }), video: false }));
     view.unmount();
     expect(stop).toHaveBeenCalled();
   });
@@ -74,7 +108,7 @@ describe("MeetingOverlay media", () => {
     });
 
     const view = render(
-      <MeetingOverlay
+      <MeetingOverlay {...connectionProps()}
         small={false}
         meeting={meeting}
         members={[member]}
@@ -93,7 +127,7 @@ describe("MeetingOverlay media", () => {
       />,
     );
 
-    await waitFor(() => expect(view.getByText("Check media permission.")).toBeTruthy());
+    await waitFor(() => expect(view.getByText(/Microphone unavailable/)).toBeTruthy());
     expect(onMutedChange).toHaveBeenCalledWith(true);
     expect(onCameraChange).toHaveBeenCalledWith(false);
   });
@@ -104,7 +138,7 @@ describe("MeetingOverlay media", () => {
     trigger.focus();
 
     const view = render(
-      <MeetingOverlay
+      <MeetingOverlay {...connectionProps()}
         small
         meeting={meeting}
         members={[member]}
@@ -126,7 +160,7 @@ describe("MeetingOverlay media", () => {
     const dialog = view.getByRole("dialog");
     expect(dialog.classList.contains("meeting-overlay-small")).toBe(true);
     expect(dialog.getAttribute("aria-modal")).toBeNull();
-    expect(view.queryByLabelText("Meeting chat")).toBeNull();
+    expect(view.container.querySelector(".meeting-chat-container")?.hasAttribute("hidden")).toBe(true);
     expect(view.container.querySelector(".modal-backdrop")).toBeNull();
     expect(document.activeElement).toBe(trigger);
     trigger.remove();
@@ -138,7 +172,7 @@ describe("MeetingOverlay media", () => {
     trigger.focus();
     const onLeave = vi.fn();
     const view = render(
-      <MeetingOverlay
+      <MeetingOverlay {...connectionProps()}
         small={false}
         meeting={meeting}
         members={[member]}
@@ -180,7 +214,7 @@ describe("MeetingOverlay media", () => {
   it("dismisses the reaction picker before closing the meeting", () => {
     const onLeave = vi.fn();
     const view = render(
-      <MeetingOverlay
+      <MeetingOverlay {...connectionProps()}
         small={false}
         meeting={meeting}
         members={[member]}
@@ -225,12 +259,12 @@ describe("MeetingOverlay media", () => {
       onViewChange,
       onLeave: vi.fn(),
     };
-    const view = render(<MeetingOverlay {...commonProps} small />);
+    const view = render(<MeetingOverlay {...connectionProps()} {...commonProps} small />);
 
     fireEvent.click(view.getByRole("button", { name: "Expand meeting" }));
     expect(onViewChange).toHaveBeenCalledWith(false);
 
-    view.rerender(<MeetingOverlay {...commonProps} small={false} />);
+    view.rerender(<MeetingOverlay {...connectionProps()} {...commonProps} small={false} />);
     fireEvent.click(view.getByRole("button", { name: "Minimize meeting" }));
     expect(onViewChange).toHaveBeenLastCalledWith(true);
   });

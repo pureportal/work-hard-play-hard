@@ -1,0 +1,22 @@
+.organisation-content { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.organisation-tree section { padding: 10px 0; min-height: 50px; }
+.organisation-content h3 { font-size: 13px; margin: 0 0 10px; }
+.organisation-content ul { list-style: none; padding: 0; margin: 0; }
+.organisation-branches .organisation-branches { padding-left: 12px; border-left: 1px solid var(--line); margin-left: 8px; }
+.organisation-unit { padding: 6px 0; min-width: 0; }
+.organisation-unit-title, .organisation-person-row { width: 100%; text-align: left; color: inherit; border: 0; border-radius: 6px; padding: 10px 8px; font-size: 13px; }
+.organisation-unit-title { background: var(--accent-soft); font-weight: 600; }
+.organisation-person-row { background: transparent; display: flex; justify-content: space-between; gap: 8px; }
+.organisation-person > button:hover { background: var(--accent-soft); }
+.organisation-tree button[aria-expanded="true"] { box-shadow: inset 3px 0 var(--accent); background: var(--accent-soft); }
+.organisation-tree .organisation-edit { margin: 8px 0 12px; padding: 12px; }
+.organisation-person-row > span { overflow-wrap: anywhere; }
+.organisation-person small { opacity: .7; }
+.organisation-content [draggable="true"] { cursor: grab; }
+.organisation-content [draggable="true"]:active { cursor: grabbing; }
+.organisation-edit { border: 1px solid var(--line); padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 12px; }
+.organisation-edit fieldset { padding: 0; margin: 0; border: 0; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.organisation-edit label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.organisation-edit input, .organisation-edit select { min-width: 0; width: 100%; border: 1px solid var(--line); background: var(--panel-strong); color: inherit; border-radius: 6px; padding: 8px; }
+.organisation-vote { display: flex; flex-direction: column; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.organisation-vote > div { display: flex; gap: 8px; }

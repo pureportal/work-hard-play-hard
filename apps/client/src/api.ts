@@ -12,11 +12,17 @@ import type {
   MemberRole,
   RegistrationAvailability,
   RegistrationSettings,
+  SpotifyStatus,
+  GitHubStatus,
+  GitHubRepositories,
+  GitHubMailroom,
+  GitHubMailroomView,
 } from "@workhard/shared";
 import { resolveServerUrl } from "./server-url";
 
 const REQUEST_TIMEOUT_MS = 10_000;
 const UPLOAD_TIMEOUT_MS = 45_000;
+const SPOTIFY_REQUEST_TIMEOUT_MS = 30_000;
 
 export class ConnectionError extends Error {
   constructor(message: string) {
@@ -133,6 +139,63 @@ export async function fetchBootstrap(): Promise<BootstrapData> {
   return readResponse<BootstrapData>(response, "Office could not be loaded.");
 }
 
+export async function fetchSpotifyStatus(): Promise<SpotifyStatus> {
+  return readResponse<SpotifyStatus>(await fetchWithTimeout("/v1/spotify", { cache: "no-store" }));
+}
+
+export async function fetchGitHubStatus(): Promise<GitHubStatus> {
+  return readResponse<GitHubStatus>(await fetchWithTimeout("/v1/github", { cache: "no-store" }));
+}
+
+export async function connectGitHub(): Promise<string> {
+  const response = await fetchWithTimeout("/v1/github/connect", {
+    method: "POST", headers: { "content-type": "application/json" }, body: "{}",
+  });
+  return (await readResponse<{ url: string }>(response)).url;
+}
+
+export async function disconnectGitHub(): Promise<GitHubStatus> {
+  return readResponse<GitHubStatus>(await fetchWithTimeout("/v1/github", { method: "DELETE" }));
+}
+
+export async function fetchGitHubRepositories(page: number, signal?: AbortSignal): Promise<GitHubRepositories> {
+  return readResponse<GitHubRepositories>(await fetchWithTimeout(`/v1/github/repositories?page=${page}`, { cache: "no-store", ...(signal ? { signal } : {}) }, 35_000));
+}
+
+export async function fetchGitHubMailroom(objectId: string, repository: string, view: GitHubMailroomView, cursor: string | null, signal?: AbortSignal): Promise<GitHubMailroom> {
+  const query = new URLSearchParams({ repository, view, ...(cursor ? { cursor } : {}) });
+  return readResponse<GitHubMailroom>(await fetchWithTimeout(`/v1/github/trays/${encodeURIComponent(objectId)}?${query}`, { cache: "no-store", ...(signal ? { signal } : {}) }, 35_000));
+}
+
+export async function connectSpotify(): Promise<string> {
+  const response = await fetchWithTimeout("/v1/spotify/connect", {
+    method: "POST", headers: { "content-type": "application/json" }, body: "{}",
+  });
+  return (await readResponse<{ url: string }>(response)).url;
+}
+
+export async function disconnectSpotify(): Promise<SpotifyStatus> {
+  return readResponse<SpotifyStatus>(await fetchWithTimeout("/v1/spotify", { method: "DELETE" }, SPOTIFY_REQUEST_TIMEOUT_MS));
+}
+
+export async function setSpotifySharing(sharing: boolean): Promise<SpotifyStatus> {
+  return readResponse<SpotifyStatus>(await fetchWithTimeout("/v1/spotify/sharing", {
+    method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ sharing }),
+  }, SPOTIFY_REQUEST_TIMEOUT_MS));
+}
+
+export async function setSpotifyJam(url: string | null): Promise<SpotifyStatus> {
+  return readResponse<SpotifyStatus>(await fetchWithTimeout("/v1/spotify/jam", {
+    method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ url }),
+  }));
+}
+
+export async function playSpotifySong(targetUserId: string, trackId: string): Promise<void> {
+  await readResponse(await fetchWithTimeout("/v1/spotify/play", {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ targetUserId, trackId }),
+  }, SPOTIFY_REQUEST_TIMEOUT_MS));
+}
+
 export async function inviteMember(
   teamId: string,
   email: string,
@@ -225,6 +288,16 @@ export async function uploadChatImage(conversationId: string, file: File): Promi
     body: file,
   }, UPLOAD_TIMEOUT_MS);
   return readResponse<ChatMessage>(response, "Image could not be sent.");
+}
+
+export async function uploadWhiteboardImage(objectId: string, file: File): Promise<string> {
+  const response = await fetchWithTimeout(`/v1/whiteboards/${encodeURIComponent(objectId)}/images`, {
+    method: "POST",
+    headers: { "content-type": file.type },
+    body: file,
+  }, UPLOAD_TIMEOUT_MS);
+  const result = await readResponse<{ url: string }>(response, "Image could not be uploaded. Try again.");
+  return result.url;
 }
 
 export async function updatePlayerCharacter(appearance: CharacterAppearance): Promise<Member> {

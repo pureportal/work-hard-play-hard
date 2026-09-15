@@ -1,11 +1,12 @@
+import { createTestData } from "../testing/workspace-data.js";
 import { getGameArea, type WorldPlayer } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
-import { DemoStore } from "../store.js";
+import { WorkspaceStore } from "../store.js";
 import { nearbyGameParticipants } from "./game-lobby.js";
 
 describe("game interaction areas", () => {
   it.each(["object-falling-blocks", "object-tic-tac-toe", "object-chess"])("enters every edge of the drawn %s circle", (id) => {
-    const object = new DemoStore().getObject(id)!;
+    const object = new WorkspaceStore(createTestData()).getObject(id)!;
     const area = getGameArea(object);
     for (let angle = 0; angle < 360; angle += 15) {
       const radians = angle * Math.PI / 180;

@@ -1,3 +1,4 @@
+import { createTestData } from "../testing/workspace-data.js";
 import {
   TIC_TAC_TOE_DEFINITION_ID,
   TIC_TAC_TOE_VARIANTS,
@@ -6,14 +7,14 @@ import {
   type WorldPlayer,
 } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
-import { DemoStore } from "../store.js";
+import { WorkspaceStore } from "../store.js";
 import { MemoryDatabase } from "../persistence/memory-database.js";
 import type { GameEventDelivery } from "./game-event-delivery.js";
 import { TicTacToeMultiplayerRuntime } from "./tic-tac-toe-multiplayer.js";
 
 describe("TicTacToeMultiplayerRuntime", () => {
   it.each(TIC_TAC_TOE_VARIANTS)("synchronizes $name for participants and rejects unrelated moves", ({ id }) => {
-    const runtime = startedRuntime(new DemoStore(), id);
+    const runtime = startedRuntime(new WorkspaceStore(createTestData()), id);
     const session = runtime.getSessionEvents("user-maya");
     const command: TicTacToeCommand = id === "classic"
       ? { kind: "classic.place", cell: 4 }
@@ -39,7 +40,7 @@ describe("TicTacToeMultiplayerRuntime", () => {
   });
 
   it("keeps every nearby player eligible and removes disconnected players", () => {
-    const runtime = new TicTacToeMultiplayerRuntime(new DemoStore());
+    const runtime = new TicTacToeMultiplayerRuntime(new WorkspaceStore(createTestData()));
     const players = [...nearbyPlayers(), nearbyPlayer("user-priya", 1_320, 530)];
     const connected = new Set(players.map(({ userId }) => userId));
     const first = events(runtime.syncLobbies(players, connected)).find((event) => event.type === "game.lobby_updated");
@@ -48,11 +49,11 @@ describe("TicTacToeMultiplayerRuntime", () => {
     connected.delete("user-leo");
     const next = events(runtime.syncLobbies(players, connected)).find((event) => event.type === "game.lobby_updated");
     expect(next?.type === "game.lobby_updated" && next.lobby.participantIds).toEqual(["user-maya", "user-priya"]);
-    expect(() => runtime.start("user-leo", "classic")).toThrow("GAME_TOO_FAR");
+    expect(() => runtime.start("user-leo", "object-tic-tac-toe", "classic")).toThrow("GAME_TOO_FAR");
   });
 
   it("completes once, restores presence, and persists results through the workspace store", async () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = startedRuntime(store, "stacking");
     const deliveries = runtime.leave("user-maya");
     const statistics = store.getGameStatistics();
@@ -70,7 +71,7 @@ describe("TicTacToeMultiplayerRuntime", () => {
 
     const database = new MemoryDatabase();
     await database.saveWorkspaceState({ players: [], store: store.exportMutableState() });
-    const restored = new DemoStore();
+    const restored = new WorkspaceStore(createTestData());
     restored.restoreMutableState((await database.loadWorkspaceState())!.store);
     expect(restored.getGameStatistics()).toEqual(statistics);
     expect(restored.getScores()).toEqual(store.getScores());
@@ -78,7 +79,7 @@ describe("TicTacToeMultiplayerRuntime", () => {
   });
 
   it("forms a two-player proximity lobby and starts the selected variant", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new TicTacToeMultiplayerRuntime(store);
     const players = nearbyPlayers();
     const deliveries = runtime.syncLobbies(players, new Set(players.map((player) => player.userId)));
@@ -92,7 +93,7 @@ describe("TicTacToeMultiplayerRuntime", () => {
       }),
     }));
 
-    const started = runtime.start("user-maya", "ultimate");
+    const started = runtime.start("user-maya", "object-tic-tac-toe", "ultimate");
     expect(started.participantIds).toEqual(["user-maya", "user-leo"]);
     expect(events(started.deliveries)).toContainEqual(expect.objectContaining({
       type: "game.state",
@@ -107,16 +108,16 @@ describe("TicTacToeMultiplayerRuntime", () => {
   });
 
   it("rejects starting before a second player arrives", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new TicTacToeMultiplayerRuntime(store);
     const player = nearbyPlayers()[0]!;
     runtime.syncLobbies([player], new Set([player.userId]));
 
-    expect(() => runtime.start(player.userId, "classic")).toThrow("GAME_PLAYERS_REQUIRED");
+    expect(() => runtime.start(player.userId, "object-tic-tac-toe", "classic")).toThrow("GAME_PLAYERS_REQUIRED");
   });
 
   it("broadcasts authoritative turns and records the winner", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = startedRuntime(store, "classic");
     const moves: Array<[string, TicTacToeCommand]> = [
       ["user-maya", { kind: "classic.place", cell: 0 }],
@@ -142,7 +143,7 @@ describe("TicTacToeMultiplayerRuntime", () => {
   });
 
   it("records a draw without assigning a winner", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = startedRuntime(store, "classic");
     const cells = [0, 1, 2, 4, 3, 5, 7, 6, 8];
     let completion: ServerEvent | undefined;
@@ -159,7 +160,7 @@ describe("TicTacToeMultiplayerRuntime", () => {
   });
 
   it("awards the round to the opponent when a player leaves", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = startedRuntime(store, "stacking");
 
     const completion = events(runtime.leave("user-maya")).find((event) => event.type === "game.round_completed");
@@ -173,11 +174,11 @@ describe("TicTacToeMultiplayerRuntime", () => {
   });
 });
 
-function startedRuntime(store: DemoStore, variantId: "classic" | "ultimate" | "stacking") {
+function startedRuntime(store: WorkspaceStore, variantId: "classic" | "ultimate" | "stacking") {
   const runtime = new TicTacToeMultiplayerRuntime(store);
   const players = nearbyPlayers();
   runtime.syncLobbies(players, new Set(players.map((player) => player.userId)));
-  runtime.start("user-maya", variantId);
+  runtime.start("user-maya", "object-tic-tac-toe", variantId);
   return runtime;
 }
 

@@ -1,3 +1,4 @@
+import { createOrganisation } from "@workhard/shared";
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BootstrapData, ClientCommand, ServerEvent } from "@workhard/shared";
@@ -57,6 +58,7 @@ let online = true;
 const workspaceSnapshot: BootstrapData = {
   currentUserId: "user-one",
   corporateIdentity: createTestCorporateIdentity(),
+    organisation: createOrganisation(),
   team: { id: "team-one", name: "Team", slug: "team", accent: "#000000" },
   office: { id: "office-one", teamId: "team-one", name: "Office" },
   floors: [],

@@ -53,11 +53,6 @@
 
 .workspace-shell:has(.player-build-panel) .top-bar-coins { display: none; }
 
-.player-build-panel .build-panel-scroll > .economy-summary:last-child {
-  border-top: 1px solid var(--line);
-  border-bottom: 0;
-}
-
 @media (max-width: 700px), (max-width: 1000px) and (max-height: 550px) {
   .side-panel.build-panel .panel-header {
     min-height: 48px;
@@ -88,8 +83,8 @@
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scrollbar-width: thin;
-    padding: 3px;
-    margin: -3px;
+    padding: 5px 5px var(--horizontal-scroll-clearance);
+    margin: -5px;
   }
 
   .build-panel .asset-category-tabs button {

@@ -17,7 +17,7 @@ import {
   type WorldPlayer,
 } from "@workhard/shared";
 import { Chess, DEFAULT_POSITION, type Move } from "chess.js";
-import { DemoStore } from "../store.js";
+import { WorkspaceStore } from "../store.js";
 import { findStockfishMove, type ChessBotSearch } from "./chess-bot.js";
 import type { GameEventDelivery } from "./game-event-delivery.js";
 import { availableDrawClaims, boardPieces, canPossiblyMate, colorName, drawClaimResult, engineMove, hydrateChess, moveRecord, outcomeAfterMove, promotionName } from "./chess-rules.js";
@@ -33,7 +33,7 @@ export class ChessMultiplayerRuntime {
   private readonly matches = new Map<string, ChessMatchRecord>();
   private readonly positions = new Map<string, Chess>();
   private readonly positionViews = new Map<string, Pick<ChessMatchView, "board" | "inCheck" | "legalMoves" | "drawClaims">>();
-  private readonly nearbyUserIds = new Set<string>();
+  private readonly nearbyObjectIdByUser = new Map<string, string>();
   private readonly viewingMatchIdByUser = new Map<string, string>();
   private lastClockBroadcastAt = 0;
   private botSearch: { matchId: string; controller: AbortController } | undefined;
@@ -42,7 +42,7 @@ export class ChessMultiplayerRuntime {
   private stopped = false;
 
   constructor(
-    private readonly store: DemoStore,
+    private readonly store: WorkspaceStore,
     private readonly now: Now = () => new Date(),
     private readonly searchBot: ChessBotSearch = findStockfishMove,
   ) {
@@ -56,43 +56,36 @@ export class ChessMultiplayerRuntime {
     players: Iterable<WorldPlayer>,
     connectedUserIds: ReadonlySet<string>,
   ): GameEventDelivery[] {
-    const definition = this.store.getMiniGame(CHESS_DEFINITION_ID);
-    const object = definition ? this.store.getGameObjects(definition.id)[0] : undefined;
-    if (!definition || !object) {
-      const deliveries = [...this.nearbyUserIds].map<GameEventDelivery>((userId) => ({
-        scope: "users",
-        userIds: [userId],
-        event: { type: "chess.lobby_closed", definitionId: CHESS_DEFINITION_ID },
-      }));
-      this.nearbyUserIds.clear();
-      return deliveries;
+    const next = new Map<string, WorldObject>();
+    const playerList = [...players];
+    for (const object of this.store.getGameObjects(CHESS_DEFINITION_ID)) {
+      const previous = [...this.nearbyObjectIdByUser].filter(([, objectId]) => objectId === object.id).map(([userId]) => userId);
+      for (const userId of nearbyGameParticipants(playerList, object, connectedUserIds, previous)) {
+        if (!next.has(userId) || this.nearbyObjectIdByUser.get(userId) === object.id) next.set(userId, object);
+      }
     }
-
-    const previous = new Set(this.nearbyUserIds);
-    const next = new Set(nearbyGameParticipants(players, object, connectedUserIds, [...previous]));
-
     const deliveries: GameEventDelivery[] = [];
-    for (const userId of previous) {
+    for (const userId of this.nearbyObjectIdByUser.keys()) {
       if (!next.has(userId)) {
         deliveries.push({
           scope: "users",
           userIds: [userId],
           event: { type: "chess.lobby_closed", definitionId: CHESS_DEFINITION_ID },
         });
+        this.nearbyObjectIdByUser.delete(userId);
       }
     }
-    this.nearbyUserIds.clear();
-    for (const userId of next) {
-      this.nearbyUserIds.add(userId);
-      if (!previous.has(userId)) {
+    for (const [userId, object] of next) {
+      if (this.nearbyObjectIdByUser.get(userId) !== object.id) {
         deliveries.push(this.lobbyDelivery(userId, object));
       }
+      this.nearbyObjectIdByUser.set(userId, object.id);
     }
     return deliveries;
   }
 
   create(userId: string, settings: ChessMatchSettings): GameEventDelivery[] {
-    const object = this.requireChessObject();
+    const object = this.requireChessObject(userId);
     this.requireNearby(userId);
     this.validateSettings(userId, settings);
     if (settings.bot && [...this.matches.values()].some((match) => match.creatorUserId === userId && match.settings.bot && match.status === "active")) {
@@ -178,10 +171,9 @@ export class ChessMultiplayerRuntime {
   }
 
   close(userId: string, matchId: string): GameEventDelivery[] {
-    if (this.viewingMatchIdByUser.get(userId) === matchId) {
-      this.viewingMatchIdByUser.delete(userId);
-    }
-    return [];
+    if (this.viewingMatchIdByUser.get(userId) !== matchId) return [];
+    this.viewingMatchIdByUser.delete(userId);
+    return [{ scope: "users", userIds: [userId], event: { type: "chess.match_closed", matchId } }];
   }
 
   isViewing(userId: string): boolean {
@@ -375,7 +367,7 @@ export class ChessMultiplayerRuntime {
 
   disconnect(userId: string): void {
     this.viewingMatchIdByUser.delete(userId);
-    this.nearbyUserIds.delete(userId);
+    this.nearbyObjectIdByUser.delete(userId);
   }
 
   stop(): void {
@@ -412,11 +404,14 @@ export class ChessMultiplayerRuntime {
   }
 
   getSessionEvents(userId: string): ServerEvent[] {
-    if (!this.nearbyUserIds.has(userId)) {
-      return [];
+    const events: ServerEvent[] = [];
+    if (this.nearbyObjectIdByUser.has(userId)) {
+      events.push(this.lobbyEvent(userId, this.requireChessObject(userId)));
     }
-    const object = this.requireChessObject();
-    return [this.lobbyEvent(userId, object)];
+    const matchId = this.viewingMatchIdByUser.get(userId);
+    const match = matchId ? this.matches.get(matchId) : undefined;
+    if (match) events.push({ type: "chess.match_state", match: this.matchView(match, userId, this.now()) });
+    return events;
   }
 
   private settleClockOrComplete(match: ChessMatchRecord, chess: Chess, now: Date): GameEventDelivery[] | undefined {
@@ -503,9 +498,10 @@ export class ChessMultiplayerRuntime {
   }
 
   private lobbyDeliveries(): GameEventDelivery[] {
-    const definition = this.store.getMiniGame(CHESS_DEFINITION_ID);
-    const object = definition ? this.store.getGameObjects(definition.id)[0] : undefined;
-    return object ? [...this.nearbyUserIds].map((userId) => this.lobbyDelivery(userId, object)) : [];
+    return [...this.nearbyObjectIdByUser].flatMap(([userId, objectId]) => {
+      const object = this.store.getObject(objectId);
+      return object ? [this.lobbyDelivery(userId, object)] : [];
+    });
   }
 
   private lobbyDelivery(userId: string, object: WorldObject): GameEventDelivery {
@@ -532,17 +528,19 @@ export class ChessMultiplayerRuntime {
     };
   }
 
-  private requireChessObject(): WorldObject {
+  private requireChessObject(userId: string): WorldObject {
     const definition = this.store.getMiniGame(CHESS_DEFINITION_ID);
-    const object = definition ? this.store.getGameObjects(definition.id)[0] : undefined;
-    if (!object) {
+    const objectId = this.nearbyObjectIdByUser.get(userId);
+    if (!objectId) throw new Error("CHESS_TOO_FAR");
+    const object = this.store.getObject(objectId);
+    if (!definition || !object || object.assetId !== definition.assetId) {
       throw new Error("CHESS_NOT_FOUND");
     }
     return object;
   }
 
   private requireNearby(userId: string): void {
-    if (!this.nearbyUserIds.has(userId)) {
+    if (!this.nearbyObjectIdByUser.has(userId)) {
       throw new Error("CHESS_TOO_FAR");
     }
   }

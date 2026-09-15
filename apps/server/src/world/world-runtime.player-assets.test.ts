@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { BootstrapData, ClientCommand, FloorLayout, Room, ServerEvent } from "@workhard/shared";
-import { createSeedData } from "../seed.js";
-import { DemoStore } from "../store.js";
+import { createTestData } from "../testing/workspace-data.js";
+import { WorkspaceStore } from "../store.js";
 import { WorldRuntime } from "./world-runtime.js";
 
 afterEach(() => {
@@ -9,8 +9,55 @@ afterEach(() => {
 });
 
 describe("WorldRuntime player-owned assets", () => {
+  it.each([
+    ["horizontal", 0], ["horizontal", 1], ["vertical", 0], ["vertical", 1],
+  ] as const)("places and moves owned flooring beside a %s wall on side %i without bypassing room permissions", (orientation, side) => {
+    const position = (along: number, across: number) => orientation === "horizontal" ? { x: along, y: across } : { x: across, y: along };
+    const data = workspace(room("assigned", [side === 0 ? "user-jonas" : "user-priya"]));
+    const otherRoom = room("assigned", [side === 1 ? "user-jonas" : "user-priya"]);
+    const otherBounds = { ...position(0, 128), width: 128, height: 128 };
+    data.layouts[0]!.rooms.push({ ...otherRoom, id: "other-room", bounds: otherBounds, footprint: [otherBounds] });
+    data.layouts[0]!.walls = [{ id: "divider", start: position(0, 128), end: position(256, 128) }];
+    const store = new WorkspaceStore(data);
+    const ownedAssetId = store.purchaseAsset("user-jonas", "floor-wood", "buy-floor").transaction.ownedAssetId!;
+    const runtime = new WorldRuntime(store);
+    const events: ServerEvent[] = [];
+    const peer = runtime.connect("user-jonas", "floor-player", (event) => events.push(event));
+    try {
+      const place = (requestId: string, across: number) => send(runtime, peer, {
+        type: "player_asset.place", requestId, baseRevision: store.getLayout("floor-player")!.revision,
+        ownedAssetId, position: position(32, across), variantId: "oak", rotation: 0,
+      });
+      place("cross-divider", 96);
+      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "ASSET_BLOCKED" });
+      place("other-room", side === 0 ? 128 : 64);
+      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "ASSET_ROOM_FORBIDDEN" });
+      place("wall-edge", side === 0 ? 64 : 128);
+      expect(events).toContainEqual(expect.objectContaining({ type: "layout.updated", requestId: "wall-edge" }));
+      const placed = store.getLayout("floor-player")!.objects[0]!;
+      expect(placed).toMatchObject({ ...position(32, side === 0 ? 64 : 128), ownerUserId: "user-jonas", ownedAssetId });
+      send(runtime, peer, {
+        type: "player_asset.move", requestId: "move-through-wall", baseRevision: store.getLayout("floor-player")!.revision,
+        objectId: placed.id, position: position(32, 96), variantId: "oak", rotation: 90,
+      });
+      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "ASSET_BLOCKED" });
+      send(runtime, peer, {
+        type: "player_asset.move", requestId: "move-along-wall", baseRevision: store.getLayout("floor-player")!.revision,
+        objectId: placed.id, position: position(64, side === 0 ? 64 : 128), variantId: "oak", rotation: 90,
+      });
+      expect(store.getObject(placed.id)).toMatchObject({ ...position(64, side === 0 ? 64 : 128), rotation: 90 });
+      expect(store.getOwnedAsset("user-jonas", ownedAssetId).placement?.objectId).toBe(placed.id);
+      send(runtime, peer, {
+        type: "player_asset.remove", requestId: "remove-floor", baseRevision: store.getLayout("floor-player")!.revision, objectId: placed.id,
+      });
+      expect(store.getOwnedAsset("user-jonas", ownedAssetId).placement).toBeUndefined();
+    } finally {
+      runtime.stop();
+    }
+  });
+
   it("places, moves, and removes only the player's inventory in assigned rooms", () => {
-    const store = new DemoStore(workspace(room("assigned", ["user-jonas"])));
+    const store = new WorkspaceStore(workspace(room("assigned", ["user-jonas"])));
     const ownedAssetId = store.purchaseAsset("user-jonas", "chair-office", "buy-chair").transaction.ownedAssetId!;
     const otherAssetId = store.purchaseAsset("user-priya", "chair-office", "buy-other-chair").transaction.ownedAssetId!;
     const runtime = new WorldRuntime(store);
@@ -79,7 +126,7 @@ describe("WorldRuntime player-owned assets", () => {
   });
 
   it("returns the exact transaction for idempotent economy mutations", () => {
-    const store = new DemoStore(workspace(room("assigned", ["user-jonas"])));
+    const store = new WorkspaceStore(workspace(room("assigned", ["user-jonas"])));
     const runtime = new WorldRuntime(store);
     const events: ServerEvent[] = [];
     const peer = runtime.connect("user-jonas", "floor-player", (event) => events.push(event));
@@ -111,7 +158,7 @@ describe("WorldRuntime player-owned assets", () => {
   });
 
   it("denies moving or removing another player's placed asset", () => {
-    const store = new DemoStore(workspace(room("assigned", ["user-jonas", "user-priya"])));
+    const store = new WorkspaceStore(workspace(room("assigned", ["user-jonas", "user-priya"])));
     const ownedAssetId = store.purchaseAsset("user-priya", "plant-floor", "buy-priya-plant").transaction.ownedAssetId!;
     const runtime = new WorldRuntime(store);
     const ownerEvents: ServerEvent[] = [];
@@ -155,7 +202,8 @@ describe("WorldRuntime player-owned assets", () => {
   });
 
   it("requires the global setting for public rooms and restricts that setting to admins", () => {
-    const store = new DemoStore(workspace(room("open", [])));
+    const store = new WorkspaceStore(workspace(room("open", [])));
+    store.updateGameSettings({ roomAccess: { mode: "open", assignedPersonIds: [] }, roomBuild: { mode: "none", assignedPersonIds: [] } });
     const ownedAssetId = store.purchaseAsset("user-jonas", "plant-floor", "buy-plant").transaction.ownedAssetId!;
     const runtime = new WorldRuntime(store);
     const playerEvents: ServerEvent[] = [];
@@ -172,24 +220,24 @@ describe("WorldRuntime player-owned assets", () => {
       variantId: "forest",
       rotation: 0,
     });
-    expect(playerEvents.at(-1)).toMatchObject({ type: "command.error", code: "PUBLIC_ASSET_PLACEMENT_DISABLED" });
+    expect(playerEvents.at(-1)).toMatchObject({ type: "command.error", code: "ASSET_ROOM_FORBIDDEN" });
 
     send(runtime, playerPeer, {
       type: "game.settings_update",
       requestId: "player-setting",
-      settings: { allowPlayerAssetPlacementInPublicRooms: true },
+      settings: { roomAccess: { mode: "open", assignedPersonIds: [] }, roomBuild: { mode: "open", assignedPersonIds: [] } },
     });
     expect(playerEvents.at(-1)).toMatchObject({ type: "command.error", code: "GAME_SETTINGS_FORBIDDEN" });
 
     send(runtime, adminPeer, {
       type: "game.settings_update",
       requestId: "admin-setting",
-      settings: { allowPlayerAssetPlacementInPublicRooms: true },
+      settings: { roomAccess: { mode: "open", assignedPersonIds: [] }, roomBuild: { mode: "open", assignedPersonIds: [] } },
     });
-    expect(store.getGameSettings()).toEqual({ allowPlayerAssetPlacementInPublicRooms: true });
+    expect(store.getGameSettings()).toEqual({ roomAccess: { mode: "open", assignedPersonIds: [] }, roomBuild: { mode: "open", assignedPersonIds: [] } });
     expect(playerEvents).toContainEqual({
       type: "game.settings_updated",
-      settings: { allowPlayerAssetPlacementInPublicRooms: true },
+      settings: { roomAccess: { mode: "open", assignedPersonIds: [] }, roomBuild: { mode: "open", assignedPersonIds: [] } },
     });
 
     send(runtime, playerPeer, {
@@ -208,7 +256,7 @@ describe("WorldRuntime player-owned assets", () => {
   it("publishes authoritative daily reward state after the UTC day changes", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-03T23:59:59.000Z"));
-    const store = new DemoStore(workspace(room("assigned", ["user-jonas"])));
+    const store = new WorkspaceStore(workspace(room("assigned", ["user-jonas"])));
     store.claimDailyReward("user-jonas", "claim-before-midnight");
     const runtime = new WorldRuntime(store);
     const events: ServerEvent[] = [];
@@ -235,7 +283,7 @@ function send(runtime: WorldRuntime, peerId: string, command: ClientCommand): vo
 }
 
 function workspace(playerRoom: Room): BootstrapData {
-  const data = createSeedData("user-jonas", new Date("2026-09-01T12:00:00.000Z"));
+  const data = createTestData("user-jonas", new Date("2026-09-01T12:00:00.000Z"));
   data.floors = [{
     id: "floor-player",
     officeId: data.office.id,
@@ -281,5 +329,6 @@ function room(mode: Room["access"]["mode"], assignedPersonIds: string[]): Room {
     windowIds: [],
     privateEligible: true,
     access: { mode, assignedPersonIds, knockable: false },
+    build: { mode: mode === "assigned" ? "assigned" : "default", assignedPersonIds },
   };
 }

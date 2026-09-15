@@ -8,26 +8,14 @@ import {
   type TicTacToeCommand,
   type TicTacToeMark,
   type TicTacToePieceSize,
-  type UltimateTicTacToeState,
 } from "@workhard/shared";
+import { BoardMark, CELL_NAMES } from "./TicTacToeBoardMark";
 
 interface BoardProps<State> {
   state: State;
   currentUserId: string;
   onCommand: (command: TicTacToeCommand) => void;
 }
-
-const CELL_NAMES = [
-  "top left",
-  "top center",
-  "top right",
-  "middle left",
-  "center",
-  "middle right",
-  "bottom left",
-  "bottom center",
-  "bottom right",
-];
 
 export function ClassicBoard({ state, currentUserId, onCommand }: BoardProps<ClassicTicTacToeState>) {
   const canMove = state.status === "playing" && state.turnUserId === currentUserId;
@@ -51,49 +39,6 @@ export function ClassicBoard({ state, currentUserId, onCommand }: BoardProps<Cla
   );
 }
 
-export function UltimateBoard({ state, currentUserId, onCommand }: BoardProps<UltimateTicTacToeState>) {
-  const canMove = state.status === "playing" && state.turnUserId === currentUserId;
-  const winningBoards = new Set(state.winningLine ?? []);
-  return (
-    <div className="tic-tac-toe-ultimate-board" role="grid" aria-label="Ultimate board">
-      {state.boards.map((board, boardIndex) => {
-        const result = state.boardResults[boardIndex];
-        const active = state.status === "playing"
-          && (state.activeBoard === null || state.activeBoard === boardIndex);
-        return (
-          <div
-            key={boardIndex}
-            className={[
-              "tic-tac-toe-local-board",
-              active && !result ? "is-active" : "",
-              result ? "is-closed" : "",
-              winningBoards.has(boardIndex) ? "is-winning" : "",
-            ].filter(Boolean).join(" ")}
-            role="rowgroup"
-            aria-label={`${CELL_NAMES[boardIndex]} board${result ? `: ${result === "draw" ? "draw" : `${result.toUpperCase()} won`}` : ""}`}
-          >
-            {board.map((mark, cell) => (
-              <button
-                key={cell}
-                type="button"
-                role="gridcell"
-                aria-label={mark
-                  ? `${CELL_NAMES[boardIndex]} board, ${CELL_NAMES[cell]}: ${mark.toUpperCase()}`
-                  : `Play ${CELL_NAMES[cell]} in ${CELL_NAMES[boardIndex]} board`}
-                disabled={!canMove || !active || Boolean(result) || mark !== null}
-                onClick={() => onCommand({ kind: "ultimate.place", board: boardIndex, cell })}
-              >
-                <BoardMark mark={mark} />
-              </button>
-            ))}
-            {result && result !== "draw" && <BoardMark mark={result} className="local-board-result" />}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 export function StackingBoard({ state, currentUserId, onCommand }: BoardProps<StackingTicTacToeState>) {
   const player = state.players.find((candidate) => candidate.userId === currentUserId);
   const mark = player?.mark;
@@ -105,7 +50,13 @@ export function StackingBoard({ state, currentUserId, onCommand }: BoardProps<St
 
   useEffect(() => {
     setSourceCell(undefined);
-  }, [state.moveNumber]);
+  }, [state.moveNumber, state.roundId]);
+
+  useEffect(() => {
+    if (mark && action !== "move" && state.reserves[mark][action] === 0) {
+      setAction(TIC_TAC_TOE_PIECE_SIZES.find((size) => state.reserves[mark][size] > 0) ?? "move");
+    }
+  }, [action, mark, state.reserves]);
 
   const chooseAction = (next: TicTacToePieceSize | "move") => {
     setAction(next);
@@ -163,7 +114,7 @@ export function StackingBoard({ state, currentUserId, onCommand }: BoardProps<St
         <button
           type="button"
           aria-pressed={action === "move"}
-          disabled={!canMove}
+          disabled={!canMove || !state.board.some((piece) => piece?.mark === mark)}
           onClick={() => chooseAction("move")}
         >
           Move
@@ -181,6 +132,7 @@ export function StackingBoard({ state, currentUserId, onCommand }: BoardProps<St
               className={[
                 winningCells.has(cell) ? "is-winning" : "",
                 sourceCell === cell ? "is-selected" : "",
+                enabled && sourceCell !== undefined && sourceCell !== cell ? "is-available" : "",
               ].filter(Boolean).join(" ")}
               aria-label={stackingCellLabel(cell, piece)}
               aria-pressed={sourceCell === cell ? true : undefined}
@@ -194,10 +146,6 @@ export function StackingBoard({ state, currentUserId, onCommand }: BoardProps<St
       </div>
     </div>
   );
-}
-
-function BoardMark({ mark, className = "" }: { mark: TicTacToeMark | null; className?: string }) {
-  return mark ? <span className={`tic-tac-toe-board-mark is-${mark} ${className}`.trim()} aria-hidden="true" /> : null;
 }
 
 function isStackingCellEnabled(

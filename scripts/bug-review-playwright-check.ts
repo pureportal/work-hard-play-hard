@@ -99,11 +99,11 @@ try {
       verified.push(`${viewport.width}: another connection can open and close while a held movement key keeps working`);
 
       await closeGame(page);
-      await page.route("**/characters/anime/head/female-calm.png", (route) => route.abort("failed"));
+      await page.route("**/characters/blockbench/head/female-calm.png", (route) => route.abort("failed"));
       await page.reload({ waitUntil: "domcontentloaded" });
       await page.locator(".world-artwork-error").waitFor();
       await page.screenshot({ path: `${output}/${viewport.width}-character-load-error.png` });
-      await page.unroute("**/characters/anime/head/female-calm.png");
+      await page.unroute("**/characters/blockbench/head/female-calm.png");
       await page.getByRole("button", { name: "Reload", exact: true }).click();
       await worldReady(page);
       assert.equal(await page.locator(".world-artwork-error").count(), 0);

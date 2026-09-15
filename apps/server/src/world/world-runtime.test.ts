@@ -1,6 +1,7 @@
+import { createTestData } from "../testing/workspace-data.js";
 import { getOutdoorBounds, getOutdoorWindowLights, type ClientCommand, type ServerEvent } from "@workhard/shared";
 import { describe, expect, it, vi } from "vitest";
-import { DemoStore } from "../store.js";
+import { WorkspaceStore } from "../store.js";
 import { WorldRuntime } from "./world-runtime.js";
 
 function connect(runtime: WorldRuntime, userId: string, events: ServerEvent[]): string {
@@ -50,7 +51,7 @@ function travelToFloor(runtime: WorldRuntime, peerId: string, events: ServerEven
 
 describe("WorldRuntime calls", () => {
   it("walks to a coworker and rings until the recipient accepts", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const mayaEvents: ServerEvent[] = [];
     const leoEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
@@ -85,7 +86,7 @@ describe("WorldRuntime calls", () => {
   });
 
   it("continues toward a coworker who moves during the approach", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const mayaEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
     const leoPeer = connect(runtime, "user-leo", []);
@@ -112,7 +113,7 @@ describe("WorldRuntime calls", () => {
   });
 
   it("does not ring someone who is already in a meeting", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const mayaEvents: ServerEvent[] = [];
     const leoEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
@@ -121,7 +122,7 @@ describe("WorldRuntime calls", () => {
     send(runtime, leoPeer, {
       type: "meeting.join",
       requestId: "join-remote-meeting",
-      meetingId: "meeting-open-huddle",
+      meetingId: "meeting-product-crit",
     });
     mayaEvents.length = 0;
     leoEvents.length = 0;
@@ -141,7 +142,7 @@ describe("WorldRuntime calls", () => {
   });
 
   it("rings nearby coworkers and changes state only after the recipient accepts", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const mayaEvents: ServerEvent[] = [];
     const leoEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
@@ -182,7 +183,7 @@ describe("WorldRuntime calls", () => {
   });
 
   it("lets the recipient decline a ringing call", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const mayaEvents: ServerEvent[] = [];
     const leoEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
@@ -210,7 +211,7 @@ describe("WorldRuntime calls", () => {
   });
 
   it("ends an accepted call when either person changes floors", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const mayaEvents: ServerEvent[] = [];
     const leoEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
@@ -239,7 +240,7 @@ describe("WorldRuntime calls", () => {
   });
 
   it("keeps an accepted call active when someone enters a meeting area without opening it", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     runtime.restorePlayers(runtime.serializePlayers().map((player) => {
       if (player.userId === "user-maya") {
         return { ...player, x: 690, y: 760 };
@@ -260,7 +261,7 @@ describe("WorldRuntime calls", () => {
       throw new Error("Call did not ring");
     }
     send(runtime, leoPeer, { type: "call.respond", requestId: "accept", callId: incoming.callId, accept: true });
-    send(runtime, mayaPeer, { type: "movement.set_destination", requestId: "enter-huddle", floorId: "floor-studio", x: 800, y: 760 });
+    send(runtime, mayaPeer, { type: "movement.set_destination", requestId: "walk-across-floor", floorId: "floor-studio", x: 800, y: 760 });
     for (let tick = 0; tick < 30; tick += 1) {
       runtime.runTickForTest();
     }
@@ -271,7 +272,7 @@ describe("WorldRuntime calls", () => {
   });
 
   it("keeps an accepted call active when someone enters an open meeting room", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     runtime.restorePlayers(runtime.serializePlayers().map((player) => {
       if (player.userId === "user-maya") {
         return { ...player, x: 690, y: 500 };
@@ -310,7 +311,7 @@ describe("WorldRuntime calls", () => {
   });
 
   it("keeps an accepted call active when a meeting join is rejected", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const mayaEvents: ServerEvent[] = [];
     const leoEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
@@ -335,7 +336,7 @@ describe("WorldRuntime calls", () => {
   });
 
   it("rejects calls to coworkers outside the nearby range", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const mayaEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
     connect(runtime, "user-jonas", []);
@@ -352,7 +353,7 @@ describe("WorldRuntime calls", () => {
 
   it("marks an unanswered call as missed for both people", () => {
     vi.useFakeTimers();
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     try {
       const mayaEvents: ServerEvent[] = [];
       const leoEvents: ServerEvent[] = [];
@@ -375,7 +376,7 @@ describe("WorldRuntime calls", () => {
   });
 
   it("declines a ringing call and cancels walk-up approaches when the recipient enables do not disturb", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const mayaEvents: ServerEvent[] = [];
     const leoEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
@@ -422,7 +423,7 @@ describe("WorldRuntime calls", () => {
 
 describe("WorldRuntime interactions", () => {
   it("shares quick reactions with the current floor and throttles bursts", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const mayaEvents: ServerEvent[] = [];
     const leoEvents: ServerEvent[] = [];
     const noahEvents: ServerEvent[] = [];
@@ -447,7 +448,7 @@ describe("WorldRuntime interactions", () => {
   });
 
   it("throttles repeated direct waves", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const mayaEvents: ServerEvent[] = [];
     const leoEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
@@ -466,7 +467,7 @@ describe("WorldRuntime interactions", () => {
   });
 
   it("keeps meeting reactions with active participants", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const mayaEvents: ServerEvent[] = [];
     const leoEvents: ServerEvent[] = [];
     const jonasEvents: ServerEvent[] = [];
@@ -490,7 +491,7 @@ describe("WorldRuntime interactions", () => {
   });
 
   it("turns nearby reciprocal waves into a high five", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     runtime.restorePlayers(runtime.serializePlayers().map((player) => {
       if (player.userId === "user-maya") {
         return { ...player, x: 410, y: 650 };
@@ -518,7 +519,7 @@ describe("WorldRuntime interactions", () => {
   });
 
   it("clears a pending high five when someone enters a meeting", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     runtime.restorePlayers(runtime.serializePlayers().map((player) => {
       if (player.userId === "user-maya") {
         return { ...player, x: 410, y: 650 };
@@ -543,7 +544,7 @@ describe("WorldRuntime interactions", () => {
   });
 
   it("does not high five across the room", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const mayaEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
     const leoPeer = connect(runtime, "user-leo", []);
@@ -556,7 +557,7 @@ describe("WorldRuntime interactions", () => {
   });
 
   it("rejects waves that bypass unavailable and self-interaction controls", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const mayaEvents: ServerEvent[] = [];
     const priyaEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
@@ -573,24 +574,24 @@ describe("WorldRuntime interactions", () => {
 });
 
 describe("WorldRuntime meeting entry", () => {
-  it("does not join a public meeting when a player enters its area", () => {
-    const store = new DemoStore();
+  it("does not join a meeting when a player walks across the floor", () => {
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const mayaEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
 
-    send(runtime, mayaPeer, { type: "movement.set_destination", requestId: "enter-huddle", floorId: "floor-studio", x: 800, y: 760 });
+    send(runtime, mayaPeer, { type: "movement.set_destination", requestId: "walk-across-floor", floorId: "floor-studio", x: 800, y: 760 });
     for (let tick = 0; tick < 250; tick += 1) {
       runtime.runTickForTest();
     }
 
     expect(mayaEvents.some((event) => event.type === "meeting.joined")).toBe(false);
-    expect(store.getMeeting("meeting-open-huddle")?.participantIds).not.toContain("user-maya");
+    expect(store.getMeeting("meeting-product-crit")?.participantIds).not.toContain("user-maya");
     runtime.stop();
   });
 
   it("does not join the meeting assigned to an entered room", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const jonasEvents: ServerEvent[] = [];
     const jonasPeer = connect(runtime, "user-jonas", jonasEvents);
@@ -609,7 +610,7 @@ describe("WorldRuntime meeting entry", () => {
   });
 
   it("does not start a scheduled meeting when someone walks through its room", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const jonasEvents: ServerEvent[] = [];
     const jonasPeer = connect(runtime, "user-jonas", jonasEvents);
@@ -627,38 +628,40 @@ describe("WorldRuntime meeting entry", () => {
   });
 
   it("joins only after an explicit request and does not rejoin after leaving", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const mayaEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
 
-    send(runtime, mayaPeer, { type: "movement.set_destination", requestId: "enter-huddle", floorId: "floor-studio", x: 800, y: 760 });
+    send(runtime, mayaPeer, { type: "movement.set_destination", requestId: "walk-across-floor", floorId: "floor-studio", x: 800, y: 760 });
     for (let tick = 0; tick < 250; tick += 1) {
       runtime.runTickForTest();
     }
     expect(mayaEvents.some((event) => event.type === "meeting.joined")).toBe(false);
 
-    send(runtime, mayaPeer, { type: "meeting.join", requestId: "open-meeting", meetingId: "meeting-open-huddle" });
+    send(runtime, mayaPeer, { type: "meeting.join", requestId: "open-meeting", meetingId: "meeting-product-crit" });
     expect(mayaEvents).toContainEqual(expect.objectContaining({
       type: "meeting.joined",
-      meeting: expect.objectContaining({ id: "meeting-open-huddle" }),
+      meeting: expect.objectContaining({ id: "meeting-product-crit" }),
     }));
-    expect(store.getMeeting("meeting-open-huddle")?.participantIds).toContain("user-maya");
+    expect(store.getMeeting("meeting-product-crit")?.participantIds).toContain("user-maya");
 
-    send(runtime, mayaPeer, { type: "meeting.leave", requestId: "leave-meeting", meetingId: "meeting-open-huddle" });
+    const joined = mayaEvents.findLast((event) => event.type === "meeting.joined");
+    if (joined?.type !== "meeting.joined") throw new Error("Meeting not joined");
+    send(runtime, mayaPeer, { type: "meeting.leave", requestId: "leave-meeting", meetingId: "meeting-product-crit", sessionId: joined.session.sessionId });
     const joinsAfterLeave = mayaEvents.filter((event) => event.type === "meeting.joined").length;
 
     runtime.runTickForTest();
 
     expect(mayaEvents.filter((event) => event.type === "meeting.joined")).toHaveLength(joinsAfterLeave);
-    expect(store.getMeeting("meeting-open-huddle")?.participantIds).not.toContain("user-maya");
+    expect(store.getMeeting("meeting-product-crit")?.participantIds).not.toContain("user-maya");
     runtime.stop();
   });
 });
 
 describe("WorldRuntime navigation boundaries", () => {
   it("keeps manual movement inside the navigable outdoor bounds", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const mayaEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
@@ -680,7 +683,7 @@ describe("WorldRuntime navigation boundaries", () => {
   });
 
   it("keeps multiple sessions on the same authoritative floor", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const firstEvents: ServerEvent[] = [];
     const secondEvents: ServerEvent[] = [];
     const firstPeer = connect(runtime, "user-maya", firstEvents);
@@ -709,7 +712,7 @@ describe("WorldRuntime navigation boundaries", () => {
   });
 
   it("uses the member's canonical floor when a reconnect requests a stale floor", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     store.updateOnline("user-maya", false);
     const runtime = new WorldRuntime(store);
     const events: ServerEvent[] = [];
@@ -728,7 +731,7 @@ describe("WorldRuntime navigation boundaries", () => {
   });
 
   it("resynchronizes mutable workspace data after a reconnect", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const firstEvents: ServerEvent[] = [];
     const firstPeer = connect(runtime, "user-jonas", firstEvents);
@@ -760,7 +763,7 @@ describe("WorldRuntime navigation boundaries", () => {
   });
 
   it("restores an active call and meeting in additional sessions", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const mayaEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
     connect(runtime, "user-leo", []);
@@ -798,16 +801,17 @@ describe("WorldRuntime navigation boundaries", () => {
     connect(runtime, "user-maya", meetingSessionEvents);
 
     expect(meetingSessionEvents).toContainEqual(expect.objectContaining({
-      type: "meeting.joined",
+      type: "meeting.updated",
       meeting: expect.objectContaining({ id: "meeting-product-crit" }),
     }));
+    expect(meetingSessionEvents.some((event) => event.type === "meeting.joined")).toBe(false);
     runtime.stop();
   });
 });
 
 describe("WorldRuntime layout safety", () => {
   it("rejects stale room settings without overwriting the accepted update", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const events: ServerEvent[] = [];
     const peer = connect(runtime, "user-maya", events);
@@ -850,7 +854,7 @@ describe("WorldRuntime layout safety", () => {
   });
 
   it("opens a private room when its final door is removed", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const mayaEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
@@ -888,7 +892,7 @@ describe("WorldRuntime layout safety", () => {
   });
 
   it("places thin wall runs and detects the resulting room live", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const mayaEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
@@ -917,7 +921,7 @@ describe("WorldRuntime layout safety", () => {
   });
 
   it("keeps doors and windows clear of wall junctions", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const mayaEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
@@ -938,7 +942,7 @@ describe("WorldRuntime layout safety", () => {
   });
 
   it("adds an outdoor window with a floor-light source", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const mayaEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
@@ -962,7 +966,7 @@ describe("WorldRuntime layout safety", () => {
   });
 
   it("does not reserve layout space for disconnected players and restores them safely", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const mayaPeer = connect(runtime, "user-maya", []);
     runtime.disconnect(mayaPeer);
@@ -985,7 +989,7 @@ describe("WorldRuntime layout safety", () => {
   });
 
   it("enforces build permission for every layout command", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const events: ServerEvent[] = [];
     const peer = connect(runtime, "user-jonas", events);
@@ -1017,7 +1021,7 @@ describe("WorldRuntime layout safety", () => {
 
 describe("WorldRuntime workspace access", () => {
   it("evicts a person when they are removed from a private room", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     store.updateRoomSettings("room-quiet", {
       name: "Quiet Corner",
       color: "#cbd3ed",
@@ -1059,7 +1063,7 @@ describe("WorldRuntime workspace access", () => {
   });
 
   it("publishes invitation changes to connected editors", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const mayaEvents: ServerEvent[] = [];
     const leoEvents: ServerEvent[] = [];
@@ -1085,7 +1089,7 @@ describe("WorldRuntime workspace access", () => {
 
 describe("WorldRuntime private-room access", () => {
   it("blocks manual movement through a locked door", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const jonasEvents: ServerEvent[] = [];
     const jonasPeer = connect(runtime, "user-jonas", jonasEvents);
 
@@ -1103,7 +1107,7 @@ describe("WorldRuntime private-room access", () => {
   });
 
   it("cancels click-to-move when a room locks during the walk", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const jonasEvents: ServerEvent[] = [];
     const jonasPeer = connect(runtime, "user-jonas", jonasEvents);
@@ -1138,7 +1142,7 @@ describe("WorldRuntime private-room access", () => {
   });
 
   it("lets a current occupant admit a nearby coworker into a locked room", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const jonasEvents: ServerEvent[] = [];
     const priyaEvents: ServerEvent[] = [];
     const leoEvents: ServerEvent[] = [];
@@ -1175,7 +1179,7 @@ describe("WorldRuntime private-room access", () => {
   });
 
   it("dismisses a knock for an occupant who leaves while keeping other recipients active", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     runtime.restorePlayers(runtime.serializePlayers().map((player) => player.userId === "user-maya"
       ? { ...player, x: 1100, y: 250 }
       : player));
@@ -1210,7 +1214,7 @@ describe("WorldRuntime private-room access", () => {
   });
 
   it("keeps a declined coworker outside the locked room", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const jonasEvents: ServerEvent[] = [];
     const priyaEvents: ServerEvent[] = [];
     const jonasPeer = connect(runtime, "user-jonas", jonasEvents);
@@ -1234,7 +1238,7 @@ describe("WorldRuntime private-room access", () => {
   });
 
   it("does not create an access request when nobody is inside", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const jonasEvents: ServerEvent[] = [];
     const jonasPeer = connect(runtime, "user-jonas", jonasEvents);
 
@@ -1247,7 +1251,7 @@ describe("WorldRuntime private-room access", () => {
 
   it("expires an unanswered access request", () => {
     vi.useFakeTimers();
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     try {
       const jonasEvents: ServerEvent[] = [];
       const priyaEvents: ServerEvent[] = [];
@@ -1267,7 +1271,7 @@ describe("WorldRuntime private-room access", () => {
   });
 
   it("expires a knock when the requester walks away", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const jonasEvents: ServerEvent[] = [];
     const jonasPeer = connect(runtime, "user-jonas", jonasEvents);
     connect(runtime, "user-priya", []);
@@ -1284,7 +1288,7 @@ describe("WorldRuntime private-room access", () => {
   });
 
   it("expires a pending knock when the requester loses room visibility", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const jonasEvents: ServerEvent[] = [];
     const priyaEvents: ServerEvent[] = [];
@@ -1331,7 +1335,7 @@ describe("WorldRuntime private-room access", () => {
   });
 
   it("restores pending knocks and granted room access in additional sessions", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const jonasEvents: ServerEvent[] = [];
     const priyaEvents: ServerEvent[] = [];
     const jonasPeer = connect(runtime, "user-jonas", jonasEvents);
@@ -1376,7 +1380,7 @@ describe("WorldRuntime private-room access", () => {
 
 describe("WorldRuntime chat privacy", () => {
   it("delivers direct messages only to conversation participants", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const mayaEvents: ServerEvent[] = [];
     const leoEvents: ServerEvent[] = [];
     const jonasEvents: ServerEvent[] = [];
@@ -1398,7 +1402,7 @@ describe("WorldRuntime chat privacy", () => {
   });
 
   it("rejects messages to a direct conversation the sender does not belong to", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const jonasEvents: ServerEvent[] = [];
     const jonasPeer = connect(runtime, "user-jonas", jonasEvents);
 
@@ -1416,7 +1420,7 @@ describe("WorldRuntime chat privacy", () => {
 
 describe("WorldRuntime game lifecycle", () => {
   it("stops a game when its player closes it", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     runtime.restorePlayers(runtime.serializePlayers().map((player) => player.userId === "user-maya"
       ? { ...player, x: 1060, y: 700 }
       : player));
@@ -1427,10 +1431,10 @@ describe("WorldRuntime game lifecycle", () => {
     for (let tick = 0; tick < 500; tick += 1) {
       runtime.runTickForTest();
     }
-    send(runtime, mayaPeer, { type: "game.start", requestId: "start-game", definitionId: "game-falling-blocks", objectId: "object-falling-blocks" });
+    send(runtime, mayaPeer, { type: "game.start", requestId: "start-game", definitionId: "game-falling-blocks", objectId: "object-falling-blocks", solo: true });
     expect(mayaEvents).toContainEqual(expect.objectContaining({ type: "game.state" }));
-    send(runtime, mayaPeer, { type: "game.end", requestId: "end-game" });
-    send(runtime, mayaPeer, { type: "game.command", requestId: "move-after-close", command: "left" });
+    send(runtime, mayaPeer, { type: "game.end", roundId: mayaEvents.findLast((event) => event.type === "game.state")!.roundId, requestId: "end-game" });
+    send(runtime, mayaPeer, { type: "game.command", roundId: mayaEvents.findLast((event) => event.type === "game.state")!.roundId, requestId: "move-after-close", command: "left" });
 
     expect(mayaEvents.at(-1)).toMatchObject({ type: "command.error", code: "GAME_NOT_STARTED" });
     runtime.stop();

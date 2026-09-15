@@ -1,3 +1,4 @@
+import { createOrganisation } from "@workhard/shared";
 import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { FALLING_BLOCKS_DEFINITION_ID } from "@workhard/shared";
 import type { BootstrapData, ChatMessage, Conversation } from "@workhard/shared";
@@ -20,6 +21,7 @@ function data(conversations: Conversation[], messages: ChatMessage[]): Bootstrap
   return {
     currentUserId: "maya",
     corporateIdentity: createTestCorporateIdentity(),
+    organisation: createOrganisation(),
     team: { id: "team", name: "Team", slug: "team", accent: "#000" },
     office: { id: "office", teamId: "team", name: "Office" },
     floors: [],

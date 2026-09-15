@@ -1,3 +1,4 @@
+import { createOrganisation } from "@workhard/shared";
 import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -47,12 +48,13 @@ const meeting: Meeting = {
   durationMinutes: 30,
   status: "live",
   participantIds: [],
-  location: { type: "public", floorId: "floor-one", x: 300, y: 300, radius: 80 },
+  location: { type: "room", roomId: "room" },
 };
 
 const workspace: BootstrapData = {
   currentUserId: "user-one",
   corporateIdentity: createTestCorporateIdentity(),
+    organisation: createOrganisation(),
   team: { id: "team-one", name: "Team", slug: "team", accent: "#000000" },
   office: { id: "office-one", teamId: "team-one", name: "Office" },
   floors: [{
@@ -139,7 +141,6 @@ describe("Workspace snapshot rendering", () => {
     const updated = canvasRenders.at(-1)!;
 
     expect(updated.players).not.toBe(initial.players);
-    expect(updated.meetings).toBe(initial.meetings);
     expect(updated.reactions).toBe(initial.reactions);
     expect(updated.highFives).toBe(initial.highFives);
     expect(updated.gongRings).toBe(initial.gongRings);

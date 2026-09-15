@@ -1,13 +1,22 @@
-import { DEFAULT_CHARACTER_APPEARANCE, requireAssetDefinition } from "@workhard/shared";
+import { createOrganisation } from "@workhard/shared";
+import { ASSET_ROTATIONS, DEFAULT_CHARACTER_APPEARANCE, getPlacedAssetBounds, getPlacedAssetInteractions, requireAssetDefinition } from "@workhard/shared";
 import type { Container, Sprite } from "pixi.js";
+import { Graphics } from "pixi.js";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { getOutdoorBounds, type Floor, type FloorLayout, type Member, type WorldPlayer } from "@workhard/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WorldCanvas, type WorldCanvasProps } from "./WorldCanvas";
-import { getWorldAssetArtwork } from "../world-asset-artwork";
+import { getWorldAssetArtwork, getWorldAssetSurfaceHeight } from "../world-asset-artwork";
 import * as characterRenderer from "../character-renderer";
+import { MusicIndicator } from "../spotify/music-indicator";
+import { CharacterSprite } from "../character-sprite";
+import { CHARACTER_ATLAS_SIZE, CHARACTER_ATLAS_HEIGHT } from "@workhard/shared";
 
 const pixiState = vi.hoisted(() => ({ applications: [] as unknown[] }));
+
+beforeEach(() => {
+  vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: false })));
+});
 
 vi.mock("pixi.js", async (importOriginal) => {
   HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
@@ -15,6 +24,7 @@ vi.mock("pixi.js", async (importOriginal) => {
     fillRect: vi.fn(),
     globalCompositeOperation: "source-over",
     getImageData: vi.fn(() => ({ data: [0, 0, 0, 0] })),
+    measureText: vi.fn((text: string) => ({ width: text.length * 6, actualBoundingBoxLeft: 0, actualBoundingBoxRight: text.length * 6, actualBoundingBoxAscent: 10, actualBoundingBoxDescent: 3 })),
   })) as unknown as typeof HTMLCanvasElement.prototype.getContext;
   const pixi = await importOriginal<typeof import("pixi.js")>();
 
@@ -64,10 +74,45 @@ vi.mock("pixi.js", async (importOriginal) => {
 
 beforeEach(() => {
   pixiState.applications.length = 0;
+  vi.stubGlobal("CanvasRenderingContext2D", class {});
 });
 
 afterEach(() => {
   cleanup();
+});
+
+describe("WorldCanvas start point", () => {
+  it.each(["mouse", "touch"] as const)("previews and moves the snapped start point with %s", async (pointerType) => {
+    const onEdit = vi.fn();
+    const { container } = render(<WorldCanvas {...createProps()} editing editingTool="spawn" onEdit={onEdit} />);
+    const canvas = await findCanvas(container);
+    const point = getScreenPoint(getApplication(), 325, 314);
+    dispatchPointer(canvas, "pointerdown", point.x, point.y, { pointerType });
+    dispatchPointer(canvas, "pointerup", point.x, point.y, { pointerType });
+    if (pointerType === "touch") {
+      expect(onEdit).not.toHaveBeenCalled();
+      await waitFor(() => expect((screen.getByRole("button", { name: "Move here" }) as HTMLButtonElement).disabled).toBe(false));
+      fireEvent.click(screen.getByRole("button", { name: "Move here" }));
+    }
+    expect(onEdit).toHaveBeenCalledWith({ tool: "spawn", position: { x: 320, y: 320 } });
+    expect(screen.queryByRole("button", { name: "Rotate asset clockwise" })).toBeNull();
+  });
+
+  it("blocks wall placement and keeps start points unavailable in player asset mode", async () => {
+    const onEdit = vi.fn();
+    const props = createProps();
+    const blocked = { ...props.layout, walls: [{ id: "wall", start: { x: 256, y: 320 }, end: { x: 384, y: 320 } }] };
+    const { container, rerender } = render(<WorldCanvas {...props} layout={blocked} editing editingTool="spawn" onEdit={onEdit} />);
+    const canvas = await findCanvas(container);
+    const point = getScreenPoint(getApplication(), 320, 320);
+    dispatchPointer(canvas, "pointerdown", point.x, point.y);
+    dispatchPointer(canvas, "pointerup", point.x, point.y);
+    expect(onEdit).not.toHaveBeenCalled();
+    rerender(<WorldCanvas {...props} editing editingTool="spawn" onEdit={onEdit} playerAssetPlacement={{ userId: "player", organisation: createOrganisation(), officeBuilder: false, settings: { roomAccess: { mode: "open", assignedPersonIds: [] }, roomBuild: { mode: "open", assignedPersonIds: [] } } }} />);
+    dispatchPointer(canvas, "pointerdown", point.x, point.y);
+    dispatchPointer(canvas, "pointerup", point.x, point.y);
+    expect(onEdit).not.toHaveBeenCalled();
+  });
 });
 
 describe("WorldCanvas camera", () => {
@@ -509,6 +554,43 @@ describe("WorldCanvas camera", () => {
   });
 });
 
+describe("WorldCanvas raised asset outlines", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it.each(ASSET_ROTATIONS)("outlines the visible laptop when selecting and moving it at %s degrees", async (rotation) => {
+    const desk = { id: "desk", floorId: "floor", assetId: "desk-straight", variantId: "sage", rotation: 0 as const, x: 256, y: 256 };
+    const laptop = { ...desk, id: "laptop", assetId: "decor-laptop", variantId: "graphite", rotation, x: 272 };
+    const buildLayout = { ...layout, objects: [desk, laptop] };
+    const artwork = getWorldAssetArtwork(requireAssetDefinition(laptop.assetId), laptop.variantId, rotation).bounds;
+    const offset = -getWorldAssetSurfaceHeight(desk.assetId) / Math.SQRT2;
+    const outline = [laptop.x + artwork.x - 1, expect.closeTo(laptop.y + artwork.y + offset - 1), artwork.width + 2, artwork.height + 2];
+    const rectangle = vi.spyOn(Graphics.prototype, "rect");
+    const circle = vi.spyOn(Graphics.prototype, "circle");
+    const props = { ...createProps(), layout: buildLayout, editing: true, players: [], members: [] };
+    const { container, rerender } = render(<WorldCanvas {...props} selectedBuildItem={{ type: "asset", id: laptop.id }} />);
+    const canvas = await findCanvas(container);
+    expect(rectangle.mock.calls).toContainEqual(outline);
+    const origin = { x: laptop.x + artwork.x + artwork.width / 2, y: laptop.y + artwork.y + offset + artwork.height / 2 };
+    const marker = circle.mock.calls.find(([, , radius]) => radius === 10)!;
+    expect(marker).toBeDefined();
+    expect(Math.hypot(marker[0] - origin.x, marker[1] - origin.y) * getWorldScale(getApplication())).toBeGreaterThanOrEqual(43.99);
+    for (const deltaY of [100_000, -100_000]) {
+      circle.mockClear();
+      fireEvent.wheel(canvas, { clientX: 400, clientY: 300, deltaY });
+      const zoomedMarker = circle.mock.calls.find(([, , radius]) => radius === 10)!;
+      expect(zoomedMarker).toBeDefined();
+      expect(Math.hypot(zoomedMarker[0] - origin.x, zoomedMarker[1] - origin.y) * getWorldScale(getApplication())).toBeGreaterThanOrEqual(43.99);
+    }
+
+    rerender(<WorldCanvas {...props} movingBuildItem={{ type: "asset", id: laptop.id }} editingAssetId={laptop.assetId} editingAssetVariantId={laptop.variantId} editingAssetRotation={rotation} />);
+    rectangle.mockClear();
+    const footprint = getPlacedAssetBounds(laptop);
+    const point = getScreenPoint(getApplication(), footprint.x + footprint.width / 2, footprint.y + footprint.height / 2 + offset);
+    dispatchPointer(canvas, "pointermove", point.x, point.y);
+    expect(rectangle.mock.calls).toContainEqual(outline);
+  });
+});
+
 describe("WorldCanvas artwork", () => {
   const object = { id: "artwork-fixture", floorId: "floor", assetId: "storage-credenza", variantId: "ink", rotation: 90 as const, x: 96, y: 64 };
   const artwork = getWorldAssetArtwork(requireAssetDefinition(object.assetId), object.variantId, object.rotation);
@@ -582,18 +664,195 @@ describe("WorldCanvas artwork", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
-  it("draws nearer objects after rear objects regardless of insertion order, with decorations above furniture", async () => {
+  it("keeps decorations with their supporting furniture and ground art below the depth layer", async () => {
     const objects = [
       { ...object, id: "near", y: 144, rotation: 0 as const },
-      { ...object, id: "surface", assetId: "decor-coffee", variantId: "graphite", y: 64 },
-      { ...object, id: "back", y: 64, rotation: 0 as const },
+      { ...object, id: "surface", assetId: "decor-coffee", variantId: "graphite", y: 64, rotation: 0 as const },
+      { ...object, id: "back", assetId: "desk-straight", variantId: "sage", y: 64, rotation: 0 as const },
       { ...object, id: "ground", assetId: "rug-round", variantId: "oak", y: 144 },
     ];
     const { container } = render(<WorldCanvas {...createProps()} players={[]} members={[]} layout={{ ...layout, objects }} />);
     await findCanvas(container);
     const placed = getApplication().stage.getChildByLabel("world-asset:near", true)!;
     const order = placed.parent!.children.filter((child) => child.label.startsWith("world-asset:")).map((child) => child.label);
-    expect(order).toEqual(["world-asset:ground", "world-asset:back", "world-asset:near", "world-asset:surface"]);
+    expect(order).toEqual(["world-asset:back", "world-asset:surface", "world-asset:near"]);
+    const ground = getApplication().stage.getChildByLabel("world-asset:ground", true)!;
+    const world = placed.parent!.parent!;
+    expect(world.getChildIndex(ground.parent!)).toBeLessThan(world.getChildIndex(placed.parent!));
+  });
+});
+
+describe("WorldCanvas Spotify indicators", () => {
+  it("keeps matching avatars renderable when one leaves during account connection", () => {
+    const atlas = document.createElement("canvas");
+    atlas.width = CHARACTER_ATLAS_SIZE;
+    atlas.height = CHARACTER_ATLAS_HEIGHT;
+    const leaving = new CharacterSprite(atlas);
+    const remaining = new CharacterSprite(atlas);
+    leaving.sprite.destroy();
+    remaining.update(1000, "idle", "down");
+    expect(remaining.sprite.texture.source.destroyed).toBe(false);
+    expect(remaining.sprite.texture.source.style).toBeTruthy();
+    remaining.sprite.destroy();
+  });
+
+  it("attaches listening notes to the player and removes them when sharing stops", async () => {
+    const activity = {
+      userId: player.userId, trackId: "4iV5W9uYEdYUVa79Axb7Rh", title: "Test song", artist: "Test artist",
+      album: "Test album", artworkUrl: null, trackUrl: "https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh",
+      expiresAt: Date.now() + 30_000, jamUrl: null,
+    };
+    const { container, rerender } = render(<WorldCanvas {...createProps()} listeningActivities={{ [player.userId]: activity }} />);
+    await findCanvas(container);
+    const application = getApplication();
+    runFrames(application, 1);
+    const avatar = application.stage.getChildByLabel(`world-player:${player.userId}`, true)!;
+    const notes = avatar.getChildByLabel("spotify-notes")!;
+    expect(notes.visible).toBe(true);
+    rerender(<WorldCanvas {...createProps()} listeningActivities={{}} />);
+    runFrames(application, 1);
+    expect(notes.visible).toBe(false);
+  });
+
+  it("animates notes over the head, honors reduced motion and clears expired or reacting indicators", () => {
+    const notes = new MusicIndicator();
+    notes.update(1000, 5000, -48, false, false);
+    expect(notes.container.visible).toBe(true);
+    expect(notes.container.y).toBe(-62);
+    const positions = notes.container.children.map((note) => note.y);
+    notes.update(1500, 5000, -38, false, false);
+    expect(notes.container.children.map((note) => note.y)).not.toEqual(positions);
+    expect(notes.container.y).toBe(-52);
+    notes.update(1600, 5000, -48, true, false);
+    expect(notes.container.children.every((note) => note.y === 0 && note.rotation === 0)).toBe(true);
+    notes.update(1700, 5000, -48, false, true);
+    expect(notes.container.visible).toBe(false);
+    notes.update(5000, 5000, -48, false, false);
+    expect(notes.container.visible).toBe(false);
+    notes.container.destroy({ children: true });
+  });
+});
+
+describe("WorldCanvas depth", () => {
+  const rearMember = { ...member, id: "rear", name: "Rear Player" };
+  const rearPlayer = { ...player, userId: rearMember.id, y: 64 };
+
+  function drawOrder(): string[] {
+    return getApplication().stage.getChildByLabel("world-depth", true)!.children.map((child) => child.label);
+  }
+
+  it("draws overlapping avatars by their feet and updates order at the interpolated crossing", async () => {
+    const props = { ...createProps(), members: [member, rearMember], players: [player, rearPlayer] };
+    const { container, rerender } = render(<WorldCanvas {...props} />);
+    await findCanvas(container);
+    expect(drawOrder()).toEqual(["world-player:rear", "world-player:player"]);
+
+    rerender(<WorldCanvas {...props} players={[{ ...player, y: 0 }, rearPlayer]} />);
+    runFrames(getApplication(), 1);
+    expect(drawOrder()).toEqual(["world-player:rear", "world-player:player"]);
+    runFrames(getApplication(), 20);
+    expect(drawOrder()).toEqual(["world-player:player", "world-player:rear"]);
+
+    rerender(<WorldCanvas {...props} players={[rearPlayer, { ...player, y: 0 }]} />);
+    expect(drawOrder()).toEqual(["world-player:player", "world-player:rear"]);
+  });
+
+  it("breaks equal-depth ties consistently across joining and snapshot order", async () => {
+    const coincident = { ...rearPlayer, x: player.x, y: player.y };
+    const props = { ...createProps(), members: [member, rearMember], players: [coincident, player] };
+    const { container, rerender } = render(<WorldCanvas {...props} />);
+    await findCanvas(container);
+    expect(drawOrder()).toEqual(["world-player:player", "world-player:rear"]);
+    rerender(<WorldCanvas {...props} players={[player]} />);
+    expect(drawOrder()).toEqual(["world-player:player"]);
+    rerender(<WorldCanvas {...props} players={[player, coincident]} />);
+    expect(drawOrder()).toEqual(["world-player:player", "world-player:rear"]);
+  });
+
+  it.each(ASSET_ROTATIONS)("walks behind and in front of a desk rotated %s degrees", async (rotation) => {
+    const object = { id: "desk", floorId: floor.id, assetId: "desk-straight", variantId: "sage", rotation, x: 64, y: 64 };
+    const bounds = getPlacedAssetBounds(object);
+    const back = { ...player, x: bounds.x + bounds.width / 2, y: bounds.y - 12 };
+    const front = { ...back, y: bounds.y + bounds.height + 12 };
+    const props = { ...createProps(), players: [back], layout: { ...layout, objects: [object] } };
+    const { container, rerender } = render(<WorldCanvas {...props} />);
+    await findCanvas(container);
+    expect(drawOrder()).toEqual(["world-player:player", "world-asset:desk"]);
+    rerender(<WorldCanvas {...props} players={[front]} />);
+    runFrames(getApplication(), 1);
+    expect(drawOrder()).toEqual(["world-player:player", "world-asset:desk"]);
+    runFrames(getApplication(), 50);
+    expect(drawOrder()).toEqual(["world-asset:desk", "world-player:player"]);
+    rerender(<WorldCanvas {...props} />);
+    runFrames(getApplication(), 50);
+    expect(drawOrder()).toEqual(["world-player:player", "world-asset:desk"]);
+  });
+
+  it.each(ASSET_ROTATIONS)("orders a chair and its occupant from the rotated seat at %s degrees", async (rotation) => {
+    const chair = { id: "chair", floorId: floor.id, assetId: "chair-office", variantId: "white", rotation, x: 96, y: 64 };
+    const interaction = getPlacedAssetInteractions(chair)[0]!;
+    const seated = { ...player, ...interaction.center, facing: "down" as const, seat: { objectId: chair.id, interactionId: interaction.id } };
+    const props = { ...createProps(), layout: { ...layout, objects: [chair] }, members: [member, rearMember], players: [seated, { ...rearPlayer, y: 100 }] };
+    const { container, rerender } = render(<WorldCanvas {...props} />);
+    await findCanvas(container);
+    const seatedOrder = rotation === 180
+      ? ["world-player:player", "world-asset:chair"]
+      : ["world-asset:chair", "world-player:player"];
+    expect(drawOrder()).toEqual([...seatedOrder, "world-player:rear"]);
+    const playerView = getApplication().stage.getChildByLabel("world-player:player", true)!;
+    expect([playerView.x, playerView.y]).toEqual([interaction.center.x, interaction.center.y]);
+
+    rerender(<WorldCanvas {...props} colorTheme="dark" />);
+    expect(drawOrder()).toEqual([...seatedOrder, "world-player:rear"]);
+    expect(getApplication().stage.getChildByLabel("world-player:player", true)).toBe(playerView);
+
+    rerender(<WorldCanvas {...props} players={[{ ...player, x: interaction.center.x, y: 120 }, rearPlayer]} />);
+    runFrames(getApplication(), 50);
+    expect(drawOrder()).toEqual(["world-player:rear", "world-asset:chair", "world-player:player"]);
+  });
+
+  it("uses the individual seat direction on a corner sofa", async () => {
+    const sofa = { id: "sofa", floorId: floor.id, assetId: "sofa-corner", variantId: "white", rotation: 90 as const, x: 96, y: 64 };
+    const interaction = getPlacedAssetInteractions(sofa).find((seat) => seat.direction === "up")!;
+    const props = { ...createProps(), layout: { ...layout, objects: [sofa] }, players: [{ ...player, ...interaction.center, seat: { objectId: sofa.id, interactionId: interaction.id } }] };
+    const { container } = render(<WorldCanvas {...props} />);
+    await findCanvas(container);
+    expect(drawOrder()).toEqual(["world-player:player", "world-asset:sofa"]);
+  });
+
+  it("keeps carried players at the carrier's depth instead of the raised sprite position", async () => {
+    const carriedMember = { ...member, id: "carried", name: "Carried Player" };
+    const carried = { ...player, userId: carriedMember.id, carriedByUserId: player.userId };
+    const props = { ...createProps(), members: [member, rearMember, carriedMember], players: [carried, player, rearPlayer] };
+    const { container, rerender } = render(<WorldCanvas {...props} />);
+    await findCanvas(container);
+    runFrames(getApplication(), 50);
+    expect(drawOrder()).toEqual(["world-player:rear", "world-player:carried", "world-player:player"]);
+    rerender(<WorldCanvas {...props} players={[carried, { ...player, y: 32 }, rearPlayer]} />);
+    runFrames(getApplication(), 50);
+    expect(drawOrder()).toEqual(["world-player:carried", "world-player:player", "world-player:rear"]);
+    rerender(<WorldCanvas {...props} players={[carried, rearPlayer]} />);
+    runFrames(getApplication(), 50);
+    expect(drawOrder()).toEqual(["world-player:rear", "world-player:carried"]);
+  });
+});
+
+describe("world keyboard focus", () => {
+  it("leaves arrow keys available to scroll focused interface content", async () => {
+    const onDirectionalInput = vi.fn();
+    const { container } = render(<>
+      <WorldCanvas {...createProps()} onDirectionalInput={onDirectionalInput} />
+      <aside><div tabIndex={0} aria-label="Scrollable content" /></aside>
+    </>);
+    const canvas = await findCanvas(container);
+    const scrollArea = screen.getByLabelText("Scrollable content");
+    scrollArea.focus();
+    expect(fireEvent.keyDown(scrollArea, { key: "ArrowDown" })).toBe(true);
+    expect(onDirectionalInput).not.toHaveBeenCalled();
+    expect(fireEvent.keyDown(canvas, { key: "ArrowDown" })).toBe(false);
+    expect(onDirectionalInput).toHaveBeenLastCalledWith(1, 0, 1);
+    fireEvent.keyUp(canvas, { key: "ArrowDown" });
+    expect(onDirectionalInput).toHaveBeenLastCalledWith(2, 0, 0);
   });
 });
 
@@ -602,7 +861,6 @@ function createProps(): WorldCanvasProps {
     floor,
     layout,
     members: [member],
-    meetings: [],
     players: [player],
     reactions: [],
     highFives: [],

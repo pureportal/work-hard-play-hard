@@ -1,19 +1,20 @@
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Shuffle } from "lucide-react";
 import { useState } from "react";
 import {
-  CHARACTER_BREAST_SIZES, CHARACTER_FACES, CHARACTER_GENDERS, CHARACTER_HAIRSTYLES,
+  CHARACTER_FACES, CHARACTER_GENDERS, CHARACTER_HAIRSTYLES,
   CHARACTER_HEADWEAR, CHARACTER_OUTFITS, characterAppearanceKey, randomCharacterAppearance,
   type CharacterAppearance, type CharacterDirection, type CharacterMotion,
 } from "@workhard/shared";
 import { CharacterPreview } from "./CharacterPreview";
+import { useHorizontalWheelScroll } from "../hooks/useHorizontalWheelScroll";
 
 const categories = [
-  { id: "face", label: "Face", crop: "face", options: CHARACTER_FACES, names: ["Calm", "Bright", "Fierce"] },
-  { id: "hairstyle", label: "Hair", crop: "hair", options: CHARACTER_HAIRSTYLES, names: ["Ruby bob", "Midnight spikes", "Lavender ponytail"] },
-  { id: "upperBody", label: "Tops", crop: "upper", options: CHARACTER_OUTFITS, names: ["Bomber jacket", "Ranger vest", "Moon armor"] },
-  { id: "lowerBody", label: "Bottoms", crop: "lower", options: CHARACTER_OUTFITS, names: ["Denim shorts", "Ranger breeches", "Moon breeches"] },
-  { id: "shoes", label: "Shoes", crop: "shoes", options: CHARACTER_OUTFITS, names: ["Sneakers", "Leather boots", "Moon boots"] },
-  { id: "headwear", label: "Headwear", crop: "headwear", options: CHARACTER_HEADWEAR, names: ["None", "Star cap", "Moon hat"] },
+  { id: "face", label: "Face", crop: "face", options: CHARACTER_FACES, names: ["Calm", "Bright", "Fierce", "Dreamy", "Wink", "Shy"] },
+  { id: "hairstyle", label: "Hair", crop: "hair", options: CHARACTER_HAIRSTYLES, names: ["Rose bob", "Midnight spikes", "Lavender ponytail", "Pink twintails", "Honey waves", "Mint braid", "Ash pixie", "Chestnut curtains", "Ink hime cut", "Silver tousle", "Peach buns", "Copper side sweep", "Cocoa curls", "Pearl braid"] },
+  { id: "upperBody", label: "Tops", crop: "upper", options: CHARACTER_OUTFITS, names: ["Bomber jacket", "Ranger jacket", "Moon armor", "Sailor blouse", "Honey cardigan", "Lilac kimono", "Traveler jacket", "Festival haori"] },
+  { id: "lowerBody", label: "Bottoms", crop: "lower", options: CHARACTER_OUTFITS, names: ["Denim trousers", "Ranger breeches", "Moon breeches", "Sailor trousers", "Plum trousers", "Petal hakama", "Travel breeches", "Indigo hakama"] },
+  { id: "shoes", label: "Shoes", crop: "shoes", options: CHARACTER_OUTFITS, names: ["Sneakers", "Leather boots", "Moon boots", "Navy shoes", "Honey shoes", "Rose shoes", "Travel boots", "Tabi sandals"] },
+  { id: "headwear", label: "Headwear", crop: "headwear", options: CHARACTER_HEADWEAR, names: ["None", "Star cap", "Moon hat", "Beret", "Ribbon", "Cat ears", "Blossom clip", "Goggles"] },
 ] as const;
 
 interface CharacterEditorProps {
@@ -23,6 +24,7 @@ interface CharacterEditorProps {
 }
 
 export function CharacterEditor({ appearance, onSave, onClose }: CharacterEditorProps) {
+  const scrollCategories = useHorizontalWheelScroll();
   const [draft, setDraft] = useState<CharacterAppearance>(() => ({ ...appearance }));
   const [categoryIndex, setCategoryIndex] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -67,7 +69,7 @@ export function CharacterEditor({ appearance, onSave, onClose }: CharacterEditor
           <CharacterPreview appearance={draft} label="Character preview" motion={motion} direction={direction} onReady={setReady} />
           <div className="character-playback">
             <div className="character-segmented" role="group" aria-label="Animation">
-              {(["idle", "walk", "sit"] as const).map((value) => <button key={value} type="button" aria-pressed={motion === value} onClick={() => setMotion(value)}>{{ idle: "Idle", walk: "Walk", sit: "Sit" }[value]}</button>)}
+              {(["idle", "walk", "sit", "listen", "sit-listen"] as const).map((value) => <button key={value} type="button" aria-pressed={motion === value} onClick={() => setMotion(value)}>{{ idle: "Idle", walk: "Walk", sit: "Sit", listen: "Listen", "sit-listen": "Sit & listen" }[value]}</button>)}
             </div>
             <div className="character-directions" role="group" aria-label="Facing direction">
               {([["down", "Front", ArrowDown], ["left", "Left", ArrowLeft], ["up", "Back", ArrowUp], ["right", "Right", ArrowRight]] as const).map(([value, label, Icon]) => (
@@ -86,13 +88,7 @@ export function CharacterEditor({ appearance, onSave, onClose }: CharacterEditor
               {CHARACTER_GENDERS.map((gender) => <button key={gender} type="button" aria-pressed={draft.gender === gender} onClick={() => change("gender", gender)}>{gender === "female" ? "Female" : "Male"}</button>)}
             </div>
           </fieldset>
-          <fieldset disabled={saving} className="character-body-controls">
-            <legend>Breast size</legend>
-            <div className="character-segmented">
-              {CHARACTER_BREAST_SIZES.map((size) => <button key={size} type="button" aria-pressed={draft.breastSize === size} onClick={() => change("breastSize", size)}>{size === "none" ? "No Breast" : size[0]!.toUpperCase() + size.slice(1)}</button>)}
-            </div>
-          </fieldset>
-          <div className="character-categories" role="tablist" aria-label="Appearance">
+          <div ref={scrollCategories} className="character-categories" role="tablist" aria-label="Appearance">
             {categories.map((item, index) => (
               <button key={item.id} id={`character-tab-${item.id}`} type="button" disabled={saving} role="tab" aria-selected={index === categoryIndex}
                 aria-controls="character-options" tabIndex={index === categoryIndex ? 0 : -1}

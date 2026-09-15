@@ -9,7 +9,9 @@ const focusableSelector = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
 
-export function useModalFocus<T extends HTMLElement>(onClose: () => void, active = true) {
+const activeDialogs: HTMLElement[] = [];
+
+export function useModalFocus<T extends HTMLElement>(onClose: () => void, active = true, trapFocus = true) {
   const dialogRef = useRef<T>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -23,15 +25,18 @@ export function useModalFocus<T extends HTMLElement>(onClose: () => void, active
       return;
     }
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
+    activeDialogs.push(dialog);
     dialog.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (activeDialogs.at(-1) !== dialog || event.defaultPrevented) return;
+      if (!trapFocus && !(event.target instanceof Node && dialog.contains(event.target))) return;
       if (event.key === "Escape") {
         event.preventDefault();
         onCloseRef.current();
         return;
       }
-      if (event.key !== "Tab") {
+      if (event.key !== "Tab" || !trapFocus) {
         return;
       }
       const focusable = [...dialog.querySelectorAll<HTMLElement>(focusableSelector)]
@@ -58,11 +63,13 @@ export function useModalFocus<T extends HTMLElement>(onClose: () => void, active
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      if (previousFocus?.isConnected) {
+      const wasTopmost = activeDialogs.at(-1) === dialog;
+      activeDialogs.splice(activeDialogs.indexOf(dialog), 1);
+      if (wasTopmost && previousFocus?.isConnected) {
         previousFocus.focus();
       }
     };
-  }, [active]);
+  }, [active, trapFocus]);
 
   return dialogRef;
 }

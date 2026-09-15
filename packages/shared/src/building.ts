@@ -1,5 +1,6 @@
 import { pointInRect, type Position, type Rect } from "./geometry.js";
 import type { AssetRotation, WorldObject } from "./assets.js";
+import type { RoomPermission } from "./room-permissions.js";
 
 export const BUILD_GRID_SIZE = 32;
 export const WALL_THICKNESS = 12;
@@ -13,7 +14,7 @@ export const MAX_LAYOUT_ROOMS_PER_FLOOR = 512;
 
 export type WallOrientation = "horizontal" | "vertical";
 export type OpeningType = "door" | "window";
-export type RoomAccessMode = "open" | "assigned";
+export type RoomAccessMode = RoomPermission["mode"];
 
 export interface Wall {
   id: string;
@@ -51,9 +52,7 @@ export interface RoomBoundarySegment {
   endOffset: number;
 }
 
-export interface RoomAccess {
-  mode: RoomAccessMode;
-  assignedPersonIds: string[];
+export interface RoomAccess extends RoomPermission {
   knockable: boolean;
 }
 
@@ -70,12 +69,16 @@ export interface Room {
   windowIds: string[];
   privateEligible: boolean;
   access: RoomAccess;
+  build?: RoomPermission;
+  organisationUnitId?: string;
 }
 
 export interface RoomSettings {
   name: string;
   color: string;
   access: RoomAccess;
+  build?: RoomPermission;
+  organisationUnitId?: string;
 }
 
 export interface FloorTile {
@@ -95,7 +98,7 @@ export interface FloorLayout {
   rooms: Room[];
 }
 
-export type LayoutTool = "wall" | "door" | "window" | "asset" | "erase";
+export type LayoutTool = "wall" | "door" | "window" | "asset" | "erase" | "spawn";
 
 export type LayoutEdit =
   | { tool: "wall"; start: Position; end: Position }
@@ -191,6 +194,10 @@ export function getOpeningRect(wall: Wall, opening: WallOpening, thickness = WAL
   return getWallOrientation(wall) === "horizontal"
     ? { x: center.x - opening.width / 2, y: center.y - halfThickness, width: opening.width, height: thickness }
     : { x: center.x - halfThickness, y: center.y - opening.width / 2, width: thickness, height: opening.width };
+}
+
+export function getOpeningArtworkRect(wall: Wall, opening: WallOpening): Rect {
+  return getOpeningRect(wall, opening, opening.type === "door" ? 8 : WALL_THICKNESS + 4);
 }
 
 export function getWallSolidRects(wall: Wall, openings: WallOpening[], thickness = WALL_THICKNESS): Rect[] {

@@ -17,6 +17,21 @@ import { describe, expect, it } from "vitest";
 const bounds = { width: 512, height: 512 };
 
 describe("raster asset placement", () => {
+  it.each([0, 90, 180, 270] as const)("keeps the arc lamp canopy clear of player collision at %s degrees", rotation => {
+    const lamp = object("lamp", "light-arc", 160, 160, rotation);
+    const layout = withObjects(lamp);
+    const cells = getPlacedAssetCells(lamp);
+    expect(cells).toHaveLength(8);
+    expect(cells.filter(cell => cell.solid)).toHaveLength(4);
+    expect(getAssetCollisionRects(layout)).toHaveLength(4);
+    const canopy = cells.find(cell => !cell.solid)!;
+    const decoration = object("chair", "chair-office", canopy.worldX, canopy.worldY);
+    expect(getAssetPlacementError(layout, bounds, decoration)).toBe("ASSET_BLOCKED");
+    const solid = cells.filter(cell => cell.solid);
+    expect({ x: Math.min(...solid.map(cell => cell.x)), y: Math.min(...solid.map(cell => cell.y)) })
+      .toEqual([{ x: 0, y: 0 }, { x: 2, y: 0 }, { x: 0, y: 2 }, { x: 0, y: 0 }][rotation / 90]);
+  });
+
   it("uses occupied cells instead of an irregular asset's bounding box", () => {
     const cornerDesk = object("corner", "desk-corner", 0, 0);
     const inOpenCorner = object("plant", "plant-floor", 48, 48);
@@ -86,12 +101,12 @@ describe("raster asset placement", () => {
   });
 
   it("places floor surfaces beneath furniture while blocking duplicate tiles", () => {
-    const tile = object("tile", "floor-tile", 32, 32);
+    const tile = object("tile", "floor-wood", 32, 32);
     const chair = object("chair", "chair-office", 48, 48);
 
     expect(getAssetPlacementError(withObjects(tile), bounds, chair)).toBeUndefined();
     expect(getAssetPlacementError(withObjects(chair), bounds, tile)).toBeUndefined();
-    expect(getAssetPlacementError(withObjects(tile), bounds, { ...tile, id: "other-tile", variantId: "stone" }))
+    expect(getAssetPlacementError(withObjects(tile), bounds, { ...tile, id: "other-tile", assetId: "floor-stone-tiles", variantId: "limestone" }))
       .toBe("ASSET_BLOCKED");
     expect(getAssetCollisionRects(withObjects(tile))).toEqual([]);
   });
@@ -102,8 +117,23 @@ describe("raster asset placement", () => {
     }
     expect(getAssetVariants(requireAssetDefinition("sofa-straight")).map((variant) => variant.id))
       .toEqual(["white", "gray", "blue"]);
-    expect(getAssetVariants(requireAssetDefinition("floor-tile")).map((variant) => variant.pattern))
-      .toEqual(["wood", "stone", "grass"]);
+    expect(getAssetVariants(requireAssetDefinition("floor-parquet")).map((variant) => variant.id))
+      .toEqual(["herringbone", "chevron", "basket"]);
+  });
+
+  it.each(ASSET_CATALOG.assets.filter(asset => asset.kind === "floor-tile"))("places every $name design and rotation beneath rugs and furniture", definition => {
+    for (const variant of getAssetVariants(definition)) for (const rotation of [0, 90, 180, 270] as const) {
+      const floor = { ...object("floor", definition.id, 32, 32, rotation), variantId: variant.id };
+      const rug = object("rug", "rug-woven", 32, 32);
+      const chair = object("chair", "chair-office", 48, 48);
+      expect(getAssetPlacementError(withObjects(rug, chair), bounds, floor)).toBeUndefined();
+      expect(getAssetPlacementError(withObjects(floor, chair), bounds, rug)).toBeUndefined();
+      expect(getAssetPlacementError(withObjects(floor, rug), bounds, chair)).toBeUndefined();
+      expect(getAssetPlacementError(withObjects(floor), bounds, { ...floor, id: "duplicate" })).toBe("ASSET_BLOCKED");
+      expect(getAssetPlacementError(withObjects(floor), bounds, { ...floor, id: "adjacent", x: 96 })).toBeUndefined();
+      expect(getAssetPlacementError(withObjects(rug), bounds, { ...rug, id: "second-rug" })).toBe("ASSET_BLOCKED");
+      expect(getAssetCollisionRects(withObjects(floor, rug))).toEqual([]);
+    }
   });
 });
 

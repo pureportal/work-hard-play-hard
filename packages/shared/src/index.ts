@@ -1,4 +1,14 @@
+import type { OrganisationEdit, OrganisationState } from "./organisation.js";
+export * from "./organisation.js";
+export * from "./room-permissions.js";
 import type { AssetRotation } from "./assets.js";
+import type { PlayerRoomAccessibility } from "./room-accessibility.js";
+export * from "./room-accessibility.js";
+export * from "./spawn-placement.js";
+export * from "./meetings.js";
+import type { SpotifyEvent } from "./spotify.js";
+export * from "./spotify.js";
+export * from "./github.js";
 import type { WorkObjectEdit } from "./work-objects.js";
 import type { CharacterAppearance } from "./character.js";
 import type { GameBot } from "./game-bot.js";
@@ -11,7 +21,7 @@ import type {
 } from "./chess.js";
 import type { CoinTransaction, GameCoinReward, GameSettings, PlayerEconomy } from "./economy.js";
 import type { Position } from "./geometry.js";
-import type { TetrominoType, FallingBlocksCellPosition, FallingBlocksCommand } from "./falling-blocks.js";
+import type { TetrominoType, FallingBlocksCellPosition, FallingBlocksCommand, FallingBlocksSettings, FallingBlocksRoundState, FallingBlocksClear, FallingBlocksSpecialCounts, FallingBlocksStatistics } from "./falling-blocks.js";
 import {
   TIC_TAC_TOE_DEFINITION_ID,
   type TicTacToeCommand,
@@ -26,9 +36,12 @@ import type {
 
 export * from "./building.js";
 export * from "./character.js";
+export * from "./character-composition.js";
 export * from "./assets.js";
 export * from "./work-objects.js";
+export * from "./whiteboard.js";
 export * from "./asset-placement.js";
+export * from "./flooring.js";
 export * from "./layout-placement.js";
 export * from "./geometry.js";
 export * from "./floor-portals.js";
@@ -235,10 +248,7 @@ interface MeetingDetails {
   participantIds: string[];
 }
 
-export type Meeting = MeetingDetails & (
-  | { location: { type: "room"; roomId: string } }
-  | { location: { type: "public"; floorId: string; x: number; y: number; radius: number } }
-);
+export type Meeting = MeetingDetails & { location: { type: "room"; roomId: string } };
 
 export interface MiniGameDefinition {
   id: string;
@@ -262,6 +272,7 @@ export interface GameScore {
   placement: number;
   won: boolean;
   playedAt: string;
+  fallingBlocks?: FallingBlocksSpecialCounts;
 }
 
 export interface PlayerGameStatistics {
@@ -274,6 +285,8 @@ export interface PlayerGameStatistics {
   highestLines: number;
   totalScore: number;
   totalLines: number;
+  fallingBlocks?: FallingBlocksStatistics;
+  holdsCrown?: true;
 }
 
 export interface GameLobbyState {
@@ -291,6 +304,7 @@ export interface GameRoundParticipantState {
   level: number;
   status: "playing" | "finished";
   placement?: number;
+  fallingBlocks?: FallingBlocksSpecialCounts;
 }
 
 export interface GameRoundState {
@@ -301,6 +315,7 @@ export interface GameRoundState {
   startedAt: string;
   status: "playing" | "completed";
   participants: GameRoundParticipantState[];
+  fallingBlocks?: FallingBlocksRoundState;
   completedAt?: string;
   winnerUserId?: string;
 }
@@ -313,6 +328,7 @@ export interface WorkspaceAccessData {
 }
 
 export interface BootstrapData extends WorkspaceAccessData {
+  organisation: OrganisationState;
   currentUserId: string;
   corporateIdentity: CorporateIdentity;
   team: Team;
@@ -379,6 +395,7 @@ export interface FallingBlocksGameState {
   score: number;
   lines: number;
   level: number;
+  fallIntervalMs: number;
   running: boolean;
   paused: boolean;
   activePiece: TetrominoType | null;
@@ -387,13 +404,19 @@ export interface FallingBlocksGameState {
   heldPiece: TetrominoType | null;
   nextPieces: TetrominoType[];
   canHold: boolean;
+  specials: FallingBlocksSpecialCounts;
+  lastClear: FallingBlocksClear | null;
 }
 
 export type GameState = FallingBlocksGameState | TicTacToeGameState;
 export type GameCommand = FallingBlocksCommand | TicTacToeCommand;
 
 export type ServerEvent =
+  | { type: "organisation.updated"; organisation: OrganisationState }
+  | SpotifyEvent
   | WorldSnapshot
+  | { type: "command.ack"; requestId: string }
+  | { type: "work.saved"; requestId: string }
   | { type: "session.ready"; userId: string; floorId: string }
   | { type: "session.synced" }
   | { type: "workspace.snapshot"; data: BootstrapData }
@@ -403,6 +426,8 @@ export type ServerEvent =
   | { type: "chat.message_created"; message: ChatMessage }
   | { type: "chat.ack"; requestId: string; messageId: string }
   | { type: "layout.updated"; layout: FloorLayout; requestId?: string }
+  | { type: "floor.updated"; floor: Floor }
+  | { type: "room.accessibility"; accessibility: PlayerRoomAccessibility }
   | { type: "workspace.access_updated"; access: WorkspaceAccessData }
   | { type: "layout.conflict"; requestId: string; revision: number }
   | { type: "room.knock_requested"; knock: RoomKnock }
@@ -415,9 +440,16 @@ export type ServerEvent =
   | { type: "interaction.gong_rang"; ring: GongRing }
   | { type: "interaction.gong_cooldown"; objectId: string; floorId: string; cooldownUntil: number }
   | { type: "call.state"; callId: string; peerUserId: string; direction: CallDirection; state: CallState }
+  | { type: "proximity.media_state"; session: import("./media.js").ProximityMediaSession }
+  | { type: "proximity.left"; sessionId: string }
+  | { type: "proximity.signal"; sessionId: string; fromSessionId: string; signal: import("./media.js").MediaSignal }
   | { type: "meeting.updated"; meeting: Meeting }
-  | { type: "meeting.joined"; meeting: Meeting }
-  | { type: "meeting.left"; meetingId: string }
+  | { type: "meeting.joined"; requestId: string; meeting: Meeting; session: import("./meetings.js").MeetingMediaSession }
+  | { type: "meeting.left"; requestId?: string; meetingId: string; sessionId: string }
+  | { type: "meeting.media_state"; session: import("./meetings.js").MeetingMediaSession }
+  | { type: "meeting.signal"; sessionId: string; fromSessionId: string; signal: import("./media.js").MediaSignal }
+  | { type: "meeting.invited"; invitation: import("./meetings.js").MeetingInvitation }
+  | { type: "meeting.invitation_sent"; requestId: string; invitation: import("./meetings.js").MeetingInvitation }
   | { type: "game.lobby_updated"; lobby: GameLobbyState }
   | { type: "game.round_started"; round: GameRoundState }
   | { type: "game.round_updated"; round: GameRoundState }
@@ -433,6 +465,7 @@ export type ServerEvent =
   | { type: "chess.lobby_updated"; lobby: ChessLobbyState }
   | { type: "chess.lobby_closed"; definitionId: ChessLobbyState["definitionId"] }
   | { type: "chess.match_state"; match: ChessMatchView }
+  | { type: "chess.match_closed"; matchId: string }
   | { type: "kidnapping.global_settings_updated"; settings: GlobalKidnappingSettings }
   | { type: "kidnapping.player_settings_updated"; settings: PlayerKidnappingSettings }
   | { type: "kidnapping.started"; carrierUserId: string; carriedUserId: string }
@@ -441,6 +474,7 @@ export type ServerEvent =
   | { type: "command.error"; requestId?: string; code: string; message: string };
 
 export type ClientCommand =
+  | { type: "organisation.edit"; requestId: string; baseRevision: number; edit: OrganisationEdit }
   | { type: "movement.input"; sequence: number; dx: number; dy: number }
   | { type: "movement.set_destination"; requestId: string; floorId: string; x: number; y: number }
   | { type: "movement.stop"; requestId: string }
@@ -450,7 +484,9 @@ export type ClientCommand =
   | { type: "kidnapping.global_settings_update"; requestId: string; settings: GlobalKidnappingSettings }
   | { type: "kidnapping.player_settings_update"; requestId: string; settings: PlayerKidnappingSettings }
   | { type: "presence.set_availability"; requestId: string; availability: Availability }
-  | { type: "proximity.set_media"; requestId: string; microphone: boolean; camera: boolean }
+  | { type: "proximity.set_media"; requestId: string; sessionId: string; microphone: boolean; camera: boolean }
+  | { type: "proximity.leave"; requestId: string; sessionId: string }
+  | { type: "proximity.signal"; requestId: string; sessionId: string; targetSessionId: string; signal: import("./media.js").MediaSignal }
   | { type: "chat.send"; requestId: string; conversationId: string; body: string }
   | { type: "layout.apply"; requestId: string; baseRevision: number; edit: LayoutEdit }
   | { type: "player_asset.place"; requestId: string; baseRevision: number; ownedAssetId: string; position: Position; variantId: string; rotation: AssetRotation }
@@ -464,6 +500,7 @@ export type ClientCommand =
   | { type: "work.approach"; requestId: string; objectId: string }
   | { type: "seat.leave"; requestId: string }
   | { type: "room.update_settings"; requestId: string; baseRevision: number; roomId: string; settings: RoomSettings }
+  | { type: "room.inspect_access"; requestId: string; userId: string | null }
   | { type: "room.knock"; requestId: string; roomId: string }
   | { type: "room.knock_respond"; requestId: string; knockId: string; accept: boolean }
   | { type: "interaction.wave"; requestId: string; targetUserId: string }
@@ -472,12 +509,16 @@ export type ClientCommand =
   | { type: "call.request"; requestId: string; targetUserId: string }
   | { type: "call.respond"; requestId: string; callId: string; accept: boolean }
   | { type: "call.end"; requestId: string; callId: string }
-  | { type: "meeting.join"; requestId: string; meetingId: string }
-  | { type: "meeting.leave"; requestId: string; meetingId: string }
-  | { type: "game.start"; requestId: string; definitionId: typeof FALLING_BLOCKS_DEFINITION_ID; objectId: string; solo?: boolean }
-  | { type: "game.start"; requestId: string; definitionId: typeof TIC_TAC_TOE_DEFINITION_ID; variantId: TicTacToeVariantId; bot?: GameBot }
-  | { type: "game.end"; requestId: string }
-  | { type: "game.command"; requestId: string; command: GameCommand }
+  | { type: "meeting.join"; requestId: string; meetingId: string; invitationId?: string }
+  | { type: "meeting.leave"; requestId: string; meetingId: string; sessionId: string }
+  | { type: "meeting.media"; requestId: string; sessionId: string; microphone: boolean; camera: boolean; screen: boolean }
+  | { type: "meeting.signal"; requestId: string; sessionId: string; targetSessionId: string; signal: import("./media.js").MediaSignal }
+  | { type: "meeting.invite"; requestId: string; sessionId: string; targetUserId: string }
+  | { type: "meeting.lock"; requestId: string; sessionId: string; locked: boolean }
+  | { type: "game.start"; requestId: string; definitionId: typeof FALLING_BLOCKS_DEFINITION_ID; objectId: string; solo?: boolean; settings?: FallingBlocksSettings }
+  | { type: "game.start"; requestId: string; definitionId: typeof TIC_TAC_TOE_DEFINITION_ID; objectId: string; variantId: TicTacToeVariantId; bot?: GameBot }
+  | { type: "game.end"; requestId: string; roundId: string }
+  | { type: "game.command"; requestId: string; roundId: string; command: GameCommand }
   | { type: "chess.match_create"; requestId: string; settings: ChessMatchSettings }
   | { type: "chess.match_join"; requestId: string; matchId: string }
   | { type: "chess.match_open"; requestId: string; matchId: string }
@@ -490,3 +531,4 @@ export type ClientCommand =
   | { type: "chess.draw_respond"; requestId: string; matchId: string; accept: boolean };
 
 export type KidnappingEndReason = "cancelled" | "interrupted" | "access_revoked";
+export * from "./media.js";

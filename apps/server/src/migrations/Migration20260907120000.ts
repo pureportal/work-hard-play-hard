@@ -6,7 +6,6 @@ export class Migration20260907120000 extends Migration {
   override up(): void {
     this.addSql(`update "members" set "character" = jsonb_build_object(
       'gender', (array['female', 'male'])[1 + floor(random() * 2)::int],
-      'breastSize', (array['none', 'flat', 'medium', 'big'])[1 + floor(random() * 4)::int],
       'face', (array['calm', 'bright', 'fierce'])[1 + floor(random() * 3)::int],
       'hairstyle', (array['bob', 'spiky', 'ponytail'])[1 + floor(random() * 3)::int],
       'upperBody', (array['street', 'ranger', 'arcane'])[1 + floor(random() * 3)::int],

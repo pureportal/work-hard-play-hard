@@ -1,24 +1,9 @@
-import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import type { FloorLayout, Member, Room, RoomSettings } from "@workhard/shared";
+import type { FloorLayout, Room } from "@workhard/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BuildPanel } from "./BuildPanel";
-import { createTestGameSettings } from "../test-fixtures";
 
 afterEach(cleanup);
-
-const member: Member = {
-  id: "person-alex",
-  name: "Alex Morgan",
-  initials: "AM", character: { ...DEFAULT_CHARACTER_APPEARANCE },
-  email: "alex@example.com",
-  title: "Engineer",
-  role: "member",
-  permissions: [],
-  color: "#445566",
-  availability: "available",
-  online: true,
-};
 
 describe("BuildPanel", () => {
   it("groups JSON assets by category and selects rotation", () => {
@@ -29,13 +14,10 @@ describe("BuildPanel", () => {
     render(
       <BuildPanel
         layout={layout([])}
-        members={[member]}
         tool="asset"
         assetId="chair-office"
         assetVariantId="white"
         assetRotation={90}
-        gameSettings={createTestGameSettings()}
-        canManageGameSettings={false}
         onToolChange={onToolChange}
         onAssetChange={onAssetChange}
         onAssetVariantChange={onAssetVariantChange}
@@ -43,8 +25,8 @@ describe("BuildPanel", () => {
         onMoveSelected={vi.fn()}
         onRotateSelected={vi.fn()}
         onRemoveSelected={vi.fn()}
-        onUpdateRoom={vi.fn()}
-        onUpdateGameSettings={vi.fn()}
+        onInspectAccess={vi.fn()}
+        onOpenRooms={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -65,21 +47,34 @@ describe("BuildPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Crystal floor lamp" }));
     expect(onAssetChange).toHaveBeenCalledWith("light-crystal");
     fireEvent.change(screen.getByRole("combobox", { name: "Rarity" }), { target: { value: "all" } });
-    expect(screen.getByRole("button", { name: "Drum floor lamp" })).toBeTruthy();
+    const lighting = screen.getByRole("tabpanel", { name: "Lighting" });
+    expect(within(lighting).getAllByRole("button").filter((button) => button.hasAttribute("data-rarity")).map((button) => button.textContent)).toEqual([
+      "Drum floor lamp", "Paper lantern", "Stone lantern", "Tripod lamp", "Mushroom lamp", "Tulip lamp", "Cage lamp", "Studio spotlight", "Arc floor lamp", "Crystal floor lamp",
+    ]);
+    expect(screen.getByRole("button", { name: "Crystal floor lamp" }).getAttribute("aria-description")).toBe("Legendary");
+
+    const lightingTab = screen.getByRole("tab", { name: "Lighting" });
+    fireEvent.keyDown(lightingTab, { key: "End" });
+    const lastTab = screen.getByRole("tab", { name: "Infrastructure" });
+    expect(lastTab.getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(lastTab);
+    fireEvent.keyDown(lastTab, { key: "ArrowRight" });
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Desks" }));
+    fireEvent.keyDown(document.activeElement!, { key: "ArrowLeft" });
+    expect(document.activeElement).toBe(lastTab);
+    fireEvent.keyDown(lastTab, { key: "Home" });
+    expect(screen.getByRole("tab", { name: "Desks" }).getAttribute("aria-selected")).toBe("true");
   });
 
-  it("offers Floor Tile with wood, stone, and grass designs", () => {
+  it("offers separate flooring materials and parquet layouts", () => {
     const onAssetChange = vi.fn();
     render(
       <BuildPanel
         layout={layout([])}
-        members={[member]}
         tool="asset"
-        assetId="floor-tile"
-        assetVariantId="wood"
+        assetId="floor-parquet"
+        assetVariantId="herringbone"
         assetRotation={0}
-        gameSettings={createTestGameSettings()}
-        canManageGameSettings={false}
         onToolChange={vi.fn()}
         onAssetChange={onAssetChange}
         onAssetVariantChange={vi.fn()}
@@ -87,17 +82,24 @@ describe("BuildPanel", () => {
         onMoveSelected={vi.fn()}
         onRotateSelected={vi.fn()}
         onRemoveSelected={vi.fn()}
-        onUpdateRoom={vi.fn()}
-        onUpdateGameSettings={vi.fn()}
+        onInspectAccess={vi.fn()}
+        onOpenRooms={vi.fn()}
         onClose={vi.fn()}
       />,
     );
 
-    fireEvent.click(screen.getByRole("tab", { name: "Surfaces" }));
-    fireEvent.click(screen.getByRole("button", { name: "Floor Tile" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Floor types" }));
+    fireEvent.click(screen.getByRole("button", { name: "Parquet" }));
 
-    expect(onAssetChange).toHaveBeenCalledWith("floor-tile");
-    expect(screen.getAllByRole("radio").map((option) => option.textContent)).toEqual(["Wood", "Stone", "Grass"]);
+    expect(onAssetChange).toHaveBeenCalledWith("floor-parquet");
+    expect(screen.getAllByRole("radio").map((option) => option.textContent)).toEqual(["Herringbone", "Chevron", "Basketweave"]);
+    expect(screen.getByRole("button", { name: "Ceramic tiles" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Natural grass" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Woven rug" })).toBeNull();
+    expect(screen.getByRole("radiogroup").closest('[role="tabpanel"]')).toBeNull();
+    fireEvent.click(screen.getByRole("tab", { name: "Floor decor" }));
+    expect(screen.getByRole("button", { name: "Woven rug" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Parquet" })).toBeNull();
   });
 
   it("offers Falling Blocks in the equipment build category", () => {
@@ -106,13 +108,10 @@ describe("BuildPanel", () => {
     render(
       <BuildPanel
         layout={layout([])}
-        members={[member]}
         tool={null}
         assetId="desk-straight"
         assetVariantId="sage"
         assetRotation={0}
-        gameSettings={createTestGameSettings()}
-        canManageGameSettings={false}
         onToolChange={onToolChange}
         onAssetChange={onAssetChange}
         onAssetVariantChange={vi.fn()}
@@ -120,8 +119,8 @@ describe("BuildPanel", () => {
         onMoveSelected={vi.fn()}
         onRotateSelected={vi.fn()}
         onRemoveSelected={vi.fn()}
-        onUpdateRoom={vi.fn()}
-        onUpdateGameSettings={vi.fn()}
+        onInspectAccess={vi.fn()}
+        onOpenRooms={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -137,13 +136,10 @@ describe("BuildPanel", () => {
     render(
       <BuildPanel
         layout={layout([])}
-        members={[member]}
         tool={null}
         assetId="desk-straight"
         assetVariantId="sage"
         assetRotation={0}
-        gameSettings={createTestGameSettings()}
-        canManageGameSettings={false}
         onToolChange={vi.fn()}
         onAssetChange={vi.fn()}
         onAssetVariantChange={vi.fn()}
@@ -151,8 +147,8 @@ describe("BuildPanel", () => {
         onMoveSelected={vi.fn()}
         onRotateSelected={vi.fn()}
         onRemoveSelected={vi.fn()}
-        onUpdateRoom={vi.fn()}
-        onUpdateGameSettings={vi.fn()}
+        onInspectAccess={vi.fn()}
+        onOpenRooms={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -163,76 +159,6 @@ describe("BuildPanel", () => {
     expect(screen.getByRole("button", { name: "Desktop monitor" })).toBeTruthy();
     fireEvent.click(screen.getByRole("tab", { name: "Equipment" }));
     expect(screen.getByRole("button", { name: "Bookshelf" })).toBeTruthy();
-  });
-
-  it("offers windows and saves room customization with multiple access settings", () => {
-    const onUpdateRoom = vi.fn<(roomId: string, settings: RoomSettings) => void>();
-    render(
-      <BuildPanel
-        layout={layout([room("eligible", true)])}
-        members={[member]}
-        tool={null}
-        assetId="desk-straight"
-        assetVariantId="sage"
-        assetRotation={0}
-        gameSettings={createTestGameSettings()}
-        canManageGameSettings={false}
-        onToolChange={vi.fn()}
-        onAssetChange={vi.fn()}
-        onAssetVariantChange={vi.fn()}
-        onAssetRotationChange={vi.fn()}
-        onMoveSelected={vi.fn()}
-        onRotateSelected={vi.fn()}
-        onRemoveSelected={vi.fn()}
-        onUpdateRoom={onUpdateRoom}
-        onUpdateGameSettings={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
-
-    expect(screen.getByRole("button", { name: "Window" })).toBeTruthy();
-    fireEvent.click(screen.getByText("Room eligible"));
-    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Apartment 2A" } });
-    fireEvent.click(screen.getByLabelText("Alex Morgan"));
-    fireEvent.change(screen.getByLabelText("Access"), { target: { value: "assigned" } });
-    fireEvent.click(screen.getByLabelText("Allow knocking"));
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
-
-    expect(onUpdateRoom).toHaveBeenCalledWith("eligible", {
-      name: "Apartment 2A",
-      color: "#dce7f7",
-      access: { mode: "assigned", assignedPersonIds: ["person-alex"], knockable: true },
-    });
-  });
-
-  it("disables private access when a detected room has no door", () => {
-    render(
-      <BuildPanel
-        layout={layout([room("open-gap", false)])}
-        members={[member]}
-        tool={null}
-        assetId="desk-straight"
-        assetVariantId="sage"
-        assetRotation={0}
-        gameSettings={createTestGameSettings()}
-        canManageGameSettings={false}
-        onToolChange={vi.fn()}
-        onAssetChange={vi.fn()}
-        onAssetVariantChange={vi.fn()}
-        onAssetRotationChange={vi.fn()}
-        onMoveSelected={vi.fn()}
-        onRotateSelected={vi.fn()}
-        onRemoveSelected={vi.fn()}
-        onUpdateRoom={vi.fn()}
-        onUpdateGameSettings={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
-
-    fireEvent.click(screen.getByText("Room open-gap"));
-    const access = screen.getByLabelText("Access");
-    expect((within(access).getByRole("option", { name: "Assigned people" }) as HTMLOptionElement).disabled).toBe(true);
-    expect(screen.getByText("Add a door to make private.")).toBeTruthy();
   });
 
   it("offers outdoor assets and selected-item controls", () => {
@@ -253,13 +179,10 @@ describe("BuildPanel", () => {
     render(
       <BuildPanel
         layout={selectedLayout}
-        members={[member]}
         tool={null}
         assetId="chair-office"
         assetVariantId="white"
         assetRotation={0}
-        gameSettings={createTestGameSettings()}
-        canManageGameSettings={false}
         selectedItem={{ type: "asset", id: "chair" }}
         onToolChange={vi.fn()}
         onAssetChange={vi.fn()}
@@ -268,8 +191,8 @@ describe("BuildPanel", () => {
         onMoveSelected={onMoveSelected}
         onRotateSelected={onRotateSelected}
         onRemoveSelected={onRemoveSelected}
-        onUpdateRoom={vi.fn()}
-        onUpdateGameSettings={vi.fn()}
+        onInspectAccess={vi.fn()}
+        onOpenRooms={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -295,22 +218,5 @@ function layout(rooms: Room[]): FloorLayout {
     tiles: [],
     objects: [],
     rooms,
-  };
-}
-
-function room(id: string, privateEligible: boolean): Room {
-  return {
-    id,
-    floorId: "floor",
-    name: `Room ${id}`,
-    color: "#dce7f7",
-    capacity: 4,
-    bounds: { x: 32, y: 32, width: 128, height: 128 },
-    footprint: [{ x: 32, y: 32, width: 128, height: 128 }],
-    boundary: [],
-    doorIds: privateEligible ? ["door"] : [],
-    windowIds: [],
-    privateEligible,
-    access: { mode: "open", assignedPersonIds: [], knockable: false },
   };
 }

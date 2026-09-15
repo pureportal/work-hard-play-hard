@@ -5,7 +5,7 @@ import { createServer } from "node:net";
 import { resolve } from "node:path";
 import puppeteer, { type Page } from "puppeteer";
 import type { ServerEvent } from "@workhard/shared";
-import { createApplication } from "../apps/server/src/app.js";
+import { createTestApplication } from "../apps/server/src/testing/application.js";
 import { MemoryDatabase } from "../apps/server/src/persistence/memory-database.js";
 
 declare global {
@@ -24,7 +24,7 @@ const port = await new Promise<number>((done, reject) => {
   });
 });
 const origin = `http://127.0.0.1:${port}`;
-const application = await createApplication({ database: new MemoryDatabase(), seeded: true, clientUrl: origin, clientOrigins: [origin] });
+const application = await createTestApplication({ database: new MemoryDatabase(), fixture: true, clientUrl: origin, clientOrigins: [origin] });
 const index = await readFile(resolve(distribution, "index.html"));
 const assets = new Map(await Promise.all((await readdir(resolve(distribution, "assets"))).map(async (name) =>
   [name, await readFile(resolve(distribution, "assets", name))] as const)));

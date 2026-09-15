@@ -1,13 +1,14 @@
+import { createTestData } from "../apps/server/src/testing/workspace-data.js";
 import type { BrowserContext } from "playwright-core";
 import type { ClientCommand, ServerEvent } from "../packages/shared/src/index.js";
-import { DemoStore } from "../apps/server/src/store.js";
+import { WorkspaceStore } from "../apps/server/src/store.js";
 import { WorldRuntime } from "../apps/server/src/world/world-runtime.js";
 import { clientCommandSchema } from "../apps/server/src/protocol.js";
 import { fileURLToPath } from "node:url";
 import { extname, resolve, sep } from "node:path";
 
 export function createArcadeReviewFixture() {
-  const store = new DemoStore();
+  const store = new WorkspaceStore(createTestData());
   const runtime = new WorldRuntime(store);
   const events: ServerEvent[] = [];
   const commands: ClientCommand[] = [];
@@ -15,7 +16,7 @@ export function createArcadeReviewFixture() {
 
   async function install(context: BrowserContext, userId = "user-maya") {
     if (process.env.ARCADE_PRODUCTION === "1") {
-      const directory = fileURLToPath(new URL("../apps/client/dist/", import.meta.url));
+      const directory = process.env.ARCADE_BUILD_DIR ?? fileURLToPath(new URL("../apps/client/dist/", import.meta.url));
       const types: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".svg": "image/svg+xml", ".json": "application/json", ".webp": "image/webp" };
       await context.route("http://127.0.0.1:5173/**", async (route) => {
         const pathname = new URL(route.request().url()).pathname;

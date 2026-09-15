@@ -36,6 +36,7 @@ describe("floor navigation", () => {
     expect(route).toEqual([{
       floorId: "floor-1",
       path: [{ x: 320, y: 320 }],
+      distance: Math.hypot(256, 256),
     }]);
   });
 
@@ -61,6 +62,7 @@ describe("floor navigation", () => {
     expect(route?.[1]).toEqual({
       floorId: "floor-2",
       path: [{ x: 256, y: 448 }],
+      distance: Math.hypot(192, 384),
     });
   });
 
@@ -83,6 +85,7 @@ describe("floor navigation", () => {
     expect(route?.[2]).toEqual({
       floorId: "floor-3",
       path: [{ x: 256, y: 448 }],
+      distance: Math.hypot(128, 384),
     });
   });
 });

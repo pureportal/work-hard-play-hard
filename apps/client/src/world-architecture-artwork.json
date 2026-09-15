@@ -1,0 +1,188 @@
+{
+  "wall": {
+    "elevation": 0,
+    "variants": {
+      "plaster": {
+        "path": "/world-architecture/wall/plaster.png",
+        "width": 912,
+        "height": 228,
+        "frames": [
+          {
+            "x": 18,
+            "y": 18,
+            "width": 192,
+            "height": 72
+          },
+          {
+            "x": 246,
+            "y": 18,
+            "width": 72,
+            "height": 192
+          },
+          {
+            "x": 474,
+            "y": 18,
+            "width": 192,
+            "height": 72
+          },
+          {
+            "x": 702,
+            "y": 18,
+            "width": 72,
+            "height": 192
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 32,
+            "height": 12
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 32
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "width": 32,
+            "height": 12
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 32
+          }
+        ]
+      }
+    }
+  },
+  "door": {
+    "elevation": 0,
+    "variants": {
+      "plaster": {
+        "path": "/world-architecture/door/plaster.png",
+        "width": 1680,
+        "height": 420,
+        "frames": [
+          {
+            "x": 18,
+            "y": 18,
+            "width": 384,
+            "height": 48
+          },
+          {
+            "x": 438,
+            "y": 18,
+            "width": 48,
+            "height": 384
+          },
+          {
+            "x": 858,
+            "y": 18,
+            "width": 384,
+            "height": 48
+          },
+          {
+            "x": 1278,
+            "y": 18,
+            "width": 48,
+            "height": 384
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 64,
+            "height": 8
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "width": 8,
+            "height": 64
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "width": 64,
+            "height": 8
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "width": 8,
+            "height": 64
+          }
+        ]
+      }
+    }
+  },
+  "window": {
+    "elevation": 0,
+    "variants": {
+      "plaster": {
+        "path": "/world-architecture/window/plaster.png",
+        "width": 2448,
+        "height": 612,
+        "frames": [
+          {
+            "x": 18,
+            "y": 18,
+            "width": 576,
+            "height": 96
+          },
+          {
+            "x": 630,
+            "y": 18,
+            "width": 96,
+            "height": 576
+          },
+          {
+            "x": 1242,
+            "y": 18,
+            "width": 576,
+            "height": 96
+          },
+          {
+            "x": 1854,
+            "y": 18,
+            "width": 96,
+            "height": 576
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 96,
+            "height": 16
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "width": 16,
+            "height": 96
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "width": 96,
+            "height": 16
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "width": 16,
+            "height": 96
+          }
+        ]
+      }
+    }
+  }
+}

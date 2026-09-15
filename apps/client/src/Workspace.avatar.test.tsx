@@ -1,3 +1,4 @@
+import { createOrganisation } from "@workhard/shared";
 import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { useEffect } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -47,6 +48,7 @@ const member: Member = {
 const workspace: BootstrapData = {
   currentUserId: member.id,
   corporateIdentity: createTestCorporateIdentity(),
+    organisation: createOrganisation(),
   team: { id: "team-one", name: "Team", slug: "team", accent: "#000000" },
   office: { id: "office-one", teamId: "team-one", name: "Office" },
   floors: [{
@@ -90,14 +92,13 @@ afterEach(cleanup);
 
 describe("Workspace avatar customization", () => {
   it("saves from the editor and immediately updates profile portraits", async () => {
-    const character: CharacterAppearance = { ...DEFAULT_CHARACTER_APPEARANCE, gender: "male", breastSize: "none" };
+    const character: CharacterAppearance = { ...DEFAULT_CHARACTER_APPEARANCE, gender: "male" };
     apiMocks.updatePlayerCharacter.mockResolvedValue({ ...member, character });
     const { container } = render(<Workspace initialData={workspace} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Customize avatar" }));
     expect(screen.queryByRole("button", { name: "Photo" })).toBeNull();
     expect(container.querySelector('input[type="file"]')).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Male" }));
-    fireEvent.click(screen.getByRole("button", { name: "No Breast" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Male" }));
     fireEvent.click(screen.getByRole("button", { name: "Use character" }));
     await waitFor(() => expect(apiMocks.updatePlayerCharacter).toHaveBeenCalledWith(character));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Avatar" })).toBeNull());

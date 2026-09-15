@@ -114,7 +114,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 12px;
   gap: 6px;
   color: var(--muted);
@@ -138,6 +138,7 @@
   flex: 1;
   padding: 24px;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .tic-tac-toe-players {
@@ -363,6 +364,74 @@
   border-color: var(--accent);
 }
 
+.tic-tac-toe-local-board:not(.is-active):not(.is-closed) {
+  background: var(--game-recess);
+}
+
+.tic-tac-toe-board-overview {
+  display: block;
+  padding: 5px;
+  touch-action: manipulation;
+}
+
+.tic-tac-toe-board-overview:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.tic-tac-toe-board-overview:not(:disabled):active {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.tic-tac-toe-overview-cells {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  width: 100%;
+  height: 100%;
+}
+
+.tic-tac-toe-overview-cells > span {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.tic-tac-toe-local-board.is-closed .tic-tac-toe-overview-cells {
+  opacity: 0.18;
+}
+
+.tic-tac-toe-board-focus {
+  display: grid;
+  justify-items: center;
+  width: min(430px, 100%);
+  gap: 10px;
+}
+
+.tic-tac-toe-board-focus-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+}
+
+.tic-tac-toe-board-focus-header strong {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 550;
+  text-transform: capitalize;
+}
+
+.tic-tac-toe-board-focus .tic-tac-toe-board {
+  width: min(100%, max(200px, calc(100dvh - 254px)));
+}
+
 .tic-tac-toe-local-board.is-closed > button {
   opacity: 0.18;
 }
@@ -534,6 +603,11 @@
   background: var(--accent-soft);
 }
 
+.tic-tac-toe-board.is-stacking > button.is-available {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
 @media (max-width: 700px) {
   .tic-tac-toe-content {
     padding: 16px 12px;
@@ -566,7 +640,7 @@
     gap: 16px;
   }
   .tic-tac-toe-stacking-layout .tic-tac-toe-board {
-    width: min(100%, calc(100cqh - 258px));
+    width: min(100%, calc(100cqh - 224px));
   }
   .tic-tac-toe-piece-picker {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -642,6 +716,14 @@
     padding-top: 0;
     container-type: size;
   }
+  .tic-tac-toe-board-focus {
+    height: 100%;
+    grid-template-rows: auto minmax(0, 1fr);
+    min-height: 0;
+  }
+  .tic-tac-toe-board-focus .tic-tac-toe-board {
+    width: min(100%, calc(100cqh - 54px));
+  }
   .tic-tac-toe-board,
   .tic-tac-toe-ultimate-board {
     width: min(100%, 100cqh);
@@ -659,7 +741,7 @@
   }
   .tic-tac-toe-piece-picker button {
     grid-template-columns: 1fr auto;
-    min-height: 40px;
+    min-height: 44px;
     padding: 4px;
     gap: 2px 4px;
     text-align: center;

@@ -1,0 +1,61 @@
+.github-connection h3 { display: flex; align-items: center; gap: 8px; }
+.github-connection h3 span { margin-left: auto; font-size: 12px; font-weight: 400; overflow-wrap: anywhere; }
+.github-connection p, .github-repository-picker p { font-size: 13px; }
+.github-connection .text-button, .github-repository-picker .text-button { border: 0; border-radius: 6px; padding: 6px 8px; background: transparent; color: var(--muted); cursor: pointer; }
+.github-connection .text-button:hover, .github-repository-picker .text-button:hover { background: var(--accent-soft); color: var(--ink); }
+.github-connection .text-button:disabled { opacity: 0.55; cursor: default; }
+.github-connection-compact { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; }
+.github-connection-compact h3 { flex: 1; margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.github-connection-compact > button { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; font-size: 12px; }
+.github-connection-compact .github-error { flex-basis: 100%; }
+.github-error { color: var(--danger); font-size: 13px; }
+.github-mailroom { width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 40px); overflow-y: auto; scrollbar-gutter: stable; overscroll-behavior: contain; padding: 20px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel-strong); color: var(--ink); box-shadow: 0 18px 60px #0003; }
+.github-mailroom-floating { position: fixed; right: 24px; top: 80px; z-index: 80; }
+.github-mailroom-floating .github-mailroom { max-height: calc(100dvh - 104px); }
+.github-mailroom-header { display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 1; margin: -8px 0; padding: 8px 0; background: var(--panel-strong); }
+.github-mailroom-header h2 { font-size: 20px; margin: 0; flex: 1; }
+.github-tray-art { width: 64px; height: 48px; display: flex; }
+.github-tray-art .asset-shape { width: 64px; height: 48px; }
+.github-mailroom .github-connection { margin: 12px 0; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.github-repository-picker { display: grid; gap: 8px; margin: 16px 0; }
+.github-repository-label { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.github-repository-picker label { font-size: 13px; font-weight: 600; }
+.github-repository-picker select { width: 100%; min-width: 0; min-height: 40px; padding: 8px; color: inherit; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.github-repository-picker a { font-size: 12px; }
+.github-mailroom a { color: color-mix(in srgb, var(--accent) 72%, var(--ink)); }
+.github-mailroom-tabs { display: grid; grid-template-columns: 1fr 1fr auto 1fr; gap: 4px; padding: 4px; border-radius: 10px; background: var(--panel); }
+.github-mailroom-tabs button { min-height: 36px; background: transparent; color: var(--muted); border: 0; border-radius: 7px; padding: 8px 10px; font-size: 12px; cursor: pointer; transition: background-color 140ms, color 140ms; }
+.github-mailroom-tabs button:hover { color: var(--ink); background: var(--accent-soft); }
+.github-mailroom-tabs button[aria-pressed="true"] { background: var(--accent-soft); color: color-mix(in srgb, var(--accent) 72%, var(--ink)); font-weight: 600; }
+.github-mailroom-summary, .github-pagination, .github-pull-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.github-mailroom-summary { margin: 10px 0 4px; font-size: 12px; color: var(--muted); min-height: 36px; }
+.github-pull-requests { list-style: none; padding: 0; margin: 0; }
+.github-pull-requests li + li { border-top: 1px solid var(--line); }
+.github-pull-requests a { display: flex; align-items: flex-start; gap: 10px; padding: 14px 8px; border-radius: 9px; text-decoration: none; transition: background-color 140ms; }
+.github-pull-requests a:hover, .github-pull-requests a:focus-visible { background: var(--accent-soft); }
+.github-mailroom :is(a, button, select):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.github-pull-content { flex: 1; min-width: 0; }
+.github-pull-icon { flex-shrink: 0; margin-top: 2px; color: color-mix(in srgb, #37b879 70%, var(--ink)); }
+.github-pull-requests [data-state="merged"] .github-pull-icon { color: var(--accent); }
+.github-pull-requests [data-state="draft"] .github-pull-icon { color: var(--muted); }
+.github-pull-external { flex-shrink: 0; margin-top: 3px; color: var(--muted); }
+.github-pull-requests strong { display: block; font-size: 14px; line-height: 1.45; color: var(--ink); overflow-wrap: anywhere; }
+.github-pull-requests small { display: block; font-size: 12px; margin-top: 4px; color: var(--muted); overflow-wrap: anywhere; }
+.github-pull-meta { margin-top: 8px; font-size: 12px; color: var(--muted); }
+.github-pull-meta time { flex-shrink: 0; }
+.github-empty { padding: 28px 0; text-align: center; font-size: 14px; color: var(--muted); }
+.github-pagination { margin-top: 12px; }
+.github-merge-arrival { display: flex; gap: 8px; align-items: center; font-size: 13px; padding: 10px; border-radius: 8px; background: var(--accent-soft); text-decoration: none; }
+.github-merge-arrival svg { animation: github-paper-flight 700ms ease-out both; }
+.github-spinner { animation: spin 1s linear infinite; }
+@keyframes github-paper-flight { from { transform: translate(-14px, 8px) rotate(-20deg); opacity: 0; } to { transform: translate(0, 0) rotate(0); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .github-merge-arrival svg, .github-spinner { animation: none; }
+  .github-mailroom-tabs button, .github-pull-requests a { transition: none; }
+}
+@media (max-width: 600px) {
+  .github-mailroom { padding: 16px; }
+  .github-mailroom-floating { right: 12px; top: 68px; }
+  .github-mailroom-floating .github-mailroom { max-height: calc(100dvh - 80px); }
+  .github-mailroom-tabs button { min-height: 40px; padding: 8px 6px; }
+}

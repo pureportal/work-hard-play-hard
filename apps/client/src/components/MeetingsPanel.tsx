@@ -1,19 +1,18 @@
 import { Calendar, Clock3, MapPin, Video, X } from "lucide-react";
-import type { Floor, Meeting, Member, Room } from "@workhard/shared";
+import type { Meeting, Member, Room } from "@workhard/shared";
 import { Avatar } from "./Avatar";
 import { IconButton } from "./IconButton";
 
 interface MeetingsPanelProps {
   meetings: Meeting[];
   rooms: Room[];
-  floors: Floor[];
   members: Member[];
   openingMeetingId?: string | undefined;
   onJoin: (meeting: Meeting) => void;
   onClose: () => void;
 }
 
-export function MeetingsPanel({ meetings, rooms, floors, members, openingMeetingId, onJoin, onClose }: MeetingsPanelProps) {
+export function MeetingsPanel({ meetings, rooms, members, openingMeetingId, onJoin, onClose }: MeetingsPanelProps) {
   const activeMeetings = meetings.filter((meeting) => meeting.status !== "ended")
     .sort((left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime());
   return (
@@ -28,9 +27,7 @@ export function MeetingsPanel({ meetings, rooms, floors, members, openingMeeting
         {activeMeetings.length === 0 && <div className="empty-symbol" aria-label="No meetings"><Calendar size={24} /></div>}
         {activeMeetings.map((meeting) => {
           const meetingLocation = meeting.location;
-          const location = meetingLocation.type === "room"
-            ? rooms.find((item) => item.id === meetingLocation.roomId)?.name
-            : floors.find((item) => item.id === meetingLocation.floorId)?.name;
+          const location = rooms.find((item) => item.id === meetingLocation.roomId)?.name;
           return (
             <article className={`meeting-card ${meeting.status}`} key={meeting.id}>
               <div className="meeting-time">

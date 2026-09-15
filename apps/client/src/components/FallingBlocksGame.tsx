@@ -1,12 +1,15 @@
-import { ArrowDown, ArrowLeft, ArrowRight, Check, Pause, Play, RotateCw, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Check, Crown, Gamepad2, Pause, X } from "lucide-react";
+import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { FallingBlocksGameState, GameRoundState, Member, FallingBlocksCommand } from "@workhard/shared";
+import { FALLING_BLOCKS_HARD_CELL, FALLING_BLOCKS_MODE_LABELS } from "@workhard/shared";
 import { GameResultActions } from "./GameResultActions";
 import { GameExitPrompt } from "./GameExitPrompt";
 import { useModalFocus } from "../hooks/useModalFocus";
 import { useFallingBlocksKeyboard } from "../hooks/useFallingBlocksKeyboard";
 import { IconButton } from "./IconButton";
 import { FallingBlocksMark } from "./FallingBlocksMark";
+import { FallingBlocksControls } from "./FallingBlocksControls";
+import { FallingBlocksClearNotice } from "./FallingBlocksClearNotice";
 import {
   FallingBlocksPiecePreview,
   FALLING_BLOCKS_BLOCK_COLORS,
@@ -27,10 +30,14 @@ const EMPTY_GRID = Array.from({ length: 20 }, () => Array<number>(10).fill(0));
 
 export function FallingBlocksGame({ state, round, members, currentUserId, onCommand, onClose, onPlayAgain }: FallingBlocksGameProps) {
   const [confirmingExit, setConfirmingExit] = useState(false);
-  const closeGame = () => round.status === "playing" ? setConfirmingExit(true) : onClose();
-  const dialogRef = useModalFocus<HTMLElement>(closeGame);
+  const [showControls, setShowControls] = useState(false);
+  const controlsId = useId();
   const currentPlayer = round.participants.find((participant) => participant.userId === currentUserId);
+  const closeGame = () => currentPlayer?.status === "playing" ? setConfirmingExit(true) : onClose();
+  const dialogRef = useModalFocus<HTMLElement>(closeGame);
   const multiplayer = round.participants.length > 1;
+  const gameMode = round.fallingBlocks?.settings.mode;
+  const incomingRows = round.fallingBlocks?.attacks.reduce((rows, attack) => rows + (attack.targetUserId === currentUserId ? attack.rows : 0), 0) ?? 0;
   const canControl = !confirmingExit && round.status === "playing" && currentPlayer?.status === "playing" && state?.running === true;
   const activeCellKeys = useMemo(
     () => new Set(state?.activeCells.map(({ row, column }) => `${row}-${column}`) ?? []),
@@ -46,6 +53,7 @@ export function FallingBlocksGame({ state, round, members, currentUserId, onComm
 
   useFallingBlocksKeyboard({
     enabled: canControl,
+    paused: state?.paused === true,
     allowPause: !multiplayer,
     allowHold: state?.canHold === true,
     onCommand,
@@ -69,14 +77,22 @@ export function FallingBlocksGame({ state, round, members, currentUserId, onComm
       <section ref={dialogRef} className="arcade-game falling-blocks-game" role="dialog" aria-modal="true" aria-labelledby="falling-blocks-title" tabIndex={-1}>
         <header className="game-header">
           <div><FallingBlocksMark className="game-mini-mark" /><h2 id="falling-blocks-title">Falling Blocks</h2></div>
-          <IconButton label="Close game" icon={X} onClick={closeGame} />
+          <div className="falling-blocks-header-actions">
+            {canControl && <IconButton label={showControls ? "Hide controls" : "Show controls"} icon={Gamepad2}
+              aria-expanded={showControls} aria-controls={controlsId}
+              onClick={() => {
+                setShowControls((shown) => !shown);
+                dialogRef.current?.focus({ preventScroll: true });
+              }} />}
+            <IconButton label="Close game" icon={X} onClick={closeGame} />
+          </div>
         </header>
 
         {confirmingExit && round.status === "playing" && <GameExitPrompt multiplayer={multiplayer} onLeave={onClose} onCancel={() => setConfirmingExit(false)} />}
         <div className="falling-blocks-content">
           <aside className="falling-blocks-left-rail">
             <section className={`falling-blocks-preview-panel falling-blocks-hold${state?.canHold === false ? " is-locked" : ""}`}>
-              <h3>Hold <kbd>C</kbd></h3>
+              <h3>Hold</h3>
               <FallingBlocksPiecePreview
                 key={state?.heldPiece ?? "empty"}
                 piece={state?.heldPiece ?? null}
@@ -84,12 +100,9 @@ export function FallingBlocksGame({ state, round, members, currentUserId, onComm
               />
             </section>
 
-            <div className="falling-blocks-key-guide" aria-label="Keyboard controls">
-              <div><kbd>← →</kbd><span>Move</span></div>
-              <div><kbd>↑</kbd><span>Rotate</span></div>
-              <div><kbd>↓</kbd><span>Soft drop</span></div>
-              <div><kbd>Space</kbd><span>Drop</span></div>
-            </div>
+            {gameMode && gameMode !== "classic" && <p className="falling-blocks-mode">{FALLING_BLOCKS_MODE_LABELS[gameMode]}</p>}
+            {incomingRows > 0 && <div className="falling-blocks-preview-panel falling-blocks-incoming" role="status"><span>Incoming</span><strong>{incomingRows}</strong></div>}
+
           </aside>
 
           <div className="falling-blocks-playfield">
@@ -108,6 +121,7 @@ export function FallingBlocksGame({ state, round, members, currentUserId, onComm
                     const className = [
                       "falling-blocks-cell",
                       cell > 0 ? "is-filled" : "",
+                      cell === FALLING_BLOCKS_HARD_CELL ? "is-hard" : "",
                       active ? "is-active" : "",
                       ghost ? "is-ghost" : "",
                     ].filter(Boolean).join(" ");
@@ -118,6 +132,7 @@ export function FallingBlocksGame({ state, round, members, currentUserId, onComm
                   }),
                 )}
                 {lineClearSequence > 0 && <span key={lineClearSequence} className="falling-blocks-line-flash" />}
+                {!boardStatus && state?.lastClear && <FallingBlocksClearNotice clear={state.lastClear} />}
                 {boardStatus && (
                   <div className="board-state">
                     {state?.paused ? <Pause size={20} /> : currentPlayer?.status === "finished" ? <Check size={20} /> : null}
@@ -154,7 +169,9 @@ export function FallingBlocksGame({ state, round, members, currentUserId, onComm
                       const member = members.find((candidate) => candidate.id === participant.userId);
                       return (
                         <li key={participant.userId} aria-current={participant.userId === currentUserId ? "true" : undefined}>
-                          <span>{participant.placement ?? (participant.status === "finished" ? <Check size={13} /> : "\u2022")}</span>
+                          <span>{participant.userId === round.fallingBlocks?.crownUserId
+                            ? <Crown size={14} className="falling-blocks-crown-icon" aria-label="Crown holder" />
+                            : participant.placement ?? (participant.status === "finished" ? <Check size={13} /> : "\u2022")}</span>
                           <span>{participant.userId === currentUserId ? "You" : member?.name ?? "Player"}</span>
                           <strong>{participant.score.toLocaleString()}</strong>
                         </li>
@@ -165,24 +182,11 @@ export function FallingBlocksGame({ state, round, members, currentUserId, onComm
             )}
           </aside>
 
-          {canControl && (
-            <div className="falling-blocks-controls" aria-label="Game controls">
-              <button aria-label="Move left" onClick={() => onCommand("left")}><ArrowLeft size={19} /></button>
-              <button aria-label="Rotate" onClick={() => onCommand("rotate")}><RotateCw size={19} /></button>
-              <button aria-label="Move right" onClick={() => onCommand("right")}><ArrowRight size={19} /></button>
-              <button aria-label="Soft drop" onClick={() => onCommand("down")}><ArrowDown size={19} /></button>
-              <button disabled={!state.canHold} onClick={() => onCommand("hold")}>Hold</button>
-              <button className="hard-drop" onClick={() => onCommand("drop")}>Drop</button>
-              {!multiplayer && (
-                <button className="pause-control" onClick={() => onCommand("pause")}>
-                  {state.paused ? <Play size={16} /> : <Pause size={16} />}
-                  {state.paused ? "Resume" : "Pause"}
-                </button>
-              )}
-            </div>
+          {canControl && showControls && (
+            <FallingBlocksControls id={controlsId} paused={state.paused} canHold={state.canHold} multiplayer={multiplayer} onCommand={onCommand} />
           )}
         </div>
-        {round.status === "completed" && <GameResultActions onClose={onClose} onPlayAgain={onPlayAgain} />}
+        {currentPlayer?.status === "finished" && <GameResultActions onClose={onClose} onPlayAgain={round.status === "completed" ? onPlayAgain : undefined} />}
       </section>
     </div>
   );

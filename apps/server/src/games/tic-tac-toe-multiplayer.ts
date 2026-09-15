@@ -13,7 +13,7 @@ import {
   type WorldObject,
   type WorldPlayer,
 } from "@workhard/shared";
-import { DemoStore } from "../store.js";
+import { WorkspaceStore } from "../store.js";
 import type { GameEventDelivery } from "./game-event-delivery.js";
 import { chooseTicTacToeMove } from "./tic-tac-toe/bot.js";
 import { TicTacToeGame } from "./tic-tac-toe/game.js";
@@ -38,30 +38,38 @@ interface GameStartResult {
 
 export class TicTacToeMultiplayerRuntime {
   readonly definitionId = TIC_TAC_TOE_DEFINITION_ID;
-  private lobbyParticipants: string[] = [];
+  private readonly lobbies = new Map<string, GameLobbyState>();
   private readonly rounds = new Map<string, ActiveRound>();
   private readonly roundIdByUser = new Map<string, string>();
 
-  constructor(private readonly store: DemoStore) {}
+  constructor(private readonly store: WorkspaceStore) {}
 
   syncLobbies(
     players: Iterable<WorldPlayer>,
     connectedUserIds: ReadonlySet<string>,
   ): GameEventDelivery[] {
-    const definition = this.store.getMiniGame(this.definitionId);
-    const object = definition ? this.store.getGameObjects(definition.id)[0] : undefined;
-    if (!definition || !object) {
-      return [];
+    const objects = this.store.getGameObjects(this.definitionId);
+    const objectIds = new Set(objects.map((object) => object.id));
+    const available = [...players].filter((player) => !this.isPlaying(player.userId));
+    const deliveries: GameEventDelivery[] = [];
+    for (const [objectId, lobby] of this.lobbies) {
+      if (objectIds.has(objectId)) continue;
+      deliveries.push(this.lobbyDelivery({ ...lobby, participantIds: [] }));
+      this.lobbies.delete(objectId);
     }
-
-    const previous = this.lobbyParticipants;
-    const next = nearbyGameParticipants([...players].filter((player) => !this.isPlaying(player.userId)), object, connectedUserIds, previous);
-
-    this.lobbyParticipants = next;
-    return sameMembers(previous, next) ? [] : [this.lobbyDelivery(object, next)];
+    for (const object of objects) {
+      const previous = this.lobbies.get(object.id);
+      const next = nearbyGameParticipants(available, object, connectedUserIds, previous?.participantIds ?? []);
+      const lobby = this.lobbyState(object, next);
+      this.lobbies.set(object.id, lobby);
+      if (!previous || previous.floorId !== lobby.floorId || !sameMembers(previous.participantIds, next)) {
+        deliveries.push(this.lobbyDelivery(lobby));
+      }
+    }
+    return deliveries;
   }
 
-  start(userId: string, variantId: TicTacToeVariantId, bot?: GameBot): GameStartResult {
+  start(userId: string, objectId: string, variantId: TicTacToeVariantId, bot?: GameBot): GameStartResult {
     const existingRound = this.getRoundForUser(userId);
     if (existingRound) {
       return {
@@ -73,18 +81,19 @@ export class TicTacToeMultiplayerRuntime {
       throw new Error("GAME_VARIANT_INVALID");
     }
     const definition = this.store.getMiniGame(this.definitionId);
-    const object = definition ? this.store.getGameObjects(definition.id)[0] : undefined;
-    if (!definition || !object) {
+    const object = this.store.getObject(objectId);
+    if (!definition || !object || object.assetId !== definition.assetId) {
       throw new Error("GAME_NOT_FOUND");
     }
-    if (!this.lobbyParticipants.includes(userId)) {
+    const lobbyParticipants = this.lobbies.get(objectId)?.participantIds ?? [];
+    if (!lobbyParticipants.includes(userId)) {
       throw new Error("GAME_TOO_FAR");
     }
-    if (!bot && this.lobbyParticipants.length < LOBBY_CAPACITY) {
+    if (!bot && lobbyParticipants.length < LOBBY_CAPACITY) {
       throw new Error("GAME_PLAYERS_REQUIRED");
     }
 
-    const opponentUserId = bot ? GAME_BOT_USER_ID : this.lobbyParticipants.find((participantId) => participantId !== userId)!;
+    const opponentUserId = bot ? GAME_BOT_USER_ID : lobbyParticipants.find((participantId) => participantId !== userId)!;
     const participantIds: [string, string] = [userId, opponentUserId];
     const id = randomUUID();
     const round: ActiveRound = {
@@ -100,10 +109,8 @@ export class TicTacToeMultiplayerRuntime {
     round.game.consumeChanged();
     this.rounds.set(id, round);
     humanParticipants(round).forEach((participantId) => this.roundIdByUser.set(participantId, id));
-    this.lobbyParticipants = this.lobbyParticipants.filter((participantId) => !participantIds.includes(participantId));
-
     const deliveries: GameEventDelivery[] = [
-      this.lobbyDelivery(object, this.lobbyParticipants),
+      ...this.removeFromLobbies(humanParticipants(round)),
       {
         scope: "users",
         userIds: humanParticipants(round),
@@ -121,6 +128,18 @@ export class TicTacToeMultiplayerRuntime {
       });
     }
     return { participantIds: humanParticipants(round), deliveries };
+  }
+
+  removeFromLobbies(participantIds: string[]): GameEventDelivery[] {
+    const deliveries: GameEventDelivery[] = [];
+    for (const [objectId, lobby] of this.lobbies) {
+      const remaining = lobby.participantIds.filter((userId) => !participantIds.includes(userId));
+      if (remaining.length === lobby.participantIds.length) continue;
+      const updated = { ...lobby, participantIds: remaining };
+      this.lobbies.set(objectId, updated);
+      deliveries.push(this.lobbyDelivery(updated));
+    }
+    return deliveries;
   }
 
   command(userId: string, command: TicTacToeCommand): GameEventDelivery[] {
@@ -182,14 +201,14 @@ export class TicTacToeMultiplayerRuntime {
     return this.roundIdByUser.has(userId);
   }
 
+  getRoundId(userId: string): string | undefined {
+    return this.roundIdByUser.get(userId);
+  }
+
   getSessionEvents(userId: string): ServerEvent[] {
     const events: ServerEvent[] = [];
-    if (this.lobbyParticipants.includes(userId)) {
-      const definition = this.store.getMiniGame(this.definitionId);
-      const object = definition ? this.store.getGameObjects(definition.id)[0] : undefined;
-      if (object) {
-        events.push(this.lobbyDelivery(object, this.lobbyParticipants).event);
-      }
+    for (const lobby of this.lobbies.values()) {
+      if (lobby.participantIds.includes(userId)) events.push(this.lobbyDelivery(lobby).event);
     }
     const round = this.getRoundForUser(userId);
     if (round) {
@@ -198,13 +217,13 @@ export class TicTacToeMultiplayerRuntime {
     return events;
   }
 
-  private lobbyDelivery(object: WorldObject, participantIds: string[]): GameEventDelivery & { scope: "floor" } {
+  private lobbyDelivery(lobby: GameLobbyState): GameEventDelivery & { scope: "floor" } {
     return {
       scope: "floor",
-      floorId: object.floorId,
+      floorId: lobby.floorId,
       event: {
         type: "game.lobby_updated",
-        lobby: this.lobbyState(object, participantIds),
+        lobby,
       },
     };
   }

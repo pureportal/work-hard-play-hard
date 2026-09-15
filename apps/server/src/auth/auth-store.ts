@@ -1,11 +1,11 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import type { AuthUser, Member } from "@workhard/shared";
+import type { AuthUser } from "@workhard/shared";
 import type {
   ApplicationDatabase,
   AuthPersistenceState,
   PersistedAuthAccount,
 } from "../persistence/application-database.js";
-import { DUMMY_PASSWORD_HASH, SEEDED_PASSWORD_HASH, hashPassword, verifyPassword } from "./passwords.js";
+import { DUMMY_PASSWORD_HASH, hashPassword, verifyPassword } from "./passwords.js";
 
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1_000;
 const MAGIC_LINK_TTL_MS = 15 * 60 * 1_000;
@@ -15,7 +15,6 @@ type AuthState = AuthPersistenceState;
 
 interface AuthStoreOptions {
   database: ApplicationDatabase;
-  members: Member[];
 }
 
 export interface RegisteredAccount {
@@ -40,10 +39,7 @@ export class AuthStore {
 
   static async create(options: AuthStoreOptions): Promise<AuthStore> {
     const saved = await options.database.loadAuthState();
-    const state = saved ?? createSeedState(options.members);
-    if (!saved && state.accounts.length > 0) {
-      await options.database.saveAuthState(state);
-    }
+    const state = saved ?? { accounts: [], sessions: [], magicLinks: [] };
     return new AuthStore(options, state);
   }
 
@@ -201,19 +197,4 @@ export function normalizeEmail(email: string): string {
 
 function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
-}
-
-function createSeedState(members: Member[]): AuthState {
-  const createdAt = new Date().toISOString();
-  return {
-    accounts: members.map((member) => ({
-      id: member.id,
-      username: member.email.split("@")[0]!.toLowerCase(),
-      email: normalizeEmail(member.email),
-      passwordHash: SEEDED_PASSWORD_HASH,
-      createdAt,
-    })),
-    sessions: [],
-    magicLinks: [],
-  };
 }

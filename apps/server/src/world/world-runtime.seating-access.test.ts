@@ -1,13 +1,14 @@
+import { createTestData } from "../testing/workspace-data.js";
 import { getPlacedAssetInteractions, type ServerEvent, type WorldPlayer } from "@workhard/shared";
 import { afterEach, describe, expect, it } from "vitest";
-import { DemoStore } from "../store.js";
+import { WorkspaceStore } from "../store.js";
 import { WorldRuntime } from "./world-runtime.js";
 
 const runtimes: WorldRuntime[] = [];
 afterEach(() => runtimes.splice(0).forEach((runtime) => runtime.stop()));
 
 function fixture({ restricted = true, wall = true, startY = 256 } = {}) {
-  const store = new DemoStore();
+  const store = new WorkspaceStore(createTestData());
   const layout = store.getLayout("floor-studio")!;
   const roomBounds = { x: 224, y: 96, width: 256, height: 320 };
   const chair = { id: "access-seat", floorId: layout.floorId, assetId: "chair-office", variantId: "white", rotation: 90 as const, x: 240, y: 240 };
@@ -53,7 +54,7 @@ describe("seat access", () => {
   });
 
   it("walks into an accessible room before taking its seat", () => {
-    const { store, runtime, sit, player, interaction } = fixture({ wall: false });
+    const { store, runtime, sit, player, interaction } = fixture({ wall: false, startY: 480 });
     const layout = store.getLayout("floor-studio")!;
     store.replaceLayout({ ...layout, revision: layout.revision + 1, rooms: layout.rooms.map((room) => ({ ...room, access: { ...room.access, assignedPersonIds: ["user-maya"] } })) });
     sit();

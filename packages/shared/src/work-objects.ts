@@ -1,9 +1,9 @@
 import { getAssetDefinition, getPlacedAssetBounds, type WorldObject } from "./assets.js";
 import { isPointInRoom, type FloorLayout } from "./building.js";
 import type { Position } from "./geometry.js";
+import { createWhiteboardDocument, type WhiteboardDocument } from "./whiteboard.js";
 
 export const WORK_OBJECT_RANGE = 72;
-export const WHITEBOARD_TEXT_LIMIT = 8_000;
 export const CHECKLIST_ITEM_LIMIT = 80;
 export const CHECKLIST_TEXT_LIMIT = 240;
 
@@ -16,11 +16,11 @@ export interface ChecklistItem {
 }
 
 export type WorkObjectState =
-  | { kind: "whiteboard"; revision: number; text: string }
+  | { kind: "whiteboard"; revision: number; document: WhiteboardDocument }
   | { kind: "checklist"; revision: number; items: ChecklistItem[] };
 
 export type WorkObjectEdit =
-  | { type: "whiteboard.save"; text: string }
+  | { type: "whiteboard.save"; document: WhiteboardDocument }
   | { type: "checklist.add"; text: string }
   | { type: "checklist.rename"; itemId: string; text: string }
   | { type: "checklist.complete"; itemId: string; completed: boolean }
@@ -30,7 +30,7 @@ export function getWorkObjectState(object: WorldObject): WorkObjectState | undef
   const kind = getAssetDefinition(object.assetId)?.workKind;
   if (!kind) return undefined;
   return object.workState ?? (kind === "whiteboard"
-    ? { kind, revision: 0, text: "" }
+    ? { kind, revision: 0, document: createWhiteboardDocument() }
     : { kind, revision: 0, items: [] });
 }
 

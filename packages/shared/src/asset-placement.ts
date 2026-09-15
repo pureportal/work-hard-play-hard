@@ -1,5 +1,6 @@
 import {
   ASSET_RASTER_SIZE,
+  getPlacedAssetBounds,
   getPlacedAssetCells,
   requireAssetDefinition,
   type AssetLayer,
@@ -38,7 +39,8 @@ interface AssetPlacementContext {
   openingCount: number;
   objectCount: number;
   wallRects: Rect[];
-  occupiedCells: Record<AssetLayer, Map<string, Set<string>>>;
+  wallCenterlines: Rect[];
+  occupiedCells: Record<AssetLayer | "covering", Map<string, Set<string>>>;
   supportedCells: Set<string>;
 }
 
@@ -67,12 +69,19 @@ export function getAssetPlacementError(
     return "ASSET_OUT_OF_RANGE";
   }
   const context = getAssetPlacementContext(layout);
-  if (candidateCells.some((cell) => context.wallRects.some((wall) => rectanglesOverlap(cellRect(cell), wall)))) {
+  const candidateBounds = getPlacedAssetBounds(candidate);
+  const blockedByWall = definition.kind === "floor-tile"
+    ? context.wallCenterlines.some((wall) => rectanglesOverlap(candidateBounds, wall))
+    : candidateCells.some((cell) => context.wallRects.some((wall) => rectanglesOverlap(cellRect(cell), wall)));
+  if (blockedByWall) {
     return "ASSET_BLOCKED";
   }
 
-  const occupiedCells = context.occupiedCells[definition.placement.layer];
-  if (candidateCells.some((cell) => hasOtherOccupant(occupiedCells.get(worldCellKey(cell)), candidate.id))) {
+  const occupiedCells = context.occupiedCells[definition.kind === "rug" ? "covering" : definition.placement.layer];
+  if (candidateCells.some((cell) => (
+    !(definition.placement.layer === "floor" && !cell.solid && cell.allows.includes("floor"))
+    && hasOtherOccupant(occupiedCells.get(worldCellKey(cell)), candidate.id)
+  ))) {
     return "ASSET_BLOCKED";
   }
   if (definition.placement.requires !== "floor" && candidateCells.some((cell) => !context.supportedCells.has(worldCellKey(cell)))) {
@@ -136,6 +145,7 @@ function getAssetPlacementContext(layout: FloorLayout): AssetPlacementContext {
   }
   const occupiedCells: AssetPlacementContext["occupiedCells"] = {
     ground: new Map(),
+    covering: new Map(),
     floor: new Map(),
     surface: new Map(),
   };
@@ -144,9 +154,11 @@ function getAssetPlacementContext(layout: FloorLayout): AssetPlacementContext {
     const definition = requireAssetDefinition(object.assetId);
     for (const cell of getPlacedAssetCells(object)) {
       const key = worldCellKey(cell);
-      const occupants = occupiedCells[definition.placement.layer].get(key) ?? new Set<string>();
+      const layer = definition.kind === "rug" ? "covering" : definition.placement.layer;
+      if (layer === "floor" && !cell.solid && cell.allows.includes("floor")) continue;
+      const occupants = occupiedCells[layer].get(key) ?? new Set<string>();
       occupants.add(object.id);
-      occupiedCells[definition.placement.layer].set(key, occupants);
+      occupiedCells[layer].set(key, occupants);
       if (definition.placement.layer === "floor" && cell.allows.includes("decoration")) {
         supportedCells.add(key);
       }
@@ -161,6 +173,7 @@ function getAssetPlacementContext(layout: FloorLayout): AssetPlacementContext {
     openingCount: layout.openings.length,
     objectCount: layout.objects.length,
     wallRects: layout.walls.flatMap((wall) => getWallSolidRects(wall, layout.openings)),
+    wallCenterlines: layout.walls.flatMap((wall) => getWallSolidRects(wall, layout.openings, 0)),
     occupiedCells,
     supportedCells,
   };

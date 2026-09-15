@@ -1,11 +1,14 @@
 import type { BootstrapData, ClientCommand, Floor, FloorLayout, ServerEvent, WorldObject } from "@workhard/shared";
-import { describe, expect, it } from "vitest";
-import { createSeedData } from "../seed.js";
-import { DemoStore } from "../store.js";
+import { afterEach, describe, expect, it } from "vitest";
+import { createTestData } from "../testing/workspace-data.js";
+import { WorkspaceStore } from "../store.js";
 import { WorldRuntime } from "./world-runtime.js";
 
 const start = { x: 64, y: 448 };
 const destination = { x: 256, y: 448 };
+const runtimes: WorldRuntime[] = [];
+
+afterEach(() => runtimes.splice(0).forEach((runtime) => runtime.stop()));
 
 describe("WorldRuntime floor navigation", () => {
   it("keeps same-floor click-to-move on the active floor", () => {
@@ -21,7 +24,6 @@ describe("WorldRuntime floor navigation", () => {
 
     expect(events.filter((event) => event.type === "session.ready")).toHaveLength(1);
     expect(currentPlayer(runtime)).toMatchObject({ floorId: "floor-1", ...destination });
-    runtime.stop();
   });
 
   it("uses the closest reachable position for a blocked same-floor click", () => {
@@ -47,7 +49,6 @@ describe("WorldRuntime floor navigation", () => {
     expect(Math.hypot(player.x - blockedDestination.x, player.y - blockedDestination.y)).toBeLessThan(
       Math.hypot(start.x - blockedDestination.x, start.y - blockedDestination.y),
     );
-    runtime.stop();
   });
 
   it("walks to a stair before continuing from the reverse stair on an adjacent floor", () => {
@@ -71,7 +72,6 @@ describe("WorldRuntime floor navigation", () => {
     ))).toBe(true);
     expect(firstPlayerSnapshot(events, "floor-2")).toMatchObject({ floorId: "floor-2", x: 64, y: 64 });
     expect(currentPlayer(runtime)).toMatchObject({ floorId: "floor-2", ...destination });
-    runtime.stop();
   });
 
   it("walks between stairs on intermediate floors before reaching a multi-floor destination", () => {
@@ -95,21 +95,80 @@ describe("WorldRuntime floor navigation", () => {
     ))).toBe(true);
     expect(firstPlayerSnapshot(events, "floor-3")).toMatchObject({ floorId: "floor-3", x: 384, y: 64 });
     expect(currentPlayer(runtime)).toMatchObject({ floorId: "floor-3", ...destination });
-    runtime.stop();
+  });
+
+  it("scales speed with the remaining walking distance across all floors", () => {
+    const { runtime, peerId, events } = createRuntime();
+    send(runtime, peerId, {
+      type: "movement.set_destination", requestId: "multi-floor", floorId: "floor-3", ...destination,
+    });
+
+    runtime.runTickForTest();
+
+    expect(start.y - currentPlayer(runtime)!.y).toBeCloseTo(37.5);
+
+    runUntil(runtime, () => currentPlayer(runtime)?.floorId === "floor-2");
+    expect(currentPlayer(runtime)).toMatchObject({ x: 64, y: 64 });
+    runtime.runTickForTest();
+    expect(currentPlayer(runtime)!.x - 64).toBeCloseTo(31.3667);
+
+    runUntil(runtime, () => currentPlayer(runtime)?.floorId === "floor-3");
+    expect(currentPlayer(runtime)).toMatchObject({ x: 384, y: 64 });
+    runtime.runTickForTest();
+    const player = currentPlayer(runtime)!;
+    expect(Math.abs(player.x - 384) + Math.abs(player.y - 64)).toBeCloseTo(26.0333);
+
+    runUntil(runtime, () => isAt(runtime, "floor-3", destination));
+    expect(events.filter((event) => event.type === "command.error")).toEqual([]);
+  });
+
+  it("excludes coordinate jumps between paired stairs from the walking distance", () => {
+    const { runtime, peerId, store } = createRuntime();
+    const secondFloor = store.getLayout("floor-2")!;
+    secondFloor.objects = [portal("two-down", 2, 352, 32, 1)];
+    secondFloor.revision += 1;
+    const target = { x: 384, y: 128 };
+    send(runtime, peerId, {
+      type: "movement.set_destination", requestId: "offset-stairs", floorId: "floor-2", ...target,
+    });
+
+    runtime.runTickForTest();
+
+    expect(start.y - currentPlayer(runtime)!.y).toBeCloseTo(24.9667);
+    runUntil(runtime, () => isAt(runtime, "floor-2", target));
+  });
+
+  it.each(["direction", "destination"])("clears the remaining floors when %s movement replaces the route", (kind) => {
+    const { runtime, peerId } = createRuntime();
+    send(runtime, peerId, {
+      type: "movement.set_destination", requestId: "multi-floor", floorId: "floor-3", ...destination,
+    });
+    runtime.runTickForTest();
+    const previous = currentPlayer(runtime)!;
+
+    send(runtime, peerId, kind === "direction"
+      ? { type: "movement.input", sequence: 1, dx: 1, dy: 0 }
+      : { type: "movement.set_destination", requestId: "same-floor", floorId: "floor-1", x: previous.x + 192, y: previous.y });
+    runtime.runTickForTest();
+
+    expect(currentPlayer(runtime)).toMatchObject({ floorId: "floor-1" });
+    expect(currentPlayer(runtime)!.x - previous.x).toBeGreaterThanOrEqual(17.5);
+    expect(currentPlayer(runtime)!.x - previous.x).toBeLessThan(22);
   });
 });
 
-function createRuntime(): { runtime: WorldRuntime; peerId: string; events: ServerEvent[]; store: DemoStore } {
+function createRuntime(): { runtime: WorldRuntime; peerId: string; events: ServerEvent[]; store: WorkspaceStore } {
   const data = navigationData();
-  const store = new DemoStore(data);
+  const store = new WorkspaceStore(data);
   const runtime = new WorldRuntime(store);
+  runtimes.push(runtime);
   const events: ServerEvent[] = [];
   const peerId = runtime.connect(data.currentUserId, "floor-1", (event) => events.push(event));
   return { runtime, peerId, events, store };
 }
 
 function navigationData(): BootstrapData {
-  const data = createSeedData();
+  const data = createTestData();
   const officeId = data.office.id;
   data.floors = [1, 2, 3].map((level): Floor => ({
     id: `floor-${level}`,

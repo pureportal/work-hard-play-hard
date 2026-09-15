@@ -101,7 +101,7 @@ try {
   await adminPage.click('button[aria-label="Invite member"]');
   await adminPage.type('.invite-form input[type="email"]', "invite-e2e@example.com");
   const invitationResponse = adminPage.waitForResponse((response) =>
-    response.request().method() === "POST" && response.url().endsWith("/v1/teams/team-northstar/invitations"),
+    response.request().method() === "POST" && response.url().endsWith("/v1/teams/team/invitations"),
   );
   await adminPage.click('.invite-form button[type="submit"]');
   const invitation = await (await invitationResponse).json() as { id: string; inviteLink?: string };

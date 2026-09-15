@@ -1,3 +1,4 @@
+import { createTestData } from "../testing/workspace-data.js";
 import {
   ASSET_ROTATIONS, CHECKLIST_ITEM_LIMIT, CHECKLIST_TEXT_LIMIT, WHITEBOARD_TEXT_LIMIT,
   getAssetVariants, getPlacedAssetCells, getWorkObjectState, requireAssetDefinition,
@@ -5,7 +6,7 @@ import {
   type ClientCommand, type ServerEvent, type WorkObjectEdit, type WorldObject,
 } from "@workhard/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DemoStore } from "../store.js";
+import { WorkspaceStore } from "../store.js";
 import { clientCommandSchema } from "../protocol.js";
 import { MemoryDatabase } from "../persistence/memory-database.js";
 import { WorldRuntime } from "./world-runtime.js";
@@ -17,7 +18,7 @@ afterEach(() => {
 });
 
 function fixture() {
-  const store = new DemoStore();
+  const store = new WorkspaceStore(createTestData());
   const layout = store.getLayout("floor-studio")!;
   const objects: WorldObject[] = [
     { id: "notes", assetId: "equipment-whiteboard", floorId: layout.floorId, x: 192, y: 192, rotation: 0, variantId: "graphite" },
@@ -66,8 +67,8 @@ describe("work objects", () => {
 
   it("shares saved notes and checklist operations with another player and reconnects", () => {
     const { store, runtime, teammate, teammateEvents, update } = fixture();
-    const id = update("notes", { type: "whiteboard.save", text: "Launch plan\nReview the demo" });
-    expect(store.getObject("notes")!.workState).toEqual({ kind: "whiteboard", revision: 1, text: "Launch plan\nReview the demo" });
+    const id = update("notes", { type: "whiteboard.save", document: { text: "Launch plan\nReview the demo", cards: [] } });
+    expect(store.getObject("notes")!.workState).toEqual({ kind: "whiteboard", revision: 1, document: { text: "Launch plan\nReview the demo", cards: [] } });
     expect(teammateEvents).toContainEqual(expect.objectContaining({ type: "layout.updated", layout: expect.objectContaining({ objects: expect.arrayContaining([expect.objectContaining({ id: "notes", workState: expect.objectContaining({ revision: 1 }) })]) }) }));
     expect(teammateEvents.some((event) => "requestId" in event && event.requestId === id)).toBe(false);
     update("tasks", { type: "checklist.add", text: "  Review demo  " }, 0, teammate);
@@ -90,10 +91,10 @@ describe("work objects", () => {
 
   it("rejects stale edits without overwriting content and keeps board revisions independent", () => {
     const { store, events, teammate, update } = fixture();
-    update("notes", { type: "whiteboard.save", text: "First" });
-    const requestId = update("notes", { type: "whiteboard.save", text: "Stale" }, 0);
+    update("notes", { type: "whiteboard.save", document: { text: "First", cards: [] } });
+    const requestId = update("notes", { type: "whiteboard.save", document: { text: "Stale", cards: [] } }, 0);
     expect(events.at(-1)).toMatchObject({ type: "command.error", code: "WORK_OBJECT_CONFLICT", requestId });
-    expect(store.getObject("notes")!.workState).toMatchObject({ text: "First" });
+    expect(store.getObject("notes")!.workState).toMatchObject({ document: { text: "First" } });
     update("tasks", { type: "checklist.add", text: "Separate board" }, 0, teammate);
     expect(store.getObject("tasks")!.workState?.revision).toBe(1);
     update("notes", { type: "checklist.add", text: "Wrong action" });
@@ -104,7 +105,7 @@ describe("work objects", () => {
 
   it("preserves content across movement, rotation, persistence, and restores without sharing instances", async () => {
     const { store, runtime, peer, update } = fixture();
-    update("notes", { type: "whiteboard.save", text: "Saved notes" });
+    update("notes", { type: "whiteboard.save", document: { text: "Saved notes", cards: [] } });
     update("tasks", { type: "checklist.add", text: "Saved task" });
     const before = structuredClone(store.getObject("notes")!.workState);
     runtime.handleCommand(peer, { type: "layout.apply", requestId: "move", baseRevision: store.getLayout("floor-studio")!.revision,
@@ -112,7 +113,7 @@ describe("work objects", () => {
     expect(store.getObject("notes")).toMatchObject({ x: 128, y: 320, rotation: 90, variantId: "violet", workState: before });
     const database = new MemoryDatabase();
     await database.saveWorkspaceState({ store: store.exportMutableState(), players: runtime.serializePlayers() });
-    const restored = new DemoStore();
+    const restored = new WorkspaceStore(createTestData());
     restored.restoreMutableState((await database.loadWorkspaceState())!.store);
     expect(restored.getLayout("floor-studio")).toEqual(store.getLayout("floor-studio"));
     expect(restored.getObject("notes")!.workState).not.toBe(store.getObject("notes")!.workState);
@@ -125,15 +126,15 @@ describe("work objects", () => {
   it("allows only nearby players on the same side of room boundaries to change a board", () => {
     const { store, runtime, peer, events, update } = fixture();
     runtime.restorePlayers(runtime.serializePlayers().map((player) => player.userId === "user-maya" ? { ...player, x: 800, y: 500 } : player));
-    update("notes", { type: "whiteboard.save", text: "Too far" });
+    update("notes", { type: "whiteboard.save", document: { text: "Too far", cards: [] } });
     expect(events.at(-1)).toMatchObject({ code: "WORK_OBJECT_TOO_FAR" });
-    runtime.handleCommand(peer, { type: "work.update", requestId: "wrong-floor", objectId: "object-rooftop-whiteboard", baseRevision: 0, edit: { type: "whiteboard.save", text: "Invalid" } });
+    runtime.handleCommand(peer, { type: "work.update", requestId: "wrong-floor", objectId: "object-rooftop-whiteboard", baseRevision: 0, edit: { type: "whiteboard.save", document: { text: "Invalid", cards: [] } } });
     expect(events.at(-1)).toMatchObject({ code: "WORK_OBJECT_NOT_FOUND" });
-    const sourceRoom = new DemoStore().getLayout("floor-studio")!.rooms[0]!;
+    const sourceRoom = new WorkspaceStore(createTestData()).getLayout("floor-studio")!.rooms[0]!;
     const layout = store.getLayout("floor-studio")!;
     store.replaceLayout({ ...layout, revision: layout.revision + 1, rooms: [{ ...sourceRoom, bounds: { x: 192, y: 160, width: 128, height: 64 }, footprint: [{ x: 192, y: 160, width: 128, height: 64 }] }] });
     runtime.restorePlayers(runtime.serializePlayers().map((player) => ({ ...player, x: 256, y: 232 })));
-    update("notes", { type: "whiteboard.save", text: "Through wall" });
+    update("notes", { type: "whiteboard.save", document: { text: "Through wall", cards: [] } });
     expect(events.at(-1)).toMatchObject({ code: "WORK_OBJECT_TOO_FAR" });
     expect(store.getObject("notes")!.workState).toBeUndefined();
   });
@@ -141,7 +142,7 @@ describe("work objects", () => {
   it("validates text, item counts, unique IDs, state kinds, and restored revisions", () => {
     const { store, events, update } = fixture();
     const command = { type: "work.update", requestId: "invalid", objectId: "notes", baseRevision: 0 };
-    for (const edit of [{ type: "whiteboard.save", text: "x".repeat(WHITEBOARD_TEXT_LIMIT + 1) }, { type: "checklist.add", text: " " }, { type: "checklist.add", text: "x".repeat(CHECKLIST_TEXT_LIMIT + 1) }]) {
+    for (const edit of [{ type: "whiteboard.save", document: { text: "x".repeat(WHITEBOARD_TEXT_LIMIT + 1), cards: [] } }, { type: "checklist.add", text: " " }, { type: "checklist.add", text: "x".repeat(CHECKLIST_TEXT_LIMIT + 1) }]) {
       expect(clientCommandSchema.safeParse({ ...command, edit }).success).toBe(false);
     }
     const state = store.exportMutableState();
@@ -152,7 +153,7 @@ describe("work objects", () => {
     expect(events.at(-1)).toMatchObject({ code: "CHECKLIST_FULL" });
     object.workState.items[1]!.id = object.workState.items[0]!.id;
     expect(() => store.restoreMutableState(state)).toThrow("WORK_OBJECT_STATE_INVALID");
-    object.workState = { kind: "whiteboard", revision: 1, text: "Wrong type" };
+    object.workState = { kind: "whiteboard", revision: 1, document: { text: "Wrong type", cards: [] } };
     expect(() => store.restoreMutableState(state)).toThrow("WORK_OBJECT_STATE_INVALID");
     object.workState = { kind: "checklist", revision: -1, items: [] };
     expect(() => store.restoreMutableState(state)).toThrow("WORK_OBJECT_STATE_INVALID");

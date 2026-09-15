@@ -36,7 +36,7 @@ async function ready(page: Page) {
 }
 
 async function checkThumbnails(page: Page) {
-  const shapes = page.locator(".asset-shape");
+  const shapes = page.locator(".asset-shape:visible");
   assert(await shapes.count() > 0);
   await shapes.evaluateAll(async (elements) => {
     const paths = new Set(elements.map((element) => element.querySelector("image")!.getAttribute("href")!));
@@ -47,7 +47,7 @@ async function checkThumbnails(page: Page) {
     }));
     for (const shape of elements) {
       const bounds = shape.getBoundingClientRect();
-      if (bounds.width !== 38 || bounds.height !== 38) throw new Error("Asset thumbnail dimensions changed");
+      if (bounds.width !== 38 || bounds.height !== 38) throw new Error(`Asset thumbnail dimensions changed: ${bounds.width}x${bounds.height}; ${shape.parentElement?.textContent}`);
     }
   });
   assert.equal(await page.locator(".world-artwork-error").count(), 0);
@@ -164,7 +164,11 @@ try {
 
   for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }, { width: 844, height: 390 }]) {
     const context = await browser.newContext({ viewport, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
-    const fixture = await installAssetFixture(context, "user-jonas");
+    const fixture = await installAssetFixture(context, "user-jonas", { x: 704, y: 576 }, { currentPlayerOnly: true });
+    const layout = fixture.store.getLayout("floor-studio")!;
+    const room = { ...layout.rooms[0]!, bounds: { x: 256, y: 256, width: 768, height: 512 }, footprint: [{ x: 256, y: 256, width: 768, height: 512 }],
+      access: { mode: "open" as const, assignedPersonIds: [], knockable: false }, build: { mode: "open" as const, assignedPersonIds: [] } };
+    Object.assign(layout, { objects: [], tiles: [], walls: [], openings: [], rooms: [room], revision: layout.revision + 1 });
     try {
       const page = await context.newPage();
       await ready(page);
@@ -181,7 +185,7 @@ try {
         assert(visible, `${category.name} must scroll fully into view`);
         await checkThumbnails(page);
       }
-      await page.getByRole("tab", { name: "Desks", exact: true }).tap();
+      await page.getByRole("tab", { name: "Decor", exact: true }).tap();
       await checkThumbnails(page);
       const firstAssetVisible = await page.locator(".shop-asset").first().evaluate((element) => {
         const box = element.getBoundingClientRect();
@@ -190,11 +194,11 @@ try {
       });
       assert(firstAssetVisible, "The first shop object must be fully visible after choosing a category");
       await capture(page, `mobile-${viewport.width}-shop`);
-      await page.getByRole("button", { name: "Buy Standing desk", exact: true }).tap();
+      await page.getByRole("button", { name: "Buy Wind chimes", exact: true }).tap();
       await page.getByRole("tab", { name: "Inventory", exact: true }).tap();
-      const row = page.locator(".inventory-asset").filter({ hasText: "Standing desk" });
+      const row = page.locator(".inventory-asset").filter({ hasText: "Wind chimes" });
       await row.getByRole("button", { name: "Place", exact: true }).tap();
-      await page.getByRole("radio", { name: "Oak", exact: true }).tap();
+      await page.getByRole("radio", { name: "Matcha", exact: true }).tap();
       for (const direction of ["South", "West", "North", "East"]) {
         await page.getByRole("button", { name: `Rotate asset clockwise, currently facing ${direction}`, exact: true }).tap();
       }
@@ -204,13 +208,14 @@ try {
       assert(metrics.scroll <= metrics.width + 1);
       assert(metrics.targets.every((target) => target.width >= 40 && target.height >= 40));
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
-      assert.equal(fixture.store.getBootstrap("user-jonas").economy.inventory.filter((asset) => asset.assetId === "desk-standing").length, 1);
+      assert.equal(fixture.store.getBootstrap("user-jonas").economy.inventory.filter((asset) => asset.assetId === "decor-wind-chimes").length, 1);
       const panel = await page.locator(".build-panel").boundingBox();
       assert(panel);
       let placed = false;
       for (const y of [150, 190, 230, 300, 340]) {
         for (const x of [110, 150, 210, 270, 330]) {
           if ((y >= panel.y && x >= panel.x) || x > viewport.width - 20) continue;
+          if (!await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.matches(".world-canvas canvas"), { x, y })) continue;
           await page.touchscreen.tap(x, y);
           await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
           if (await page.locator(".placement-confirm").isEnabled()) {
@@ -225,7 +230,7 @@ try {
       }
       if (!placed) await capture(page, `mobile-${viewport.width}-blocked`);
       assert(placed, `No touch placement completed at ${viewport.width}px`);
-      const owned = fixture.store.getBootstrap("user-jonas").economy.inventory.find((asset) => asset.assetId === "desk-standing")!;
+      const owned = fixture.store.getBootstrap("user-jonas").economy.inventory.find((asset) => asset.assetId === "decor-wind-chimes")!;
       assert(owned.placement);
       await capture(page, `mobile-${viewport.width}-placed`);
       await page.getByRole("button", { name: "Use dark mode", exact: true }).tap();
@@ -243,7 +248,7 @@ try {
     }
   }
   assert.deepEqual(issues, []);
-  await writeFile(`${output}/verification.json`, JSON.stringify({ url, transport: "Isolated DemoStore and WorldRuntime; existing running client", verified, issues }, null, 2));
+  await writeFile(`${output}/verification.json`, JSON.stringify({ url, transport: "Isolated WorkspaceStore and WorldRuntime; existing running client", verified, issues }, null, 2));
   console.log(verified.join("\n"));
 } finally {
   await browser.close();

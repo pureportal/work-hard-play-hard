@@ -1,3 +1,4 @@
+import { createOrganisation } from "@workhard/shared";
 import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -41,6 +42,7 @@ vi.mock("./components/WorldCanvasLoader", () => ({
 const workspace: BootstrapData = {
   currentUserId: "user-maya",
   corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
+    organisation: createOrganisation(),
   team: { id: "team", name: "Northstar", slug: "northstar", accent: "#6c5ce7" },
   office: { id: "office", teamId: "team", name: "Studio" },
   floors: [{
@@ -144,11 +146,11 @@ describe("Workspace kidnapping", () => {
     expect(screen.queryByRole("button", { name: "Kidnap Leo Martins" })).toBeNull();
   });
 
-  it("updates global and personal policies from Settings", () => {
+  it("updates global and personal policies from Settings", async () => {
     renderWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "Settings" }));
 
-    fireEvent.click(screen.getByRole("checkbox", { name: "Enable kidnapping" }));
+    fireEvent.click(await screen.findByRole("checkbox", { name: "Enable kidnapping" }));
     expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({
       type: "kidnapping.global_settings_update",
       settings: expect.objectContaining({ enabled: false }),
@@ -193,7 +195,7 @@ describe("Workspace kidnapping", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Settings" }));
 
-    fireEvent.click(screen.getByRole("checkbox", { name: "Allow registrations" }));
+    fireEvent.click(await screen.findByRole("checkbox", { name: "Allow registrations" }));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => expect(apiMocks.updateRegistrationSettings).toHaveBeenCalledWith({

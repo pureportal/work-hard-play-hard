@@ -1,12 +1,13 @@
+import { createTestData } from "../testing/workspace-data.js";
 import { CHESS_DEFINITION_ID, FALLING_BLOCKS_DEFINITION_ID, TIC_TAC_TOE_DEFINITION_ID } from "@workhard/shared";
 import type { ClientCommand, ServerEvent } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
-import { DemoStore } from "../store.js";
+import { WorkspaceStore } from "../store.js";
 import { WorldRuntime } from "./world-runtime.js";
 
 describe("WorldRuntime Falling Blocks multiplayer", () => {
   it("gathers players through movement, starts one round, and records its winner", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const mayaEvents: ServerEvent[] = [];
     const leoEvents: ServerEvent[] = [];
@@ -45,9 +46,9 @@ describe("WorldRuntime Falling Blocks multiplayer", () => {
     expect(mayaRound?.id).toBe(leoRound?.id);
     expect(mayaRound?.participants.map((participant) => participant.userId)).toEqual(["user-maya", "user-leo"]);
 
-    send(runtime, mayaPeer, { type: "game.command", requestId: "maya-drop", command: "drop" });
-    send(runtime, leoPeer, { type: "game.end", requestId: "leo-finish" });
-    send(runtime, mayaPeer, { type: "game.end", requestId: "maya-finish" });
+    send(runtime, mayaPeer, { type: "game.command", roundId: mayaRound!.id, requestId: "maya-drop", command: "drop" });
+    send(runtime, leoPeer, { type: "game.end", roundId: mayaRound!.id, requestId: "leo-finish" });
+    send(runtime, mayaPeer, { type: "game.end", roundId: mayaRound!.id, requestId: "maya-finish" });
 
     const completion = mayaEvents.findLast((event) => event.type === "game.round_completed");
     expect(completion?.type === "game.round_completed" && completion.round.id).toBe(mayaRound?.id);
@@ -70,7 +71,7 @@ describe("WorldRuntime Falling Blocks multiplayer", () => {
 
 describe("WorldRuntime chess multiplayer", () => {
   it("excludes active chess viewers from overlapping games and restores entry on close", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const mayaEvents: ServerEvent[] = [];
     const leoEvents: ServerEvent[] = [];
     const mayaPeer = runtime.connect("user-maya", "floor-studio", (event) => mayaEvents.push(event));
@@ -86,11 +87,11 @@ describe("WorldRuntime chess multiplayer", () => {
     const matchId = latestChessMatch(mayaEvents)!.id;
     const lobby = leoEvents.findLast((event) => event.type === "game.lobby_updated" && event.lobby.definitionId === TIC_TAC_TOE_DEFINITION_ID);
     expect(lobby?.type === "game.lobby_updated" && lobby.lobby.participantIds).toEqual(["user-leo"]);
-    send(runtime, mayaPeer, { type: "game.start", requestId: "overlap", definitionId: TIC_TAC_TOE_DEFINITION_ID, variantId: "classic", bot: { difficulty: "easy" } });
+    send(runtime, mayaPeer, { type: "game.start", requestId: "overlap", definitionId: TIC_TAC_TOE_DEFINITION_ID, objectId: "object-tic-tac-toe", variantId: "classic", bot: { difficulty: "easy" } });
     expect(mayaEvents.findLast((event) => event.type === "command.error")).toMatchObject({ requestId: "overlap", code: "GAME_IN_PROGRESS" });
 
     send(runtime, mayaPeer, { type: "chess.match_close", requestId: "close-chess", matchId });
-    send(runtime, mayaPeer, { type: "game.start", requestId: "solo-tic", definitionId: TIC_TAC_TOE_DEFINITION_ID, variantId: "classic", bot: { difficulty: "easy" } });
+    send(runtime, mayaPeer, { type: "game.start", requestId: "solo-tic", definitionId: TIC_TAC_TOE_DEFINITION_ID, objectId: "object-tic-tac-toe", variantId: "classic", bot: { difficulty: "easy" } });
     expect(mayaEvents.findLast((event) => event.type === "game.state")).toMatchObject({ definitionId: TIC_TAC_TOE_DEFINITION_ID, bot: { difficulty: "easy" } });
     send(runtime, mayaPeer, { type: "chess.match_open", requestId: "overlap-chess", matchId });
     expect(mayaEvents.findLast((event) => event.type === "command.error")).toMatchObject({ requestId: "overlap-chess", code: "GAME_IN_PROGRESS" });
@@ -98,7 +99,7 @@ describe("WorldRuntime chess multiplayer", () => {
   });
 
   it("routes locked matches, legal moves, and reconnects through the realtime protocol", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const mayaEvents: ServerEvent[] = [];
     const leoEvents: ServerEvent[] = [];

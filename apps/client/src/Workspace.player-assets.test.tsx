@@ -1,3 +1,4 @@
+import { createOrganisation } from "@workhard/shared";
 import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -60,11 +61,11 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("Workspace player assets", () => {
-  it("opens Build for a non-builder and sends owned placement commands", () => {
+  it("opens Build for a non-builder and sends owned placement commands", async () => {
     render(<Workspace initialData={workspace()} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Build" }));
-    fireEvent.click(screen.getByRole("button", { name: "Place" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Place" }, { timeout: 5000 }));
     const blueDesign = screen.getByRole("radio", { name: "Blue" });
     fireEvent.click(blueDesign);
     fireEvent.keyDown(blueDesign, { key: "r" });
@@ -83,11 +84,11 @@ describe("Workspace player assets", () => {
     expect(realtime.send).not.toHaveBeenCalledWith(expect.objectContaining({ type: "layout.apply" }));
   });
 
-  it("sends daily claims and catalog purchases through the authoritative economy API", () => {
+  it("sends daily claims and catalog purchases through the authoritative economy API", async () => {
     render(<Workspace initialData={workspace()} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Build" }));
 
-    fireEvent.click(screen.getByRole("button", { name: "Claim 50" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Claim 50" }));
     expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({ type: "economy.claim_daily" }));
 
     const claim = realtime.send.mock.calls.map(([command]) => command).find((command) => command.type === "economy.claim_daily")!;
@@ -118,10 +119,10 @@ describe("Workspace player assets", () => {
     }));
   });
 
-  it("keeps a pending placement until its own layout conflict arrives", () => {
+  it("keeps a pending placement until its own layout conflict arrives", async () => {
     render(<Workspace initialData={workspace()} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Build" }));
-    fireEvent.click(screen.getByRole("button", { name: "Place" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Place" }));
     fireEvent.click(screen.getByRole("button", { name: "Place on canvas" }));
     const placement = realtime.send.mock.calls
       .map(([command]) => command)
@@ -136,10 +137,10 @@ describe("Workspace player assets", () => {
     expect(realtime.send.mock.calls.filter(([command]) => command.type === "player_asset.place")).toHaveLength(2);
   });
 
-  it("stops placing an inventory instance that was placed in another session", () => {
+  it("stops placing an inventory instance that was placed in another session", async () => {
     render(<Workspace initialData={workspace()} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Build" }));
-    fireEvent.click(screen.getByRole("button", { name: "Place" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Place" }));
     expect(screen.getByRole("button", { name: "Place on canvas" })).toBeTruthy();
 
     const economy = createTestEconomy();
@@ -169,6 +170,7 @@ function workspace(): BootstrapData {
   return {
     currentUserId: "player",
     corporateIdentity: createTestCorporateIdentity(),
+    organisation: createOrganisation(),
     team: { id: "team", name: "Team", slug: "team", accent: "#000000" },
     office: { id: "office", teamId: "team", name: "Office" },
     floors: [{ id: "floor", officeId: "office", name: "Floor", level: 1, width: 256, height: 256, spawn: { x: 200, y: 200 }, background: "#ffffff" }],
@@ -206,6 +208,7 @@ function workspace(): BootstrapData {
         windowIds: [],
         privateEligible: true,
         access: { mode: "assigned", assignedPersonIds: ["player"], knockable: false },
+        build: { mode: "assigned", assignedPersonIds: ["player"] },
       }],
     }],
     miniGames: [],

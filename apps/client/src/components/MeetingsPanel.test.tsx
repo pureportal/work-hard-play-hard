@@ -1,19 +1,8 @@
 import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { Floor, Meeting, Member } from "@workhard/shared";
+import type { Meeting, Member } from "@workhard/shared";
 import { MeetingsPanel } from "./MeetingsPanel";
-
-const floor: Floor = {
-  id: "floor",
-  officeId: "office",
-  name: "Studio",
-  level: 1,
-  width: 800,
-  height: 600,
-  spawn: { x: 100, y: 100 },
-  background: "#ffffff",
-};
 
 const member: Member = {
   id: "member",
@@ -35,7 +24,7 @@ const meeting = (id: string, title: string, status: Meeting["status"], startsAt:
   startsAt,
   durationMinutes: 30,
   participantIds: [member.id],
-  location: { type: "public", floorId: floor.id, x: 200, y: 200, radius: 60 },
+  location: { type: "room", roomId: "room" },
 });
 
 afterEach(cleanup);
@@ -50,7 +39,6 @@ describe("MeetingsPanel", () => {
           meeting("live", "Daily", "live", "2026-08-30T09:00:00.000Z"),
         ]}
         rooms={[]}
-        floors={[floor]}
         members={[member]}
         onJoin={vi.fn()}
         onClose={vi.fn()}

@@ -2,8 +2,9 @@ import { characterAppearanceKey, DEFAULT_CHARACTER_APPEARANCE, randomCharacterAp
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApplication } from "../app.js";
 import { MemoryDatabase } from "../persistence/memory-database.js";
-import { createInitialData, createSeedData } from "../seed.js";
-import { DemoStore } from "../store.js";
+import { createInitialData } from "../initial-data.js";
+import { createTestData } from "../testing/workspace-data.js";
+import { WorkspaceStore } from "../store.js";
 import { WorldRuntime } from "../world/world-runtime.js";
 import { characterAppearanceSchema } from "./character-schema.js";
 
@@ -15,19 +16,19 @@ describe("initial character appearance", () => {
     const first = randomCharacterAppearance();
     random.mockReturnValue(0.999999);
     const second = randomCharacterAppearance();
-    expect(first).toEqual({ gender: "female", breastSize: "none", face: "calm", hairstyle: "bob", upperBody: "street", lowerBody: "street", shoes: "street", headwear: "none" });
-    expect(second).toEqual({ gender: "male", breastSize: "big", face: "fierce", hairstyle: "ponytail", upperBody: "arcane", lowerBody: "arcane", shoes: "arcane", headwear: "witch" });
+    expect(first).toEqual({ gender: "female", face: "calm", hairstyle: "bob", upperBody: "street", lowerBody: "street", shoes: "street", headwear: "none" });
+    expect(second).toEqual({ gender: "male", face: "shy", hairstyle: "longbraid", upperBody: "festival", lowerBody: "festival", shoes: "festival", headwear: "goggles" });
     expect(first).not.toBe(second);
   });
 
   it("creates characters for the first owner, registrations and invited members", () => {
-    const store = new DemoStore(createInitialData());
+    const store = new WorkspaceStore(createInitialData());
     const owner = store.addInitialMember({ id: "owner", username: "owner", email: "owner@example.com" });
     store.updateRegistrationSettings({ enabled: true, invitationRequired: false, whitelistedDomains: [], defaultRole: "member" });
     const registered = store.addRegisteredMember({ id: "registered", username: "registered", email: "registered@example.com" });
     const invited = store.addMember({ id: "invited", username: "invited", email: "invited@example.com" });
     for (const member of [owner, registered, invited]) expect(characterAppearanceSchema.safeParse(member.character).success).toBe(true);
-    const restored = new DemoStore(createInitialData());
+    const restored = new WorkspaceStore(createInitialData());
     restored.restoreMutableState(store.exportMutableState());
     expect(restored.getMembers()).toEqual(store.getMembers());
   });
@@ -35,7 +36,7 @@ describe("initial character appearance", () => {
   it("assigns varied characters to seeded testing players and includes them in the world", () => {
     let seed = 17;
     vi.spyOn(Math, "random").mockImplementation(() => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646);
-    const store = new DemoStore(createSeedData());
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     try {
       const members = store.getMembers();
@@ -64,7 +65,7 @@ describe("initial character appearance", () => {
         const bootstrap = await first.app.inject({ method: "GET", url: "/v1/bootstrap", headers: { cookie } });
         expect(bootstrap.json().members.find((member: { id: string }) => member.id === userId).character).toEqual(character);
       }
-      const customized = { ...DEFAULT_CHARACTER_APPEARANCE, gender: "male", breastSize: "none", headwear: "cap" };
+      const customized = { ...DEFAULT_CHARACTER_APPEARANCE, gender: "male", hairstyle: "swept", headwear: "cap" };
       expect((await first.app.inject({ method: "PUT", url: "/v1/members/me/character", headers: { cookie }, payload: customized })).statusCode).toBe(200);
       await first.app.close();
       const restored = await createApplication({ database });

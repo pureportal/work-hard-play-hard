@@ -20,3 +20,11 @@ export function rectanglesOverlap(left: Rect, right: Rect): boolean {
     && left.y < right.y + right.height
     && left.y + left.height > right.y;
 }
+
+export function circleIntersectsRect(x: number, y: number, radius: number, rect: Rect): boolean {
+  const closestX = Math.max(rect.x, Math.min(x, rect.x + rect.width));
+  const closestY = Math.max(rect.y, Math.min(y, rect.y + rect.height));
+  const distanceX = x - closestX;
+  const distanceY = y - closestY;
+  return distanceX * distanceX + distanceY * distanceY < radius * radius;
+}

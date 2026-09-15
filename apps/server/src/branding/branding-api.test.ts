@@ -1,9 +1,9 @@
 import sharp from "sharp";
 import { afterEach, describe, expect, it } from "vitest";
-import { createApplication } from "../app.js";
+import { createTestApplication } from "../testing/application.js";
 import { MemoryDatabase } from "../persistence/memory-database.js";
 
-const applications: Awaited<ReturnType<typeof createApplication>>[] = [];
+const applications: Awaited<ReturnType<typeof createTestApplication>>[] = [];
 
 afterEach(async () => {
   await Promise.all(applications.splice(0).map(({ app }) => app.close()));
@@ -12,7 +12,7 @@ afterEach(async () => {
 describe("corporate identity API", () => {
   it("persists owner-managed identity and exposes it before authentication", async () => {
     const database = new MemoryDatabase();
-    const context = await createApplication({ database, seeded: true });
+    const context = await createTestApplication({ database, fixture: true });
     applications.push(context);
     const ownerCookie = await loginCookie(context);
     const adminCookie = await loginCookie(context, "leo");
@@ -54,7 +54,7 @@ describe("corporate identity API", () => {
 
     await context.app.close();
     applications.splice(applications.indexOf(context), 1);
-    const restored = await createApplication({ database, seeded: true });
+    const restored = await createTestApplication({ database, fixture: true });
     applications.push(restored);
     expect((await restored.app.inject({ method: "GET", url: "/v1/auth/session" })).json().corporateIdentity)
       .toEqual(updated.json());
@@ -62,7 +62,7 @@ describe("corporate identity API", () => {
 
   it("stores an optimized logo as a database BLOB and restores its public URL", async () => {
     const database = new MemoryDatabase();
-    const context = await createApplication({ database, seeded: true });
+    const context = await createTestApplication({ database, fixture: true });
     applications.push(context);
     const cookie = await loginCookie(context);
     const input = await sharp({
@@ -95,7 +95,7 @@ describe("corporate identity API", () => {
 
     await context.app.close();
     applications.splice(applications.indexOf(context), 1);
-    const restored = await createApplication({ database, seeded: true });
+    const restored = await createTestApplication({ database, fixture: true });
     applications.push(restored);
     expect((await restored.app.inject({ method: "GET", url: "/v1/auth/session" })).json().corporateIdentity.logoUrl)
       .toBe(logoUrl);
@@ -113,7 +113,7 @@ describe("corporate identity API", () => {
 });
 
 async function loginCookie(
-  context: Awaited<ReturnType<typeof createApplication>>,
+  context: Awaited<ReturnType<typeof createTestApplication>>,
   identifier = "maya",
 ): Promise<string> {
   const response = await context.app.inject({

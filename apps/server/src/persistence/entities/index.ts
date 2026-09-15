@@ -1,5 +1,8 @@
 import { authAccountSchema, authSessionSchema, magicLinkSchema } from "./auth-entities.js";
 import { brandingLogoSchema } from "./branding-logo-entity.js";
+import { spotifyConnectionSchema } from "./spotify-entity.js";
+import { githubConnectionSchema } from "./github-entity.js";
+import { whiteboardImageSchema, whiteboardImageReferenceSchema } from "./whiteboard-image-entity.js";
 import {
   chatMessageSchema,
   chessMatchSchema,
@@ -24,6 +27,10 @@ export const databaseEntities = [
   authSessionSchema,
   magicLinkSchema,
   brandingLogoSchema,
+  whiteboardImageSchema,
+  whiteboardImageReferenceSchema,
+  spotifyConnectionSchema,
+  githubConnectionSchema,
   memberSchema,
   floorLayoutSchema,
   conversationSchema,

@@ -1,9 +1,12 @@
 import {
-  getPlacedAssetBounds,
+  ASSET_RASTER_SIZE,
+  getAssetRasterSize,
   getPlacedAssetInteractions,
+  requireAssetDefinition,
   rotateDirection,
 } from "@workhard/shared";
-import type { AssetRotation, FacingDirection, Position, Rect, WorldObject } from "@workhard/shared";
+import type { AssetRotation, FacingDirection, FloorLayout, Position, Rect, WorldObject } from "@workhard/shared";
+import { getPlacedWorldAssetBounds } from "./world-asset-placement";
 
 const labels: Record<AssetRotation, string> = {
   0: "South",
@@ -20,6 +23,17 @@ export function rotateAssetClockwise(rotation: AssetRotation): AssetRotation {
   return ((rotation + 90) % 360) as AssetRotation;
 }
 
+export function getRotatedAssetPosition(object: WorldObject, rotation: AssetRotation): Position {
+  const definition = requireAssetDefinition(object.assetId);
+  const base = getAssetRasterSize(definition, 0);
+  const current = getAssetRasterSize(definition, object.rotation);
+  const next = getAssetRasterSize(definition, rotation);
+  return {
+    x: object.x + (Math.ceil((base.width - next.width) / 2) - Math.ceil((base.width - current.width) / 2)) * ASSET_RASTER_SIZE,
+    y: object.y + (Math.ceil((base.height - next.height) / 2) - Math.ceil((base.height - current.height) / 2)) * ASSET_RASTER_SIZE,
+  };
+}
+
 export interface AssetDirectionIndicator {
   center: Position;
   bounds: Rect;
@@ -27,9 +41,9 @@ export interface AssetDirectionIndicator {
   origin?: Position;
 }
 
-export function getAssetDirectionIndicators(object: WorldObject, pointerScale?: number): AssetDirectionIndicator[] {
+export function getAssetDirectionIndicators(object: WorldObject, layout: FloorLayout, pointerScale?: number): AssetDirectionIndicator[] {
   const interactions = getPlacedAssetInteractions(object);
-  const bounds = getPlacedAssetBounds(object);
+  const bounds = getPlacedWorldAssetBounds(layout, object);
   const indicators = interactions.length > 0
     ? interactions.map(({ center, bounds: interactionBounds, direction }) => ({
       center,

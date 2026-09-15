@@ -3,6 +3,7 @@ import type { FallingBlocksCommand } from "@workhard/shared";
 
 interface FallingBlocksKeyboardOptions {
   enabled: boolean;
+  paused: boolean;
   allowPause: boolean;
   allowHold: boolean;
   onCommand: (command: FallingBlocksCommand) => void;
@@ -25,6 +26,7 @@ const lateralCommands: Partial<Record<string, PressedDirection["command"]>> = {
 const actionCommands: Partial<Record<string, FallingBlocksCommand>> = {
   ArrowUp: "rotate",
   KeyX: "rotate",
+  KeyZ: "rotate-counterclockwise",
   Space: "drop",
   KeyC: "hold",
   ShiftLeft: "hold",
@@ -33,7 +35,7 @@ const actionCommands: Partial<Record<string, FallingBlocksCommand>> = {
   KeyP: "pause",
 };
 
-export function useFallingBlocksKeyboard({ enabled, allowPause, allowHold, onCommand }: FallingBlocksKeyboardOptions): void {
+export function useFallingBlocksKeyboard({ enabled, paused, allowPause, allowHold, onCommand }: FallingBlocksKeyboardOptions): void {
   const onCommandRef = useRef(onCommand);
   const permissionsRef = useRef({ allowHold, allowPause });
 
@@ -92,9 +94,11 @@ export function useFallingBlocksKeyboard({ enabled, allowPause, allowHold, onCom
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.target instanceof HTMLElement && event.target.closest("button, input, select, textarea, [contenteditable='true']")) return;
       const lateralCommand = lateralCommands[event.code];
       const actionCommand = actionCommands[event.code];
       const isSoftDrop = event.code === "ArrowDown";
+      if (paused && actionCommand !== "pause") return;
       if (!lateralCommand && !actionCommand && !isSoftDrop) {
         return;
       }
@@ -163,11 +167,13 @@ export function useFallingBlocksKeyboard({ enabled, allowPause, allowHold, onCom
     window.addEventListener("keydown", handleKeyDown, { capture: true });
     window.addEventListener("keyup", handleKeyUp, { capture: true });
     window.addEventListener("blur", clearInput);
+    document.addEventListener("visibilitychange", clearInput);
     return () => {
       clearInput();
       window.removeEventListener("keydown", handleKeyDown, { capture: true });
       window.removeEventListener("keyup", handleKeyUp, { capture: true });
       window.removeEventListener("blur", clearInput);
+      document.removeEventListener("visibilitychange", clearInput);
     };
-  }, [enabled]);
+  }, [enabled, paused]);
 }

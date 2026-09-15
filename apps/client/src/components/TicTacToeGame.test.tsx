@@ -1,6 +1,6 @@
 import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   ClassicTicTacToeState,
   Member,
@@ -11,9 +11,14 @@ import type {
 } from "@workhard/shared";
 import { TicTacToeGame } from "./TicTacToeGame";
 
+beforeEach(() => {
+  vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
+});
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("TicTacToeGame", () => {
@@ -35,6 +40,36 @@ describe("TicTacToeGame", () => {
     fireEvent.click(screen.getByRole("gridcell", { name: "Play center in bottom right board" }));
 
     expect(onCommand).toHaveBeenCalledWith({ kind: "ultimate.place", board: 8, cell: 4 });
+  });
+
+  it("enlarges a mobile Ultimate board before placing a mark and returns to the overview after a move", () => {
+    vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
+    const onCommand = vi.fn<(command: TicTacToeCommand) => void>();
+    const { rerender } = renderGame(ultimateState(), onCommand);
+    expect(screen.getAllByRole("gridcell")).toHaveLength(9);
+    expect(screen.getByRole("gridcell", { name: "top left board" })).toHaveProperty("disabled", true);
+    fireEvent.click(screen.getByRole("gridcell", { name: "Open bottom right board" }));
+    expect(onCommand).not.toHaveBeenCalled();
+    expect(document.activeElement?.getAttribute("aria-label")).toBe("Play top left in bottom right board");
+    fireEvent.keyDown(document.activeElement!, { key: "Escape" });
+    expect(screen.getByRole("grid", { name: "Ultimate board" })).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
+    fireEvent.click(screen.getByRole("gridcell", { name: "Open bottom right board" }));
+    fireEvent.click(screen.getByRole("gridcell", { name: "Play center in bottom right board" }));
+    expect(onCommand).toHaveBeenCalledExactlyOnceWith({ kind: "ultimate.place", board: 8, cell: 4 });
+    rerender(gameElement({ ...ultimateState(), turnUserId: "user-leo", moveNumber: 2, activeBoard: 4 }, onCommand));
+    expect(screen.queryByRole("button", { name: "All boards" })).toBeNull();
+    expect(screen.getAllByRole("gridcell").every((cell) => (cell as HTMLButtonElement).disabled)).toBe(true);
+  });
+
+  it("switches from an exhausted stacking reserve to a remaining piece", () => {
+    const state = stackingState();
+    const onCommand = vi.fn<(command: TicTacToeCommand) => void>();
+    const { rerender } = renderGame(state, onCommand);
+    rerender(gameElement({ ...state, reserves: { ...state.reserves, x: { small: 0, medium: 2, large: 2 } } }, onCommand));
+    expect(screen.getByRole("button", { name: "Medium, 2 remaining" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByRole("gridcell", { name: "Play center" }));
+    expect(onCommand).toHaveBeenCalledWith({ kind: "stacking.place", size: "medium", cell: 4 });
   });
 
   it("places a selected size and moves a visible stacking piece", () => {

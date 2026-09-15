@@ -1,3 +1,4 @@
+import { createTestData } from "../testing/workspace-data.js";
 import {
   GAME_BOT_USER_ID,
   getGameArea,
@@ -7,7 +8,7 @@ import {
 import { describe, expect, it } from "vitest";
 import { createApplication } from "../app.js";
 import { ChessMultiplayerRuntime } from "../games/chess-multiplayer.js";
-import { DemoStore } from "../store.js";
+import { WorkspaceStore } from "../store.js";
 import { MemoryDatabase } from "./memory-database.js";
 
 const BOT_SETTINGS: ChessMatchSettings = {
@@ -19,7 +20,7 @@ const BOT_SETTINGS: ChessMatchSettings = {
 const NOW = new Date("2026-09-06T12:00:00.000Z");
 
 function createChessStore(settings: ChessMatchSettings = BOT_SETTINGS) {
-  const store = new DemoStore();
+  const store = new WorkspaceStore(createTestData());
   const runtime = new ChessMultiplayerRuntime(store, () => NOW);
   const object = store.getObject("object-chess")!;
   const player: WorldPlayer = {
@@ -71,7 +72,7 @@ describe("chess state persistence", () => {
   ])("preserves $timeControl $access matches and their opponent settings", (settings) => {
     const { store, runtime } = createChessStore(settings);
     runtime.stop();
-    const restored = new DemoStore();
+    const restored = new WorkspaceStore(createTestData());
 
     restored.restoreMutableState(store.exportMutableState());
 
@@ -102,7 +103,7 @@ describe("chess state persistence", () => {
     runtime.stop();
     const invalid = store.exportMutableState();
     Object.assign(invalid.chessMatches[0]!, changes);
-    const restored = new DemoStore();
+    const restored = new WorkspaceStore(createTestData());
     const before = restored.exportMutableState();
 
     expect(() => restored.restoreMutableState(invalid)).toThrow("CHESS_STATE_INVALID");

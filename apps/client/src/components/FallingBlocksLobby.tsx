@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { GameOpponentPicker } from "./GameOpponentPicker";
-import { Play, Trophy } from "lucide-react";
+import { Crown, Play, Trophy } from "lucide-react";
+import { DEFAULT_FALLING_BLOCKS_SETTINGS, FALLING_BLOCKS_MODES, FALLING_BLOCKS_MODE_LABELS } from "@workhard/shared";
 import type {
+  FallingBlocksSettings,
+  FallingBlocksMode,
+  FallingBlocksAttackTarget,
   GameLobbyState,
   GameScore,
   Member,
@@ -9,6 +13,7 @@ import type {
 } from "@workhard/shared";
 import { Avatar } from "./Avatar";
 import { FallingBlocksMark } from "./FallingBlocksMark";
+import { FallingBlocksSpecialStatistics } from "./FallingBlocksSpecialStatistics";
 
 interface FallingBlocksLobbyProps {
   lobby: GameLobbyState;
@@ -16,7 +21,10 @@ interface FallingBlocksLobbyProps {
   scores: GameScore[];
   statistics: PlayerGameStatistics[];
   currentUserId: string;
-  onStart: (solo: boolean) => void;
+  pending?: boolean;
+  initialMode?: "solo" | "multiplayer" | undefined;
+  initialSettings?: FallingBlocksSettings | undefined;
+  onStart: (solo: boolean, settings: FallingBlocksSettings) => void;
 }
 
 export function FallingBlocksLobby({
@@ -25,9 +33,13 @@ export function FallingBlocksLobby({
   scores,
   statistics,
   currentUserId,
+  pending = false,
+  initialMode = "solo",
+  initialSettings = DEFAULT_FALLING_BLOCKS_SETTINGS,
   onStart,
 }: FallingBlocksLobbyProps) {
-  const [mode, setMode] = useState<"solo" | "multiplayer">("solo");
+  const [mode, setMode] = useState(initialMode);
+  const [settings, setSettings] = useState(initialSettings);
   const participants = lobby.participantIds.flatMap((userId) => {
     const member = members.find((candidate) => candidate.id === userId);
     return member ? [member] : [];
@@ -35,6 +47,8 @@ export function FallingBlocksLobby({
   const playerStatistics = statistics.find(
     (candidate) => candidate.definitionId === lobby.definitionId && candidate.userId === currentUserId,
   );
+  const crown = statistics.find((entry) => entry.definitionId === lobby.definitionId && entry.holdsCrown);
+  const crownMember = members.find((member) => member.id === crown?.userId);
   const bestScoresByUser = new Map<string, GameScore>();
   for (const score of scores.filter((candidate) => candidate.definitionId === lobby.definitionId)) {
     const best = bestScoresByUser.get(score.userId);
@@ -47,7 +61,7 @@ export function FallingBlocksLobby({
     .slice(0, 5);
 
   return (
-    <aside className="game-lobby falling-blocks-lobby" aria-label="Falling Blocks lobby">
+    <aside className="game-lobby falling-blocks-lobby" aria-label="Falling Blocks lobby" aria-busy={pending}>
       <header>
         <FallingBlocksMark />
         <div>
@@ -56,7 +70,25 @@ export function FallingBlocksLobby({
         </div>
       </header>
 
+      {crownMember && <p className="falling-blocks-crown" aria-label="Crown holder"><Crown size={17} />{crownMember.id === currentUserId ? "You" : crownMember.name}</p>}
+
       <GameOpponentPicker mode={mode} onModeChange={setMode} soloLabel="Solo" />
+
+      <div className="falling-blocks-settings">
+        <label>
+          Mode
+          <select value={settings.mode} onChange={(event) => setSettings({ ...settings, mode: event.target.value as FallingBlocksMode })}>
+            {FALLING_BLOCKS_MODES.map((gameMode) => <option key={gameMode} value={gameMode}>{FALLING_BLOCKS_MODE_LABELS[gameMode]}</option>)}
+          </select>
+        </label>
+        {mode === "multiplayer" && <label>
+          Attack target
+          <select value={settings.attackTarget} onChange={(event) => setSettings({ ...settings, attackTarget: event.target.value as FallingBlocksAttackTarget })}>
+            <option value="random">Random</option>
+            <option value="fewest-stones">Fewest stones</option>
+          </select>
+        </label>}
+      </div>
 
       {mode === "multiplayer" && <section className="falling-blocks-lobby-players">
         <h3>Lobby</h3>
@@ -71,9 +103,9 @@ export function FallingBlocksLobby({
         </ul>
       </section>}
 
-      <button className="primary-button falling-blocks-start-button" disabled={mode === "multiplayer" && participants.length < 2} onClick={() => onStart(mode === "solo")}>
+      <button className="primary-button falling-blocks-start-button" disabled={pending || !lobby.participantIds.includes(currentUserId) || (mode === "multiplayer" && participants.length < 2)} onClick={() => onStart(mode === "solo", settings)}>
         <Play size={16} fill="currentColor" />
-        {mode === "multiplayer" && participants.length < 2 ? "Waiting for player" : "Play"}
+        {pending ? "Starting…" : mode === "multiplayer" && participants.length < 2 ? "Waiting for player" : "Play"}
       </button>
 
       <dl className="falling-blocks-player-stats" aria-label="Your Falling Blocks statistics">
@@ -82,6 +114,8 @@ export function FallingBlocksLobby({
         <div><dt>Games</dt><dd>{playerStatistics?.gamesPlayed ?? 0}</dd></div>
         <div><dt>Lines</dt><dd>{playerStatistics?.totalLines ?? 0}</dd></div>
       </dl>
+
+      <FallingBlocksSpecialStatistics members={members} statistics={statistics} currentUserId={currentUserId} />
 
       {highScores.length > 0 && (
         <section className="falling-blocks-high-scores">

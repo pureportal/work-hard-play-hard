@@ -32,6 +32,70 @@ afterEach(() => {
 });
 
 describe("world artwork textures", () => {
+  it("plays synchronized sprite and shadow frames after loading and wraps the loop", async () => {
+    const view = artwork(0);
+    view.animation = { frames: [view.frame, artwork(512).frame], frameDuration: 100 };
+    const sprite = textures.createSprite(view, vi.fn());
+    const shadow = textures.createSprite(view, vi.fn());
+    const animate = textures.createAnimation([sprite, shadow], view)!;
+    animate(100);
+    images[0]!.dispatchEvent(new Event("load"));
+    await vi.waitFor(() => expect(sprite.visible).toBe(true));
+    animate(100);
+    expect(sprite.texture.frame.x).toBe(524);
+    expect(shadow.texture).toBe(sprite.texture);
+    expect(sprite.width).toBe(96);
+    expect(sprite.height).toBe(60);
+    expect(sprite.y).toBe(-12);
+    animate(200);
+    expect(sprite.texture.frame.x).toBe(12);
+    animate(-100);
+    expect(sprite.texture.frame.x).toBe(12);
+    sprite.destroy();
+    animate(300);
+    expect(shadow.texture.frame.x).toBe(524);
+    textures.destroy();
+    expect(() => animate(400)).not.toThrow();
+    shadow.destroy();
+  });
+
+  it("selects moving artwork even when its first pose has a transparent pixel", async () => {
+    const pixels = new Uint8ClampedArray(1024 * 256 * 4);
+    pixels[(82 * 1024 + 624) * 4 + 3] = 255;
+    const context = vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation((() => ({
+      drawImage: vi.fn(), getImageData: () => ({ data: pixels }),
+    })) as unknown as typeof HTMLCanvasElement.prototype.getContext);
+    const view = artwork(0);
+    view.animation = { frames: [view.frame, artwork(512).frame], frameDuration: 100 };
+    const sprite = textures.createSprite(view, vi.fn());
+    images[0]!.dispatchEvent(new Event("load"));
+    await vi.waitFor(() => expect(sprite.visible).toBe(true));
+    expect(textures.isPointVisible(view, 48, 18)).toBe(true);
+    expect(textures.isPointVisible(view, 47, 18)).toBe(false);
+    context.mockRestore();
+    sprite.destroy();
+  });
+
+  it("hit-tests visible pixels in the selected directional crop", async () => {
+    const pixels = new Uint8ClampedArray(1024 * 256 * 4);
+    pixels[(82 * 1024 + 112) * 4 + 3] = 255;
+    const drawImage = vi.fn();
+    const context = vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation((() => ({
+      drawImage, getImageData: () => ({ data: pixels }),
+    })) as unknown as typeof HTMLCanvasElement.prototype.getContext);
+    const sprite = textures.createSprite(artwork(0), vi.fn());
+    expect(textures.isPointVisible(artwork(0), 48, 18)).toBe(false);
+    images[0]!.dispatchEvent(new Event("load"));
+    await vi.waitFor(() => expect(sprite.visible).toBe(true));
+    expect(textures.isPointVisible(artwork(0), 48, 18)).toBe(true);
+    expect(textures.isPointVisible(artwork(0), 47, 18)).toBe(false);
+    expect(textures.isPointVisible(artwork(512), 48, 18)).toBe(false);
+    expect(textures.isPointVisible(artwork(0), -1, 18)).toBe(false);
+    expect(drawImage).toHaveBeenCalledOnce();
+    context.mockRestore();
+    sprite.destroy();
+  });
+
   it("shares one loaded atlas between directions without sharing their crop", async () => {
     const failed = vi.fn();
     const front = textures.createSprite(artwork(0), failed);
@@ -135,5 +199,7 @@ function artwork(x: number): WorldAssetArtwork {
     bounds: { x: 0, y: -12, width: 96, height: 60 },
     atlasWidth: 1024,
     atlasHeight: 256,
+    seatOffset: 0,
+    seatHasBack: false,
   };
 }

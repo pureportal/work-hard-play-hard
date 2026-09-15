@@ -1,8 +1,9 @@
+import { createOrganisation } from "@workhard/shared";
 import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
-import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_CORPORATE_IDENTITY } from "@workhard/shared";
-import type { BootstrapData, ClientCommand, ServerEvent, WorldSnapshot } from "@workhard/shared";
+import type { BootstrapData, ClientCommand, MeetingMediaSession, ServerEvent, WorldSnapshot } from "@workhard/shared";
 import { Workspace } from "./App";
 import type { WorldCanvasProps } from "./components/WorldCanvas";
 import { createTestEconomy, createTestGameSettings, createTestKidnappingConfiguration } from "./test-fixtures";
@@ -11,12 +12,13 @@ const realtime = vi.hoisted(() => ({
   handler: undefined as ((event: ServerEvent) => void) | undefined,
   send: vi.fn<(command: ClientCommand) => boolean>(),
   snapshot: undefined as WorldSnapshot | undefined,
+  connection: "online" as "online" | "offline",
 }));
 
 vi.mock("./hooks/useRealtime", () => ({
   useRealtime: ({ onEvent }: { onEvent: (event: ServerEvent) => void }) => {
     realtime.handler = onEvent;
-    return { connection: "online" as const, snapshot: realtime.snapshot, send: realtime.send };
+    return { connection: realtime.connection, snapshot: realtime.snapshot, send: realtime.send };
   },
 }));
 
@@ -39,9 +41,15 @@ const meeting = {
   location: { type: "room" as const, roomId: "room-review" },
 };
 
+const mediaSession: MeetingMediaSession = { sessionId: "meeting-session", meetingId: meeting.id, hostUserId: "user-maya", locked: false, iceServers: [],
+  participants: [{ sessionId: "meeting-session", userId: "user-maya", microphone: false, camera: false, screen: false }] };
+
+beforeEach(() => { vi.stubGlobal("RTCPeerConnection", vi.fn()); });
+
 const workspace: BootstrapData = {
   currentUserId: "user-maya",
   corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
+    organisation: createOrganisation(),
   team: { id: "team", name: "Northstar", slug: "northstar", accent: "#6c5ce7" },
   office: { id: "office", teamId: "team", name: "Studio" },
   floors: [{
@@ -144,15 +152,18 @@ beforeEach(() => {
   };
   realtime.send.mockReset();
   realtime.send.mockReturnValue(true);
+  realtime.connection = "online";
 });
 
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
   realtime.handler = undefined;
+  vi.useRealTimers();
 });
 
 describe("meeting area entry", () => {
-  it("opens and plays each overlapping Falling Blocks cabinet by its saved object ID", () => {
+  it("opens and plays each overlapping Falling Blocks cabinet by its saved object ID", async () => {
     const data = structuredClone(workspace);
     data.layouts[0]!.objects = [
       { id: "object-tetris", floorId: "floor", assetId: "equipment-falling-blocks", x: 180, y: 180, rotation: 0, variantId: "graphite" },
@@ -178,13 +189,15 @@ describe("meeting area entry", () => {
       expect(realtime.send).toHaveBeenLastCalledWith(expect.objectContaining({
         type: "game.start", definitionId: "game-falling-blocks", objectId: object.id, solo: true,
       }));
+      const command = realtime.send.mock.calls.at(-1)![0] as Extract<ClientCommand, { type: "game.start" }>;
+      act(() => realtime.handler!({ type: "command.ack", requestId: command.requestId }));
     }
 
     act(() => realtime.handler!({ type: "game.round_started", round: {
       id: "round", definitionId: "game-falling-blocks", objectId: "placed-blocks", floorId: "floor", startedAt: new Date().toISOString(), status: "playing",
       participants: [{ userId: "user-maya", status: "playing", score: 0, lines: 0, level: 1 }],
     } }));
-    expect(screen.getByRole("dialog", { name: "Falling Blocks" })).toBeTruthy();
+    expect(await screen.findByRole("dialog", { name: "Falling Blocks" })).toBeTruthy();
     expect(screen.getByTestId("world-input").dataset.enabled).toBe("false");
   });
 
@@ -247,7 +260,7 @@ describe("meeting area entry", () => {
     fireEvent.click(screen.getByRole("button", { name: "Unmute" }));
     await act(async () => Promise.resolve());
 
-    act(() => realtime.handler?.({ type: "meeting.left", meetingId: meeting.id }));
+    act(() => realtime.handler?.({ type: "meeting.left", meetingId: meeting.id, sessionId: "stale-session" }));
 
     expect(screen.getByRole("button", { name: "Mute" })).toBeTruthy();
     expect(screen.queryByRole("dialog")).toBeNull();
@@ -373,7 +386,7 @@ describe("meeting area entry", () => {
     expect(screen.getByRole("dialog", { name: meeting.title })).toBeTruthy();
     expect((screen.getByRole("button", { name: "Leaving meeting" }) as HTMLButtonElement).disabled).toBe(true);
 
-    act(() => realtime.handler?.({ type: "meeting.left", meetingId: meeting.id }));
+    act(() => realtime.handler?.({ type: "meeting.left", meetingId: meeting.id, sessionId: mediaSession.sessionId, requestId: meetingLeaveCommands()[0]!.requestId }));
     expect(screen.queryByRole("dialog", { name: meeting.title })).toBeNull();
   });
 
@@ -405,6 +418,146 @@ describe("meeting area entry", () => {
     expect(screen.getByRole("dialog", { name: meeting.title })).toBeTruthy();
   });
 
+  it("ignores duplicate join acknowledgements and stale meeting updates while capturing", async () => {
+    const stop = vi.fn();
+    Object.defineProperty(navigator, "mediaDevices", { configurable: true,
+      value: { getUserMedia: vi.fn().mockResolvedValue({ getTracks: () => [{ stop }] }) } });
+    renderWorkspace();
+    fireEvent.click(screen.getByRole("button", { name: "Open" }));
+    emitJoined();
+    fireEvent.click(within(screen.getByRole("dialog", { name: meeting.title })).getByRole("button", { name: "Unmute" }));
+    await act(async () => Promise.resolve());
+    emitJoined();
+    expect(meetingLeaveCommands()).toHaveLength(0);
+    act(() => realtime.handler?.({ type: "meeting.updated", meeting: { ...meeting, status: "ended", participantIds: [] } }));
+    expect(within(screen.getByRole("dialog", { name: meeting.title })).getByRole("button", { name: "Mute" })).toBeTruthy();
+    expect(stop).not.toHaveBeenCalled();
+  });
+
+  it("requires the matching session, meeting and leave request before stopping media", async () => {
+    const stop = vi.fn();
+    Object.defineProperty(navigator, "mediaDevices", { configurable: true,
+      value: { getUserMedia: vi.fn().mockResolvedValue({ getTracks: () => [{ stop }] }) } });
+    renderWorkspace();
+    fireEvent.click(screen.getByRole("button", { name: "Open" }));
+    emitJoined();
+    fireEvent.click(within(screen.getByRole("dialog", { name: meeting.title })).getByRole("button", { name: "Unmute" }));
+    await act(async () => Promise.resolve());
+    fireEvent.click(screen.getByRole("button", { name: "Leave meeting" }));
+    const command = meetingLeaveCommands()[0]!;
+    for (const event of [
+      { sessionId: "old-session", meetingId: meeting.id, requestId: command.requestId },
+      { sessionId: mediaSession.sessionId, meetingId: "other-meeting", requestId: command.requestId },
+      { sessionId: mediaSession.sessionId, meetingId: meeting.id, requestId: "other-request" },
+    ]) act(() => realtime.handler?.({ type: "meeting.left", ...event }));
+    expect(stop).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Leaving meeting" })).toBeTruthy();
+    act(() => realtime.handler?.({ type: "meeting.left", sessionId: mediaSession.sessionId, meetingId: meeting.id, requestId: command.requestId }));
+    expect(stop).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("dialog", { name: meeting.title })).toBeNull();
+  });
+
+  it("restores the entry action after a timeout and releases a late joined session without opening it", () => {
+    vi.useFakeTimers();
+    renderWorkspace();
+    fireEvent.click(screen.getByRole("button", { name: "Open" }));
+    act(() => vi.advanceTimersByTime(10_000));
+    expect(screen.getByRole("button", { name: "Open" })).toBeTruthy();
+    emitJoined();
+    expect(screen.queryByRole("dialog", { name: meeting.title })).toBeNull();
+    expect(meetingLeaveCommands().at(-1)).toMatchObject({ meetingId: meeting.id, sessionId: mediaSession.sessionId });
+  });
+
+  it("releases capture on disconnect and waits for an explicit open after reconnecting", async () => {
+    const stop = vi.fn();
+    Object.defineProperty(navigator, "mediaDevices", { configurable: true,
+      value: { getUserMedia: vi.fn().mockResolvedValue({ getTracks: () => [{ stop }] }) } });
+    const props = { initialData: structuredClone(workspace), onSignOut: vi.fn(), onSessionExpired: vi.fn() };
+    const view = render(<Workspace {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: "Open" }));
+    emitJoined();
+    fireEvent.click(within(screen.getByRole("dialog", { name: meeting.title })).getByRole("button", { name: "Unmute" }));
+    await act(async () => Promise.resolve());
+    realtime.connection = "offline";
+    view.rerender(<Workspace {...props} />);
+    expect(stop).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("dialog", { name: meeting.title })).toBeNull();
+    realtime.connection = "online";
+    view.rerender(<Workspace {...props} />);
+    emitJoined();
+    expect(screen.queryByRole("dialog", { name: meeting.title })).toBeNull();
+    expect(meetingJoinCommands()).toHaveLength(1);
+  });
+
+  it("opens a nearby board alongside the meeting without restarting capture or joining again", async () => {
+    const stop = vi.fn();
+    const getUserMedia = vi.fn().mockResolvedValue({ getTracks: () => [{ stop }] });
+    Object.defineProperty(navigator, "mediaDevices", { configurable: true, value: { getUserMedia } });
+    const data = structuredClone(workspace);
+    data.layouts[0]!.objects.push({ id: "meeting-board", assetId: "equipment-whiteboard", variantId: "graphite", floorId: "floor", x: 240, y: 220, rotation: 0,
+      label: "Review board", workState: { kind: "whiteboard", revision: 0, document: { text: "Notes", cards: [] } } });
+    render(<Workspace initialData={data} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Open" }));
+    emitJoined();
+    fireEvent.click(within(screen.getByRole("dialog", { name: meeting.title })).getByRole("button", { name: "Unmute" }));
+    await act(async () => Promise.resolve());
+    fireEvent.click(screen.getByRole("button", { name: "Meeting settings" }));
+    fireEvent.click(screen.getByRole("button", { name: "Review board" }));
+    expect((await screen.findByRole("dialog", { name: "Review board" })).getAttribute("aria-modal")).toBeNull();
+    const call = screen.getByRole("dialog", { name: meeting.title });
+    expect(call.classList.contains("meeting-overlay-small")).toBe(true);
+    expect(within(call).getByRole("button", { name: "Mute" })).toBeTruthy();
+    expect(getUserMedia).toHaveBeenCalledOnce();
+    expect(stop).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Close board" }));
+    expect(screen.queryByRole("dialog", { name: "Review board" })).toBeNull();
+    expect(meetingJoinCommands()).toHaveLength(1);
+    expect(meetingLeaveCommands()).toHaveLength(0);
+  });
+
+  it("starts open media after accepting a matching invitation and ignores repeated acceptance", async () => {
+    const getUserMedia = vi.fn(async (constraints: MediaStreamConstraints) => ({
+      getTracks: () => [{ kind: constraints.audio ? "audio" : "video", stop: vi.fn() }],
+    }) as unknown as MediaStream);
+    vi.stubGlobal("navigator", { mediaDevices: { getUserMedia } });
+    renderWorkspace();
+    const call = { type: "call.state" as const, callId: "invitation", peerUserId: "user-leo", direction: "incoming" as const };
+    act(() => realtime.handler?.({ ...call, state: "ringing" }));
+    fireEvent.click(screen.getByRole("button", { name: "Accept call from Leo Martins" }));
+    expect(getUserMedia).not.toHaveBeenCalled();
+    act(() => realtime.handler?.({ ...call, state: "accepted" }));
+    await waitFor(() => expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({ type: "proximity.set_media", microphone: true, camera: true })));
+    fireEvent.click(screen.getByRole("button", { name: "Mute" }));
+    act(() => realtime.handler?.({ ...call, state: "accepted" }));
+    expect(screen.getByRole("button", { name: "Unmute" })).toBeTruthy();
+    expect(getUserMedia).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not enable devices for an unsolicited call acceptance", () => {
+    const getUserMedia = vi.fn();
+    vi.stubGlobal("navigator", { mediaDevices: { getUserMedia } });
+    renderWorkspace();
+    act(() => realtime.handler?.({ type: "call.state", callId: "stale", peerUserId: "user-leo", direction: "outgoing", state: "accepted" }));
+    expect(getUserMedia).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Unmute" })).toBeTruthy();
+  });
+
+  it("keeps devices off if an accepted invitation ends before media starts", () => {
+    const getUserMedia = vi.fn();
+    vi.stubGlobal("navigator", { mediaDevices: { getUserMedia } });
+    renderWorkspace();
+    const call = { type: "call.state" as const, callId: "brief", peerUserId: "user-leo", direction: "incoming" as const };
+    act(() => realtime.handler?.({ ...call, state: "ringing" }));
+    fireEvent.click(screen.getByRole("button", { name: "Accept call from Leo Martins" }));
+    act(() => {
+      realtime.handler?.({ ...call, state: "accepted" });
+      realtime.handler?.({ ...call, state: "ended" });
+    });
+    expect(getUserMedia).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Unmute" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Turn camera on" })).toBeTruthy();
+  });
+
   it("selects an avatar before walking over to call", () => {
     renderWorkspace();
 
@@ -427,6 +580,8 @@ function renderWorkspace(): void {
 function emitJoined(): void {
   act(() => realtime.handler?.({
     type: "meeting.joined",
+    requestId: meetingJoinCommands().at(-1)?.requestId ?? "unsolicited-join",
+    session: mediaSession,
     meeting: { ...meeting, participantIds: [workspace.currentUserId] },
   }));
 }

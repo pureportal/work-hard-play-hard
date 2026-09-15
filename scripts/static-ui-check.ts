@@ -1,15 +1,16 @@
+import { createTestData } from "../apps/server/src/testing/workspace-data.js";
 import { mkdir, readFile } from "node:fs/promises";
 import { dirname, extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer, { type HTTPRequest, type Page } from "puppeteer";
 import { ASSET_CATALOG } from "../packages/shared/src/index.js";
-import { DemoStore } from "../apps/server/src/store.js";
+import { WorkspaceStore } from "../apps/server/src/store.js";
 import { verifyTicTacToeUi } from "./tic-tac-toe-ui-check.js";
 
 const workspaceDirectory = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distributionDirectory = resolve(workspaceDirectory, "apps/client/dist");
 const artifactDirectory = resolve(workspaceDirectory, "artifacts");
-const bootstrap = new DemoStore().getBootstrap("user-maya");
+const bootstrap = new WorkspaceStore(createTestData()).getBootstrap("user-maya");
 bootstrap.conversations = bootstrap.conversations.filter((conversation) => conversation.id !== "conversation-jonas");
 bootstrap.messages = bootstrap.messages.filter((message) => message.conversationId !== "conversation-jonas");
 await mkdir(artifactDirectory, { recursive: true });
@@ -283,6 +284,8 @@ try {
   await clickButtonWithText(page, "Players");
   await clickButtonWithText(page, "Play");
   await page.waitForSelector(".falling-blocks-game", { visible: true });
+  assert(await page.$(".falling-blocks-controls") === null, "Game controls should start hidden.");
+  await page.click('button[aria-label="Show controls"]');
   await page.waitForSelector('.falling-blocks-hold [aria-label="Held I piece"]', { visible: true });
   await assertViewport(page, [".falling-blocks-game", ".falling-blocks-game > header", ".falling-blocks-content"]);
   await assertFullyContained(page, ".falling-blocks-game", [".falling-blocks-left-rail", ".falling-blocks-board", ".falling-blocks-sidebar", ".falling-blocks-controls"]);
@@ -346,7 +349,7 @@ try {
   );
 
   await page.keyboard.press("c");
-  await page.waitForFunction(() => (document.querySelector('.falling-blocks-controls button:nth-child(5)') as HTMLButtonElement | null)?.disabled === true);
+  await page.waitForFunction(() => (document.querySelector('.falling-blocks-controls button[aria-label="Hold"]') as HTMLButtonElement | null)?.disabled === true);
   await page.waitForSelector('.falling-blocks-hold [aria-label="Held T piece"]', { visible: true });
   const firstHoldCount = await page.evaluate(() => (
     (globalThis as typeof globalThis & { mockSockets: Array<{ commands: Array<{ type: string; command?: string }> }> })
@@ -360,7 +363,7 @@ try {
   ));
   assert(blockedHoldCount === firstHoldCount, "Hold was dispatched twice before a piece locked.");
   await page.keyboard.press("Space");
-  await page.waitForFunction(() => (document.querySelector('.falling-blocks-controls button:nth-child(5)') as HTMLButtonElement | null)?.disabled === false);
+  await page.waitForFunction(() => (document.querySelector('.falling-blocks-controls button[aria-label="Hold"]') as HTMLButtonElement | null)?.disabled === false);
   await page.keyboard.press("c");
   await page.waitForFunction((previousCount) => {
     const commands = (globalThis as typeof globalThis & { mockSockets: Array<{ commands: Array<{ type: string; command?: string }> }> })
@@ -573,8 +576,11 @@ async function installApplicationTransport(targetPage: Page): Promise<void> {
       }
 
       send(source: string): void {
-        const command = JSON.parse(source) as { type: string; floorId?: string; meetingId?: string; reaction?: string; command?: string; definitionId?: string };
+        const command = JSON.parse(source) as { type: string; requestId?: string; floorId?: string; meetingId?: string; reaction?: string; command?: string; definitionId?: string };
         this.commands.push(command);
+        if (command.requestId && (command.type.startsWith("game.") || command.type.startsWith("chess."))) {
+          queueMicrotask(() => this.emit({ type: "command.ack", requestId: command.requestId! }));
+        }
         if (command.type === "meeting.join" && command.meetingId) {
           const meeting = workspace.meetings.find((candidate) => candidate.id === command.meetingId);
           if (meeting) {

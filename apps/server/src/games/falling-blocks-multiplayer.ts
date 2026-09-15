@@ -2,28 +2,29 @@ import { nearbyGameParticipants } from "./game-lobby.js";
 import { randomUUID } from "node:crypto";
 import {
   FALLING_BLOCKS_DEFINITION_ID,
+  DEFAULT_FALLING_BLOCKS_SETTINGS,
+  type FallingBlocksSettings,
   type GameLobbyState,
   type GameRoundState,
   type ServerEvent,
   type WorldObject,
   type WorldPlayer,
 } from "@workhard/shared";
-import { DemoStore } from "../store.js";
+import { WorkspaceStore } from "../store.js";
 import { FallingBlocksGame } from "./falling-blocks.js";
+import { FallingBlocksAttacks } from "./falling-blocks-attacks.js";
 import type { GameEventDelivery } from "./game-event-delivery.js";
 
 export type { GameEventDelivery } from "./game-event-delivery.js";
 
 const LOBBY_CAPACITY = 8;
+const SIMULATION_STEP_MS = 50;
 
 type GameCommand = Parameters<FallingBlocksGame["command"]>[0];
 
-interface PlayerCompletion {
-  score: number;
-  lines: number;
-  level: number;
+type PlayerCompletion = FallingBlocksGame["result"] & {
   order: number;
-}
+};
 
 interface ActiveRound {
   id: string;
@@ -33,8 +34,11 @@ interface ActiveRound {
   startedAt: string;
   participantIds: string[];
   games: Map<string, FallingBlocksGame>;
+  settings: FallingBlocksSettings;
+  attacks: FallingBlocksAttacks;
   completions: Map<string, PlayerCompletion>;
   completionCount: number;
+  publishedState?: string;
 }
 
 interface StartResult {
@@ -47,7 +51,7 @@ export class FallingBlocksMultiplayerRuntime {
   private readonly rounds = new Map<string, ActiveRound>();
   private readonly roundIdByUser = new Map<string, string>();
 
-  constructor(private readonly store: DemoStore) {}
+  constructor(private readonly store: WorkspaceStore, private readonly random: () => number = Math.random) {}
 
   syncLobbies(
     players: Iterable<WorldPlayer>,
@@ -65,7 +69,7 @@ export class FallingBlocksMultiplayerRuntime {
     }
     for (const object of objects) {
       const previous = this.lobbies.get(object.id);
-      const next = nearbyGameParticipants(playerList.filter((player) => !this.isPlaying(player.userId)), object, connectedUserIds, previous?.participantIds ?? [], LOBBY_CAPACITY);
+      const next = nearbyGameParticipants(playerList.filter((player) => !this.getRoundForUser(player.userId)), object, connectedUserIds, previous?.participantIds ?? [], LOBBY_CAPACITY);
       const lobby = this.lobbyState(object, next);
       this.lobbies.set(object.id, lobby);
       if (!previous || previous.floorId !== lobby.floorId || !sameMembers(previous.participantIds, next)) {
@@ -76,7 +80,7 @@ export class FallingBlocksMultiplayerRuntime {
     return deliveries;
   }
 
-  start(userId: string, objectId: string, solo = false): StartResult {
+  start(userId: string, objectId: string, solo = false, settings: FallingBlocksSettings = DEFAULT_FALLING_BLOCKS_SETTINGS): StartResult {
     const existingRound = this.getRoundForUser(userId);
     if (existingRound) {
       return {
@@ -94,6 +98,8 @@ export class FallingBlocksMultiplayerRuntime {
       throw new Error("GAME_TOO_FAR");
     }
     const participantIds = solo ? [userId] : [...nearbyUserIds];
+    if (!solo && participantIds.length < 2) throw new Error("GAME_PLAYERS_REQUIRED");
+    const games = new Map<string, FallingBlocksGame>();
 
     const round: ActiveRound = {
       id: randomUUID(),
@@ -102,32 +108,27 @@ export class FallingBlocksMultiplayerRuntime {
       floorId: object.floorId,
       startedAt: new Date().toISOString(),
       participantIds,
-      games: new Map(),
+      games,
+      settings: { ...settings },
+      attacks: new FallingBlocksAttacks(games, settings.attackTarget, this.random),
       completions: new Map(),
       completionCount: 0,
     };
     for (const participantId of participantIds) {
-      const game = new FallingBlocksGame(round.id);
+      const game = new FallingBlocksGame(round.id, settings.mode);
       game.consumeChanged();
       round.games.set(participantId, game);
       this.roundIdByUser.set(participantId, round.id);
     }
     this.rounds.set(round.id, round);
-    const deliveries: GameEventDelivery[] = [];
-    for (const [lobbyObjectId, lobby] of this.lobbies) {
-      const remaining = lobby.participantIds.filter((participantId) => !participantIds.includes(participantId));
-      if (remaining.length === lobby.participantIds.length) continue;
-      const updated = { ...lobby, participantIds: remaining };
-      this.lobbies.set(lobbyObjectId, updated);
-      deliveries.push(this.lobbyDelivery(updated));
-    }
-    deliveries.push(
-      {
-        scope: "users",
-        userIds: participantIds,
-        event: { type: "game.round_started", round: this.roundState(round) },
-      },
-    );
+    const deliveries = this.removeFromLobbies(participantIds);
+    const state = this.roundState(round);
+    round.publishedState = JSON.stringify(state);
+    deliveries.push({
+      scope: "users",
+      userIds: participantIds,
+      event: { type: "game.round_started", round: state },
+    });
     for (const participantId of participantIds) {
       const game = round.games.get(participantId)!;
       deliveries.push({ scope: "users", userIds: [participantId], event: game.state });
@@ -142,6 +143,18 @@ export class FallingBlocksMultiplayerRuntime {
     return { participantIds, deliveries };
   }
 
+  removeFromLobbies(participantIds: string[]): GameEventDelivery[] {
+    const deliveries: GameEventDelivery[] = [];
+    for (const [lobbyObjectId, lobby] of this.lobbies) {
+      const remaining = lobby.participantIds.filter((participantId) => !participantIds.includes(participantId));
+      if (remaining.length === lobby.participantIds.length) continue;
+      const updated = { ...lobby, participantIds: remaining };
+      this.lobbies.set(lobbyObjectId, updated);
+      deliveries.push(this.lobbyDelivery(updated));
+    }
+    return deliveries;
+  }
+
   command(userId: string, command: GameCommand): GameEventDelivery[] {
     const round = this.requireRoundForUser(userId);
     if (round.completions.has(userId)) {
@@ -152,6 +165,7 @@ export class FallingBlocksMultiplayerRuntime {
     }
     const game = round.games.get(userId)!;
     game.command(command);
+    round.attacks.enqueue(userId, game.consumeClears());
     const deliveries: GameEventDelivery[] = [];
     if (game.consumeChanged()) {
       deliveries.push({ scope: "users", userIds: [userId], event: game.state });
@@ -167,12 +181,21 @@ export class FallingBlocksMultiplayerRuntime {
     const deliveries: GameEventDelivery[] = [];
     for (const round of this.rounds.values()) {
       let changed = false;
+      let remainingMs = deltaMs;
+      while (remainingMs > 0) {
+        const stepMs = Math.min(remainingMs, SIMULATION_STEP_MS);
+        for (const game of round.games.values()) game.update(stepMs);
+        changed = round.attacks.advance(stepMs) || changed;
+        for (const [userId, game] of round.games) {
+          round.attacks.enqueue(userId, game.consumeClears());
+        }
+        remainingMs -= stepMs;
+      }
       for (const participantId of round.participantIds) {
         if (round.completions.has(participantId)) {
           continue;
         }
         const game = round.games.get(participantId)!;
-        game.update(deltaMs);
         if (game.consumeChanged()) {
           deliveries.push({ scope: "users", userIds: [participantId], event: game.state });
           changed = true;
@@ -191,9 +214,9 @@ export class FallingBlocksMultiplayerRuntime {
 
   leave(userId: string): GameEventDelivery[] {
     const round = this.getRoundForUser(userId);
-    if (!round || round.completions.has(userId)) {
-      return [];
-    }
+    if (!round) return [];
+    this.roundIdByUser.delete(userId);
+    if (round.completions.has(userId)) return [];
     const game = round.games.get(userId)!;
     game.end();
     const deliveries: GameEventDelivery[] = [];
@@ -208,6 +231,10 @@ export class FallingBlocksMultiplayerRuntime {
   isPlaying(userId: string): boolean {
     const round = this.getRoundForUser(userId);
     return Boolean(round && !round.completions.has(userId));
+  }
+
+  getRoundId(userId: string): string | undefined {
+    return this.roundIdByUser.get(userId);
   }
 
   getSessionEvents(userId: string): ServerEvent[] {
@@ -279,6 +306,7 @@ export class FallingBlocksMultiplayerRuntime {
       return;
     }
     round.completionCount += 1;
+    round.attacks.removeTarget(userId);
     round.completions.set(userId, {
       ...round.games.get(userId)!.result,
       order: round.completionCount,
@@ -297,10 +325,14 @@ export class FallingBlocksMultiplayerRuntime {
       this.completeRound(round, deliveries);
       return;
     }
+    const state = this.roundState(round);
+    const serialized = JSON.stringify(state);
+    if (serialized === round.publishedState) return;
+    round.publishedState = serialized;
     deliveries.push({
       scope: "users",
-      userIds: round.participantIds,
-      event: { type: "game.round_updated", round: this.roundState(round) },
+      userIds: round.participantIds.filter((userId) => this.roundIdByUser.get(userId) === round.id),
+      event: { type: "game.round_updated", round: state },
     });
   }
 
@@ -347,7 +379,7 @@ export class FallingBlocksMultiplayerRuntime {
     }
     this.rounds.delete(round.id);
     for (const participantId of round.participantIds) {
-      this.roundIdByUser.delete(participantId);
+      if (this.roundIdByUser.get(participantId) === round.id) this.roundIdByUser.delete(participantId);
     }
   }
 
@@ -375,11 +407,22 @@ export class FallingBlocksMultiplayerRuntime {
           ...(placement === undefined ? {} : { placement }),
         };
       }),
+      fallingBlocks: {
+        settings: { ...round.settings }, attacks: round.attacks.state,
+        ...this.crownState(),
+      },
       ...(completion ? {
         completedAt: completion.completedAt,
         ...(completion.winnerUserId ? { winnerUserId: completion.winnerUserId } : {}),
       } : {}),
     };
+  }
+
+  private crownState(): { crownUserId?: string } {
+    const holder = this.store.getGameStatistics().find((statistics) =>
+      statistics.definitionId === FALLING_BLOCKS_DEFINITION_ID && statistics.holdsCrown,
+    );
+    return holder ? { crownUserId: holder.userId } : {};
   }
 }
 

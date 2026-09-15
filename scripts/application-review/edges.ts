@@ -92,14 +92,14 @@ try {
         await page.locator(".corporate-logo-actions").getByRole("button", { name: "Remove", exact: true }).click();
         await page.locator(".corporate-logo-actions").getByRole("button", { name: "Remove", exact: true }).waitFor({ state: "hidden" });
         await page.getByRole("button", { name: "Close settings", exact: true }).click();
-        await page.route("**/characters/anime/portraits/**", (route) => route.abort());
+        await page.route("**/characters/blockbench/**", (route) => route.abort());
         await page.reload();
         await page.getByRole("status").filter({ hasText: /^Connected$/ }).waitFor();
         await page.getByRole("button", { name: "Customize avatar", exact: true }).click();
         await page.locator(".character-stage .character-preview-error").waitFor();
         assert(await page.getByRole("button", { name: "Use character", exact: true }).isDisabled());
         await review.capture(page, `${prefix}-avatar-artwork-error`);
-        await page.unroute("**/characters/anime/portraits/**");
+        await page.unroute("**/characters/blockbench/**");
         await page.locator(".character-stage").getByRole("button", { name: "Retry", exact: true }).click();
         await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>(".character-editor-actions .primary-button")?.disabled);
         const options = page.getByRole("tablist", { name: "Appearance" });

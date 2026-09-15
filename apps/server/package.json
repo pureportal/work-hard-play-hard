@@ -7,8 +7,7 @@
     "dist"
   ],
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "seed": "tsx src/seed-development.ts",
+    "dev": "tsx watch --env-file-if-exists=../../.env.local src/index.ts",
     "migration:create": "mikro-orm migration:create --config mikro-orm.config.ts",
     "migration:check": "mikro-orm migration:check --config mikro-orm.config.ts",
     "migration:up": "mikro-orm migration:up --config mikro-orm.config.ts",

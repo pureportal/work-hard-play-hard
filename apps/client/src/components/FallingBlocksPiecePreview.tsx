@@ -20,6 +20,8 @@ export const FALLING_BLOCKS_BLOCK_COLORS = [
   TETROMINO_COLORS.L,
   TETROMINO_COLORS.S,
   TETROMINO_COLORS.Z,
+  "#929ab0",
+  "#566175",
 ];
 
 interface FallingBlocksPiecePreviewProps {

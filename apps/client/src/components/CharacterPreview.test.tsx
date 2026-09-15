@@ -1,10 +1,10 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { loadCharacterLayers } from "../character-renderer";
+import { renderCharacter } from "../character-renderer";
 import { CharacterPreview } from "./CharacterPreview";
 
-vi.mock("../character-renderer", () => ({ loadCharacterLayers: vi.fn() }));
+vi.mock("../character-renderer", () => ({ renderCharacter: vi.fn() }));
 
 const context = {
   clearRect: vi.fn(), save: vi.fn(), restore: vi.fn(), drawImage: vi.fn(),
@@ -12,7 +12,7 @@ const context = {
 } as unknown as CanvasRenderingContext2D;
 
 beforeEach(() => {
-  vi.mocked(loadCharacterLayers).mockReset().mockResolvedValue([]);
+  vi.mocked(renderCharacter).mockReset().mockResolvedValue(document.createElement("canvas"));
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation((() => context) as unknown as typeof HTMLCanvasElement.prototype.getContext);
   vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
 });
@@ -26,14 +26,14 @@ describe("character preview recovery", () => {
     render(<CharacterPreview appearance={DEFAULT_CHARACTER_APPEARANCE} label="Character preview" onReady={onReady} />);
     expect((await screen.findByRole("alert")).textContent).toContain("Character preview is unavailable");
     expect(onReady).not.toHaveBeenCalledWith(true);
-    expect(loadCharacterLayers).not.toHaveBeenCalled();
+    expect(renderCharacter).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     await waitFor(() => expect(onReady).toHaveBeenLastCalledWith(true));
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("retains the appearance when retrying failed artwork", async () => {
-    vi.mocked(loadCharacterLayers).mockRejectedValueOnce(new Error("Character could not load. Try again."));
+    vi.mocked(renderCharacter).mockRejectedValueOnce(new Error("Character could not load. Try again."));
     const appearance = { ...DEFAULT_CHARACTER_APPEARANCE, hairstyle: "spiky" as const };
     const onReady = vi.fn();
     render(<CharacterPreview appearance={appearance} label="Character preview" onReady={onReady} />);
@@ -41,6 +41,6 @@ describe("character preview recovery", () => {
     expect(onReady).not.toHaveBeenCalledWith(true);
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     await waitFor(() => expect(onReady).toHaveBeenLastCalledWith(true));
-    expect(loadCharacterLayers).toHaveBeenLastCalledWith(appearance, "portrait");
+    expect(renderCharacter).toHaveBeenLastCalledWith(appearance);
   });
 });

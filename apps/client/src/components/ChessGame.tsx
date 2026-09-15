@@ -13,13 +13,14 @@ import { GameResultActions } from "./GameResultActions";
 import { useModalFocus } from "../hooks/useModalFocus";
 import { Avatar } from "./Avatar";
 import { ChessMark } from "./ChessMark";
-import { ChessPiece } from "./ChessPiece";
+import { ChessBoard } from "./ChessBoard";
 import { IconButton } from "./IconButton";
 
 interface ChessGameProps {
   match: ChessMatchView;
   members: Member[];
   currentUserId: string;
+  pending?: boolean;
   onMove: (move: ChessMoveInput) => void;
   onOfferDraw: () => void;
   onClaimDraw: (move?: ChessMoveInput) => void;
@@ -30,13 +31,11 @@ interface ChessGameProps {
   onRetryBot?: (() => void) | undefined;
 }
 
-const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"] as const;
-const RANKS = ["1", "2", "3", "4", "5", "6", "7", "8"] as const;
-
 export function ChessGame({
   match,
   members,
   currentUserId,
+  pending = false,
   onMove,
   onOfferDraw,
   onClaimDraw,
@@ -52,7 +51,7 @@ export function ChessGame({
   const ownMember = members.find((member) => member.id === currentUserId);
   const opponentUserId = ownColor === "white" ? match.blackUserId : match.whiteUserId;
   const opponent = members.find((member) => member.id === opponentUserId);
-  const canMove = match.status === "active" && match.turn === ownColor;
+  const canMove = !pending && match.status === "active" && match.turn === ownColor;
   const [selectedSquare, setSelectedSquare] = useState<ChessSquare>();
   const [promotionMoves, setPromotionMoves] = useState<ChessLegalMove[]>();
   const [confirmingResignation, setConfirmingResignation] = useState(false);
@@ -75,15 +74,16 @@ export function ChessGame({
   const checkedKingSquare = match.inCheck
     ? match.board.find((piece) => piece.color === match.turn && piece.type === "king")?.square
     : undefined;
-  const files = ownColor === "white" ? FILES : [...FILES].reverse();
-  const ranks = ownColor === "white" ? [...RANKS].reverse() : RANKS;
 
   useEffect(() => {
     setSelectedSquare(undefined);
     setPromotionMoves(undefined);
-    setConfirmingResignation(false);
     setClaimingDraw(false);
   }, [match.id, match.moves.length, match.turn, match.status]);
+
+  useEffect(() => {
+    setConfirmingResignation(false);
+  }, [match.id, match.status]);
 
   useEffect(() => {
     if (moveListRef.current) {
@@ -95,10 +95,14 @@ export function ChessGame({
     if (!canMove) {
       return;
     }
+    if (selectedSquare === square) {
+      setSelectedSquare(undefined);
+      return;
+    }
     const piece = pieceBySquare.get(square);
     if (selectedSquare) {
       const candidates = selectableMoves.filter((move) => move.from === selectedSquare && move.to === square);
-        if (candidates.length > 0) {
+      if (candidates.length > 0) {
         const promotions = candidates.filter((move) => move.promotion);
         if (promotions.length > 0) {
           setPromotionMoves(promotions);
@@ -160,51 +164,10 @@ export function ChessGame({
               paused={match.clock.pausedForWeekend && match.turn === opponentColor}
             />
 
-            <div className={`chess-board is-${ownColor}`} role="grid" aria-label={`Chess board, ${ownColor} side`}>
-              {ranks.flatMap((rank, rowIndex) => files.map((file, columnIndex) => {
-                const square = `${file}${rank}` as ChessSquare;
-                const piece = pieceBySquare.get(square);
-                const selected = selectedSquare === square;
-                const legal = legalDestinations.has(square);
-                const last = lastMove?.from === square || lastMove?.to === square;
-                const classes = [
-                  "chess-square",
-                  (FILES.indexOf(file) + RANKS.indexOf(rank)) % 2 === 0 ? "is-dark" : "is-light",
-                  selected ? "is-selected" : "",
-                  legal ? "is-legal" : "",
-                  legal && piece ? "is-capture" : "",
-                  last ? "is-last" : "",
-                  checkedKingSquare === square ? "is-check" : "",
-                ].filter(Boolean).join(" ");
-                return (
-                  <button
-                    key={square}
-                    className={classes}
-                    role="gridcell"
-                    aria-label={squareLabel(square, piece)}
-                    aria-selected={selected}
-                    data-square={square}
-                    onClick={() => selectSquare(square)}
-                  >
-                    {columnIndex === 0 && <span className="chess-rank-label">{rank}</span>}
-                    {rowIndex === 7 && <span className="chess-file-label">{file}</span>}
-                    {piece && <ChessPiece type={piece.type} color={piece.color} />}
-                    {legal && <span className="chess-move-target" />}
-                  </button>
-                );
-              }))}
-
-              {promotionMoves && (
-                <div className="chess-promotion-picker" role="dialog" aria-label="Choose promotion">
-                  {(["queen", "rook", "bishop", "knight"] as const).map((piece) => (
-                    <button key={piece} aria-label={`Promote to ${piece}`} onClick={() => choosePromotion(piece)}>
-                      <ChessPiece type={piece} color={ownColor} />
-                    </button>
-                  ))}
-                  <button className="chess-promotion-cancel" aria-label="Cancel promotion" onClick={() => setPromotionMoves(undefined)}><X size={17} /></button>
-                </div>
-              )}
-            </div>
+            <ChessBoard key={ownColor} color={ownColor} board={match.board} lastMove={lastMove}
+              checkedSquare={checkedKingSquare} selectedSquare={selectedSquare} legalDestinations={legalDestinations}
+              canMove={canMove} promotionMoves={promotionMoves} onSelect={selectSquare}
+              onPromote={choosePromotion} onCancelPromotion={() => setPromotionMoves(undefined)} />
 
             <PlayerBar
               color={ownColor}
@@ -221,14 +184,14 @@ export function ChessGame({
             <section className="chess-status" aria-live="polite">
               <span className={`chess-color-dot is-${match.turn}`} />
               <div>
-                <strong>{statusTitle(match, currentUserId, ownColor)}</strong>
+                <strong>{pending ? "Sending…" : statusTitle(match, currentUserId, ownColor)}</strong>
                 {statusDetail(match) && <span>{statusDetail(match)}</span>}
               </div>
             </section>
 
-            <section className="chess-moves">
-              <h3>Moves</h3>
-              {match.moves.length > 0 ? (
+            {match.moves.length > 0 && (
+              <section className="chess-moves">
+                <h3>Moves</h3>
                 <ol ref={moveListRef}>
                   {Array.from({ length: Math.ceil(match.moves.length / 2) }, (_, index) => (
                     <li key={index}>
@@ -238,13 +201,11 @@ export function ChessGame({
                     </li>
                   ))}
                 </ol>
-              ) : (
-                <div className="chess-moves-empty"><ChessMark /></div>
-              )}
-            </section>
+              </section>
+            )}
 
             {match.status === "active" && (
-              <div className="chess-game-actions">
+              <div className="chess-game-actions" inert={pending} aria-busy={pending}>
                 {match.drawClaims.length > 0 && (
                   <button className="secondary-button chess-claim-button" onClick={() => {
                     const immediate = match.drawClaims.find((claim) => !claim.move);
@@ -340,10 +301,6 @@ function useDisplayedClock(match: ChessMatchView): Record<ChessColor, number | n
       ? null
       : Math.max(0, match.clock.blackRemainingMs - (activeColor === "black" ? elapsed : 0)),
   };
-}
-
-function squareLabel(square: ChessSquare, piece: ChessMatchView["board"][number] | undefined): string {
-  return piece ? `${piece.color} ${piece.type} on ${square}` : square;
 }
 
 function formatClock(milliseconds: number): string {

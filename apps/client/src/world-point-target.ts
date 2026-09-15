@@ -7,7 +7,7 @@ import {
   requireAssetDefinition,
 } from "@workhard/shared";
 import type { AssetKind, FloorLayout, Rect, WorldObject } from "@workhard/shared";
-import { getWorldAssetArtwork } from "./world-asset-artwork";
+import { getPlacedWorldAssetArtwork } from "./world-asset-placement";
 
 const directlyInteractiveAssetKinds: ReadonlySet<AssetKind> = new Set(["game", "gong", "portal", "whiteboard"]);
 
@@ -15,14 +15,16 @@ type WorldPointTarget =
   | { type: "object"; object: WorldObject; interactionId?: string }
   | { type: "destination"; x: number; y: number };
 
-export function resolveWorldPointTarget(layout: FloorLayout, x: number, y: number, minimumTargetSize = 0): WorldPointTarget {
+export function resolveWorldPointTarget(layout: FloorLayout, x: number, y: number, minimumTargetSize = 0, hitsArtwork?: (object: WorldObject) => boolean): WorldPointTarget {
   for (let index = layout.objects.length - 1; index >= 0; index -= 1) {
     const object = layout.objects[index]!;
     const asset = requireAssetDefinition(object.assetId);
-    const artwork = asset.workKind ? getWorldAssetArtwork(asset, object.variantId, object.rotation).bounds : undefined;
-    if (!isPointInPlacedAsset(x, y, object) && !(artwork && isPointInWorldTarget(x, y, {
+    const artwork = directlyInteractiveAssetKinds.has(asset.kind) ? getPlacedWorldAssetArtwork(layout, object).bounds : undefined;
+    const artworkHit = artwork && (hitsArtwork ? hitsArtwork(object) : isPointInWorldTarget(x, y, {
       ...artwork, x: object.x + artwork.x, y: object.y + artwork.y,
-    }, minimumTargetSize))) {
+    }, minimumTargetSize));
+    const footprintHit = asset.placement.layer !== "surface" && isPointInPlacedAsset(x, y, object);
+    if (!footprintHit && !artworkHit) {
       continue;
     }
     const interaction = getPlacedAssetInteractions(object).find((candidate) => isPointInPlacedInteraction(x, y, candidate));

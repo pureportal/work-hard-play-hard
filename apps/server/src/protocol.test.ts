@@ -74,18 +74,40 @@ describe("movement protocol", () => {
 });
 
 describe("Falling Blocks protocol", () => {
+  it("accepts the mode and target options and rejects unknown or client-controlled rules", () => {
+    const start = { type: "game.start", requestId: "settings", definitionId: "game-falling-blocks", objectId: "object-falling-blocks" };
+    for (const mode of ["classic", "speed-up", "sudden-death"]) {
+      for (const attackTarget of ["random", "fewest-stones"]) {
+        const command = { ...start, settings: { mode, attackTarget } };
+        expect(clientCommandSchema.parse(command)).toEqual(command);
+      }
+    }
+    for (const settings of [
+      { mode: "unknown", attackTarget: "random" },
+      { mode: "classic", attackTarget: "highest-score" },
+      { mode: ["speed-up", "sudden-death"], attackTarget: "random" },
+      { mode: "classic" },
+      { mode: "classic", attackTarget: "random", delayMs: 0 },
+      { mode: "classic", attackTarget: "random", targetUserId: "user-leo", rows: 20 },
+    ]) expect(clientCommandSchema.safeParse({ ...start, settings }).success).toBe(false);
+    expect(clientCommandSchema.safeParse({
+      type: "game.start", requestId: "wrong-game", definitionId: "game-tic-tac-toe", objectId: "object-tic-tac-toe", variantId: "classic",
+      settings: { mode: "classic", attackTarget: "random" },
+    }).success).toBe(false);
+  });
+
   it("accepts explicit solo play and rejects opponent options for the wrong game", () => {
     const start = { type: "game.start", requestId: "solo", definitionId: "game-falling-blocks", objectId: "object-falling-blocks", solo: true };
     expect(clientCommandSchema.safeParse(start).success).toBe(true);
     expect(clientCommandSchema.safeParse({ ...start, objectId: undefined }).success).toBe(false);
     expect(clientCommandSchema.safeParse({ ...start, objectId: "" }).success).toBe(false);
     expect(clientCommandSchema.safeParse({ ...start, bot: { difficulty: "easy" } }).success).toBe(false);
-    expect(clientCommandSchema.safeParse({ ...start, definitionId: "game-tic-tac-toe", variantId: "classic" }).success).toBe(false);
+    expect(clientCommandSchema.safeParse({ ...start, definitionId: "game-tic-tac-toe", objectId: "object-tic-tac-toe", variantId: "classic", solo: true }).success).toBe(false);
   });
 
   it("accepts the hold command", () => {
     expect(clientCommandSchema.safeParse({
-      type: "game.command",
+      type: "game.command", roundId: "11111111-1111-4111-8111-111111111111",
       requestId: "hold-piece",
       command: "hold",
     }).success).toBe(true);
@@ -94,7 +116,7 @@ describe("Falling Blocks protocol", () => {
 
 describe("Tic-Tac-Toe protocol", () => {
   it("validates bot difficulty without accepting client-controlled identities", () => {
-    const start = { type: "game.start", requestId: "bot", definitionId: "game-tic-tac-toe", variantId: "ultimate" };
+    const start = { type: "game.start", requestId: "bot", definitionId: "game-tic-tac-toe", objectId: "object-tic-tac-toe", variantId: "ultimate" };
     for (const difficulty of ["easy", "medium", "hard"]) {
       expect(clientCommandSchema.safeParse({ ...start, bot: { difficulty } }).success).toBe(true);
     }
@@ -112,11 +134,11 @@ describe("Tic-Tac-Toe protocol", () => {
     { kind: "classic.place", cell: 0, mark: "o" },
     { kind: "unknown", cell: 0 },
   ])("rejects malformed or client-controlled moves: %j", (command) => {
-    expect(clientCommandSchema.safeParse({ type: "game.command", requestId: "invalid", command }).success).toBe(false);
+    expect(clientCommandSchema.safeParse({ type: "game.command", roundId: "11111111-1111-4111-8111-111111111111", requestId: "invalid", command }).success).toBe(false);
   });
 
   it("rejects unknown variants and variants on another game", () => {
-    expect(clientCommandSchema.safeParse({ type: "game.start", requestId: "invalid", definitionId: "game-tic-tac-toe", variantId: "unknown" }).success).toBe(false);
+    expect(clientCommandSchema.safeParse({ type: "game.start", requestId: "invalid", definitionId: "game-tic-tac-toe", objectId: "object-tic-tac-toe", variantId: "unknown" }).success).toBe(false);
     expect(clientCommandSchema.safeParse({ type: "game.start", requestId: "invalid", definitionId: "game-falling-blocks", objectId: "object-falling-blocks", variantId: "classic" }).success).toBe(false);
   });
 
@@ -124,7 +146,7 @@ describe("Tic-Tac-Toe protocol", () => {
     expect(clientCommandSchema.safeParse({
       type: "game.start",
       requestId: "start-stacking",
-      definitionId: "game-tic-tac-toe",
+      definitionId: "game-tic-tac-toe", objectId: "object-tic-tac-toe",
       variantId: "stacking",
     }).success).toBe(true);
 
@@ -135,7 +157,7 @@ describe("Tic-Tac-Toe protocol", () => {
       { kind: "stacking.move", fromCell: 1, toCell: 8 },
     ]) {
       expect(clientCommandSchema.safeParse({
-        type: "game.command",
+        type: "game.command", roundId: "11111111-1111-4111-8111-111111111111",
         requestId: "move",
         command,
       }).success).toBe(true);
@@ -146,10 +168,10 @@ describe("Tic-Tac-Toe protocol", () => {
     expect(clientCommandSchema.safeParse({
       type: "game.start",
       requestId: "start",
-      definitionId: "game-tic-tac-toe",
+      definitionId: "game-tic-tac-toe", objectId: "object-tic-tac-toe",
     }).success).toBe(false);
     expect(clientCommandSchema.safeParse({
-      type: "game.command",
+      type: "game.command", roundId: "11111111-1111-4111-8111-111111111111",
       requestId: "move",
       command: { kind: "classic.place", cell: 9 },
     }).success).toBe(false);
@@ -280,6 +302,7 @@ describe("proximity media protocol", () => {
   it("accepts explicit microphone and camera readiness", () => {
     expect(clientCommandSchema.safeParse({
       type: "proximity.set_media",
+      sessionId: "11111111-1111-4111-8111-111111111111",
       requestId: "media-state",
       microphone: true,
       camera: false,
@@ -289,6 +312,7 @@ describe("proximity media protocol", () => {
   it("requires both device states", () => {
     expect(clientCommandSchema.safeParse({
       type: "proximity.set_media",
+      sessionId: "11111111-1111-4111-8111-111111111111",
       requestId: "media-state",
       microphone: true,
     }).success).toBe(false);
@@ -358,7 +382,7 @@ describe("economy protocol", () => {
     expect(clientCommandSchema.safeParse({
       type: "game.settings_update",
       requestId: "settings",
-      settings: { allowPlayerAssetPlacementInPublicRooms: true },
+      settings: { roomAccess: { mode: "open", assignedPersonIds: [] }, roomBuild: { mode: "open", assignedPersonIds: [] } },
     }).success).toBe(true);
     expect(clientCommandSchema.safeParse({
       type: "economy.purchase_asset",

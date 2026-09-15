@@ -1,3 +1,4 @@
+import { createTestData } from "../testing/workspace-data.js";
 import {
   TIC_TAC_TOE_DEFINITION_ID,
   TIC_TAC_TOE_VARIANTS,
@@ -6,12 +7,12 @@ import {
   type TicTacToeCommand,
 } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
-import { DemoStore } from "../store.js";
+import { WorkspaceStore } from "../store.js";
 import { WorldRuntime } from "./world-runtime.js";
 
 describe("WorldRuntime Tic-Tac-Toe multiplayer", () => {
   it.each(TIC_TAC_TOE_VARIANTS)("restores a $name session on another connection and forfeits only after the last disconnect", ({ id }) => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const mayaEvents: ServerEvent[] = [];
     const leoEvents: ServerEvent[] = [];
@@ -23,15 +24,15 @@ describe("WorldRuntime Tic-Tac-Toe multiplayer", () => {
     for (let tick = 0; tick < 500; tick += 1) {
       runtime.runTickForTest();
     }
-    send(runtime, mayaPeer, { type: "game.start", requestId: "start", definitionId: TIC_TAC_TOE_DEFINITION_ID, variantId: id });
+    send(runtime, mayaPeer, { type: "game.start", requestId: "start", definitionId: TIC_TAC_TOE_DEFINITION_ID, objectId: "object-tic-tac-toe", variantId: id });
     const command: TicTacToeCommand = id === "classic"
       ? { kind: "classic.place", cell: 4 }
       : id === "ultimate"
         ? { kind: "ultimate.place", board: 0, cell: 4 }
         : { kind: "stacking.place", cell: 4, size: "large" };
-    send(runtime, leoPeer, { type: "game.command", requestId: "wrong-turn", command });
+    send(runtime, leoPeer, { type: "game.command", roundId: latestState(mayaEvents)!.roundId, requestId: "wrong-turn", command });
     expect(leoEvents.findLast((event) => event.type === "command.error")).toMatchObject({ code: "GAME_NOT_YOUR_TURN" });
-    send(runtime, mayaPeer, { type: "game.command", requestId: "move", command });
+    send(runtime, mayaPeer, { type: "game.command", roundId: latestState(mayaEvents)!.roundId, requestId: "move", command });
     expect(latestState(mayaEvents)).toMatchObject({ variantId: id, moveNumber: 1, turnUserId: "user-leo" });
     expect(latestState(leoEvents)).toEqual(latestState(mayaEvents));
 
@@ -49,7 +50,7 @@ describe("WorldRuntime Tic-Tac-Toe multiplayer", () => {
   });
 
   it("gathers two players, synchronizes turns, and completes the round", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const mayaEvents: ServerEvent[] = [];
     const leoEvents: ServerEvent[] = [];
@@ -79,7 +80,7 @@ describe("WorldRuntime Tic-Tac-Toe multiplayer", () => {
     send(runtime, mayaPeer, {
       type: "game.start",
       requestId: "start-classic",
-      definitionId: TIC_TAC_TOE_DEFINITION_ID,
+      definitionId: TIC_TAC_TOE_DEFINITION_ID, objectId: "object-tic-tac-toe",
       variantId: "classic",
     });
     expect(latestState(mayaEvents)).toMatchObject({
@@ -97,7 +98,7 @@ describe("WorldRuntime Tic-Tac-Toe multiplayer", () => {
       [mayaPeer, 2],
     ] as const) {
       send(runtime, peerId, {
-        type: "game.command",
+        type: "game.command", roundId: latestState(mayaEvents)!.roundId,
         requestId: `move-${cell}`,
         command: { kind: "classic.place", cell },
       });

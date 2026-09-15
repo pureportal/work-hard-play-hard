@@ -1,5 +1,6 @@
 import {
   LogOut,
+  Network,
   MessageCircle,
   PencilRuler,
   Settings,
@@ -12,7 +13,7 @@ import { Avatar } from "./Avatar";
 import { IconButton } from "./IconButton";
 import { BrandMark } from "./BrandMark";
 
-export type WorkspacePanel = "people" | "chat" | "meetings" | "build" | "settings" | null;
+export type WorkspacePanel = "people" | "chat" | "meetings" | "build" | "settings" | "organisation" | "rooms" | null;
 
 interface NavRailProps {
   activePanel: WorkspacePanel;
@@ -27,6 +28,7 @@ interface NavRailProps {
 
 const items: { panel: Exclude<WorkspacePanel, null>; label: string; icon: LucideIcon }[] = [
   { panel: "people", label: "People", icon: Users },
+  { panel: "organisation", label: "Organisation", icon: Network },
   { panel: "chat", label: "Messages", icon: MessageCircle },
   { panel: "meetings", label: "Meetings", icon: Video },
   { panel: "build", label: "Build", icon: PencilRuler },

@@ -1,10 +1,11 @@
+import { roomAccessAllows } from "@workhard/shared";
 import { randomUUID } from "node:crypto";
 import {
-  CHARACTER_WALK_SPEED,
   ASSET_RASTER_SIZE,
   BUILD_GRID_SIZE,
   canUseWorkObject,
   getWorkObjectState,
+  GITHUB_TRAY_ASSET_ID,
   GONG_COOLDOWN_MS,
   GONG_INTERACTION_RANGE,
   MAX_LAYOUT_OBJECTS_PER_FLOOR,
@@ -22,6 +23,7 @@ import {
   getPlacedAssetInteraction,
   getPlayerAssetRoomError,
   getRoomDoorPosition,
+  getSpawnPlacementError,
   getUtcDayKey,
   getWallOpeningPlacement,
   getWallLength,
@@ -58,6 +60,7 @@ import {
   type Member,
   type Meeting,
   type PlayerKidnappingSettings,
+  type PlayerRoomAccessibility,
   type Rect,
   type ReactionKind,
   type ServerEvent,
@@ -72,7 +75,8 @@ import {
 import { ChessMultiplayerRuntime } from "../games/chess-multiplayer.js";
 import type { GameEventDelivery } from "../games/game-event-delivery.js";
 import { GamesRuntime } from "../games/games-runtime.js";
-import { DemoStore } from "../store.js";
+import { MeetingSessions } from "../meetings/meeting-sessions.js";
+import { WorkspaceStore } from "../store.js";
 import { applyWorkObjectEdit } from "../work/work-object-state.js";
 import { canOccupy } from "./collision.js";
 import {
@@ -81,7 +85,9 @@ import {
   type FloorRouteTransition,
 } from "./floor-navigation.js";
 import { findPath } from "./pathfinding.js";
+import { getMovementSpeed, MAX_MOVEMENT_STEP } from "./movement-speed.js";
 import { reconcileProximityGroups } from "./proximity-groups.js";
+import { ProximitySessions } from "./proximity-sessions.js";
 import { canReachSeat } from "./seat-reachability.js";
 
 const TICK_MS = 50;
@@ -97,6 +103,7 @@ const SNAPSHOT_COMMAND_TYPES = new Set<ClientCommand["type"]>([
   "kidnapping.player_settings_update",
   "presence.set_availability",
   "proximity.set_media",
+  "proximity.leave",
   "layout.apply",
   "player_asset.place",
   "player_asset.move",
@@ -185,19 +192,21 @@ export class WorldRuntime {
   private readonly players = new Map<string, WorldPlayer>();
   private readonly connectedPlayersByFloor = new Map<string, Set<WorldPlayer>>();
   private readonly peers = new Map<string, Peer>();
+  private readonly roomAccessInspections = new Map<Peer, { userId: string; serialized: string }>();
   private readonly peersByFloor = new Map<string, Set<Peer>>();
   private readonly movements = new Map<string, MovementState>();
   private readonly kidnappingByCarrier = new Map<string, string>();
   private readonly kidnappingByCarried = new Map<string, string>();
   private readonly activeMovementUserIds = new Set<string>();
   private readonly movementSequences = new Map<string, number>();
-  private readonly proximityMedia = new Map<string, { microphone: boolean; camera: boolean }>();
+  private readonly proximitySessions = new ProximitySessions();
   private readonly gameRuntime: GamesRuntime;
   private readonly chessRuntime: ChessMultiplayerRuntime;
   private readonly calls = new Map<string, ActiveCall>();
   private readonly roomKnocks = new Map<string, ActiveRoomKnock>();
   private readonly roomGrants = new Map<string, Set<string>>();
   private readonly activeMeetings = new Map<string, string>();
+  private readonly meetingSessions = new MeetingSessions();
   private readonly lastReactionAt = new Map<string, number>();
   private readonly recentWaves = new Map<string, RecentWave>();
   private readonly gongCooldowns = new Map<string, number>();
@@ -210,7 +219,10 @@ export class WorldRuntime {
   private economyDayKey = getUtcDayKey(new Date());
   dirty = false;
 
-  constructor(private readonly store: DemoStore, options: { chessNow?: () => Date } = {}) {
+  constructor(private readonly store: WorkspaceStore, options: { chessNow?: () => Date } = {}) {
+    for (const meeting of store.getMeetings()) {
+      for (const userId of meeting.participantIds) store.leaveMeeting(meeting.id, userId);
+    }
     this.gameRuntime = new GamesRuntime(store);
     this.chessRuntime = new ChessMultiplayerRuntime(store, options.chessNow);
     for (const member of store.getMembers()) {
@@ -240,6 +252,7 @@ export class WorldRuntime {
 
   stop(): void {
     this.chessRuntime.stop();
+    this.roomAccessInspections.clear();
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = undefined;
@@ -258,12 +271,12 @@ export class WorldRuntime {
     this.kidnappingByCarrier.clear();
     this.kidnappingByCarried.clear();
     this.movementSequences.clear();
-    this.proximityMedia.clear();
+    this.proximitySessions.clear();
     for (const player of this.players.values()) {
       delete player.proximity;
       delete player.carriedByUserId;
     }
-    this.activeMeetings.clear();
+    for (const userId of this.activeMeetings.keys()) this.leaveActiveMeeting(userId);
     this.lastReactionAt.clear();
     this.recentWaves.clear();
     this.gongCooldowns.clear();
@@ -364,8 +377,12 @@ export class WorldRuntime {
       return;
     }
     this.removePeer(peer);
+    this.proximitySessions.disconnect(peerId);
+    this.reconcileProximityCalls();
+    this.roomAccessInspections.delete(peer);
     this.dirtySnapshotFloorIds.add(peer.floorId);
     this.movementSequences.delete(peerId);
+    if (this.meetingSessions.forPeer(peerId)) this.leaveActiveMeeting(peer.userId);
     const stillConnected = [...this.peers.values()].some((item) => item.userId === peer.userId);
     if (!stillConnected) {
       this.endKidnappingForUser(peer.userId, "interrupted");
@@ -378,7 +395,7 @@ export class WorldRuntime {
         delete player.wavingUntil;
         delete player.proximity;
       }
-      this.proximityMedia.delete(peer.userId);
+      this.proximitySessions.delete(peer.userId);
       this.broadcast({ type: "presence.changed", member: this.store.updateOnline(peer.userId, false) });
       this.endCallsForUser(peer.userId);
       this.leaveActiveMeeting(peer.userId);
@@ -434,7 +451,14 @@ export class WorldRuntime {
           this.setAvailability(peer, command.availability);
           break;
         case "proximity.set_media":
-          this.setProximityMedia(peer, command.microphone, command.camera);
+          this.setProximityMedia(peer, command.sessionId, command.microphone, command.camera);
+          break;
+        case "proximity.leave":
+          this.proximitySessions.leave(peer.id, command.sessionId);
+          this.reconcileProximityCalls();
+          break;
+        case "proximity.signal":
+          this.proximitySessions.signal(peer.id, command.sessionId, command.targetSessionId, command.signal);
           break;
         case "chat.send":
           this.sendChat(peer, command.requestId, command.conversationId, command.body);
@@ -457,6 +481,12 @@ export class WorldRuntime {
         case "economy.purchase_asset":
           this.purchaseAsset(peer, command.requestId, command.assetId);
           break;
+        case "organisation.edit": {
+          const organisation = this.store.editOrganisation(peer.userId, command.baseRevision, command.edit);
+          this.broadcast({ type: "organisation.updated", organisation });
+          this.reconcilePermissionChanges();
+          break;
+        }
         case "game.settings_update":
           this.updateGameSettings(peer, command.settings);
           break;
@@ -474,6 +504,16 @@ export class WorldRuntime {
           break;
         case "room.update_settings":
           this.updateRoomSettings(peer, command.requestId, command.baseRevision, command.roomId, command.settings);
+          break;
+        case "room.inspect_access":
+          if (command.userId === null) {
+            this.roomAccessInspections.delete(peer);
+          } else {
+            if (!this.store.canBuild(peer.userId)) throw new Error("EDIT_FORBIDDEN");
+            if (!this.store.getMember(command.userId)) throw new Error("USER_NOT_FOUND");
+            this.roomAccessInspections.set(peer, { userId: command.userId, serialized: "" });
+            this.publishRoomAccessibility();
+          }
           break;
         case "room.knock":
           this.requestRoomKnock(peer, command.roomId);
@@ -500,10 +540,22 @@ export class WorldRuntime {
           this.endCall(peer, command.callId);
           break;
         case "meeting.join":
-          this.joinMeeting(peer, command.meetingId);
+          this.joinMeeting(peer, command.meetingId, command.requestId, command.invitationId);
           break;
         case "meeting.leave":
-          this.leaveMeeting(peer, command.meetingId);
+          this.leaveMeeting(peer, command.meetingId, command.sessionId, command.requestId);
+          break;
+        case "meeting.media":
+          this.meetingSessions.updateMedia(peer.id, command.sessionId, { microphone: command.microphone, camera: command.camera, screen: command.screen });
+          break;
+        case "meeting.signal":
+          this.meetingSessions.signal(peer.id, command.sessionId, command.targetSessionId, command.signal);
+          break;
+        case "meeting.invite":
+          this.inviteToMeeting(peer, command.sessionId, command.targetUserId, command.requestId);
+          break;
+        case "meeting.lock":
+          this.meetingSessions.lock(peer.id, command.sessionId, command.locked);
           break;
         case "game.start":
           this.startGame(
@@ -514,25 +566,25 @@ export class WorldRuntime {
           );
           break;
         case "game.end":
-          this.endGame(peer);
+          this.endGame(peer, command.roundId);
           break;
         case "game.command":
-          this.commandGame(peer, command.command);
+          this.commandGame(peer, command.roundId, command.command);
           break;
         case "chess.match_create":
-          if (this.gameRuntime.isPlaying(peer.userId)) throw new Error("GAME_IN_PROGRESS");
+          if (this.gameRuntime.getRoundId(peer.userId)) throw new Error("GAME_IN_PROGRESS");
           this.dispatchGameEvents(this.chessRuntime.create(peer.userId, command.settings));
           if (command.settings.bot) this.stopMovement(peer.userId);
           this.syncGameLobbies();
           break;
         case "chess.match_join":
-          if (this.gameRuntime.isPlaying(peer.userId)) throw new Error("GAME_IN_PROGRESS");
+          if (this.gameRuntime.getRoundId(peer.userId)) throw new Error("GAME_IN_PROGRESS");
           this.dispatchGameEvents(this.chessRuntime.join(peer.userId, command.matchId));
           this.stopMovement(peer.userId);
           this.syncGameLobbies();
           break;
         case "chess.match_open":
-          if (this.gameRuntime.isPlaying(peer.userId)) throw new Error("GAME_IN_PROGRESS");
+          if (this.gameRuntime.getRoundId(peer.userId)) throw new Error("GAME_IN_PROGRESS");
           this.dispatchGameEvents(this.chessRuntime.open(peer.userId, command.matchId));
           this.stopMovement(peer.userId);
           this.syncGameLobbies();
@@ -565,6 +617,15 @@ export class WorldRuntime {
       }
       if (SPATIAL_COMMAND_TYPES.has(command.type)) {
         this.reconciliationDirty = true;
+      }
+      if ((command.type === "chess.move" || command.type === "chess.resign"
+        || command.type === "chess.draw_claim" || command.type === "chess.draw_respond")
+        && !this.chessRuntime.isViewing(peer.userId)) this.syncGameLobbies();
+      if ("requestId" in command && (command.type === "game.start" || command.type === "game.end"
+        || command.type === "organisation.edit" || command.type === "game.settings_update"
+        || command.type.startsWith("chess.")
+        || (command.type === "game.command" && typeof command.command === "object"))) {
+        peer.send({ type: "command.ack", requestId: command.requestId });
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "COMMAND_FAILED";
@@ -633,7 +694,7 @@ export class WorldRuntime {
 
   restorePlayers(players: WorldPlayer[]): void {
     this.roomGrants.clear();
-    this.proximityMedia.clear();
+    this.proximitySessions.clear();
     for (const player of this.players.values()) {
       delete player.proximity;
     }
@@ -724,10 +785,12 @@ export class WorldRuntime {
     }
     const gameEvents = this.gameRuntime.update(deltaMs);
     this.dispatchGameEvents(gameEvents);
-    if (gameEvents.length > 0) {
+    const chessEvents = this.chessRuntime.update();
+    this.dispatchGameEvents(chessEvents);
+    if (gameEvents.some(({ event }) => event.type === "game.round_completed")
+      || chessEvents.some(({ event }) => event.type === "chess.match_state" && event.match.status === "completed")) {
       this.syncGameLobbies();
     }
-    this.dispatchGameEvents(this.chessRuntime.update());
 
     if (this.tickNumber % SNAPSHOT_HEARTBEAT_TICKS === 0) {
       const economyDayKey = getUtcDayKey(new Date());
@@ -741,6 +804,7 @@ export class WorldRuntime {
 
     const snapshotDue = this.tickNumber % SNAPSHOT_INTERVAL_TICKS === 0;
     if (snapshotDue && this.peers.size > 0) {
+      this.publishRoomAccessibility();
       const floorIds = this.getSnapshotFloorIdsDue();
       if (floorIds.size > 0) {
         this.broadcastSnapshots(floorIds);
@@ -753,27 +817,39 @@ export class WorldRuntime {
   }
 
   private advancePlayer(player: WorldPlayer, movement: MovementState, deltaSeconds: number): boolean {
+    const upcomingLegs = movement.journey?.legs.slice(movement.journey.legIndex + 1);
+    let remainingDistance = getMovementSpeed(player, movement.path, upcomingLegs) * deltaSeconds;
+    const floorId = player.floorId;
+    let moved = false;
+    while (remainingDistance > 0) {
+      const previousTarget = movement.path[0];
+      const consumedDistance = this.advancePlayerStep(player, movement, Math.min(remainingDistance, MAX_MOVEMENT_STEP));
+      if (player.floorId !== floorId) {
+        return true;
+      }
+      if (consumedDistance > 0) {
+        remainingDistance -= consumedDistance;
+        moved = true;
+      } else if (movement.path[0] === previousTarget) {
+        break;
+      }
+    }
+    return moved;
+  }
+
+  private advancePlayerStep(player: WorldPlayer, movement: MovementState, distance: number): number {
     const carriedPlayer = this.getCarriedPlayer(player.userId);
     let dx = movement.dx;
     let dy = movement.dy;
     let pathTarget: { x: number; y: number } | undefined;
-    let distance = CHARACTER_WALK_SPEED * deltaSeconds;
     if (dx !== 0 || dy !== 0) {
-      movement.path = [];
-      delete movement.destinationRequestId;
-      delete movement.journey;
-      delete movement.approachUserId;
-      delete movement.approachRequestId;
-      delete movement.kidnappingTargetUserId;
-      delete movement.kidnappingRequestId;
-      delete movement.assetInteraction;
       const magnitude = Math.hypot(dx, dy);
       dx /= magnitude;
       dy /= magnitude;
     } else if (movement.path.length > 0) {
       pathTarget = movement.path[0];
       if (!pathTarget) {
-        return false;
+        return 0;
       }
       const distanceX = pathTarget.x - player.x;
       const distanceY = pathTarget.y - player.y;
@@ -783,22 +859,22 @@ export class WorldRuntime {
         if (movement.path.length === 0) {
           this.advanceJourney(player, movement);
         }
-        return false;
+        return 0;
       }
       distance = Math.min(distance, distanceToTarget);
       dx = distanceX / distanceToTarget;
       dy = distanceY / distanceToTarget;
     } else if (movement.journey) {
       this.advanceJourney(player, movement);
-      return false;
+      return 0;
     } else {
-      return false;
+      return 0;
     }
 
     const layout = this.store.getLayout(player.floorId);
     const floor = this.store.getFloor(player.floorId);
     if (!layout || !floor) {
-      return false;
+      return 0;
     }
     const nextX = player.x + dx * distance;
     const nextY = player.y + dy * distance;
@@ -855,7 +931,7 @@ export class WorldRuntime {
       }
       this.dirty = true;
     }
-    return moved;
+    return moved ? distance : 0;
   }
 
   private getFullRoomIds(player: WorldPlayer): ReadonlySet<string> {
@@ -885,9 +961,41 @@ export class WorldRuntime {
   }
 
   private userHasRoomAccess(userId: string, room: Room): boolean {
-    return room.access.mode === "open"
-      || room.access.assignedPersonIds.includes(userId)
+    return roomAccessAllows(room, userId, this.store.getGameSettings(), this.store.getOrganisation())
       || Boolean(this.roomGrants.get(userId)?.has(room.id));
+  }
+
+  private publishRoomAccessibility(): void {
+    const results = new Map<string, { accessibility: PlayerRoomAccessibility; serialized: string }>();
+    for (const [peer, inspection] of this.roomAccessInspections) {
+      if (!this.store.canBuild(peer.userId) || !this.store.getMember(inspection.userId)) {
+        this.roomAccessInspections.delete(peer);
+        continue;
+      }
+      let result = results.get(inspection.userId);
+      if (!result) {
+        const accessibility: PlayerRoomAccessibility = {
+          userId: inspection.userId,
+          floors: this.store.getLayouts().map((layout) => {
+            const fullRoomIds = this.getFullRoomIdsForFloor(inspection.userId, layout.floorId);
+            return {
+              floorId: layout.floorId,
+              rooms: layout.rooms.map((room) => ({
+                roomId: room.id,
+                status: !this.userHasRoomAccess(inspection.userId, room)
+                  ? "restricted" : fullRoomIds.has(room.id) ? "full" : "accessible",
+              })),
+            };
+          }),
+        };
+        result = { accessibility, serialized: JSON.stringify(accessibility) };
+        results.set(inspection.userId, result);
+      }
+      if (result.serialized !== inspection.serialized) {
+        inspection.serialized = result.serialized;
+        peer.send({ type: "room.accessibility", accessibility: result.accessibility });
+      }
+    }
   }
 
   private getCarriedPlayer(carrierUserId: string): WorldPlayer | undefined {
@@ -1681,59 +1789,37 @@ export class WorldRuntime {
     this.reconcileProximityCalls();
   }
 
-  private setProximityMedia(peer: Peer, microphone: boolean, camera: boolean): void {
+  private setProximityMedia(peer: Peer, sessionId: string, microphone: boolean, camera: boolean): void {
     const player = this.players.get(peer.userId);
-    if (!player?.connected) {
-      throw new Error("WORLD_NOT_READY");
-    }
-    if (microphone || camera) {
-      this.proximityMedia.set(peer.userId, { microphone, camera });
-    } else {
-      this.proximityMedia.delete(peer.userId);
-      delete player.proximity;
-    }
+    if (!player?.connected) throw new Error("WORLD_NOT_READY");
+    this.proximitySessions.set(peer, sessionId, microphone, camera);
     this.reconcileProximityCalls();
   }
 
   private reconcileProximityCalls(): void {
-    if (this.proximityMedia.size === 0) {
-      return;
-    }
-    const readyPlayers: Array<{ player: WorldPlayer; media: { microphone: boolean; camera: boolean } }> = [];
     const participants = [];
-    for (const [userId, media] of this.proximityMedia) {
-      const player = this.players.get(userId);
-      if (!player) {
-        continue;
-      }
-      const ready = player.connected
+    for (const session of this.proximitySessions.values()) {
+      const player = this.players.get(session.userId);
+      const ready = player?.connected
         && player.availability !== "dnd"
-        && !this.activeMeetings.has(userId)
-        && !this.userHasAcceptedCall(userId)
+        && !this.activeMeetings.has(session.userId)
         && this.isOnPublicFloor(player);
       if (!ready) {
-        delete player.proximity;
+        this.proximitySessions.delete(session.userId);
         continue;
       }
-      readyPlayers.push({ player, media });
-      participants.push({
-        userId,
-        floorId: player.floorId,
+      participants.push({ userId: session.userId, floorId: player.floorId,
         zoneId: player.roomId ? `room:${player.roomId}` : `floor:${player.floorId}`,
-        x: player.x,
-        y: player.y,
-        ...(player.proximity?.callId ? { groupId: player.proximity.callId } : {}),
-      });
+        x: player.x, y: player.y, ...(session.callId ? { groupId: session.callId } : {}) });
     }
-    const memberships = reconcileProximityGroups(participants, randomUUID);
-
-    for (const { player, media } of readyPlayers) {
-      const callId = memberships.get(player.userId);
-      player.proximity = {
-        ...media,
-        ...(callId ? { callId } : {}),
-      };
+    this.proximitySessions.reconcile(reconcileProximityGroups(participants, randomUUID));
+    const readyUserIds = new Set<string>();
+    for (const session of this.proximitySessions.values()) {
+      const player = this.players.get(session.userId)!;
+      readyUserIds.add(session.userId);
+      player.proximity = { microphone: session.microphone, camera: session.camera, ...(session.callId ? { callId: session.callId } : {}) };
     }
+    for (const player of this.players.values()) if (!readyUserIds.has(player.userId)) delete player.proximity;
   }
 
   private sendChat(peer: Peer, requestId: string, conversationId: string, body: string): void {
@@ -1753,6 +1839,17 @@ export class WorldRuntime {
     }
     if (layout.revision !== baseRevision) {
       peer.send({ type: "layout.conflict", requestId, revision: layout.revision });
+      return;
+    }
+    if (edit.tool === "spawn") {
+      const spawn = { x: snapToBuildGrid(edit.position.x), y: snapToBuildGrid(edit.position.y) };
+      const error = getSpawnPlacementError(layout, getOutdoorBounds(floor), spawn,
+        [...this.players.values()].filter((player) => player.floorId === floor.id), this.store.getGameSettings().roomAccess.mode);
+      if (error) throw new Error(error);
+      const replacement = this.store.replaceLayout({ ...structuredClone(layout), revision: layout.revision + 1 });
+      const updatedFloor = this.store.updateFloorSpawn(floor.id, spawn);
+      this.broadcast({ type: "floor.updated", floor: updatedFloor });
+      this.broadcastLayout(replacement.layout, { userId: peer.userId, requestId });
       return;
     }
     const next = structuredClone(layout);
@@ -1791,6 +1888,20 @@ export class WorldRuntime {
       this.removeLayoutItem(peer.floorId, next, edit.item);
     } else {
       throw new Error("EDIT_INVALID");
+    }
+    for (const object of layout.objects) {
+      const after = next.objects.find((candidate) => candidate.id === object.id);
+      if (!after || after.x !== object.x || after.y !== object.y || after.rotation !== object.rotation || after.variantId !== object.variantId) {
+        const error = getPlayerAssetRoomError(layout, object, peer.userId, this.store.getGameSettings(), this.store.getOrganisation(), true);
+        if (error) throw new Error(error);
+      }
+    }
+    for (const object of next.objects) {
+      const before = layout.objects.find((candidate) => candidate.id === object.id);
+      if (!before || before.x !== object.x || before.y !== object.y || before.rotation !== object.rotation || before.variantId !== object.variantId) {
+        const error = getPlayerAssetRoomError(layout, object, peer.userId, this.store.getGameSettings(), this.store.getOrganisation(), true);
+        if (error) throw new Error(error);
+      }
     }
     const mergedSegments = mergeWallSegments(next.walls, next.openings);
     next.walls = mergedSegments.walls;
@@ -1879,6 +1990,7 @@ export class WorldRuntime {
     if (ownedAsset.placement?.objectId !== object.id) {
       throw new Error("ASSET_OWNERSHIP_INVALID");
     }
+    this.assertPlayerAssetRoom(layout, object, peer.userId);
     const next = structuredClone(layout);
     this.moveAsset(peer.floorId, next, floor, objectId, position, variantId, rotation, (candidate) => {
       this.assertPlayerAssetRoom(next, candidate, peer.userId);
@@ -1906,6 +2018,7 @@ export class WorldRuntime {
     if (ownedAsset.placement?.objectId !== object.id || ownedAsset.placement.floorId !== object.floorId) {
       throw new Error("ASSET_OWNERSHIP_INVALID");
     }
+    this.assertPlayerAssetRoom(layout, object, peer.userId);
     const next = structuredClone(layout);
     this.removeLayoutItem(peer.floorId, next, { type: "asset", id: objectId });
     next.revision += 1;
@@ -1924,16 +2037,17 @@ export class WorldRuntime {
     this.publishEconomy(peer.userId, requestId, result.transaction);
   }
 
-  private updateGameSettings(peer: Peer, settings: Parameters<DemoStore["updateGameSettings"]>[0]): void {
-    if (!this.store.canManageMembers(peer.userId)) {
+  private updateGameSettings(peer: Peer, settings: Parameters<WorkspaceStore["updateGameSettings"]>[0]): void {
+    if (!this.store.canManageMembers(peer.userId) && !this.store.getOrganisation().ceoIds.includes(peer.userId)) {
       throw new Error("GAME_SETTINGS_FORBIDDEN");
     }
     const updated = this.store.updateGameSettings(settings);
     this.broadcast({ type: "game.settings_updated", settings: updated });
+    this.reconcilePermissionChanges();
   }
 
   private assertPlayerAssetRoom(layout: FloorLayout, object: WorldObject, userId: string): void {
-    const error = getPlayerAssetRoomError(layout, object, userId, this.store.getGameSettings());
+    const error = getPlayerAssetRoomError(layout, object, userId, this.store.getGameSettings(), this.store.getOrganisation());
     if (error) {
       throw new Error(error);
     }
@@ -1961,13 +2075,13 @@ export class WorldRuntime {
       }
       this.updateRoom(player);
       const room = player.roomId ? next.rooms.find((candidate) => candidate.id === player.roomId) : undefined;
-      if (room?.access.mode === "assigned" && !this.userHasRoomAccess(player.userId, room)) {
+      if (room && !this.userHasRoomAccess(player.userId, room)) {
         this.evictPlayerFromRoom(player, room);
       }
     }
     for (const [userId, meetingId] of this.activeMeetings) {
       const meeting = this.store.getMeeting(meetingId);
-      if (meeting?.location.type === "room" && !nextRoomIds.has(meeting.location.roomId)) {
+      if (meeting && !nextRoomIds.has(meeting.location.roomId)) {
         this.leaveActiveMeeting(userId);
       }
     }
@@ -2485,7 +2599,7 @@ export class WorldRuntime {
     roomId: string,
     settings: RoomSettings,
   ): void {
-    if (!this.store.canBuild(peer.userId)) {
+    if (!this.store.canManageRoom(peer.userId, roomId)) {
       throw new Error("EDIT_FORBIDDEN");
     }
     const currentRoom = this.store.getRoom(roomId);
@@ -2497,10 +2611,21 @@ export class WorldRuntime {
       peer.send({ type: "layout.conflict", requestId, revision: currentLayout.revision });
       return;
     }
+    if (settings.organisationUnitId !== currentRoom?.organisationUnitId && !this.store.canBuild(peer.userId)
+      && !this.store.getOrganisation().ceoIds.includes(peer.userId)) throw new Error("ORGANISATION_FORBIDDEN");
     const layout = this.store.updateRoomSettings(roomId, settings);
     const room = layout.rooms.find((item) => item.id === roomId);
     this.clearRoomGrants(roomId);
-    if (room?.access.mode === "assigned") {
+    for (const meeting of this.store.getMeetings()) {
+      if (meeting.location.roomId === roomId) this.meetingSessions.revokeInvitations(meeting.id);
+    }
+    for (const [userId, meetingId] of this.activeMeetings) {
+      const meeting = this.store.getMeeting(meetingId);
+      if (meeting && meeting.location.roomId === roomId && room && !this.userHasRoomAccess(userId, room)) {
+        this.leaveActiveMeeting(userId);
+      }
+    }
+    if (room) {
       this.evictRestrictedRoomPlayers(room);
     }
     this.broadcastToFloor(layout.floorId, { type: "room.access_revoked", roomId });
@@ -2513,6 +2638,27 @@ export class WorldRuntime {
     }
     this.validateRoomKnocks();
     this.broadcastLayout(layout, { userId: peer.userId, requestId });
+  }
+
+  private reconcilePermissionChanges(): void {
+    for (const layout of this.store.getLayouts()) {
+      for (const room of layout.rooms) {
+        this.clearRoomGrants(room.id);
+        this.broadcastToFloor(layout.floorId, { type: "room.access_revoked", roomId: room.id });
+        this.evictRestrictedRoomPlayers(room);
+      }
+    }
+    for (const [userId, meetingId] of this.activeMeetings) {
+      const meeting = this.store.getMeeting(meetingId);
+      if (meeting) {
+        const room = this.store.getRoom(meeting.location.roomId);
+        if (room && !this.userHasRoomAccess(userId, room)) this.leaveActiveMeeting(userId);
+        this.meetingSessions.revokeInvitations(meetingId);
+      }
+    }
+    this.validateRoomKnocks();
+    this.publishRoomAccessibility();
+    this.broadcastSnapshots(new Set(this.store.getLayouts().map((layout) => layout.floorId)));
   }
 
   private evictRestrictedRoomPlayers(room: Room): void {
@@ -2585,7 +2731,7 @@ export class WorldRuntime {
     if (!room || !player) {
       throw new Error("ROOM_NOT_FOUND");
     }
-    if (room.access.mode !== "assigned" || this.userHasRoomAccess(peer.userId, room) || player.roomId === room.id) {
+    if (room.access.mode === "open" || this.userHasRoomAccess(peer.userId, room) || player.roomId === room.id) {
       throw new Error("ROOM_ACCESS_NOT_REQUIRED");
     }
     if (!room.access.knockable) {
@@ -2643,7 +2789,7 @@ export class WorldRuntime {
         !requester?.connected
         || !room
         || requester.floorId !== room.floorId
-        || room.access.mode !== "assigned"
+        || room.access.mode === "open"
         || !room.access.knockable
         || this.distanceToRoomDoor(requester.x, requester.y, room) > KNOCK_RANGE
     ) {
@@ -2720,7 +2866,7 @@ export class WorldRuntime {
         !requester?.connected
         || !room
         || requester.floorId !== room.floorId
-        || room.access.mode !== "assigned"
+        || room.access.mode === "open"
         || !room.access.knockable
         || this.distanceToRoomDoor(requester.x, requester.y, room) > KNOCK_RANGE
       ) {
@@ -2810,7 +2956,7 @@ export class WorldRuntime {
     const layout = player ? this.store.getLayout(player.floorId) : undefined;
     const floor = player ? this.store.getFloor(player.floorId) : undefined;
     const object = layout?.objects.find((candidate) => candidate.id === objectId);
-    if (!player?.connected || !layout || !floor || !object || !getWorkObjectState(object)) throw new Error("WORK_OBJECT_NOT_FOUND");
+    if (!player?.connected || !layout || !floor || !object || (!getWorkObjectState(object) && object.assetId !== GITHUB_TRAY_ASSET_ID)) throw new Error("WORK_OBJECT_NOT_FOUND");
     const path = this.findAssetInteractionPath(layout, floor, player, getPlacedAssetBounds(object),
       (point) => canUseWorkObject(object, layout, { ...point, floorId: player.floorId }));
     const destination = path.at(-1);
@@ -3079,17 +3225,11 @@ export class WorldRuntime {
     const room = player.roomId
       ? this.store.getLayout(player.floorId)?.rooms.find((candidate) => candidate.id === player.roomId)
       : undefined;
-    return !room || room.access.mode === "open";
+    return !room || room.access.mode === "open" || (room.access.mode === "default" && this.store.getGameSettings().roomAccess.mode === "open");
   }
 
   private userHasActiveCall(userId: string): boolean {
     return [...this.calls.values()].some((call) => call.callerUserId === userId || call.targetUserId === userId);
-  }
-
-  private userHasAcceptedCall(userId: string): boolean {
-    return [...this.calls.values()].some(
-      (call) => call.state === "accepted" && (call.callerUserId === userId || call.targetUserId === userId),
-    );
   }
 
   private requestCall(peer: Peer, targetUserId: string): void {
@@ -3220,7 +3360,7 @@ export class WorldRuntime {
     }
   }
 
-  private joinMeeting(peer: Peer, meetingId: string): void {
+  private joinMeeting(peer: Peer, meetingId: string, requestId: string, invitationId?: string): void {
     const meeting = this.store.getMeeting(meetingId);
     if (!meeting || meeting.status === "ended") {
       throw new Error("MEETING_NOT_FOUND");
@@ -3228,60 +3368,48 @@ export class WorldRuntime {
     if (!this.store.canViewMeeting(peer.userId, meeting)) {
       throw new Error("MEETING_NOT_FOUND");
     }
-    if (meeting.location.type === "room") {
-      const room = this.store.getRoom(meeting.location.roomId);
-      const player = this.players.get(peer.userId);
-      const hasAccess = room && (this.userHasRoomAccess(peer.userId, room) || player?.roomId === room.id);
-      if (!room || !hasAccess) {
-        throw new Error("ROOM_ACCESS_REQUIRED");
-      }
-      if (!meeting.participantIds.includes(peer.userId) && meeting.participantIds.length >= room.capacity) {
-        throw new Error("ROOM_FULL");
-      }
+    const invited = this.meetingSessions.authorizeJoin(peer.userId, meetingId, invitationId);
+    const room = this.store.getRoom(meeting.location.roomId);
+    const hasAccess = room && (this.userHasRoomAccess(peer.userId, room) || invited);
+    if (!room || !hasAccess) {
+      throw new Error("ROOM_ACCESS_REQUIRED");
+    }
+    if (!meeting.participantIds.includes(peer.userId) && meeting.participantIds.length >= room.capacity) {
+      throw new Error("ROOM_FULL");
     }
     this.endKidnappingForUser(peer.userId, "interrupted");
-    this.enterMeeting(peer.userId, meeting);
+    this.meetingSessions.consumeInvitation(invitationId);
+    this.enterMeeting(peer, meeting, requestId);
   }
 
-  private leaveMeeting(peer: Peer, meetingId: string): void {
-    const active = this.activeMeetings.get(peer.userId);
-    if (active === meetingId) {
-      this.leaveActiveMeeting(peer.userId);
-      return;
-    }
-    const meeting = this.store.getMeeting(meetingId);
-    if (!meeting?.participantIds.includes(peer.userId)) {
-      throw new Error("MEETING_NOT_JOINED");
-    }
-    const left = this.store.leaveMeeting(meetingId, peer.userId);
-    peer.send({ type: "meeting.left", meetingId });
-    this.broadcastMeetingUpdate(left);
+  private leaveMeeting(peer: Peer, meetingId: string, sessionId: string, requestId: string): void {
+    const session = this.meetingSessions.require(peer.id, sessionId);
+    if (session.meetingId !== meetingId) throw new Error("MEETING_NOT_JOINED");
+    this.leaveActiveMeeting(peer.userId, requestId);
   }
 
-  private enterMeeting(userId: string, meeting: Meeting): void {
+  private enterMeeting(peer: Peer, meeting: Meeting, requestId: string): void {
+    const userId = peer.userId;
     const active = this.activeMeetings.get(userId);
-    if (active === meeting.id) {
-      this.sendToUser(userId, { type: "meeting.joined", meeting });
-      return;
-    }
-    if (active) {
+    if (active && active !== meeting.id) {
       this.leaveActiveMeeting(userId);
     }
     this.clearRecentWavesForUser(userId);
     this.endCallsForUser(userId);
     const joined = this.store.joinMeeting(meeting.id, userId);
-    this.proximityMedia.delete(userId);
+    this.proximitySessions.delete(userId);
     const player = this.players.get(userId);
     if (player) {
       delete player.proximity;
     }
     this.activeMeetings.set(userId, meeting.id);
     this.reconcileProximityCalls();
-    this.sendToUser(userId, { type: "meeting.joined", meeting: joined });
+    this.meetingSessions.join(peer, joined, requestId);
+    this.sendToUser(userId, { type: "workspace.access_updated", access: this.store.getWorkspaceAccess(userId) });
     this.broadcastMeetingUpdate(joined);
   }
 
-  private leaveActiveMeeting(userId: string): void {
+  private leaveActiveMeeting(userId: string, requestId?: string): void {
     const meetingId = this.activeMeetings.get(userId);
     if (!meetingId) {
       return;
@@ -3289,8 +3417,20 @@ export class WorldRuntime {
     this.activeMeetings.delete(userId);
     const meeting = this.store.leaveMeeting(meetingId, userId);
     this.reconcileProximityCalls();
-    this.sendToUser(userId, { type: "meeting.left", meetingId });
+    this.meetingSessions.removeUser(userId, requestId);
+    this.sendToUser(userId, { type: "workspace.access_updated", access: this.store.getWorkspaceAccess(userId) });
     this.broadcastMeetingUpdate(meeting);
+  }
+
+  private inviteToMeeting(peer: Peer, sessionId: string, targetUserId: string, requestId: string): void {
+    const session = this.meetingSessions.require(peer.id, sessionId);
+    const meeting = this.store.getMeeting(session.meetingId)!;
+    const room = this.store.getRoom(meeting.location.roomId);
+    if (room && !roomAccessAllows(room, peer.userId, this.store.getGameSettings(), this.store.getOrganisation())) throw new Error("ROOM_ACCESS_REQUIRED");
+    if (![...this.peers.values()].some((candidate) => candidate.userId === targetUserId)) throw new Error("PERSON_OFFLINE");
+    const invitation = this.meetingSessions.invite(peer.id, sessionId, targetUserId);
+    this.sendToUser(targetUserId, { type: "meeting.invited", invitation });
+    peer.send({ type: "meeting.invitation_sent", requestId, invitation });
   }
 
   private startGame(peer: Peer, definitionId: string, variantId?: TicTacToeVariantId, options: Parameters<GamesRuntime["start"]>[3] = {}): void {
@@ -3303,16 +3443,16 @@ export class WorldRuntime {
     this.dispatchGameEvents(started.deliveries);
   }
 
-  private commandGame(peer: Peer, command: GameCommand): void {
-    const deliveries = this.gameRuntime.command(peer.userId, command);
+  private commandGame(peer: Peer, roundId: string, command: GameCommand): void {
+    const deliveries = this.gameRuntime.command(peer.userId, roundId, command);
     this.dispatchGameEvents(deliveries);
     if (deliveries.some((delivery) => delivery.event.type === "game.round_completed")) {
       this.syncGameLobbies();
     }
   }
 
-  private endGame(peer: Peer): void {
-    this.dispatchGameEvents(this.gameRuntime.leave(peer.userId));
+  private endGame(peer: Peer, roundId: string): void {
+    this.dispatchGameEvents(this.gameRuntime.end(peer.userId, roundId));
     this.syncGameLobbies();
   }
 
@@ -3466,7 +3606,7 @@ export class WorldRuntime {
     if (activeMeetingId && activeMeeting === activeMeetingId) {
       const meeting = this.store.getMeeting(activeMeetingId);
       if (meeting) {
-        peer.send({ type: "meeting.joined", meeting });
+        peer.send({ type: "meeting.updated", meeting });
       }
     }
 
@@ -3496,6 +3636,9 @@ export class WorldRuntime {
     }
 
     for (const event of this.gameRuntime.getSessionEvents(peer.userId)) {
+      peer.send(event);
+    }
+    for (const event of this.chessRuntime.getSessionEvents(peer.userId)) {
       peer.send(event);
     }
   }
@@ -3586,9 +3729,25 @@ export class WorldRuntime {
 
   private userMessage(code: string): string {
     const messages: Record<string, string> = {
+      ORGANISATION_FORBIDDEN: "You cannot make that change outside your area of responsibility.",
+      ORGANISATION_CONFLICT: "The organisation changed. Review it and try again.",
+      ORGANISATION_UNIT_NOT_FOUND: "That unit was removed. Choose another unit.",
+      ORGANISATION_CYCLE: "A unit cannot contain itself. Choose another parent.",
+      ORGANISATION_UNIT_NOT_EMPTY: "Move the members and subteams before deleting this unit.",
+      ORGANISATION_UNIT_IN_USE: "Remove this unit from room permissions before deleting it.",
+      ORGANISATION_LIMIT: "The organisation has reached its unit limit.",
+      CEO_VOTE_REQUIRED: "Removing a CEO requires a vote.",
+      CEO_VOTE_EXISTS: "A removal vote is already open for this CEO.",
+      CEO_VOTE_CLOSED: "This vote has closed. Review the result.",
+      CEO_ALREADY_VOTED: "Your vote has already been recorded.",
+      CEO_ALREADY_ASSIGNED: "This person is already a CEO.",
+      CEO_NOT_FOUND: "This person is no longer a CEO.",
+      CEO_LAST_REQUIRED: "At least one CEO must remain.",
       DESTINATION_BLOCKED: "That spot is blocked.",
       EDIT_FORBIDDEN: "You cannot edit this office.",
       EDIT_OUT_OF_RANGE: "Place it inside the floor.",
+      SPAWN_BLOCKED: "Choose a clear spot for the start point.",
+      SPAWN_RESTRICTED: "Place the start point in an open area.",
       ASSET_OFF_RASTER: "Place it on the grid.",
       ASSET_OUT_OF_RANGE: "Place it inside the floor.",
       ASSET_BLOCKED: "That space is occupied.",
@@ -3600,8 +3759,8 @@ export class WorldRuntime {
       ASSET_ALREADY_PLACED: "That asset is already placed.",
       ASSET_OWNERSHIP_INVALID: "That asset could not be verified.",
       ASSET_ROOM_REQUIRED: "Place it inside a room.",
-      ASSET_ROOM_FORBIDDEN: "You can only place assets in your assigned rooms.",
-      PUBLIC_ASSET_PLACEMENT_DISABLED: "Player assets are not enabled in this room.",
+      ASSET_ROOM_FORBIDDEN: "You cannot build in this room. Choose another room or change its build settings.",
+
       INSUFFICIENT_COINS: "You do not have enough coins.",
       INVENTORY_FULL: "Your inventory is full.",
       LAYOUT_CAPACITY_REACHED: "Remove something before adding more.",
@@ -3639,13 +3798,23 @@ export class WorldRuntime {
       CALLER_IN_MEETING: "Leave your meeting before calling.",
       PERSON_IN_MEETING: "They are in a meeting.",
       CALL_INVALID: "That call could not be started.",
+      PROXIMITY_SESSION_INVALID: "This conversation has ended. Turn on your microphone to start again.",
+      PROXIMITY_PEER_UNAVAILABLE: "That person has left the conversation.",
       MEETING_NOT_FOUND: "That meeting is no longer available.",
+      MEETING_NOT_JOINED: "This meeting session ended. Open the meeting again.",
+      MEETING_PEER_UNAVAILABLE: "That participant disconnected.",
+      MEETING_LOCKED: "This meeting is locked. Ask a participant to invite you.",
+      MEETING_HOST_REQUIRED: "Only the host can lock this meeting.",
+      MEETING_INVITATION_EXPIRED: "This invitation expired. Ask for another invitation.",
+      MEETING_INVITATION_PENDING: "An invitation is already pending.",
+      MEETING_ALREADY_JOINED: "They are already in this meeting.",
       ROOM_ACCESS_NOT_REQUIRED: "This room is open to you.",
       KNOCK_TOO_FAR: "Move closer to knock.",
       KNOCK_ALREADY_PENDING: "You already knocked.",
       KNOCK_NO_OCCUPANTS: "No one is inside.",
       KNOCK_NOT_FOUND: "That request is no longer active.",
       GAME_NOT_STARTED: "Start the game first.",
+      GAME_ROUND_CHANGED: "That round ended. Use the current game.",
       GAME_NOT_FOUND: "That game is unavailable.",
       GAME_TOO_FAR: "Move closer to the game table.",
       GAME_ALREADY_FINISHED: "Your game is finished.",

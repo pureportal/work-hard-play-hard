@@ -1,6 +1,7 @@
+import { createTestData } from "../testing/workspace-data.js";
 import { describe, expect, it } from "vitest";
 import { getOutdoorBounds, type FloorLayout } from "@workhard/shared";
-import { DemoStore } from "../store.js";
+import { WorkspaceStore } from "../store.js";
 import { canOccupy } from "./collision.js";
 import { findPath } from "./pathfinding.js";
 
@@ -128,7 +129,7 @@ describe("world navigation", () => {
   });
 
   it("keeps the rooftop portal and private-room door reachable from its spawn", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const rooftop = store.getLayout("floor-rooftop");
     const floor = store.getFloor("floor-rooftop");
     if (!rooftop || !floor) {

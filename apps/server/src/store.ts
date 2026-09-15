@@ -1,3 +1,6 @@
+import { applyOrganisationEdit, validateOrganisation, validateRoomPermission } from "./organisation/organisation-store.js";
+import { gameSettingsSchema } from "./organisation/organisation-schema.js";
+import { canEditRoomPermissions, type OrganisationEdit, type OrganisationState } from "@workhard/shared";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import {
   BOT_DIFFICULTIES,
@@ -10,6 +13,7 @@ import {
   CHESS_TIME_CONTROLS,
   DEFAULT_PLAYER_KIDNAPPING_SETTINGS,
   GAME_BOT_USER_ID,
+  FALLING_BLOCKS_DEFINITION_ID,
   KIDNAPPING_POLICY_MODES,
   MAX_LAYOUT_OBJECTS_PER_FLOOR,
   MAX_LAYOUT_OPENINGS_PER_FLOOR,
@@ -40,6 +44,7 @@ import type {
   Floor,
   FloorLayout,
   GameScore,
+  FallingBlocksSpecialCounts,
   GlobalKidnappingSettings,
   Invitation,
   Meeting,
@@ -54,7 +59,8 @@ import type {
   WorldObject,
   WorkspaceAccessData,
 } from "@workhard/shared";
-import { createSeedData } from "./seed.js";
+import { createInitialData } from "./initial-data.js";
+import { addFallingBlocksStatistics, validFallingBlocksCounts } from "./games/falling-blocks-statistics.js";
 import { workObjectStateSchema } from "./work/work-object-state.js";
 import {
   EconomyStore,
@@ -64,7 +70,9 @@ import {
 } from "./economy/economy-store.js";
 
 export interface MutableStoreState {
+  organisation: OrganisationState;
   members: Member[];
+  floors: Floor[];
   layouts: FloorLayout[];
   conversations: Conversation[];
   messages: ChatMessage[];
@@ -96,6 +104,7 @@ interface GameRoundScoreInput {
   level: number;
   order: number;
   won: boolean;
+  fallingBlocks?: FallingBlocksSpecialCounts;
 }
 
 export interface IssuedInvitation {
@@ -116,7 +125,7 @@ const DEFAULT_REGISTRATION_SETTINGS: RegistrationSettings = {
   defaultRole: "member",
 };
 
-export class DemoStore {
+export class WorkspaceStore {
   private data: BootstrapData;
   private messageSequenceByConversation: Map<string, number>;
   private readonly economy: EconomyStore;
@@ -127,13 +136,14 @@ export class DemoStore {
   private chessMatches: ChessMatchRecord[] = [];
   dirty = false;
 
-  constructor(initialData: BootstrapData = createSeedData()) {
+  constructor(initialData: BootstrapData = createInitialData()) {
     this.data = structuredClone(initialData);
     for (const layout of this.data.layouts) {
       assertLayoutIntegrity(layout);
     }
     this.messageSequenceByConversation = indexMessageSequences(this.data.messages);
     this.economy = new EconomyStore(this.data.members.map((member) => member.id));
+    this.economy.updateGameSettings(initialData.gameSettings);
     this.globalKidnappingSettings = structuredClone(initialData.kidnapping.global);
     validateCorporateIdentity(initialData.corporateIdentity);
     this.corporateIdentity = structuredClone(initialData.corporateIdentity);
@@ -199,6 +209,16 @@ export class DemoStore {
     return this.data.floors;
   }
 
+  updateFloorSpawn(floorId: string, spawn: Floor["spawn"]): Floor {
+    const floor = this.getFloor(floorId);
+    if (!floor) {
+      throw new Error("FLOOR_NOT_FOUND");
+    }
+    floor.spawn = structuredClone(spawn);
+    this.dirty = true;
+    return structuredClone(floor);
+  }
+
   getLayout(floorId: string): FloorLayout | undefined {
     return this.data.layouts.find((layout) => layout.floorId === floorId);
   }
@@ -236,6 +256,29 @@ export class DemoStore {
 
   getMeeting(meetingId: string): Meeting | undefined {
     return this.data.meetings.find((meeting) => meeting.id === meetingId);
+  }
+
+  getOrganisation(): OrganisationState {
+    return this.data.organisation;
+  }
+
+  editOrganisation(actorId: string, baseRevision: number, edit: OrganisationEdit): OrganisationState {
+    if (edit.type === "unit.delete") {
+      const unitId = edit.unitId;
+      const permissions = [this.getGameSettings().roomAccess, this.getGameSettings().roomBuild,
+        ...this.data.layouts.flatMap((layout) => layout.rooms.flatMap((room) => [room.access, ...(room.build ? [room.build] : [])]))];
+      if (permissions.some((permission) => permission.unitGrants?.some((grant) => grant.unitId === unitId))
+        || this.data.layouts.some((layout) => layout.rooms.some((room) => room.organisationUnitId === unitId))) throw new Error("ORGANISATION_UNIT_IN_USE");
+    }
+    this.data.organisation = applyOrganisationEdit(this.data.organisation, this.data.members.map((member) => member.id), actorId, baseRevision, edit);
+    this.dirty = true;
+    return this.getOrganisation();
+  }
+
+  canManageRoom(userId: string, roomId: string): boolean {
+    const room = this.getRoom(roomId);
+    const member = this.getMember(userId);
+    return Boolean(room && member && canEditRoomPermissions(room, userId, member.permissions, this.data.organisation));
   }
 
   getMembers(): Member[] {
@@ -358,6 +401,7 @@ export class DemoStore {
       floorId: floor.id,
       position: structuredClone(floor.spawn),
     };
+    if (this.data.members.length === 0) this.data.organisation.ceoIds = [member.id];
     this.data.members.push(member);
     this.economy.createAccount(member.id);
     this.playerKidnappingSettings.set(member.id, structuredClone(DEFAULT_PLAYER_KIDNAPPING_SETTINGS));
@@ -366,6 +410,9 @@ export class DemoStore {
   }
 
   removeMember(userId: string): void {
+    if (this.data.organisation.ceoIds.includes(userId)) throw new Error("CEO_VOTE_REQUIRED");
+    this.data.organisation.assignments = this.data.organisation.assignments.filter((person) => person.userId !== userId);
+    this.data.organisation.revision += 1;
     for (const layout of this.data.layouts) {
       const next = structuredClone(layout);
       next.objects = next.objects.filter((object) => object.ownerUserId !== userId);
@@ -376,8 +423,9 @@ export class DemoStore {
           changed = true;
         }
         room.access.assignedPersonIds = assignedPersonIds;
-        if (room.access.mode === "assigned" && room.access.assignedPersonIds.length === 0) {
-          room.access = { mode: "open", assignedPersonIds: [], knockable: false };
+        if (room.build?.assignedPersonIds.includes(userId)) {
+          room.build.assignedPersonIds = room.build.assignedPersonIds.filter((id) => id !== userId);
+          changed = true;
         }
       }
       if (changed) {
@@ -386,6 +434,11 @@ export class DemoStore {
       }
     }
     this.data.members = this.data.members.filter((member) => member.id !== userId);
+    const defaults = this.getGameSettings();
+    for (const permission of [defaults.roomAccess, defaults.roomBuild]) {
+      permission.assignedPersonIds = permission.assignedPersonIds.filter((id) => id !== userId);
+    }
+    this.updateGameSettings(defaults);
     const removedConversationIds = new Set(
       this.data.conversations
         .filter((conversation) => conversation.type === "direct" && conversation.participantIds?.includes(userId))
@@ -415,9 +468,6 @@ export class DemoStore {
     if (!this.getMember(userId)) {
       return false;
     }
-    if (meeting.location.type === "public") {
-      return true;
-    }
     return Boolean(this.getRoom(meeting.location.roomId));
   }
 
@@ -436,7 +486,7 @@ export class DemoStore {
       return Boolean(conversation.roomId && this.getRoom(conversation.roomId));
     }
     const meeting = conversation.meetingId ? this.getMeeting(conversation.meetingId) : undefined;
-    return Boolean(meeting && this.canViewMeeting(userId, meeting));
+    return Boolean(meeting && meeting.participantIds.includes(userId) && this.canViewMeeting(userId, meeting));
   }
 
   getConversation(conversationId: string): Conversation | undefined {
@@ -756,28 +806,20 @@ export class DemoStore {
     if (!layout || !room) {
       throw new Error("ROOM_NOT_FOUND");
     }
-    const assignedPersonIds = [...new Set(settings.access.assignedPersonIds)];
-    if (assignedPersonIds.some((personId) => !this.getMember(personId))) {
-      throw new Error("ROOM_ASSIGNEE_NOT_FOUND");
-    }
-    if (settings.access.mode === "assigned" && !room.privateEligible) {
-      throw new Error("ROOM_NOT_PRIVATE_ELIGIBLE");
-    }
-    if (settings.access.mode === "assigned" && assignedPersonIds.length === 0) {
-      throw new Error("ROOM_ASSIGNEE_REQUIRED");
-    }
-    if (settings.access.mode === "open" && settings.access.knockable) {
-      throw new Error("ROOM_KNOCK_REQUIRES_PRIVATE");
-    }
+    const memberIds = this.data.members.map((member) => member.id);
+    validateRoomPermission(settings.access, this.data.organisation, memberIds);
+    if (settings.build) validateRoomPermission(settings.build, this.data.organisation, memberIds);
+    if (settings.organisationUnitId && !this.data.organisation.units.some((unit) => unit.id === settings.organisationUnitId)) throw new Error("ORGANISATION_UNIT_NOT_FOUND");
+    if (settings.access.mode !== "open" && settings.access.mode !== "default" && !room.privateEligible) throw new Error("ROOM_NOT_PRIVATE_ELIGIBLE");
+    if (settings.access.mode === "open" && settings.access.knockable) throw new Error("ROOM_KNOCK_REQUIRES_PRIVATE");
     const next = structuredClone(layout);
     const nextRoom = next.rooms.find((item) => item.id === roomId)!;
     nextRoom.name = settings.name.trim();
     nextRoom.color = settings.color;
-    nextRoom.access = {
-      mode: settings.access.mode,
-      assignedPersonIds,
-      knockable: settings.access.mode === "assigned" && settings.access.knockable,
-    };
+    nextRoom.access = structuredClone(settings.access);
+    nextRoom.build = structuredClone(settings.build ?? { mode: "default", assignedPersonIds: [] });
+    if (settings.organisationUnitId) nextRoom.organisationUnitId = settings.organisationUnitId;
+    else delete nextRoom.organisationUnitId;
     next.revision += 1;
     return this.replaceLayout(next).layout;
   }
@@ -821,6 +863,9 @@ export class DemoStore {
         || !Number.isSafeInteger(result.order)
         || result.order < 0
         || typeof result.won !== "boolean"
+        || (result.fallingBlocks !== undefined && (
+          definitionId !== FALLING_BLOCKS_DEFINITION_ID || !validFallingBlocksCounts(result.fallingBlocks)
+        ))
       )
       || results.filter((result) => result.won).length > 1
       || (results.length === 1 && results[0]!.won)
@@ -855,6 +900,7 @@ export class DemoStore {
       placement: index + 1,
       won: result.won,
       playedAt,
+      ...(result.fallingBlocks ? { fallingBlocks: { ...result.fallingBlocks } } : {}),
     }));
     const nextStatistics = structuredClone(this.data.gameStatistics);
     const statistics = scores.map((score) => {
@@ -872,6 +918,9 @@ export class DemoStore {
       playerStatistics.highestLines = Math.max(playerStatistics.highestLines, score.lines);
       playerStatistics.totalScore += score.score;
       playerStatistics.totalLines += score.lines;
+      if (score.fallingBlocks) {
+        playerStatistics.fallingBlocks = addFallingBlocksStatistics(playerStatistics.fallingBlocks, score.fallingBlocks);
+      }
       if (
         !Number.isSafeInteger(playerStatistics.gamesPlayed)
         || !Number.isSafeInteger(playerStatistics.multiplayerGamesPlayed)
@@ -881,8 +930,16 @@ export class DemoStore {
       ) {
         throw new Error("GAME_RESULT_INVALID");
       }
-      return structuredClone(playerStatistics);
+      return playerStatistics;
     });
+    if (definitionId === FALLING_BLOCKS_DEFINITION_ID && mode === "multiplayer") {
+      const holder = nextStatistics.find((entry) => entry.definitionId === definitionId && entry.holdsCrown);
+      const winner = scores.find((score) => score.won);
+      if (winner && (!holder || results.some((result) => result.userId === holder.userId))) {
+        if (holder) delete holder.holdsCrown;
+        statistics.find((entry) => entry.userId === winner.userId)!.holdsCrown = true;
+      }
+    }
     const economyRewards = this.economy.rewardGames(scores.map((score) => ({
       userId: score.userId,
       roundId,
@@ -892,7 +949,7 @@ export class DemoStore {
     this.data.scores = [...this.data.scores, ...scores].sort((left, right) => right.score - left.score);
     this.data.gameStatistics = nextStatistics;
     this.dirty = true;
-    return { scores: structuredClone(scores), statistics, economyRewards };
+    return { scores: structuredClone(scores), statistics: structuredClone(statistics), economyRewards };
   }
 
   getPlayerEconomy(userId: string) {
@@ -924,6 +981,10 @@ export class DemoStore {
   }
 
   updateGameSettings(settings: Parameters<EconomyStore["updateGameSettings"]>[0]) {
+    gameSettingsSchema.parse(settings);
+    const memberIds = this.data.members.map((member) => member.id);
+    validateRoomPermission(settings.roomAccess, this.data.organisation, memberIds);
+    validateRoomPermission(settings.roomBuild, this.data.organisation, memberIds);
     const updated = this.economy.updateGameSettings(settings);
     this.dirty = true;
     return updated;
@@ -987,6 +1048,8 @@ export class DemoStore {
   exportMutableState(): MutableStoreState {
     return structuredClone({
       members: this.data.members,
+      organisation: this.data.organisation,
+      floors: this.data.floors,
       layouts: this.data.layouts,
       conversations: this.data.conversations,
       messages: this.data.messages,
@@ -1010,9 +1073,19 @@ export class DemoStore {
     if (!Array.isArray(next.layouts) || !Array.isArray(next.scores) || !Array.isArray(next.chessMatches)) {
       throw new Error("STORE_STATE_INVALID");
     }
+    validateOrganisation(next.organisation, next.members.map((member) => member.id));
+    const memberIds = next.members.map((member) => member.id);
+    for (const permission of [next.economy.gameSettings.roomAccess, next.economy.gameSettings.roomBuild]) {
+      validateRoomPermission(permission, next.organisation, memberIds);
+    }
     validateChessMatches(next.chessMatches, next.members);
     for (const layout of next.layouts) {
       assertLayoutIntegrity(layout);
+      for (const room of layout.rooms) {
+        validateRoomPermission(room.access, next.organisation, memberIds);
+        if (room.build) validateRoomPermission(room.build, next.organisation, memberIds);
+        if (room.organisationUnitId && !next.organisation.units.some((unit) => unit.id === room.organisationUnitId)) throw new Error("ORGANISATION_UNIT_NOT_FOUND");
+      }
     }
     const messageSequences = indexMessageSequences(next.messages);
     this.economy.validateStateForWorkspace(
@@ -1024,8 +1097,19 @@ export class DemoStore {
     validateKidnappingSettings(next.kidnapping, next.members);
     validateRegistrationSettings(next.registrationSettings);
     validateCorporateIdentity(next.corporateIdentity);
+    const floors = next.floors;
+    if (!Array.isArray(floors) || floors.length === 0 || new Set(floors.map((floor) => floor.id)).size !== floors.length
+      || floors.some((floor) => !floor || typeof floor.id !== "string" || !floor.id || typeof floor.name !== "string" || !floor.name
+        || !Number.isInteger(floor.level) || !Number.isFinite(floor.width) || floor.width <= 0
+        || !Number.isFinite(floor.height) || floor.height <= 0 || !Number.isFinite(floor.spawn?.x)
+        || !Number.isFinite(floor.spawn?.y) || !next.layouts.some((layout) => layout.floorId === floor.id))
+      || next.layouts.some((layout) => !floors.some((floor) => floor.id === layout.floorId))) {
+      throw new Error("STORE_STATE_INVALID");
+    }
     this.economy.restoreState(next.economy);
     this.data.members = next.members;
+    this.data.organisation = next.organisation;
+    this.data.floors = floors;
     this.data.layouts = next.layouts;
     this.data.conversations = next.conversations;
     this.data.messages = next.messages;

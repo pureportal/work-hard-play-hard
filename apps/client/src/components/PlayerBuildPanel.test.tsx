@@ -1,12 +1,26 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { MAX_LAYOUT_OBJECTS_PER_FLOOR, MAX_OWNED_ASSETS, type FloorLayout, type Room } from "@workhard/shared";
+import { createOrganisation, MAX_LAYOUT_OBJECTS_PER_FLOOR, MAX_OWNED_ASSETS, type FloorLayout, type Room } from "@workhard/shared";
 import { createTestEconomy, createTestGameSettings } from "../test-fixtures";
 import { PlayerBuildPanel } from "./PlayerBuildPanel";
 
 afterEach(cleanup);
 
 describe("PlayerBuildPanel", () => {
+  it("keeps floor materials separate from rugs in the shop", () => {
+    const onPurchase = vi.fn();
+    renderPanel({ onPurchase });
+    fireEvent.click(screen.getByRole("tab", { name: "Shop" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Floor types" }));
+    expect(screen.getAllByRole("button", { name: /^Buy / })).toHaveLength(30);
+    fireEvent.click(screen.getByRole("button", { name: "Buy Parquet" }));
+    expect(onPurchase).toHaveBeenCalledWith("floor-parquet");
+    expect(screen.queryByRole("button", { name: "Buy Woven rug" })).toBeNull();
+    fireEvent.click(screen.getByRole("tab", { name: "Floor decor" }));
+    expect(screen.getByRole("button", { name: "Buy Woven rug" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Buy Parquet" })).toBeNull();
+  });
+
   it("filters the expanded shop by rarity while retaining purchase limits", () => {
     const onPurchase = vi.fn();
     renderPanel({ onPurchase });
@@ -127,6 +141,8 @@ describe("PlayerBuildPanel", () => {
 function renderPanel(overrides: Partial<React.ComponentProps<typeof PlayerBuildPanel>> = {}) {
   const props: React.ComponentProps<typeof PlayerBuildPanel> = {
     currentUserId: "player",
+    organisation: createOrganisation(),
+    onOpenRooms: vi.fn(),
     economy: createTestEconomy(),
     gameSettings: createTestGameSettings(),
     layout: floorLayout(assignedRoom()),
@@ -162,6 +178,7 @@ function assignedRoom(): Room {
     windowIds: [],
     privateEligible: true,
     access: { mode: "assigned", assignedPersonIds: ["player"], knockable: false },
+    build: { mode: "assigned", assignedPersonIds: ["player"] },
   };
 }
 

@@ -13,7 +13,7 @@ import {
   type WallOpening,
 } from "./building.js";
 import { getAssetCollisionRects } from "./asset-placement.js";
-import { getPlacedAssetCellRects } from "./assets.js";
+import { getPlacedAssetBounds, getPlacedAssetCellRects, requireAssetDefinition } from "./assets.js";
 import { rectanglesOverlap, type Position, type Rect } from "./geometry.js";
 
 export type WallPlacementError =
@@ -50,7 +50,10 @@ export function getWallPlacementError(
     }
   }
   const wallRect = getWallRect(wall);
-  if (layout.objects.some((object) => getPlacedAssetCellRects(object).some((rect) => rectanglesOverlap(wallRect, rect)))) {
+  const wallCenterline = getWallRect(wall, 0);
+  if (layout.objects.some((object) => requireAssetDefinition(object.assetId).kind === "floor-tile"
+    ? rectanglesOverlap(wallCenterline, getPlacedAssetBounds(object))
+    : getPlacedAssetCellRects(object).some((rect) => rectanglesOverlap(wallRect, rect)))) {
     return "SPACE_OCCUPIED";
   }
   const orientation = getWallOrientation(wall);

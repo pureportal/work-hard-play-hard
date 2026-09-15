@@ -1,4 +1,8 @@
 import { MikroORM } from "@mikro-orm/postgresql";
+import type { SpotifyConnectionRecord } from "../spotify/spotify-record.js";
+import { SpotifyConnectionEntity } from "./entities/spotify-entity.js";
+import type { GitHubConnectionRecord } from "../github/github-record.js";
+import { GitHubConnectionEntity } from "./entities/github-entity.js";
 import type {
   BrandingLogoReference,
   BrandingLogoWrite,
@@ -13,8 +17,51 @@ import { PostgreSqlAuthRepository } from "./postgresql-auth-repository.js";
 import { PostgreSqlBrandingLogoRepository } from "./postgresql-branding-logo-repository.js";
 import { createDatabaseConfig, type PostgreSqlEnvironment } from "./database-config.js";
 import { PostgreSqlWorkspaceRepository } from "./postgresql-workspace-repository.js";
+import { PostgreSqlWhiteboardImages } from "./postgresql-whiteboard-images.js";
+import { WhiteboardImageEntity } from "./entities/whiteboard-image-entity.js";
+import type { WhiteboardImageWrite } from "../work/whiteboard-image-record.js";
 
 export class PostgreSqlDatabase implements ApplicationDatabase {
+  async loadGitHubConnections(): Promise<GitHubConnectionRecord[]> {
+    const records = await this.orm.em.fork().findAll(GitHubConnectionEntity);
+    return records.map(({ userId, encryptedTokens, login }) => ({ userId, encryptedTokens, login }));
+  }
+
+  async saveGitHubConnection(record: GitHubConnectionRecord): Promise<void> {
+    await this.orm.em.fork().upsert(GitHubConnectionEntity, record);
+  }
+
+  async removeGitHubConnection(userId: string): Promise<void> {
+    await this.orm.em.fork().nativeDelete(GitHubConnectionEntity, { userId });
+  }
+
+  saveWhiteboardImage(image: WhiteboardImageWrite): Promise<void> {
+    return new PostgreSqlWhiteboardImages(this.orm).save(image);
+  }
+
+  readWhiteboardImage(id: string): Promise<Buffer | undefined> {
+    return new PostgreSqlWhiteboardImages(this.orm).read(id);
+  }
+
+  retainWhiteboardImages(objectId: string, imageIds: string[]): Promise<boolean> {
+    return new PostgreSqlWhiteboardImages(this.orm).retain(objectId, imageIds);
+  }
+
+  cleanupWhiteboardImages(): Promise<void> {
+    return new PostgreSqlWhiteboardImages(this.orm).cleanup();
+  }
+  async loadSpotifyConnections(): Promise<SpotifyConnectionRecord[]> {
+    const records = await this.orm.em.fork().findAll(SpotifyConnectionEntity);
+    return records.map(({ userId, encryptedTokens, sharing }) => ({ userId, encryptedTokens, sharing }));
+  }
+
+  async saveSpotifyConnection(record: SpotifyConnectionRecord): Promise<void> {
+    await this.orm.em.fork().upsert(SpotifyConnectionEntity, record);
+  }
+
+  async removeSpotifyConnection(userId: string): Promise<void> {
+    await this.orm.em.fork().nativeDelete(SpotifyConnectionEntity, { userId });
+  }
   private readonly authRepository: PostgreSqlAuthRepository;
   private readonly brandingLogoRepository: PostgreSqlBrandingLogoRepository;
   private readonly workspaceRepository: PostgreSqlWorkspaceRepository;
@@ -74,6 +121,9 @@ export class PostgreSqlDatabase implements ApplicationDatabase {
 
   async clear(): Promise<void> {
     await this.orm.em.fork().transactional(async (entityManager) => {
+      await entityManager.nativeDelete(GitHubConnectionEntity, {});
+      await entityManager.nativeDelete(WhiteboardImageEntity, {});
+      await entityManager.nativeDelete(SpotifyConnectionEntity, {});
       await this.brandingLogoRepository.clear(entityManager);
       await this.authRepository.clear(entityManager);
       await this.workspaceRepository.clear(entityManager);

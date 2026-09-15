@@ -4,10 +4,24 @@ import type { WorkObjectState } from "@workhard/shared";
 import { WorkObjectDialog } from "./WorkObjectDialog";
 
 afterEach(cleanup);
-const notes: WorkObjectState = { kind: "whiteboard", revision: 2, text: "Original notes" };
+const notes: WorkObjectState = { kind: "whiteboard", revision: 2, document: { text: "Original notes", cards: [] } };
 const checklist: WorkObjectState = { kind: "checklist", revision: 4, items: [{ id: "one", text: "Review demo", completed: false }] };
 
 describe("WorkObjectDialog", () => {
+  it.each([notes, checklist])("allows meeting controls to receive focus alongside a $kind", (state) => {
+    const close = vi.fn();
+    const view = render(<><button>Mute meeting</button><WorkObjectDialog title="Shared board" state={state} modal={false} onUpdate={vi.fn()} onClose={close} /></>);
+    const dialog = screen.getByRole("dialog", { name: "Shared board" });
+    expect(dialog.getAttribute("aria-modal")).toBeNull();
+    expect(view.container.querySelector(".modal-backdrop")).toBeNull();
+    const mute = screen.getByRole("button", { name: "Mute meeting" });
+    mute.focus();
+    fireEvent.keyDown(mute, { key: "Escape" });
+    expect(close).not.toHaveBeenCalled();
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(close).toHaveBeenCalledOnce();
+  });
+
   it("keeps notes until the server acknowledges, and retains failed drafts", async () => {
     const update = vi.fn().mockRejectedValueOnce(new Error("Connection lost. Try again.")).mockResolvedValue(undefined);
     render(<WorkObjectDialog title="Whiteboard" state={notes} onUpdate={update} onClose={vi.fn()} />);
@@ -15,7 +29,7 @@ describe("WorkObjectDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await screen.findByText("Connection lost. Try again.");
     expect((screen.getByRole("textbox", { name: "Notes" }) as HTMLTextAreaElement).value).toBe("Release plan\nReview");
-    expect(update).toHaveBeenCalledWith(2, { type: "whiteboard.save", text: "Release plan\nReview" });
+    expect(update).toHaveBeenCalledWith(2, { type: "whiteboard.save", document: { text: "Release plan\nReview", cards: [] } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await screen.findByText("Saved");
   });
@@ -24,13 +38,13 @@ describe("WorkObjectDialog", () => {
     const update = vi.fn().mockResolvedValue(undefined);
     const view = render(<WorkObjectDialog title="Whiteboard" state={notes} onUpdate={update} onClose={vi.fn()} />);
     fireEvent.change(screen.getByLabelText("Notes"), { target: { value: "My draft" } });
-    view.rerender(<WorkObjectDialog title="Whiteboard" state={{ ...notes, revision: 3, text: "Teammate notes" }} onUpdate={update} onClose={vi.fn()} />);
-    expect(screen.getByRole("alert").textContent).toContain("Your draft is kept");
+    view.rerender(<WorkObjectDialog title="Whiteboard" state={{ ...notes, revision: 3, document: { text: "Teammate notes", cards: [] } }} onUpdate={update} onClose={vi.fn()} />);
+    expect(screen.getByRole("alert").textContent).toContain("Choose which changes to keep.");
     expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByLabelText("Notes") as HTMLTextAreaElement).value).toBe("My draft");
-    fireEvent.click(screen.getByRole("button", { name: "Keep draft" }));
+    fireEvent.click(screen.getByRole("button", { name: "Keep mine" }));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    await waitFor(() => expect(update).toHaveBeenCalledWith(3, { type: "whiteboard.save", text: "My draft" }));
+    await waitFor(() => expect(update).toHaveBeenCalledWith(3, { type: "whiteboard.save", document: { text: "My draft", cards: [] } }));
   });
 
   it("adds, edits, completes, reopens, and removes checklist items through saved operations", async () => {

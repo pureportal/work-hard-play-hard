@@ -15,6 +15,7 @@ export interface FloorRouteTransition {
 export interface FloorRouteLeg {
   floorId: string;
   path: Position[];
+  distance: number;
   transition?: FloorRouteTransition;
 }
 
@@ -64,7 +65,7 @@ export function findFloorRoute({
 
   if (start.floorId === destination.floorId) {
     const path = findPath(start.floorId, toPosition(start), toPosition(destination), "destination");
-    return path ? [{ floorId: start.floorId, path }] : undefined;
+    return path ? [{ floorId: start.floorId, path, distance: pathDistance(start, path) }] : undefined;
   }
 
   const portals = getFloorPortals(floors, layouts);
@@ -95,8 +96,7 @@ export function findFloorRoute({
           predecessors,
           current,
           { key: DESTINATION_KEY, ...destination },
-          { floorId: current.floorId, path },
-          pathDistance(current, path),
+          { floorId: current.floorId, path, distance: pathDistance(current, path) },
         );
       }
     }
@@ -106,6 +106,7 @@ export function findFloorRoute({
       if (!path) {
         continue;
       }
+      const distance = pathDistance(current, path);
       for (const destinationPortal of getCorrespondingFloorPortals(portals, sourcePortal)) {
         relax(
           queued,
@@ -120,13 +121,13 @@ export function findFloorRoute({
           {
             floorId: current.floorId,
             path,
+            distance,
             transition: {
               sourcePortalId: sourcePortal.object.id,
               destinationPortalId: destinationPortal.object.id,
               floorId: destinationPortal.floorId,
             },
           },
-          pathDistance(current, path) + TRANSITION_COST,
         );
       }
     }
@@ -142,9 +143,8 @@ function relax(
   current: SearchState,
   next: Omit<SearchState, "cost">,
   leg: FloorRouteLeg,
-  edgeCost: number,
 ): void {
-  const cost = current.cost + edgeCost;
+  const cost = current.cost + leg.distance + (leg.transition ? TRANSITION_COST : 0);
   if (cost >= (costs.get(next.key) ?? Number.POSITIVE_INFINITY)) {
     return;
   }

@@ -1,11 +1,12 @@
+import { createTestData } from "../testing/workspace-data.js";
 import type { ServerEvent, WorldPlayer, WorldSnapshot } from "@workhard/shared";
 import { describe, expect, it, vi } from "vitest";
-import { DemoStore } from "../store.js";
+import { WorkspaceStore } from "../store.js";
 import { WorldRuntime } from "./world-runtime.js";
 
 describe("WorldRuntime snapshot fanout", () => {
   it("reuses one assembled snapshot for peers on the same floor", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const firstEvents: ServerEvent[] = [];
     const secondEvents: ServerEvent[] = [];
     runtime.connect("user-maya", "floor-studio", (event) => firstEvents.push(event));
@@ -23,7 +24,7 @@ describe("WorldRuntime snapshot fanout", () => {
   });
 
   it("uses floor indexes when broadcasting snapshots across floors", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const studioEvents: ServerEvent[] = [];
     const rooftopEvents: ServerEvent[] = [];
     runtime.connect("user-maya", "floor-studio", (event) => studioEvents.push(event));
@@ -50,7 +51,7 @@ describe("WorldRuntime snapshot fanout", () => {
   });
 
   it("removes disconnected players and peers from floor snapshots", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const firstEvents: ServerEvent[] = [];
     const secondEvents: ServerEvent[] = [];
     const firstPeerId = runtime.connect("user-maya", "floor-studio", (event) => firstEvents.push(event));
@@ -72,7 +73,7 @@ describe("WorldRuntime snapshot fanout", () => {
   });
 
   it("only broadcasts movement snapshots to the floor that changed", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const studioEvents: ServerEvent[] = [];
     const rooftopEvents: ServerEvent[] = [];
     const studioPeerId = runtime.connect("user-maya", "floor-studio", (event) => studioEvents.push(event));
@@ -92,7 +93,7 @@ describe("WorldRuntime snapshot fanout", () => {
   });
 
   it("heartbeats idle floors independently of active-floor snapshots", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const studioEvents: ServerEvent[] = [];
     const rooftopEvents: ServerEvent[] = [];
     const studioPeerId = runtime.connect("user-maya", "floor-studio", (event) => studioEvents.push(event));
@@ -116,7 +117,7 @@ describe("WorldRuntime snapshot fanout", () => {
   });
 
   it("detaches snapshots from mutable runtime player state", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const events: ServerEvent[] = [];
     runtime.connect("user-maya", "floor-studio", (event) => events.push(event));
     events.length = 0;
@@ -143,7 +144,7 @@ describe("WorldRuntime snapshot fanout", () => {
   });
 
   it("skips lobby reconciliation while every player is idle", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const getGameObjects = vi.spyOn(store, "getGameObjects");
     const runtime = new WorldRuntime(store);
     const peerId = runtime.connect("user-maya", "floor-studio", () => undefined);
@@ -159,7 +160,7 @@ describe("WorldRuntime snapshot fanout", () => {
   });
 
   it("only visits active movement states on each tick", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const peerId = runtime.connect("user-maya", "floor-studio", () => undefined);
     runtime.connect("user-leo", "floor-studio", () => undefined);
     const gameRuntime = (runtime as unknown as {
@@ -183,7 +184,7 @@ describe("WorldRuntime snapshot fanout", () => {
   });
 
   it("suppresses unchanged snapshots while retaining an idle heartbeat", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const events: ServerEvent[] = [];
     const peerId = runtime.connect("user-maya", "floor-studio", (event) => events.push(event));
     events.length = 0;

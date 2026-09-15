@@ -19,12 +19,12 @@ export function useWorkObjectUpdates() {
   useEffect(() => disconnect, [disconnect]);
 
   const handleEvent = useCallback((event: ServerEvent) => {
-    if ((event.type !== "layout.updated" && event.type !== "command.error") || !event.requestId) return false;
+    if ((event.type !== "work.saved" && event.type !== "command.error") || !event.requestId) return false;
     const update = pending.current.get(event.requestId);
     if (!update) return false;
     pending.current.delete(event.requestId);
     window.clearTimeout(update.timer);
-    if (event.type === "command.error") update.reject(new Error(event.message));
+    if (event.type === "command.error") update.reject(Object.assign(new Error(event.message), { code: event.code }));
     else update.resolve();
     return event.type === "command.error";
   }, []);

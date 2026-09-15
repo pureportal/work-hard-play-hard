@@ -1,4 +1,7 @@
 import { randomUUID } from "node:crypto";
+import { WHITEBOARD_IMAGE_RECOVERY_MS, whiteboardImageReferences, type WhiteboardImageWrite } from "../work/whiteboard-image-record.js";
+import type { SpotifyConnectionRecord } from "../spotify/spotify-record.js";
+import type { GitHubConnectionRecord } from "../github/github-record.js";
 import type {
   BrandingLogoReference,
   BrandingLogoWrite,
@@ -11,6 +14,67 @@ import type {
 } from "./application-database.js";
 
 export class MemoryDatabase implements ApplicationDatabase {
+  private readonly githubConnections = new Map<string, GitHubConnectionRecord>();
+
+  async loadGitHubConnections(): Promise<GitHubConnectionRecord[]> {
+    return structuredClone([...this.githubConnections.values()]);
+  }
+
+  async saveGitHubConnection(record: GitHubConnectionRecord): Promise<void> {
+    this.githubConnections.set(record.userId, structuredClone(record));
+  }
+
+  async removeGitHubConnection(userId: string): Promise<void> {
+    this.githubConnections.delete(userId);
+  }
+
+  private readonly whiteboardImages = new Map<string, Buffer>();
+  private readonly whiteboardReferences = new Map<string, { imageId: string; objectId: string; expiresAt: number | null }>();
+
+  async saveWhiteboardImage({ id, image, objectId }: WhiteboardImageWrite): Promise<void> {
+    this.whiteboardImages.set(id, Buffer.from(image));
+    const key = JSON.stringify([id, objectId]);
+    const reference = this.whiteboardReferences.get(key);
+    if (!reference || reference.expiresAt !== null) {
+      this.whiteboardReferences.set(key, { imageId: id, objectId, expiresAt: Date.now() + WHITEBOARD_IMAGE_RECOVERY_MS });
+    }
+  }
+
+  async readWhiteboardImage(id: string): Promise<Buffer | undefined> {
+    const image = this.whiteboardImages.get(id);
+    return image ? Buffer.from(image) : undefined;
+  }
+
+  async retainWhiteboardImages(objectId: string, imageIds: string[]): Promise<boolean> {
+    if (imageIds.some((id) => !this.whiteboardImages.has(id))) return false;
+    for (const imageId of imageIds) {
+      const key = JSON.stringify([imageId, objectId]);
+      const reference = this.whiteboardReferences.get(key);
+      if (!reference || reference.expiresAt !== null) this.whiteboardReferences.set(key, { imageId, objectId, expiresAt: Date.now() + WHITEBOARD_IMAGE_RECOVERY_MS });
+    }
+    return true;
+  }
+
+  async cleanupWhiteboardImages(): Promise<void> {
+    for (const [key, reference] of this.whiteboardReferences) {
+      if (reference.expiresAt !== null && reference.expiresAt <= Date.now()) this.whiteboardReferences.delete(key);
+    }
+    const used = new Set([...this.whiteboardReferences.values()].map((reference) => reference.imageId));
+    for (const id of this.whiteboardImages.keys()) if (!used.has(id)) this.whiteboardImages.delete(id);
+  }
+  private readonly spotifyConnections = new Map<string, SpotifyConnectionRecord>();
+
+  async loadSpotifyConnections(): Promise<SpotifyConnectionRecord[]> {
+    return structuredClone([...this.spotifyConnections.values()]);
+  }
+
+  async saveSpotifyConnection(record: SpotifyConnectionRecord): Promise<void> {
+    this.spotifyConnections.set(record.userId, structuredClone(record));
+  }
+
+  async removeSpotifyConnection(userId: string): Promise<void> {
+    this.spotifyConnections.delete(userId);
+  }
   private workspaceState: WorkspacePersistenceState | undefined;
   private authState: AuthPersistenceState | undefined;
   private brandingLogo: StoredBrandingLogo | undefined;
@@ -25,6 +89,16 @@ export class MemoryDatabase implements ApplicationDatabase {
 
   async saveWorkspaceState(state: WorkspacePersistenceState): Promise<void> {
     this.workspaceState = structuredClone(state);
+    const { boardIds, references } = whiteboardImageReferences(state.store.layouts);
+    const saved = new Set(references.map(({ imageId, objectId }) => JSON.stringify([imageId, objectId])));
+    for (const [key, reference] of this.whiteboardReferences) {
+      if (!boardIds.has(reference.objectId)) this.whiteboardReferences.delete(key);
+      else if (!saved.has(key) && reference.expiresAt === null) reference.expiresAt = Date.now() + WHITEBOARD_IMAGE_RECOVERY_MS;
+    }
+    for (const reference of references) {
+      if (this.whiteboardImages.has(reference.imageId)) this.whiteboardReferences.set(JSON.stringify([reference.imageId, reference.objectId]), { ...reference, expiresAt: null });
+    }
+    await this.cleanupWhiteboardImages();
   }
 
   async loadAuthState(): Promise<AuthPersistenceState | undefined> {
@@ -58,6 +132,10 @@ export class MemoryDatabase implements ApplicationDatabase {
   }
 
   async clear(): Promise<void> {
+    this.githubConnections.clear();
+    this.whiteboardImages.clear();
+    this.whiteboardReferences.clear();
+    this.spotifyConnections.clear();
     this.workspaceState = undefined;
     this.authState = undefined;
     this.brandingLogo = undefined;

@@ -1,6 +1,7 @@
+import { createTestData } from "../testing/workspace-data.js";
 import { CHARACTER_WALK_SPEED, type ClientCommand, type ServerEvent, type WorldPlayer, type WorldSnapshot } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
-import { DemoStore } from "../store.js";
+import { WorkspaceStore } from "../store.js";
 import { WorldRuntime } from "./world-runtime.js";
 
 function placePlayers(runtime: WorldRuntime, positions: Record<string, { x: number; y: number }>): void {
@@ -21,6 +22,7 @@ function send(runtime: WorldRuntime, peerId: string, command: ClientCommand): vo
 function setMedia(runtime: WorldRuntime, peerId: string, microphone: boolean, camera: boolean): void {
   send(runtime, peerId, {
     type: "proximity.set_media",
+    sessionId: peerId,
     requestId: crypto.randomUUID(),
     microphone,
     camera,
@@ -47,7 +49,7 @@ function player(snapshotEvent: WorldSnapshot, userId: string): WorldPlayer {
 
 describe("WorldRuntime proximity calls", () => {
   it("shows a ready player without creating a solo call", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     placePlayers(runtime, { "user-maya": { x: 100, y: 100 } });
     const events: ServerEvent[] = [];
     const peer = connect(runtime, "user-maya", events);
@@ -62,7 +64,7 @@ describe("WorldRuntime proximity calls", () => {
   });
 
   it("forms a call and lets another ready player join it", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     placePlayers(runtime, {
       "user-maya": { x: 100, y: 100 },
       "user-leo": { x: 240, y: 100 },
@@ -87,7 +89,7 @@ describe("WorldRuntime proximity calls", () => {
   });
 
   it("keeps a call inside shared reach, then ends it after the group separates", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     placePlayers(runtime, {
       "user-maya": { x: 100, y: 100 },
       "user-leo": { x: 240, y: 100 },
@@ -110,13 +112,18 @@ describe("WorldRuntime proximity calls", () => {
     runtime.runTickForTest(50 / CHARACTER_WALK_SPEED * 1000);
     send(runtime, leoPeer, { type: "movement.input", sequence: 4, dx: 0, dy: 0 });
     current = snapshot(runtime, events);
-    expect(player(current, "user-maya").proximity?.callId).toBeUndefined();
-    expect(player(current, "user-leo").proximity?.callId).toBeUndefined();
+    expect(player(current, "user-maya").proximity).toBeUndefined();
+    expect(player(current, "user-leo").proximity).toBeUndefined();
+    expect(events).toContainEqual({ type: "proximity.left", sessionId: mayaPeer });
+    send(runtime, leoPeer, { type: "movement.input", sequence: 5, dx: -1, dy: 0 });
+    runtime.runTickForTest(100 / CHARACTER_WALK_SPEED * 1000);
+    send(runtime, leoPeer, { type: "movement.input", sequence: 6, dx: 0, dy: 0 });
+    expect(player(snapshot(runtime, events), "user-leo").proximity).toBeUndefined();
     runtime.stop();
   });
 
   it("ends a call when a participant turns off both devices", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     placePlayers(runtime, {
       "user-maya": { x: 100, y: 100 },
       "user-leo": { x: 240, y: 100 },
@@ -136,11 +143,12 @@ describe("WorldRuntime proximity calls", () => {
     runtime.stop();
   });
 
-  it("keeps ambient participation while a direct call is ringing, then switches on acceptance", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+  it("keeps a conversation open to others while a call invitation rings and after acceptance", () => {
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     placePlayers(runtime, {
       "user-maya": { x: 100, y: 100 },
       "user-leo": { x: 220, y: 100 },
+      "user-elena": { x: 340, y: 100 },
     });
     const mayaEvents: ServerEvent[] = [];
     const leoEvents: ServerEvent[] = [];
@@ -171,13 +179,16 @@ describe("WorldRuntime proximity calls", () => {
     });
 
     current = snapshot(runtime, mayaEvents);
-    expect(player(current, "user-maya").proximity).toBeUndefined();
-    expect(player(current, "user-leo").proximity).toBeUndefined();
+    expect(player(current, "user-maya").proximity?.callId).toBe(callId);
+    expect(player(current, "user-leo").proximity?.callId).toBe(callId);
+    const elenaPeer = connect(runtime, "user-elena", []);
+    setMedia(runtime, elenaPeer, true, true);
+    expect(player(snapshot(runtime, mayaEvents), "user-elena").proximity?.callId).toBe(callId);
     runtime.stop();
   });
 
-  it("preserves an existing ambient call when its members enter a public meeting area", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+  it("keeps an open call connected while its participants walk together", () => {
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     placePlayers(runtime, {
       "user-maya": { x: 690, y: 760 },
       "user-leo": { x: 650, y: 760 },
@@ -191,7 +202,7 @@ describe("WorldRuntime proximity calls", () => {
 
     send(runtime, mayaPeer, {
       type: "movement.set_destination",
-      requestId: "enter-huddle",
+      requestId: "walk-across-floor",
       floorId: "floor-studio",
       x: 800,
       y: 760,
@@ -208,7 +219,7 @@ describe("WorldRuntime proximity calls", () => {
   });
 
   it("keeps ambient readiness unchanged inside a meeting room before it is opened", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const events: ServerEvent[] = [];
     const peer = connect(runtime, "user-amara", events);
 
@@ -224,7 +235,7 @@ describe("WorldRuntime proximity calls", () => {
   });
 
   it("keeps ambient readiness when crossing into a meeting room", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     placePlayers(runtime, { "user-amara": { x: 735, y: 500 } });
     const events: ServerEvent[] = [];
     const peer = connect(runtime, "user-amara", events);
@@ -256,7 +267,7 @@ describe("WorldRuntime proximity calls", () => {
   });
 
   it("clears proximity readiness after the user explicitly opens a meeting", () => {
-    const runtime = new WorldRuntime(new DemoStore());
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     placePlayers(runtime, { "user-maya": { x: 100, y: 100 } });
     const events: ServerEvent[] = [];
     const peer = connect(runtime, "user-maya", events);
@@ -265,12 +276,12 @@ describe("WorldRuntime proximity calls", () => {
 
     send(runtime, peer, {
       type: "meeting.join",
-      requestId: "open-huddle",
-      meetingId: "meeting-open-huddle",
+      requestId: "open-room",
+      meetingId: "meeting-product-crit",
     });
 
     expect(player(snapshot(runtime, events), "user-maya").proximity).toBeUndefined();
-    expect(events.some((event) => event.type === "meeting.joined" && event.meeting.id === "meeting-open-huddle")).toBe(true);
+    expect(events.some((event) => event.type === "meeting.joined" && event.meeting.id === "meeting-product-crit")).toBe(true);
     runtime.stop();
   });
 });

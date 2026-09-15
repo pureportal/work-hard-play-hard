@@ -42,13 +42,13 @@ try {
       await page.getByRole("status").filter({ hasText: /^Connected$/ }).waitFor();
       await page.getByRole("button", { name: "Customize avatar", exact: true }).click();
       await ready(page);
-      await page.route("**/characters/anime/portraits/hair/ponytail.png", (route) => route.abort("failed"));
+      await page.route("**/characters/blockbench/hair/ponytail.png", (route) => route.abort("failed"));
       await page.getByRole("tab", { name: "Hair", exact: true }).click();
       await page.getByRole("button", { name: "Lavender ponytail", exact: true }).click();
       await page.locator(".character-preview-error").waitFor();
       assert(await page.getByRole("button", { name: "Use character", exact: true }).isDisabled());
       await page.screenshot({ path: `${output}/${viewport.width}-artwork-error.png` });
-      await page.unroute("**/characters/anime/portraits/hair/ponytail.png");
+      await page.unroute("**/characters/blockbench/hair/ponytail.png");
       await page.getByRole("button", { name: "Retry", exact: true }).click();
       await ready(page);
       assert.equal(await page.locator(".character-preview-error").count(), 0);

@@ -4,6 +4,7 @@ import {
   TIC_TAC_TOE_DEFINITION_ID,
   TIC_TAC_TOE_VARIANTS,
   type FallingBlocksCommand,
+  type FallingBlocksSettings,
   type GameCommand,
   type GameBot,
   type ServerEvent,
@@ -11,7 +12,7 @@ import {
   type TicTacToeVariantId,
   type WorldPlayer,
 } from "@workhard/shared";
-import { DemoStore } from "../store.js";
+import { WorkspaceStore } from "../store.js";
 import { FallingBlocksMultiplayerRuntime } from "./falling-blocks-multiplayer.js";
 import type { GameEventDelivery } from "./game-event-delivery.js";
 import { TicTacToeMultiplayerRuntime } from "./tic-tac-toe-multiplayer.js";
@@ -20,14 +21,14 @@ export class GamesRuntime {
   private readonly fallingBlocks: FallingBlocksMultiplayerRuntime;
   private readonly ticTacToe: TicTacToeMultiplayerRuntime;
 
-  constructor(store: DemoStore) {
+  constructor(store: WorkspaceStore) {
     this.fallingBlocks = new FallingBlocksMultiplayerRuntime(store);
     this.ticTacToe = new TicTacToeMultiplayerRuntime(store);
   }
 
   syncLobbies(players: Iterable<WorldPlayer>, connectedUserIds: ReadonlySet<string>): GameEventDelivery[] {
     const availablePlayers = [...players].filter((player) =>
-      !this.fallingBlocks.isPlaying(player.userId) && !this.ticTacToe.isPlaying(player.userId),
+      !this.getRoundId(player.userId),
     );
     return [
       ...this.fallingBlocks.syncLobbies(availablePlayers, connectedUserIds),
@@ -39,31 +40,39 @@ export class GamesRuntime {
     userId: string,
     definitionId: string,
     variantId?: TicTacToeVariantId,
-    options: { bot?: GameBot; solo?: boolean; objectId?: string } = {},
+    options: { bot?: GameBot; solo?: boolean; objectId?: string; settings?: FallingBlocksSettings } = {},
   ): { participantIds: string[]; deliveries: GameEventDelivery[] } {
     if (definitionId === FALLING_BLOCKS_DEFINITION_ID) {
       if (variantId !== undefined) {
         throw new Error("GAME_VARIANT_INVALID");
       }
-      if (this.ticTacToe.isPlaying(userId)) {
+      if (this.ticTacToe.getRoundId(userId)) {
         throw new Error("GAME_IN_PROGRESS");
       }
       if (!options.objectId) throw new Error("GAME_NOT_FOUND");
-      return this.fallingBlocks.start(userId, options.objectId, options.solo);
+      const started = this.fallingBlocks.start(userId, options.objectId, options.solo, options.settings);
+      started.deliveries.push(...this.ticTacToe.removeFromLobbies(started.participantIds));
+      return started;
     }
     if (definitionId === TIC_TAC_TOE_DEFINITION_ID) {
       if (!variantId || !isTicTacToeVariantId(variantId)) {
         throw new Error("GAME_VARIANT_INVALID");
       }
-      if (this.fallingBlocks.isPlaying(userId)) {
+      if (this.fallingBlocks.getRoundId(userId)) {
         throw new Error("GAME_IN_PROGRESS");
       }
-      return this.ticTacToe.start(userId, variantId, options.bot);
+      if (!options.objectId) throw new Error("GAME_NOT_FOUND");
+      const started = this.ticTacToe.start(userId, options.objectId, variantId, options.bot);
+      started.deliveries.push(...this.fallingBlocks.removeFromLobbies(started.participantIds));
+      return started;
     }
     throw new Error("GAME_NOT_FOUND");
   }
 
-  command(userId: string, command: GameCommand): GameEventDelivery[] {
+  command(userId: string, roundId: string, command: GameCommand): GameEventDelivery[] {
+    const currentRoundId = this.getRoundId(userId);
+    if (!currentRoundId) throw new Error("GAME_NOT_STARTED");
+    if (currentRoundId !== roundId) throw new Error("GAME_ROUND_CHANGED");
     if (this.fallingBlocks.isPlaying(userId)) {
       if (!isFallingBlocksCommand(command)) {
         throw new Error("GAME_COMMAND_INVALID");
@@ -84,13 +93,18 @@ export class GamesRuntime {
   }
 
   leave(userId: string): GameEventDelivery[] {
-    if (this.fallingBlocks.isPlaying(userId)) {
-      return this.fallingBlocks.leave(userId);
-    }
-    if (this.ticTacToe.isPlaying(userId)) {
-      return this.ticTacToe.leave(userId);
-    }
-    return [];
+    return [...this.fallingBlocks.leave(userId), ...this.ticTacToe.leave(userId)];
+  }
+
+  end(userId: string, roundId: string): GameEventDelivery[] {
+    const currentRoundId = this.getRoundId(userId);
+    if (!currentRoundId) return [];
+    if (currentRoundId !== roundId) throw new Error("GAME_ROUND_CHANGED");
+    return this.leave(userId);
+  }
+
+  getRoundId(userId: string): string | undefined {
+    return this.fallingBlocks.getRoundId(userId) ?? this.ticTacToe.getRoundId(userId);
   }
 
   isPlaying(userId: string): boolean {

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createApplication } from "./app.js";
+import { createTestApplication } from "./testing/application.js";
 import type { WorkspacePersistenceState } from "./persistence/application-database.js";
 import { MemoryDatabase } from "./persistence/memory-database.js";
 
@@ -11,7 +11,7 @@ afterEach(() => {
 describe("application database persistence", () => {
   it("reports database connectivity through readiness", async () => {
     const database = new MemoryDatabase();
-    const context = await createApplication({ database });
+    const context = await createTestApplication({ database });
 
     const ready = await context.app.inject("/v1/health/ready");
     expect(ready.statusCode).toBe(200);
@@ -28,7 +28,7 @@ describe("application database persistence", () => {
   it("waits for an active write and persists changes made during that write", async () => {
     vi.useFakeTimers();
     const database = new MemoryDatabase();
-    const context = await createApplication({ database, seeded: true });
+    const context = await createTestApplication({ database, fixture: true });
     await context.app.ready();
     context.runtime.stop();
 

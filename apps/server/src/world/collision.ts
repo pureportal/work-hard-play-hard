@@ -1,4 +1,4 @@
-import { getAssetCollisionRects, getWallSolidRects, isPointInRoom, type FloorLayout, type Rect, type Room } from "@workhard/shared";
+import { circleIntersectsRect, getAssetCollisionRects, getWallSolidRects, isPointInRoom, type FloorLayout, type Rect, type Room } from "@workhard/shared";
 
 export interface WorldBounds {
   x?: number;
@@ -8,14 +8,6 @@ export interface WorldBounds {
 }
 
 const colliderCache = new WeakMap<FloorLayout, { revision: number; rects: Rect[] }>();
-
-export function circleIntersectsRect(x: number, y: number, radius: number, rect: Rect): boolean {
-  const closestX = Math.max(rect.x, Math.min(x, rect.x + rect.width));
-  const closestY = Math.max(rect.y, Math.min(y, rect.y + rect.height));
-  const distanceX = x - closestX;
-  const distanceY = y - closestY;
-  return distanceX * distanceX + distanceY * distanceY < radius * radius;
-}
 
 export function canOccupy(
   layout: FloorLayout,
@@ -57,8 +49,8 @@ export function canOccupy(
 
   for (const room of layout.rooms) {
     const wasInside = isPointInRoom(currentX, currentY, room);
-    const lacksAccess = room.access.mode === "assigned"
-      && !room.access.assignedPersonIds.includes(userId)
+    const lacksAccess = room.access.mode !== "open"
+      && !(room.access.mode === "assigned" && room.access.assignedPersonIds.includes(userId))
       && !roomAccessIds.has(room.id);
     if (!wasInside && (lacksAccess || blockedRoomIds.has(room.id)) && circleIntersectsRoom(nextX, nextY, radius, room)) {
       return false;

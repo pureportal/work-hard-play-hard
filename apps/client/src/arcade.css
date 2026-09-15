@@ -18,7 +18,8 @@
 }
 
 .game-backdrop {
-  padding: 16px;
+  height: 100dvh;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   background: #211b30b8;
   backdrop-filter: blur(8px);
 }
@@ -29,6 +30,7 @@
   min-height: 0;
   max-height: 100%;
   overflow: hidden;
+  overscroll-behavior: contain;
   color: var(--ink);
   background: radial-gradient(ellipse at 10% 0, color-mix(in srgb, var(--brand-secondary) 10%, transparent), transparent 60%), var(--panel);
   border: 1px solid var(--line);
@@ -75,8 +77,8 @@
 }
 
 .game-header .icon-button {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
   color: var(--muted);
   border: 1px solid var(--line);
@@ -90,9 +92,14 @@
   border-color: var(--line);
 }
 
+.arcade-game :where(button),
+.game-lobby :where(button) {
+  touch-action: manipulation;
+}
+
 .arcade-game .primary-button,
 .arcade-game .secondary-button {
-  min-height: 40px;
+  min-height: 44px;
   font-size: 13px;
 }
 
@@ -192,7 +199,7 @@
 .game-segments button {
   flex: 1;
   padding: 9px 5px;
-  min-height: 40px;
+  min-height: 44px;
   color: var(--muted);
   background: transparent;
   border: 0;
@@ -297,7 +304,7 @@
 
 @media (max-width: 700px) {
   .game-backdrop {
-    padding: 0;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
   .arcade-game {
     width: 100%;
@@ -337,7 +344,7 @@
 
 @media (max-height: 520px) and (min-width: 701px) {
   .game-backdrop {
-    padding: 8px;
+    padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
   }
   .arcade-game {
     border-radius: 16px;
@@ -357,5 +364,19 @@
   }
   .game-exit-prompt p {
     flex-basis: auto;
+  }
+}
+
+@media (pointer: coarse) {
+  .interaction-navigation button {
+    width: 44px;
+    height: 44px;
+  }
+  .game-lobby select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .falling-blocks-special-statistics summary {
+    padding-block: 14px;
   }
 }

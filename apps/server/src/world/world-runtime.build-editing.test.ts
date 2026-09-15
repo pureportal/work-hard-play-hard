@@ -1,11 +1,12 @@
+import { createTestData } from "../testing/workspace-data.js";
 import type { ClientCommand, ServerEvent } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
-import { DemoStore } from "../store.js";
+import { WorkspaceStore } from "../store.js";
 import { WorldRuntime } from "./world-runtime.js";
 
 describe("WorldRuntime build editing", () => {
   it("merges adjacent walls into a continuous segment", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const layout = store.getLayout("floor-studio")!;
     layout.walls = [
       { id: "first", start: { x: 96, y: 96 }, end: { x: 128, y: 96 } },
@@ -35,7 +36,7 @@ describe("WorldRuntime build editing", () => {
   });
 
   it("replaces an overlapping door with a window", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const layout = store.getLayout("floor-studio")!;
     layout.walls = [{ id: "wall", start: { x: 96, y: 96 }, end: { x: 320, y: 96 } }];
     layout.openings = [{ id: "door", wallId: "wall", offset: 64, width: 64, type: "door" }];
@@ -84,7 +85,7 @@ describe("WorldRuntime build editing", () => {
   });
 
   it("moves and rotates a selected wall with its opening", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const layout = store.getLayout("floor-studio")!;
     layout.walls = [{ id: "wall", start: { x: 96, y: 96 }, end: { x: 224, y: 96 } }];
     layout.openings = [{ id: "door", wallId: "wall", offset: 32, width: 64, type: "door" }];
@@ -116,7 +117,7 @@ describe("WorldRuntime build editing", () => {
   });
 
   it("places, moves, rotates, and removes an outdoor asset", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const layout = store.getLayout("floor-studio")!;
     layout.walls = [];
     layout.openings = [];
@@ -163,7 +164,7 @@ describe("WorldRuntime build editing", () => {
   });
 
   it("places Falling Blocks through build editing", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const layout = store.getLayout("floor-studio")!;
     layout.walls = [];
     layout.openings = [];
@@ -190,7 +191,7 @@ describe("WorldRuntime build editing", () => {
   });
 
   it("places themed floor tiles beneath furniture and validates their designs", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const layout = store.getLayout("floor-studio")!;
     layout.walls = [];
     layout.openings = [];
@@ -204,10 +205,10 @@ describe("WorldRuntime build editing", () => {
       type: "layout.apply",
       requestId: "place-grass",
       baseRevision: layout.revision,
-      edit: { tool: "asset", assetId: "floor-tile", variantId: "grass", rotation: 0, position: { x: -256, y: 128 } },
+      edit: { tool: "asset", assetId: "floor-grass", variantId: "lawn", rotation: 0, position: { x: -256, y: 128 } },
     });
-    const tile = store.getLayout("floor-studio")!.objects.find((object) => object.assetId === "floor-tile")!;
-    expect(tile).toMatchObject({ variantId: "grass", rotation: 0 });
+    const tile = store.getLayout("floor-studio")!.objects.find((object) => object.assetId === "floor-grass")!;
+    expect(tile).toMatchObject({ variantId: "lawn", rotation: 0 });
 
     send(runtime, peer, {
       type: "layout.apply",
@@ -219,17 +220,17 @@ describe("WorldRuntime build editing", () => {
 
     send(runtime, peer, {
       type: "layout.apply",
-      requestId: "change-to-stone",
+      requestId: "change-to-meadow",
       baseRevision: store.getLayout("floor-studio")!.revision,
-      edit: { tool: "asset.move", objectId: tile.id, variantId: "stone", rotation: 90, position: { x: -256, y: 128 } },
+      edit: { tool: "asset.move", objectId: tile.id, variantId: "meadow", rotation: 90, position: { x: -256, y: 128 } },
     });
-    expect(store.getObject(tile.id)).toMatchObject({ variantId: "stone", rotation: 90 });
+    expect(store.getObject(tile.id)).toMatchObject({ variantId: "meadow", rotation: 90 });
 
     send(runtime, peer, {
       type: "layout.apply",
       requestId: "invalid-surface",
       baseRevision: store.getLayout("floor-studio")!.revision,
-      edit: { tool: "asset", assetId: "floor-tile", variantId: "lava", rotation: 0, position: { x: -160, y: 128 } },
+      edit: { tool: "asset", assetId: "floor-grass", variantId: "lava", rotation: 0, position: { x: -160, y: 128 } },
     });
     expect(commandError(events, "invalid-surface")).toMatchObject({ code: "ASSET_VARIANT_NOT_FOUND" });
     runtime.stop();

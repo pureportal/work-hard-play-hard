@@ -1,3 +1,4 @@
+import { createTestData } from "../testing/workspace-data.js";
 import {
   type ChessMatchSettings,
   type ChessMatchView,
@@ -6,7 +7,7 @@ import {
   type WorldPlayer,
 } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
-import { DemoStore } from "../store.js";
+import { WorkspaceStore } from "../store.js";
 import { ChessMultiplayerRuntime, elapsedClockMs } from "./chess-multiplayer.js";
 import type { GameEventDelivery } from "./game-event-delivery.js";
 
@@ -17,6 +18,17 @@ const STANDARD_OPEN: ChessMatchSettings = {
 };
 
 describe("ChessMultiplayerRuntime", () => {
+  it("closes the shared view only when the requested match is still selected", () => {
+    const game = activeMatch(STANDARD_OPEN);
+    game.runtime.open("user-maya", game.matchId);
+    expect(game.runtime.close("user-maya", "another-match")).toEqual([]);
+    expect(game.runtime.isViewing("user-maya")).toBe(true);
+    expect(game.runtime.close("user-maya", game.matchId)).toEqual([
+      { scope: "users", userIds: ["user-maya"], event: { type: "chess.match_closed", matchId: game.matchId } },
+    ]);
+    expect(game.runtime.isViewing("user-maya")).toBe(false);
+  });
+
   it("enforces turns and legal moves before completing checkmate", () => {
     const game = activeMatch(STANDARD_OPEN);
 
@@ -137,7 +149,7 @@ describe("ChessMultiplayerRuntime", () => {
       access: "locked",
       opponentUserId: "user-leo",
     };
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new ChessMultiplayerRuntime(store);
     const players = [nearby("user-maya"), nearby("user-leo"), nearby("user-priya")];
     runtime.syncLobby(players, new Set(players.map(({ userId }) => userId)));
@@ -193,7 +205,7 @@ describe("ChessMultiplayerRuntime", () => {
 
     expect(source.store.getChessMatches()[0]).toMatchObject({ status: "active", moves: [{ san: "e4" }] });
     const saved = source.store.exportMutableState();
-    const restoredStore = new DemoStore();
+    const restoredStore = new WorkspaceStore(createTestData());
     restoredStore.restoreMutableState(saved);
     const restoredRuntime = new ChessMultiplayerRuntime(restoredStore);
     const players = [nearby("user-maya"), nearby("user-leo")];
@@ -294,7 +306,7 @@ function activeMatch(
   opponentUserId = "user-leo",
   now?: () => Date,
 ) {
-  const store = new DemoStore();
+  const store = new WorkspaceStore(createTestData());
   const runtime = new ChessMultiplayerRuntime(store, now);
   const players = [nearby("user-maya"), nearby(opponentUserId)];
   runtime.syncLobby(players, new Set(players.map(({ userId }) => userId)));

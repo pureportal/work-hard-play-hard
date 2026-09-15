@@ -3,7 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { chromium, type Page } from "playwright-core";
 import puppeteer from "puppeteer";
-import { ASSET_CATALOG, ASSET_ROTATIONS, getPlacedAssetBounds, getPlacedAssetCells, getAssetVariants, requireAssetDefinition } from "../../packages/shared/src/index.js";
+import { ASSET_CATALOG, ASSET_ROTATIONS, FALLING_BLOCKS_DEFINITION_ID, getPlacedAssetBounds, getPlacedAssetCells, getAssetVariants, requireAssetDefinition } from "../../packages/shared/src/index.js";
 import { installAssetFixture } from "./playwright-fixture.js";
 
 const assets = process.argv.slice(2).map(requireAssetDefinition);
@@ -79,6 +79,13 @@ try {
       const context = await browser.newContext({ viewport, hasTouch: touch, isMobile: touch, deviceScaleFactor: 1 });
       const fixture = await installAssetFixture(context, "user-jonas", playerPosition);
       try {
+        fixture.store.claimDailyReward("user-jonas", "asset-review-bonus");
+        for (let round = 0; round < 3; round++) {
+          fixture.store.recordGameRound(`asset-review-${round}`, FALLING_BLOCKS_DEFINITION_ID, [
+            { userId: "user-jonas", score: 1000, lines: 20, level: 2, order: 0, won: false },
+          ]);
+        }
+        assert(asset.shop?.available && fixture.store.getPlayerEconomy("user-jonas").coinBalance >= asset.shop.price, `${asset.id}: purchase fixture needs sufficient coins`);
         const layout = fixture.store.getLayout("floor-studio")!;
         layout.objects = asset.placement.layer === "surface"
           ? [{ id: "review-table", floorId: "floor-studio", assetId: "table-workbench", variantId: "walnut", rotation: 0, x: 560, y: 528 }]
@@ -182,7 +189,7 @@ try {
     }
   }
   assert.deepEqual(issues, []);
-  await writeFile(`${output}/verification.json`, JSON.stringify({ url: "http://127.0.0.1:5173", transport: "Isolated DemoStore and WorldRuntime; existing running client", verified, issues }, null, 2));
+  await writeFile(`${output}/verification.json`, JSON.stringify({ url: "http://127.0.0.1:5173", transport: "Isolated WorkspaceStore and WorldRuntime; existing running client", verified, issues }, null, 2));
   console.log(verified.join("\n"));
 } finally {
   await browser.close();

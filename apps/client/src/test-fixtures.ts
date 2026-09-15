@@ -22,7 +22,7 @@ export function createTestEconomy(): PlayerEconomy {
 }
 
 export function createTestGameSettings(): GameSettings {
-  return { allowPlayerAssetPlacementInPublicRooms: false };
+  return { roomAccess: { mode: "open", assignedPersonIds: [] }, roomBuild: { mode: "none", assignedPersonIds: [] } };
 }
 
 export function createTestKidnappingConfiguration(): KidnappingConfiguration {

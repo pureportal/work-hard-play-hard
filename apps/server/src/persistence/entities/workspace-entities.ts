@@ -1,3 +1,4 @@
+import type { OrganisationState } from "@workhard/shared";
 import { EntitySchema } from "@mikro-orm/core";
 import type {
   AssignableMemberPermission,
@@ -6,7 +7,10 @@ import type {
   CharacterAppearance,
   ChessMatchRecord,
   ConversationType,
+  Floor,
   FloorLayout,
+  FallingBlocksSpecialCounts,
+  FallingBlocksStatistics,
   GameSettings,
   GlobalKidnappingSettings,
   MemberPermission,
@@ -116,6 +120,7 @@ export class GameScoreEntity {
   placement!: number;
   won!: boolean;
   playedAt!: Date;
+  fallingBlocks?: FallingBlocksSpecialCounts;
   sortOrder!: number;
 }
 
@@ -129,6 +134,8 @@ export class PlayerGameStatisticsEntity {
   highestLines!: number;
   totalScore!: number;
   totalLines!: number;
+  fallingBlocks?: FallingBlocksStatistics;
+  holdsCrown!: boolean;
   sortOrder!: number;
 }
 
@@ -175,7 +182,9 @@ export class CoinTransactionEntity {
 }
 
 export class WorkspaceSettingsEntity {
+  organisation!: OrganisationState;
   id!: string;
+  floors!: Floor[];
   gameSettings!: GameSettings;
   kidnappingSettings!: GlobalKidnappingSettings;
   playerKidnappingSettings!: Array<{ userId: string; settings: PlayerKidnappingSettings }>;
@@ -341,6 +350,7 @@ export const meetingSchema = new EntitySchema({
   },
   checks: [
     { name: "meetings_duration_minutes_check", expression: "duration_minutes > 0" },
+    { name: "meetings_room_location_check", expression: "coalesce(location->>'type', '') = 'room' and nullif(location->>'roomId', '') is not null" },
     { name: "meetings_status_check", expression: "status in ('scheduled', 'live', 'ended')" },
     { name: "meetings_sort_order_check", expression: "sort_order >= 0" },
   ],
@@ -380,6 +390,7 @@ export const gameScoreSchema = new EntitySchema({
     placement: { type: Number },
     won: { type: Boolean },
     playedAt: { type: Date, fieldName: "played_at", index: true },
+    fallingBlocks: { type: "json", fieldName: "falling_blocks", nullable: true },
     sortOrder: { type: Number, fieldName: "sort_order" },
   },
   uniques: [{ properties: ["roundId", "userId"] }],
@@ -407,8 +418,11 @@ export const playerGameStatisticsSchema = new EntitySchema({
     highestLines: { type: Number, fieldName: "highest_lines" },
     totalScore: { type: Number, fieldName: "total_score" },
     totalLines: { type: Number, fieldName: "total_lines" },
+    fallingBlocks: { type: "json", fieldName: "falling_blocks", nullable: true },
+    holdsCrown: { type: Boolean, fieldName: "holds_crown", default: false },
     sortOrder: { type: Number, fieldName: "sort_order" },
   },
+  indexes: [{ name: "player_game_statistics_crown_unique", expression: 'create unique index "player_game_statistics_crown_unique" on "player_game_statistics" ("definition_id") where "holds_crown" = true' }],
   checks: [
     { name: "player_game_statistics_games_played_check", expression: "games_played >= 0" },
     { name: "player_game_statistics_multiplayer_games_played_check", expression: "multiplayer_games_played >= 0" },
@@ -524,7 +538,9 @@ export const workspaceSettingsSchema = new EntitySchema({
   tableName: "workspace_settings",
   properties: {
     id: { type: String, primary: true },
+    floors: { type: "json" },
     gameSettings: { type: "json", fieldName: "game_settings" },
+    organisation: { type: "json" },
     kidnappingSettings: { type: "json", fieldName: "kidnapping_settings" },
     playerKidnappingSettings: { type: "json", fieldName: "player_kidnapping_settings" },
     registrationSettings: { type: "json", fieldName: "registration_settings" },

@@ -35,6 +35,7 @@ try {
         };
         await open();
         await review.capture(page, `${prefix}-whiteboard-empty`);
+        await page.getByRole("button", { name: "Notes", exact: true }).click();
         await page.getByLabel("Notes", { exact: true }).fill("Review draft\n\nKeep the meeting notes together.");
         await page.getByRole("button", { name: "Close board", exact: true }).click();
         await review.capture(page, `${prefix}-discard-prompt`);
@@ -48,17 +49,17 @@ try {
         await page.getByRole("alert").waitFor();
         await review.capture(page, `${prefix}-save-error`);
         fixture.ignoredCommands.delete("work.update");
-        layout.objects[0]!.workState = { kind: "whiteboard", revision: 1, text: "Updated notes from a teammate.\nThe review moved to the afternoon." };
+        layout.objects[0]!.workState = { kind: "whiteboard", revision: 1, document: { text: "Updated notes from a teammate.\nThe review moved to the afternoon.", cards: [] } };
         layout.revision++;
         emit({ type: "layout.updated", layout });
-        await page.getByText("Latest notes", { exact: true }).click();
+        await page.getByText("Latest board", { exact: true }).click();
         await review.capture(page, `${prefix}-latest-notes`);
         await page.getByRole("button", { name: "Keep draft", exact: true }).click();
         await page.getByRole("button", { name: "Save", exact: true }).click();
         await page.getByText("Saved", { exact: true }).waitFor();
         await page.getByLabel("Notes", { exact: true }).fill("Another draft");
         const updated = fixture.store.getLayout("floor-studio")!;
-        updated.objects[0]!.workState = { kind: "whiteboard", revision: 3, text: "Latest shared notes" };
+        updated.objects[0]!.workState = { kind: "whiteboard", revision: 3, document: { text: "Latest shared notes", cards: [] } };
         updated.revision++;
         emit({ type: "layout.updated", layout: updated });
         await page.getByRole("button", { name: "Use latest", exact: true }).click();

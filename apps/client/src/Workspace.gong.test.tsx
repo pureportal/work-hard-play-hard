@@ -1,3 +1,4 @@
+import { createOrganisation } from "@workhard/shared";
 import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -188,6 +189,7 @@ function workspace(availability: Availability = "available"): BootstrapData {
   return {
     currentUserId: "user-maya",
     corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
+    organisation: createOrganisation(),
     team: { id: "team", name: "Northstar", slug: "northstar", accent: "#6c5ce7" },
     office: { id: "office", teamId: "team", name: "Studio" },
     floors: [{

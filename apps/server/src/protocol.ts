@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { organisationEditSchema, roomPermissionSchema, gameSettingsSchema } from "./organisation/organisation-schema.js";
+import { meetingCommands } from "./meetings/meeting-protocol.js";
+import { mediaSignalSchema } from "./media/media-protocol.js";
 import { workObjectEditSchema } from "./work/work-object-state.js";
 import {
   ASSIGNABLE_MEMBER_PERMISSIONS,
@@ -10,6 +13,8 @@ import {
   REACTION_KINDS,
   FALLING_BLOCKS_COMMANDS,
   FALLING_BLOCKS_DEFINITION_ID,
+  FALLING_BLOCKS_MODES,
+  FALLING_BLOCKS_ATTACK_TARGETS,
   TIC_TAC_TOE_DEFINITION_ID,
   TIC_TAC_TOE_PIECE_SIZES,
   TIC_TAC_TOE_VARIANTS,
@@ -19,16 +24,10 @@ import {
 
 const requestId = z.string().min(1).max(80);
 const position = z.object({ x: z.number().finite(), y: z.number().finite() }).strict();
-const roomAccess = z.object({
-  mode: z.enum(["open", "assigned"]),
-  assignedPersonIds: z.array(z.string().min(1).max(100)).max(100),
-  knockable: z.boolean(),
-}).strict();
+const roomAccess = roomPermissionSchema.extend({ knockable: z.boolean() });
 const assetRotation = z.union([z.literal(0), z.literal(90), z.literal(180), z.literal(270)]);
 const assetVariantId = z.string().min(1).max(40).regex(/^[a-z0-9-]+$/);
-const gameSettings = z.object({
-  allowPlayerAssetPlacementInPublicRooms: z.boolean(),
-}).strict();
+const gameSettings = gameSettingsSchema;
 const ticTacToeCell = z.number().int().min(0).max(8);
 const ticTacToeCommand = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("classic.place"), cell: ticTacToeCell }).strict(),
@@ -41,19 +40,23 @@ const gameStart = z.object({
   type: z.literal("game.start"),
   requestId,
   definitionId: z.enum([FALLING_BLOCKS_DEFINITION_ID, TIC_TAC_TOE_DEFINITION_ID]),
-  objectId: z.string().min(1).max(128).optional(),
+  objectId: z.string().min(1).max(128),
   variantId: z.enum(TIC_TAC_TOE_VARIANTS.map((variant) => variant.id)).optional(),
   bot: gameBot.optional(),
   solo: z.boolean().optional(),
-}).strict().superRefine(({ definitionId, objectId, variantId, bot, solo }, context) => {
-  if ((definitionId === FALLING_BLOCKS_DEFINITION_ID) !== (objectId !== undefined)) {
-    context.addIssue({ code: "custom", message: "Cabinet does not match the game." });
-  }
+  settings: z.object({
+    mode: z.enum(FALLING_BLOCKS_MODES),
+    attackTarget: z.enum(FALLING_BLOCKS_ATTACK_TARGETS),
+  }).strict().optional(),
+}).strict().superRefine(({ definitionId, variantId, bot, solo, settings }, context) => {
   if ((definitionId === TIC_TAC_TOE_DEFINITION_ID) !== (variantId !== undefined)) {
     context.addIssue({ code: "custom", message: "Variant does not match the game." });
   }
   if ((bot && definitionId !== TIC_TAC_TOE_DEFINITION_ID) || (solo !== undefined && definitionId !== FALLING_BLOCKS_DEFINITION_ID)) {
     context.addIssue({ code: "custom", message: "Opponent does not match the game." });
+  }
+  if (settings && definitionId !== FALLING_BLOCKS_DEFINITION_ID) {
+    context.addIssue({ code: "custom", message: "Settings do not match the game." });
   }
 });
 const chessMatchId = z.string().uuid();
@@ -121,12 +124,13 @@ const layoutEdit = z.discriminatedUnion("tool", [
   }).strict(),
   z.object({ tool: z.literal("item.remove"), item: layoutItem }).strict(),
   z.object({
-    tool: z.enum(["door", "window", "erase"]),
+    tool: z.enum(["door", "window", "erase", "spawn"]),
     position,
   }).strict(),
 ]);
 
 export const clientCommandSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("organisation.edit"), requestId, baseRevision: z.number().int().nonnegative(), edit: organisationEditSchema }).strict(),
   z.object({ type: z.literal("movement.input"), sequence: z.number().int().nonnegative(), dx: z.number().min(-1).max(1), dy: z.number().min(-1).max(1) }),
   z.object({
     type: z.literal("movement.set_destination"),
@@ -142,7 +146,9 @@ export const clientCommandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("kidnapping.global_settings_update"), requestId, settings: globalKidnappingSettings }).strict(),
   z.object({ type: z.literal("kidnapping.player_settings_update"), requestId, settings: playerKidnappingSettings }).strict(),
   z.object({ type: z.literal("presence.set_availability"), requestId, availability: z.enum(["available", "busy", "dnd", "away"]) }),
-  z.object({ type: z.literal("proximity.set_media"), requestId, microphone: z.boolean(), camera: z.boolean() }),
+  z.object({ type: z.literal("proximity.set_media"), requestId, sessionId: z.string().uuid(), microphone: z.boolean(), camera: z.boolean() }).strict(),
+  z.object({ type: z.literal("proximity.leave"), requestId, sessionId: z.string().uuid() }).strict(),
+  z.object({ type: z.literal("proximity.signal"), requestId, sessionId: z.string().uuid(), targetSessionId: z.string().uuid(), signal: mediaSignalSchema }).strict(),
   z.object({ type: z.literal("chat.send"), requestId, conversationId: z.string().min(1).max(100), body: z.string().trim().min(1).max(500) }),
   z.object({
     type: z.literal("layout.apply"),
@@ -190,9 +196,12 @@ export const clientCommandSchema = z.discriminatedUnion("type", [
       name: z.string().trim().min(1).max(60),
       color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
       access: roomAccess,
+      build: roomPermissionSchema.optional(),
+      organisationUnitId: z.string().min(1).max(100).optional(),
     }).strict(),
   }).strict(),
   z.object({ type: z.literal("room.knock"), requestId, roomId: z.string().min(1).max(100) }),
+  z.object({ type: z.literal("room.inspect_access"), requestId, userId: z.string().min(1).max(100).nullable() }).strict(),
   z.object({ type: z.literal("room.knock_respond"), requestId, knockId: z.string().min(1).max(100), accept: z.boolean() }),
   z.object({ type: z.literal("interaction.wave"), requestId, targetUserId: z.string().min(1).max(100) }),
   z.object({ type: z.literal("interaction.react"), requestId, reaction: z.enum(REACTION_KINDS) }),
@@ -200,13 +209,13 @@ export const clientCommandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("call.request"), requestId, targetUserId: z.string().min(1).max(100) }),
   z.object({ type: z.literal("call.respond"), requestId, callId: z.string().min(1).max(100), accept: z.boolean() }),
   z.object({ type: z.literal("call.end"), requestId, callId: z.string().min(1).max(100) }),
-  z.object({ type: z.literal("meeting.join"), requestId, meetingId: z.string().min(1).max(100) }),
-  z.object({ type: z.literal("meeting.leave"), requestId, meetingId: z.string().min(1).max(100) }),
+  ...meetingCommands,
   gameStart,
-  z.object({ type: z.literal("game.end"), requestId }),
+  z.object({ type: z.literal("game.end"), requestId, roundId: z.string().uuid() }).strict(),
   z.object({
     type: z.literal("game.command"),
     requestId,
+    roundId: z.string().uuid(),
     command: z.union([z.enum(FALLING_BLOCKS_COMMANDS), ticTacToeCommand]),
   }).strict(),
   z.object({ type: z.literal("chess.match_create"), requestId, settings: chessMatchSettings }).strict(),

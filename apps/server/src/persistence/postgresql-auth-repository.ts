@@ -12,7 +12,7 @@ export class PostgreSqlAuthRepository {
   constructor(private readonly orm: MikroORM) {}
 
   async load(): Promise<AuthPersistenceState | undefined> {
-    return this.orm.em.fork().transactional(async (entityManager) => {
+    return this.orm.em.fork({ keepTransactionContext: true }).transactional(async (entityManager) => {
       const accounts = await entityManager.find(AuthAccountEntity, {}, { orderBy: { createdAt: "asc", id: "asc" } });
       if (accounts.length === 0) {
         return undefined;
@@ -45,7 +45,7 @@ export class PostgreSqlAuthRepository {
   }
 
   async save(state: AuthPersistenceState): Promise<void> {
-    await this.orm.em.fork().transactional(async (entityManager) => {
+    await this.orm.em.fork({ keepTransactionContext: true }).transactional(async (entityManager) => {
       await synchronizeRows(entityManager, AuthAccountEntity, "id", state.accounts.map((account) => ({
         id: account.id,
         username: account.username,

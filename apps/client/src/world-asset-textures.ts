@@ -6,11 +6,35 @@ interface AssetTexture {
   loaded: Promise<Texture>;
   texture?: Texture;
   frames: Map<string, Texture>;
+  alpha?: Uint8Array;
 }
 
 export class WorldAssetTextures {
   private readonly textures = new Map<string, AssetTexture>();
   private destroyed = false;
+
+  isPointVisible(artwork: WorldAssetArtwork, x: number, y: number): boolean {
+    const { bounds, frame } = artwork;
+    if (x < bounds.x || y < bounds.y || x >= bounds.x + bounds.width || y >= bounds.y + bounds.height) return false;
+    const entry = this.textures.get(artwork.path);
+    if (!entry?.texture || this.destroyed) return false;
+    if (!entry.alpha) {
+      const canvas = document.createElement("canvas");
+      canvas.width = artwork.atlasWidth;
+      canvas.height = artwork.atlasHeight;
+      const context = canvas.getContext("2d")!;
+      context.drawImage(entry.image, 0, 0);
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+      entry.alpha = new Uint8Array(canvas.width * canvas.height);
+      for (let index = 0; index < entry.alpha.length; index++) entry.alpha[index] = pixels[index * 4 + 3]!;
+      canvas.width = canvas.height = 0;
+    }
+    return (artwork.animation?.frames ?? [frame]).some(crop => {
+      const pixelX = crop.x + Math.floor((x - bounds.x) / bounds.width * crop.width);
+      const pixelY = crop.y + Math.floor((y - bounds.y) / bounds.height * crop.height);
+      return entry.alpha![pixelY * artwork.atlasWidth + pixelX]! >= 32;
+    });
+  }
 
   createSprite(artwork: WorldAssetArtwork, onError: (error: Error) => void): Sprite {
     if (this.destroyed) throw new Error("World artwork textures have been destroyed");
@@ -44,6 +68,21 @@ export class WorldAssetTextures {
     this.textures.clear();
   }
 
+  createAnimation(sprites: readonly Sprite[], artwork: WorldAssetArtwork): ((now: number) => void) | undefined {
+    const animation = artwork.animation;
+    if (!animation) return;
+    let previousFrame = -1;
+    return (now: number) => {
+      const entry = this.textures.get(artwork.path);
+      if (this.destroyed || !entry?.texture) return;
+      const index = Math.floor(Math.max(0, now) / animation.frameDuration) % animation.frames.length;
+      if (index === previousFrame) return;
+      previousFrame = index;
+      const texture = this.frame(entry, { ...artwork, frame: animation.frames[index]! });
+      for (const sprite of sprites) if (!sprite.destroyed) sprite.texture = texture;
+    };
+  }
+
   private async load(artwork: WorldAssetArtwork): Promise<Texture> {
     let entry = this.textures.get(artwork.path);
     if (!entry) {
@@ -63,6 +102,8 @@ export class WorldAssetTextures {
           const texture = Texture.from(image);
           texture.source.scaleMode = "nearest";
           texture.source.minFilter = "linear";
+          texture.source.mipmapFilter = "linear";
+          texture.source.autoGenerateMipmaps = true;
           record.texture = texture;
           resolve(texture);
         };

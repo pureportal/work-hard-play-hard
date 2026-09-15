@@ -1,9 +1,10 @@
+import { createTestData } from "./testing/workspace-data.js";
 import { describe, expect, it } from "vitest";
-import { DemoStore } from "./store.js";
+import { WorkspaceStore } from "./store.js";
 
-describe("DemoStore layout integrity", () => {
+describe("WorkspaceStore layout integrity", () => {
   it("requires every layout replacement to advance exactly one revision", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const before = structuredClone(store.getLayout("floor-studio")!);
 
     expect(() => store.replaceLayout({ ...before, revision: before.revision + 2 })).toThrow("LAYOUT_REVISION_INVALID");
@@ -11,7 +12,7 @@ describe("DemoStore layout integrity", () => {
   });
 
   it("rejects asset designs that do not belong to their catalog asset", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const before = structuredClone(store.getLayout("floor-studio")!);
     before.revision += 1;
     before.objects[0]!.variantId = "unknown";
@@ -20,7 +21,7 @@ describe("DemoStore layout integrity", () => {
   });
 
   it("revises room access when a member is removed", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const studioRevision = store.getLayout("floor-studio")!.revision;
     const rooftopRevision = store.getLayout("floor-rooftop")!.revision;
 

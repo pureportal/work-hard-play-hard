@@ -127,6 +127,7 @@ try {
       if (await walk.count()) { await walk.click(); await openNearby(page, object); }
       else await actions.getByRole("button", { name: "Open board" }).click();
       if (name === "Whiteboard") {
+        await page.getByRole("button", { name: "Notes", exact: true }).click();
         await page.getByRole("textbox", { name: "Notes" }).fill("Release plan\n\nReview the demo\nPrepare the handoff");
         await page.getByRole("button", { name: "Save", exact: true }).click();
       } else {
@@ -251,6 +252,7 @@ try {
         else await actions.getByRole("button", { name: "Open board" }).tap();
       }
       if (name === "Whiteboard") {
+        await mobile.getByRole("button", { name: "Notes", exact: true }).tap();
         await mobile.getByRole("textbox", { name: "Notes" }).fill("Release notes\nReview the prototype\nPrepare the handoff");
         await mobile.getByRole("button", { name: "Save", exact: true }).tap();
       } else {

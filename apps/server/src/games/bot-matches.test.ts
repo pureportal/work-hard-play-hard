@@ -1,22 +1,23 @@
+import { createTestData } from "../testing/workspace-data.js";
 import { GAME_BOT_USER_ID, getGameArea, TIC_TAC_TOE_VARIANTS, type ChessMoveInput, type WorldPlayer } from "@workhard/shared";
 import { describe, expect, it, vi } from "vitest";
-import { DemoStore } from "../store.js";
+import { WorkspaceStore } from "../store.js";
 import { ChessMultiplayerRuntime } from "./chess-multiplayer.js";
 import { TicTacToeMultiplayerRuntime } from "./tic-tac-toe-multiplayer.js";
 import { FallingBlocksMultiplayerRuntime } from "./falling-blocks-multiplayer.js";
 
-function playerAt(store: DemoStore, objectId: string, userId = "user-maya"): WorldPlayer {
+function playerAt(store: WorkspaceStore, objectId: string, userId = "user-maya"): WorldPlayer {
   const object = store.getObject(objectId)!;
   return { userId, floorId: object.floorId, ...getGameArea(object), connected: true, facing: "down", availability: "available" };
 }
 
 describe("bot matches", () => {
   it.each(TIC_TAC_TOE_VARIANTS)("plays $name solo and leaves nearby players in the lobby", ({ id }) => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const game = new TicTacToeMultiplayerRuntime(store);
     const players = [playerAt(store, "object-tic-tac-toe"), playerAt(store, "object-tic-tac-toe", "user-leo")];
     game.syncLobbies(players, new Set(players.map((player) => player.userId)));
-    const started = game.start("user-maya", id, { difficulty: "hard" });
+    const started = game.start("user-maya", "object-tic-tac-toe", id, { difficulty: "hard" });
     expect(started.participantIds).toEqual(["user-maya"]);
     expect(game.isPlaying("user-leo")).toBe(false);
     expect(game.isPlaying(GAME_BOT_USER_ID)).toBe(false);
@@ -33,18 +34,18 @@ describe("bot matches", () => {
   });
 
   it("starts independent bot rounds for both nearby players", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const game = new TicTacToeMultiplayerRuntime(store);
     const players = [playerAt(store, "object-tic-tac-toe"), playerAt(store, "object-tic-tac-toe", "user-leo")];
     game.syncLobbies(players, new Set(players.map((player) => player.userId)));
-    game.start("user-maya", "classic", { difficulty: "easy" });
-    game.start("user-leo", "ultimate", { difficulty: "hard" });
+    game.start("user-maya", "object-tic-tac-toe", "classic", { difficulty: "easy" });
+    game.start("user-leo", "object-tic-tac-toe", "ultimate", { difficulty: "hard" });
     game.leave("user-maya");
     expect(game.isPlaying("user-leo")).toBe(true);
   });
 
   it("starts Falling Blocks solo without starting a nearby player", () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const game = new FallingBlocksMultiplayerRuntime(store);
     const players = [playerAt(store, "object-falling-blocks"), playerAt(store, "object-falling-blocks", "user-leo")];
     game.syncLobbies(players, new Set(players.map((player) => player.userId)));
@@ -54,7 +55,7 @@ describe("bot matches", () => {
   });
 
   it("persists chess bot replies and resumes after restoring the store", async () => {
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const search = vi.fn().mockResolvedValue({ from: "e7", to: "e5" });
     const runtime = new ChessMultiplayerRuntime(store, undefined, search);
     runtime.syncLobby([playerAt(store, "object-chess")], new Set(["user-maya"]));
@@ -62,7 +63,7 @@ describe("bot matches", () => {
     const match = store.getChessMatches()[0]!;
     runtime.move("user-maya", match.id, { from: "e2", to: "e4" });
     runtime.stop();
-    const restoredStore = new DemoStore();
+    const restoredStore = new WorkspaceStore(createTestData());
     restoredStore.restoreMutableState(store.exportMutableState());
     const restored = new ChessMultiplayerRuntime(restoredStore, undefined, search);
     restored.update();
@@ -75,7 +76,7 @@ describe("bot matches", () => {
   it("discards a late chess bot move after resignation", async () => {
     let resolve!: (move: ChessMoveInput) => void;
     const search = vi.fn(() => new Promise<ChessMoveInput>((done) => { resolve = done; }));
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new ChessMultiplayerRuntime(store, undefined, search);
     runtime.syncLobby([playerAt(store, "object-chess")], new Set(["user-maya"]));
     runtime.create("user-maya", { timeControl: "standard", pauseWeekends: false, access: "locked", bot: { difficulty: "hard" } });
@@ -91,7 +92,7 @@ describe("bot matches", () => {
 
   it("surfaces engine failure and allows a deliberate retry", async () => {
     const search = vi.fn().mockRejectedValueOnce(new Error("engine stopped")).mockResolvedValue({ from: "e7", to: "e5" });
-    const store = new DemoStore();
+    const store = new WorkspaceStore(createTestData());
     const runtime = new ChessMultiplayerRuntime(store, undefined, search);
     runtime.syncLobby([playerAt(store, "object-chess")], new Set(["user-maya"]));
     runtime.create("user-maya", { timeControl: "standard", pauseWeekends: false, access: "locked", bot: { difficulty: "easy" } });

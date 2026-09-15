@@ -12,6 +12,8 @@ import type {
 import { IconButton } from "./IconButton";
 import { RegistrationSettingsEditor } from "./RegistrationSettingsEditor";
 import { CorporateIdentityEditor } from "./CorporateIdentityEditor";
+import { SpotifySettings } from "../spotify/SpotifySettings";
+import { GitHubConnection } from "../github/GitHubConnection";
 
 interface KidnappingSettingsPanelProps {
   members: Member[];
@@ -60,6 +62,8 @@ export function KidnappingSettingsPanel({
         <IconButton label="Close settings" icon={X} onClick={onClose} />
       </div>
       <div className="panel-scroll settings-panel-scroll">
+        <SpotifySettings />
+        <GitHubConnection />
         {registrationSettings && (
           <CorporateIdentityEditor
             identity={corporateIdentity}

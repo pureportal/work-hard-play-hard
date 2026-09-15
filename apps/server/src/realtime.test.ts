@@ -2,7 +2,8 @@ import type { AddressInfo } from "node:net";
 import { FALLING_BLOCKS_DEFINITION_ID, type ServerEvent } from "@workhard/shared";
 import { afterEach, describe, expect, it } from "vitest";
 import WebSocket from "ws";
-import { createApplication, type ApplicationContext } from "./app.js";
+import type { ApplicationContext } from "./app.js";
+import { createTestApplication } from "./testing/application.js";
 import { MemoryDatabase } from "./persistence/memory-database.js";
 
 const applications: ApplicationContext[] = [];
@@ -178,9 +179,9 @@ describe("realtime transport", () => {
 
     const completedForMaya = waitForEvent(mayaSocket, (event) => event.type === "game.round_completed");
     const completedForLeo = waitForEvent(leoSocket, (event) => event.type === "game.round_completed");
-    mayaSocket.send(JSON.stringify({ type: "game.command", requestId: "score", command: "drop" }));
-    leoSocket.send(JSON.stringify({ type: "game.end", requestId: "finish-leo" }));
-    mayaSocket.send(JSON.stringify({ type: "game.end", requestId: "finish-maya" }));
+    mayaSocket.send(JSON.stringify({ type: "game.command", roundId: mayaRoundEvent.round.id, requestId: "score", command: "drop" }));
+    leoSocket.send(JSON.stringify({ type: "game.end", roundId: mayaRoundEvent.round.id, requestId: "finish-leo" }));
+    mayaSocket.send(JSON.stringify({ type: "game.end", roundId: mayaRoundEvent.round.id, requestId: "finish-maya" }));
     const [mayaCompletion, leoCompletion] = await Promise.all([completedForMaya, completedForLeo]);
     if (mayaCompletion.type !== "game.round_completed" || leoCompletion.type !== "game.round_completed") {
       throw new Error("Falling Blocks round did not complete");
@@ -199,7 +200,7 @@ describe("realtime transport", () => {
 });
 
 async function listeningApplication(): Promise<ApplicationContext> {
-  const context = await createApplication({ database: new MemoryDatabase(), seeded: true });
+  const context = await createTestApplication({ database: new MemoryDatabase(), fixture: true });
   applications.push(context);
   await context.app.listen({ host: "127.0.0.1", port: 0 });
   return context;

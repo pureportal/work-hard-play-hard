@@ -3,17 +3,17 @@ import { z } from "zod";
 import {
   CHECKLIST_ITEM_LIMIT,
   CHECKLIST_TEXT_LIMIT,
-  WHITEBOARD_TEXT_LIMIT,
   type WorkObjectEdit,
   type WorkObjectState,
 } from "@workhard/shared";
+import { whiteboardDocumentSchema } from "./whiteboard-schema.js";
 
 const itemId = z.string().min(1).max(100);
 const itemText = z.string().trim().min(1).max(CHECKLIST_TEXT_LIMIT);
 const revision = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER - 1);
 
 export const workObjectEditSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("whiteboard.save"), text: z.string().max(WHITEBOARD_TEXT_LIMIT) }).strict(),
+  z.object({ type: z.literal("whiteboard.save"), document: whiteboardDocumentSchema }).strict(),
   z.object({ type: z.literal("checklist.add"), text: itemText }).strict(),
   z.object({ type: z.literal("checklist.rename"), itemId, text: itemText }).strict(),
   z.object({ type: z.literal("checklist.complete"), itemId, completed: z.boolean() }).strict(),
@@ -21,7 +21,7 @@ export const workObjectEditSchema = z.discriminatedUnion("type", [
 ]);
 
 export const workObjectStateSchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("whiteboard"), revision, text: z.string().max(WHITEBOARD_TEXT_LIMIT) }).strict(),
+  z.object({ kind: z.literal("whiteboard"), revision, document: whiteboardDocumentSchema }).strict(),
   z.object({
     kind: z.literal("checklist"), revision,
     items: z.array(z.object({ id: itemId, text: itemText, completed: z.boolean() }).strict())
@@ -32,7 +32,7 @@ export const workObjectStateSchema = z.discriminatedUnion("kind", [
 
 export function applyWorkObjectEdit(state: WorkObjectState, edit: WorkObjectEdit): WorkObjectState {
   if (state.kind === "whiteboard" && edit.type === "whiteboard.save") {
-    return { ...state, revision: state.revision + 1, text: edit.text };
+    return { ...state, revision: state.revision + 1, document: structuredClone(edit.document) };
   }
   if (state.kind !== "checklist" || edit.type === "whiteboard.save") throw new Error("WORK_OBJECT_INVALID");
   let items = state.items;

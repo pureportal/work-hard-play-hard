@@ -1,13 +1,13 @@
 import { DEFAULT_CHARACTER_APPEARANCE, type Member } from "@workhard/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createApplication } from "../app.js";
+import { createTestApplication } from "../testing/application.js";
 import { MemoryDatabase } from "../persistence/memory-database.js";
 
-const applications: Awaited<ReturnType<typeof createApplication>>[] = [];
+const applications: Awaited<ReturnType<typeof createTestApplication>>[] = [];
 afterEach(async () => { await Promise.all(applications.splice(0).map(({ app }) => app.close())); });
 
 async function application(database = new MemoryDatabase()) {
-  const context = await createApplication({ database, seeded: true });
+  const context = await createTestApplication({ database, fixture: true });
   applications.push(context);
   const login = await context.app.inject({ method: "POST", url: "/v1/auth/login", payload: { identifier: "maya", password: "northstar" } });
   return { context, database, cookie: login.cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join("; ") };
@@ -18,7 +18,7 @@ describe("character appearance API", () => {
     const { context, cookie } = await application();
     const initial = context.store.getMember("user-maya")!.character;
     expect((await context.app.inject({ method: "PUT", url: "/v1/members/me/character", payload: DEFAULT_CHARACTER_APPEARANCE })).statusCode).toBe(401);
-    for (const payload of [{ ...DEFAULT_CHARACTER_APPEARANCE, hairstyle: "../../evil" }, { gender: "female" }, { ...DEFAULT_CHARACTER_APPEARANCE, userId: "user-leo" }, { ...DEFAULT_CHARACTER_APPEARANCE, breastSize: "huge" }]) {
+    for (const payload of [{ ...DEFAULT_CHARACTER_APPEARANCE, hairstyle: "../../evil" }, { gender: "female" }, { ...DEFAULT_CHARACTER_APPEARANCE, userId: "user-leo" }, { ...DEFAULT_CHARACTER_APPEARANCE, breastSize: "flat" }]) {
       const response = await context.app.inject({ method: "PUT", url: "/v1/members/me/character", headers: { cookie }, payload });
       expect(response.statusCode).toBe(400);
       expect(response.json().code).toBe("CHARACTER_INVALID");
@@ -29,7 +29,7 @@ describe("character appearance API", () => {
   it("persists the complete appearance, publishes it and restores it after restart", async () => {
     const first = await application();
     const publish = vi.spyOn(first.context.runtime, "publishMember");
-    const character = { ...DEFAULT_CHARACTER_APPEARANCE, gender: "male" as const, breastSize: "none" as const, face: "fierce" as const, lowerBody: "ranger" as const, shoes: "arcane" as const, headwear: "witch" as const };
+    const character = { ...DEFAULT_CHARACTER_APPEARANCE, gender: "male" as const, face: "fierce" as const, hairstyle: "hime" as const, lowerBody: "ranger" as const, shoes: "arcane" as const, headwear: "witch" as const };
     const response = await first.context.app.inject({ method: "PUT", url: "/v1/members/me/character", headers: { cookie: first.cookie }, payload: character });
     expect(response.statusCode).toBe(200);
     expect(response.json().character).toEqual(character);

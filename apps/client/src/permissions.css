@@ -1,0 +1,24 @@
+.permission-content { display: flex; flex-direction: column; gap: 16px; padding: 16px; }
+.permission-content label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.permission-content input:not([type="checkbox"]), .permission-content select { min-width: 0; width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-strong); color: inherit; }
+.permission-tabs { display: flex; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+.permission-tabs button { flex: 1; padding: 8px; border: 0; border-radius: 6px; background: transparent; color: inherit; }
+.permission-tabs [aria-selected="true"] { background: var(--accent-soft); color: var(--accent); }
+.permission-form-fields { display: flex; flex-direction: column; gap: 16px; padding: 0; border: 0; min-width: 0; }
+.permission-editor { display: flex; flex-direction: column; gap: 10px; min-width: 0; margin: 0; padding: 12px; border: 1px solid var(--line); border-radius: 8px; }
+.permission-editor legend { padding: 0 4px; font-weight: 600; }
+.permission-content .permission-check { flex-direction: row; align-items: center; gap: 8px; }
+.permission-check input { accent-color: var(--accent); }
+.permission-room-name { display: grid; grid-template-columns: 1fr 60px; gap: 10px; }
+.permission-room-name input[type="color"] { height: 35px; padding: 2px; }
+.permission-editor summary, .permission-preview summary { padding: 6px 0; cursor: pointer; }
+.permission-unit { padding: 8px 0; }
+.permission-unit > label:first-child { display: grid; grid-template-columns: 1fr 105px; align-items: center; }
+.permission-people { display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; padding: 8px 0; }
+.permission-preview { margin-top: 16px; }
+.permission-preview table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.permission-preview th, .permission-preview td { padding: 8px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+.permission-preview td { text-align: center; }
+.room-permission-editor { min-width: 0; }
+.permissions-panel .panel-header { gap: 8px; }
+.permissions-panel .panel-header h2 { flex: 1; }
