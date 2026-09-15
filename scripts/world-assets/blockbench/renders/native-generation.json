@@ -1,0 +1,14 @@
+{
+  "status": "complete",
+  "requested": [
+    "floor-resin"
+  ],
+  "results": [
+    {
+      "assetId": "floor-resin",
+      "blockbenchVersion": "5.1.6",
+      "assets": 1,
+      "frames": 12
+    }
+  ]
+}

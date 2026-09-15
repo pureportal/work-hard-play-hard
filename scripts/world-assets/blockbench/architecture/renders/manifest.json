@@ -1,0 +1,200 @@
+{
+  "blockbenchVersion": "5.1.6",
+  "projection": "orthographic",
+  "elevationDegrees": 45,
+  "floorDepthScale": 1.4142135623730951,
+  "results": [
+    {
+      "assetId": "door",
+      "pixelsPerUnit": 6,
+      "variants": {
+        "plaster": {
+          "model": "scripts/world-assets/blockbench/architecture/models/door-plaster.bbmodel",
+          "parts": 6,
+          "footprint": {
+            "width": 64,
+            "height": 8
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/architecture/renders/door/plaster/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 576,
+                "y": 896.7350647362941,
+                "width": 384,
+                "height": 48
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/architecture/renders/door/plaster/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 744,
+                "y": 728.7350647362941,
+                "width": 48,
+                "height": 384.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/architecture/renders/door/plaster/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 576,
+                "y": 896.7350647362941,
+                "width": 384,
+                "height": 48.00000000000023
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/architecture/renders/door/plaster/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 744,
+                "y": 728.7350647362941,
+                "width": 48,
+                "height": 384.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        }
+      }
+    },
+    {
+      "assetId": "window",
+      "pixelsPerUnit": 6,
+      "variants": {
+        "plaster": {
+          "model": "scripts/world-assets/blockbench/architecture/models/window-plaster.bbmodel",
+          "parts": 11,
+          "footprint": {
+            "width": 96,
+            "height": 16
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/architecture/renders/window/plaster/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 872.7350647362941,
+                "width": 576,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/architecture/renders/window/plaster/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 719.9999999999999,
+                "y": 632.7350647362941,
+                "width": 96.00000000000011,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/architecture/renders/window/plaster/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 872.7350647362941,
+                "width": 576,
+                "height": 96.00000000000023
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/architecture/renders/window/plaster/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 719.9999999999999,
+                "y": 632.7350647362941,
+                "width": 96.00000000000011,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        }
+      }
+    },
+    {
+      "assetId": "wall",
+      "pixelsPerUnit": 6,
+      "variants": {
+        "plaster": {
+          "model": "scripts/world-assets/blockbench/architecture/models/wall-plaster.bbmodel",
+          "parts": 5,
+          "footprint": {
+            "width": 32,
+            "height": 12
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/architecture/renders/wall/plaster/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 672,
+                "y": 884.7350647362941,
+                "width": 192,
+                "height": 72
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/architecture/renders/wall/plaster/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 732,
+                "y": 824.7350647362941,
+                "width": 72,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/architecture/renders/wall/plaster/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 672,
+                "y": 884.7350647362941,
+                "width": 192,
+                "height": 72.00000000000023
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/architecture/renders/wall/plaster/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 732,
+                "y": 824.7350647362941,
+                "width": 72,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

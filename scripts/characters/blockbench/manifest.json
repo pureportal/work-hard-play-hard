@@ -1,0 +1,2810 @@
+{
+  "blockbenchVersion": "5.1.6",
+  "settings": {
+    "frameSize": 120,
+    "atlasSize": 960,
+    "atlasHeight": 1920,
+    "directions": [
+      "down",
+      "left",
+      "right",
+      "up"
+    ],
+    "atlasClips": {
+      "idle": {
+        "frames": 4,
+        "frameDuration": 400,
+        "row": 0,
+        "column": 0
+      },
+      "walk": {
+        "frames": 8,
+        "frameDuration": 100,
+        "row": 4,
+        "column": 0
+      },
+      "sit": {
+        "frames": 4,
+        "frameDuration": 400,
+        "row": 0,
+        "column": 4
+      },
+      "listen": {
+        "frames": 8,
+        "frameDuration": 200,
+        "row": 8,
+        "column": 0
+      },
+      "sit-listen": {
+        "frames": 8,
+        "frameDuration": 200,
+        "row": 12,
+        "column": 0
+      }
+    },
+    "anchors": {
+      "foot": {
+        "x": 60,
+        "y": 114
+      },
+      "hip": {
+        "x": 60,
+        "y": 78
+      }
+    }
+  },
+  "layers": [
+    {
+      "layer": "head",
+      "name": "female-calm",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/head/female-calm.png",
+      "model": "scripts/characters/blockbench/models/head-female-calm.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "head",
+      "name": "female-bright",
+      "appearance": {
+        "gender": "female",
+        "face": "bright",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/head/female-bright.png",
+      "model": "scripts/characters/blockbench/models/head-female-bright.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "head",
+      "name": "female-fierce",
+      "appearance": {
+        "gender": "female",
+        "face": "fierce",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/head/female-fierce.png",
+      "model": "scripts/characters/blockbench/models/head-female-fierce.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "head",
+      "name": "female-dreamy",
+      "appearance": {
+        "gender": "female",
+        "face": "dreamy",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/head/female-dreamy.png",
+      "model": "scripts/characters/blockbench/models/head-female-dreamy.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "head",
+      "name": "female-smile",
+      "appearance": {
+        "gender": "female",
+        "face": "smile",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/head/female-smile.png",
+      "model": "scripts/characters/blockbench/models/head-female-smile.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "head",
+      "name": "female-shy",
+      "appearance": {
+        "gender": "female",
+        "face": "shy",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/head/female-shy.png",
+      "model": "scripts/characters/blockbench/models/head-female-shy.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "upper",
+      "name": "female-street-flat",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/upper/female-street-flat.png",
+      "model": "scripts/characters/blockbench/models/upper-female-street-flat.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "lower",
+      "name": "female-street",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/lower/female-street.png",
+      "model": "scripts/characters/blockbench/models/lower-female-street.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "shoes",
+      "name": "female-street",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/shoes/female-street.png",
+      "model": "scripts/characters/blockbench/models/shoes-female-street.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "upper",
+      "name": "female-ranger-flat",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "ranger",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/upper/female-ranger-flat.png",
+      "model": "scripts/characters/blockbench/models/upper-female-ranger-flat.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "lower",
+      "name": "female-ranger",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "ranger",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/lower/female-ranger.png",
+      "model": "scripts/characters/blockbench/models/lower-female-ranger.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "shoes",
+      "name": "female-ranger",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "ranger",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/shoes/female-ranger.png",
+      "model": "scripts/characters/blockbench/models/shoes-female-ranger.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "upper",
+      "name": "female-arcane-flat",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "arcane",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/upper/female-arcane-flat.png",
+      "model": "scripts/characters/blockbench/models/upper-female-arcane-flat.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "lower",
+      "name": "female-arcane",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "arcane",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/lower/female-arcane.png",
+      "model": "scripts/characters/blockbench/models/lower-female-arcane.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "shoes",
+      "name": "female-arcane",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "arcane",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/shoes/female-arcane.png",
+      "model": "scripts/characters/blockbench/models/shoes-female-arcane.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "upper",
+      "name": "female-sailor-flat",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "sailor",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/upper/female-sailor-flat.png",
+      "model": "scripts/characters/blockbench/models/upper-female-sailor-flat.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "lower",
+      "name": "female-sailor",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "sailor",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/lower/female-sailor.png",
+      "model": "scripts/characters/blockbench/models/lower-female-sailor.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "shoes",
+      "name": "female-sailor",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "sailor",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/shoes/female-sailor.png",
+      "model": "scripts/characters/blockbench/models/shoes-female-sailor.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "upper",
+      "name": "female-cardigan-flat",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "cardigan",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/upper/female-cardigan-flat.png",
+      "model": "scripts/characters/blockbench/models/upper-female-cardigan-flat.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "lower",
+      "name": "female-cardigan",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "cardigan",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/lower/female-cardigan.png",
+      "model": "scripts/characters/blockbench/models/lower-female-cardigan.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "shoes",
+      "name": "female-cardigan",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "cardigan",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/shoes/female-cardigan.png",
+      "model": "scripts/characters/blockbench/models/shoes-female-cardigan.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "upper",
+      "name": "female-kimono-flat",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "kimono",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/upper/female-kimono-flat.png",
+      "model": "scripts/characters/blockbench/models/upper-female-kimono-flat.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "lower",
+      "name": "female-kimono",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "kimono",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/lower/female-kimono.png",
+      "model": "scripts/characters/blockbench/models/lower-female-kimono.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "shoes",
+      "name": "female-kimono",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "kimono",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/shoes/female-kimono.png",
+      "model": "scripts/characters/blockbench/models/shoes-female-kimono.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "upper",
+      "name": "female-traveler-flat",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "traveler",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/upper/female-traveler-flat.png",
+      "model": "scripts/characters/blockbench/models/upper-female-traveler-flat.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "lower",
+      "name": "female-traveler",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "traveler",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/lower/female-traveler.png",
+      "model": "scripts/characters/blockbench/models/lower-female-traveler.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "shoes",
+      "name": "female-traveler",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "traveler",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/shoes/female-traveler.png",
+      "model": "scripts/characters/blockbench/models/shoes-female-traveler.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "upper",
+      "name": "female-festival-flat",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "festival",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/upper/female-festival-flat.png",
+      "model": "scripts/characters/blockbench/models/upper-female-festival-flat.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "lower",
+      "name": "female-festival",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "festival",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/lower/female-festival.png",
+      "model": "scripts/characters/blockbench/models/lower-female-festival.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "shoes",
+      "name": "female-festival",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "festival",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/shoes/female-festival.png",
+      "model": "scripts/characters/blockbench/models/shoes-female-festival.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "head",
+      "name": "male-calm",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/head/male-calm.png",
+      "model": "scripts/characters/blockbench/models/head-male-calm.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "head",
+      "name": "male-bright",
+      "appearance": {
+        "gender": "male",
+        "face": "bright",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/head/male-bright.png",
+      "model": "scripts/characters/blockbench/models/head-male-bright.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "head",
+      "name": "male-fierce",
+      "appearance": {
+        "gender": "male",
+        "face": "fierce",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/head/male-fierce.png",
+      "model": "scripts/characters/blockbench/models/head-male-fierce.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "head",
+      "name": "male-dreamy",
+      "appearance": {
+        "gender": "male",
+        "face": "dreamy",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/head/male-dreamy.png",
+      "model": "scripts/characters/blockbench/models/head-male-dreamy.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "head",
+      "name": "male-smile",
+      "appearance": {
+        "gender": "male",
+        "face": "smile",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/head/male-smile.png",
+      "model": "scripts/characters/blockbench/models/head-male-smile.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "head",
+      "name": "male-shy",
+      "appearance": {
+        "gender": "male",
+        "face": "shy",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/head/male-shy.png",
+      "model": "scripts/characters/blockbench/models/head-male-shy.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "upper",
+      "name": "male-street-flat",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/upper/male-street-flat.png",
+      "model": "scripts/characters/blockbench/models/upper-male-street-flat.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "lower",
+      "name": "male-street",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/lower/male-street.png",
+      "model": "scripts/characters/blockbench/models/lower-male-street.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "shoes",
+      "name": "male-street",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/shoes/male-street.png",
+      "model": "scripts/characters/blockbench/models/shoes-male-street.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "upper",
+      "name": "male-ranger-flat",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "ranger",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/upper/male-ranger-flat.png",
+      "model": "scripts/characters/blockbench/models/upper-male-ranger-flat.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "lower",
+      "name": "male-ranger",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "ranger",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/lower/male-ranger.png",
+      "model": "scripts/characters/blockbench/models/lower-male-ranger.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "shoes",
+      "name": "male-ranger",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "ranger",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/shoes/male-ranger.png",
+      "model": "scripts/characters/blockbench/models/shoes-male-ranger.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "upper",
+      "name": "male-arcane-flat",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "arcane",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/upper/male-arcane-flat.png",
+      "model": "scripts/characters/blockbench/models/upper-male-arcane-flat.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "lower",
+      "name": "male-arcane",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "arcane",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/lower/male-arcane.png",
+      "model": "scripts/characters/blockbench/models/lower-male-arcane.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "shoes",
+      "name": "male-arcane",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "arcane",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/shoes/male-arcane.png",
+      "model": "scripts/characters/blockbench/models/shoes-male-arcane.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "upper",
+      "name": "male-sailor-flat",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "sailor",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/upper/male-sailor-flat.png",
+      "model": "scripts/characters/blockbench/models/upper-male-sailor-flat.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "lower",
+      "name": "male-sailor",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "sailor",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/lower/male-sailor.png",
+      "model": "scripts/characters/blockbench/models/lower-male-sailor.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "shoes",
+      "name": "male-sailor",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "sailor",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/shoes/male-sailor.png",
+      "model": "scripts/characters/blockbench/models/shoes-male-sailor.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "upper",
+      "name": "male-cardigan-flat",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "cardigan",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/upper/male-cardigan-flat.png",
+      "model": "scripts/characters/blockbench/models/upper-male-cardigan-flat.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "lower",
+      "name": "male-cardigan",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "cardigan",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/lower/male-cardigan.png",
+      "model": "scripts/characters/blockbench/models/lower-male-cardigan.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "shoes",
+      "name": "male-cardigan",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "cardigan",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/shoes/male-cardigan.png",
+      "model": "scripts/characters/blockbench/models/shoes-male-cardigan.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "upper",
+      "name": "male-kimono-flat",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "kimono",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/upper/male-kimono-flat.png",
+      "model": "scripts/characters/blockbench/models/upper-male-kimono-flat.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "lower",
+      "name": "male-kimono",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "kimono",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/lower/male-kimono.png",
+      "model": "scripts/characters/blockbench/models/lower-male-kimono.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "shoes",
+      "name": "male-kimono",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "kimono",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/shoes/male-kimono.png",
+      "model": "scripts/characters/blockbench/models/shoes-male-kimono.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "upper",
+      "name": "male-traveler-flat",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "traveler",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/upper/male-traveler-flat.png",
+      "model": "scripts/characters/blockbench/models/upper-male-traveler-flat.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "lower",
+      "name": "male-traveler",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "traveler",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/lower/male-traveler.png",
+      "model": "scripts/characters/blockbench/models/lower-male-traveler.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "shoes",
+      "name": "male-traveler",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "traveler",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/shoes/male-traveler.png",
+      "model": "scripts/characters/blockbench/models/shoes-male-traveler.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "upper",
+      "name": "male-festival-flat",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "festival",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/upper/male-festival-flat.png",
+      "model": "scripts/characters/blockbench/models/upper-male-festival-flat.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "lower",
+      "name": "male-festival",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "festival",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/lower/male-festival.png",
+      "model": "scripts/characters/blockbench/models/lower-male-festival.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "shoes",
+      "name": "male-festival",
+      "appearance": {
+        "gender": "male",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "festival",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/shoes/male-festival.png",
+      "model": "scripts/characters/blockbench/models/shoes-male-festival.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "bob",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/bob.png",
+      "model": "scripts/characters/blockbench/models/hair-bob.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "bob-cap",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "cap"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/bob-cap.png",
+      "model": "scripts/characters/blockbench/models/hair-bob-cap.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "bob-witch",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "witch"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/bob-witch.png",
+      "model": "scripts/characters/blockbench/models/hair-bob-witch.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "bob-beret",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "beret"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/bob-beret.png",
+      "model": "scripts/characters/blockbench/models/hair-bob-beret.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "bob-ribbon",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "ribbon"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/bob-ribbon.png",
+      "model": "scripts/characters/blockbench/models/hair-bob-ribbon.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "bob-catears",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "catears"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/bob-catears.png",
+      "model": "scripts/characters/blockbench/models/hair-bob-catears.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "bob-blossom",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "blossom"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/bob-blossom.png",
+      "model": "scripts/characters/blockbench/models/hair-bob-blossom.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "bob-goggles",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "bob",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "goggles"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/bob-goggles.png",
+      "model": "scripts/characters/blockbench/models/hair-bob-goggles.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "spiky",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "spiky",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/spiky.png",
+      "model": "scripts/characters/blockbench/models/hair-spiky.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "spiky-cap",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "spiky",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "cap"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/spiky-cap.png",
+      "model": "scripts/characters/blockbench/models/hair-spiky-cap.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "spiky-witch",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "spiky",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "witch"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/spiky-witch.png",
+      "model": "scripts/characters/blockbench/models/hair-spiky-witch.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "spiky-beret",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "spiky",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "beret"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/spiky-beret.png",
+      "model": "scripts/characters/blockbench/models/hair-spiky-beret.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "spiky-ribbon",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "spiky",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "ribbon"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/spiky-ribbon.png",
+      "model": "scripts/characters/blockbench/models/hair-spiky-ribbon.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "spiky-catears",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "spiky",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "catears"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/spiky-catears.png",
+      "model": "scripts/characters/blockbench/models/hair-spiky-catears.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "spiky-blossom",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "spiky",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "blossom"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/spiky-blossom.png",
+      "model": "scripts/characters/blockbench/models/hair-spiky-blossom.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "spiky-goggles",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "spiky",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "goggles"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/spiky-goggles.png",
+      "model": "scripts/characters/blockbench/models/hair-spiky-goggles.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "ponytail",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "ponytail",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/ponytail.png",
+      "model": "scripts/characters/blockbench/models/hair-ponytail.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "ponytail-cap",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "ponytail",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "cap"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/ponytail-cap.png",
+      "model": "scripts/characters/blockbench/models/hair-ponytail-cap.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "ponytail-witch",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "ponytail",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "witch"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/ponytail-witch.png",
+      "model": "scripts/characters/blockbench/models/hair-ponytail-witch.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "ponytail-beret",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "ponytail",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "beret"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/ponytail-beret.png",
+      "model": "scripts/characters/blockbench/models/hair-ponytail-beret.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "ponytail-ribbon",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "ponytail",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "ribbon"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/ponytail-ribbon.png",
+      "model": "scripts/characters/blockbench/models/hair-ponytail-ribbon.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "ponytail-catears",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "ponytail",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "catears"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/ponytail-catears.png",
+      "model": "scripts/characters/blockbench/models/hair-ponytail-catears.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "ponytail-blossom",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "ponytail",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "blossom"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/ponytail-blossom.png",
+      "model": "scripts/characters/blockbench/models/hair-ponytail-blossom.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "ponytail-goggles",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "ponytail",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "goggles"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/ponytail-goggles.png",
+      "model": "scripts/characters/blockbench/models/hair-ponytail-goggles.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "twintails",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "twintails",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/twintails.png",
+      "model": "scripts/characters/blockbench/models/hair-twintails.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "twintails-cap",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "twintails",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "cap"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/twintails-cap.png",
+      "model": "scripts/characters/blockbench/models/hair-twintails-cap.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "twintails-witch",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "twintails",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "witch"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/twintails-witch.png",
+      "model": "scripts/characters/blockbench/models/hair-twintails-witch.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "twintails-beret",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "twintails",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "beret"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/twintails-beret.png",
+      "model": "scripts/characters/blockbench/models/hair-twintails-beret.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "twintails-ribbon",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "twintails",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "ribbon"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/twintails-ribbon.png",
+      "model": "scripts/characters/blockbench/models/hair-twintails-ribbon.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "twintails-catears",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "twintails",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "catears"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/twintails-catears.png",
+      "model": "scripts/characters/blockbench/models/hair-twintails-catears.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "twintails-blossom",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "twintails",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "blossom"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/twintails-blossom.png",
+      "model": "scripts/characters/blockbench/models/hair-twintails-blossom.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "twintails-goggles",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "twintails",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "goggles"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/twintails-goggles.png",
+      "model": "scripts/characters/blockbench/models/hair-twintails-goggles.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "wavy",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "wavy",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/wavy.png",
+      "model": "scripts/characters/blockbench/models/hair-wavy.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "wavy-cap",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "wavy",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "cap"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/wavy-cap.png",
+      "model": "scripts/characters/blockbench/models/hair-wavy-cap.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "wavy-witch",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "wavy",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "witch"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/wavy-witch.png",
+      "model": "scripts/characters/blockbench/models/hair-wavy-witch.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "wavy-beret",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "wavy",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "beret"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/wavy-beret.png",
+      "model": "scripts/characters/blockbench/models/hair-wavy-beret.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "wavy-ribbon",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "wavy",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "ribbon"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/wavy-ribbon.png",
+      "model": "scripts/characters/blockbench/models/hair-wavy-ribbon.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "wavy-catears",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "wavy",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "catears"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/wavy-catears.png",
+      "model": "scripts/characters/blockbench/models/hair-wavy-catears.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "wavy-blossom",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "wavy",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "blossom"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/wavy-blossom.png",
+      "model": "scripts/characters/blockbench/models/hair-wavy-blossom.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "wavy-goggles",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "wavy",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "goggles"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/wavy-goggles.png",
+      "model": "scripts/characters/blockbench/models/hair-wavy-goggles.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "braid",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "braid",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/braid.png",
+      "model": "scripts/characters/blockbench/models/hair-braid.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "braid-cap",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "braid",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "cap"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/braid-cap.png",
+      "model": "scripts/characters/blockbench/models/hair-braid-cap.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "braid-witch",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "braid",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "witch"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/braid-witch.png",
+      "model": "scripts/characters/blockbench/models/hair-braid-witch.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "braid-beret",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "braid",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "beret"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/braid-beret.png",
+      "model": "scripts/characters/blockbench/models/hair-braid-beret.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "braid-ribbon",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "braid",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "ribbon"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/braid-ribbon.png",
+      "model": "scripts/characters/blockbench/models/hair-braid-ribbon.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "braid-catears",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "braid",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "catears"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/braid-catears.png",
+      "model": "scripts/characters/blockbench/models/hair-braid-catears.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "braid-blossom",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "braid",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "blossom"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/braid-blossom.png",
+      "model": "scripts/characters/blockbench/models/hair-braid-blossom.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "braid-goggles",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "braid",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "goggles"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/braid-goggles.png",
+      "model": "scripts/characters/blockbench/models/hair-braid-goggles.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "pixie",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "pixie",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/pixie.png",
+      "model": "scripts/characters/blockbench/models/hair-pixie.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "pixie-cap",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "pixie",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "cap"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/pixie-cap.png",
+      "model": "scripts/characters/blockbench/models/hair-pixie-cap.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "pixie-witch",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "pixie",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "witch"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/pixie-witch.png",
+      "model": "scripts/characters/blockbench/models/hair-pixie-witch.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "pixie-beret",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "pixie",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "beret"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/pixie-beret.png",
+      "model": "scripts/characters/blockbench/models/hair-pixie-beret.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "pixie-ribbon",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "pixie",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "ribbon"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/pixie-ribbon.png",
+      "model": "scripts/characters/blockbench/models/hair-pixie-ribbon.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "pixie-catears",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "pixie",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "catears"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/pixie-catears.png",
+      "model": "scripts/characters/blockbench/models/hair-pixie-catears.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "pixie-blossom",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "pixie",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "blossom"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/pixie-blossom.png",
+      "model": "scripts/characters/blockbench/models/hair-pixie-blossom.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "pixie-goggles",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "pixie",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "goggles"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/pixie-goggles.png",
+      "model": "scripts/characters/blockbench/models/hair-pixie-goggles.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "curtains",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "curtains",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/curtains.png",
+      "model": "scripts/characters/blockbench/models/hair-curtains.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "curtains-cap",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "curtains",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "cap"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/curtains-cap.png",
+      "model": "scripts/characters/blockbench/models/hair-curtains-cap.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "curtains-witch",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "curtains",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "witch"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/curtains-witch.png",
+      "model": "scripts/characters/blockbench/models/hair-curtains-witch.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "curtains-beret",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "curtains",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "beret"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/curtains-beret.png",
+      "model": "scripts/characters/blockbench/models/hair-curtains-beret.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "curtains-ribbon",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "curtains",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "ribbon"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/curtains-ribbon.png",
+      "model": "scripts/characters/blockbench/models/hair-curtains-ribbon.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "curtains-catears",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "curtains",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "catears"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/curtains-catears.png",
+      "model": "scripts/characters/blockbench/models/hair-curtains-catears.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "curtains-blossom",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "curtains",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "blossom"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/curtains-blossom.png",
+      "model": "scripts/characters/blockbench/models/hair-curtains-blossom.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "curtains-goggles",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "curtains",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "goggles"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/curtains-goggles.png",
+      "model": "scripts/characters/blockbench/models/hair-curtains-goggles.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "hime",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "hime",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/hime.png",
+      "model": "scripts/characters/blockbench/models/hair-hime.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "hime-cap",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "hime",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "cap"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/hime-cap.png",
+      "model": "scripts/characters/blockbench/models/hair-hime-cap.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "hime-witch",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "hime",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "witch"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/hime-witch.png",
+      "model": "scripts/characters/blockbench/models/hair-hime-witch.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "hime-beret",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "hime",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "beret"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/hime-beret.png",
+      "model": "scripts/characters/blockbench/models/hair-hime-beret.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "hime-ribbon",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "hime",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "ribbon"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/hime-ribbon.png",
+      "model": "scripts/characters/blockbench/models/hair-hime-ribbon.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "hime-catears",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "hime",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "catears"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/hime-catears.png",
+      "model": "scripts/characters/blockbench/models/hair-hime-catears.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "hime-blossom",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "hime",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "blossom"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/hime-blossom.png",
+      "model": "scripts/characters/blockbench/models/hair-hime-blossom.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "hime-goggles",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "hime",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "goggles"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/hime-goggles.png",
+      "model": "scripts/characters/blockbench/models/hair-hime-goggles.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "tousled",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "tousled",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/tousled.png",
+      "model": "scripts/characters/blockbench/models/hair-tousled.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "tousled-cap",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "tousled",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "cap"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/tousled-cap.png",
+      "model": "scripts/characters/blockbench/models/hair-tousled-cap.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "tousled-witch",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "tousled",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "witch"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/tousled-witch.png",
+      "model": "scripts/characters/blockbench/models/hair-tousled-witch.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "tousled-beret",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "tousled",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "beret"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/tousled-beret.png",
+      "model": "scripts/characters/blockbench/models/hair-tousled-beret.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "tousled-ribbon",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "tousled",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "ribbon"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/tousled-ribbon.png",
+      "model": "scripts/characters/blockbench/models/hair-tousled-ribbon.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "tousled-catears",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "tousled",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "catears"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/tousled-catears.png",
+      "model": "scripts/characters/blockbench/models/hair-tousled-catears.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "tousled-blossom",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "tousled",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "blossom"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/tousled-blossom.png",
+      "model": "scripts/characters/blockbench/models/hair-tousled-blossom.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "tousled-goggles",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "tousled",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "goggles"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/tousled-goggles.png",
+      "model": "scripts/characters/blockbench/models/hair-tousled-goggles.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "buns",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "buns",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/buns.png",
+      "model": "scripts/characters/blockbench/models/hair-buns.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "buns-cap",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "buns",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "cap"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/buns-cap.png",
+      "model": "scripts/characters/blockbench/models/hair-buns-cap.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "buns-witch",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "buns",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "witch"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/buns-witch.png",
+      "model": "scripts/characters/blockbench/models/hair-buns-witch.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "buns-beret",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "buns",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "beret"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/buns-beret.png",
+      "model": "scripts/characters/blockbench/models/hair-buns-beret.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "buns-ribbon",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "buns",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "ribbon"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/buns-ribbon.png",
+      "model": "scripts/characters/blockbench/models/hair-buns-ribbon.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "buns-catears",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "buns",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "catears"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/buns-catears.png",
+      "model": "scripts/characters/blockbench/models/hair-buns-catears.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "buns-blossom",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "buns",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "blossom"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/buns-blossom.png",
+      "model": "scripts/characters/blockbench/models/hair-buns-blossom.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "buns-goggles",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "buns",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "goggles"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/buns-goggles.png",
+      "model": "scripts/characters/blockbench/models/hair-buns-goggles.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "swept",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "swept",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/swept.png",
+      "model": "scripts/characters/blockbench/models/hair-swept.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "swept-cap",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "swept",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "cap"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/swept-cap.png",
+      "model": "scripts/characters/blockbench/models/hair-swept-cap.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "swept-witch",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "swept",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "witch"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/swept-witch.png",
+      "model": "scripts/characters/blockbench/models/hair-swept-witch.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "swept-beret",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "swept",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "beret"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/swept-beret.png",
+      "model": "scripts/characters/blockbench/models/hair-swept-beret.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "swept-ribbon",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "swept",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "ribbon"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/swept-ribbon.png",
+      "model": "scripts/characters/blockbench/models/hair-swept-ribbon.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "swept-catears",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "swept",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "catears"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/swept-catears.png",
+      "model": "scripts/characters/blockbench/models/hair-swept-catears.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "swept-blossom",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "swept",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "blossom"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/swept-blossom.png",
+      "model": "scripts/characters/blockbench/models/hair-swept-blossom.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "swept-goggles",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "swept",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "goggles"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/swept-goggles.png",
+      "model": "scripts/characters/blockbench/models/hair-swept-goggles.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "curls",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "curls",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/curls.png",
+      "model": "scripts/characters/blockbench/models/hair-curls.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "curls-cap",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "curls",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "cap"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/curls-cap.png",
+      "model": "scripts/characters/blockbench/models/hair-curls-cap.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "curls-witch",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "curls",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "witch"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/curls-witch.png",
+      "model": "scripts/characters/blockbench/models/hair-curls-witch.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "curls-beret",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "curls",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "beret"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/curls-beret.png",
+      "model": "scripts/characters/blockbench/models/hair-curls-beret.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "curls-ribbon",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "curls",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "ribbon"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/curls-ribbon.png",
+      "model": "scripts/characters/blockbench/models/hair-curls-ribbon.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "curls-catears",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "curls",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "catears"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/curls-catears.png",
+      "model": "scripts/characters/blockbench/models/hair-curls-catears.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "curls-blossom",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "curls",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "blossom"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/curls-blossom.png",
+      "model": "scripts/characters/blockbench/models/hair-curls-blossom.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "curls-goggles",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "curls",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "goggles"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/curls-goggles.png",
+      "model": "scripts/characters/blockbench/models/hair-curls-goggles.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "longbraid",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "longbraid",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "none"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/longbraid.png",
+      "model": "scripts/characters/blockbench/models/hair-longbraid.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "longbraid-cap",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "longbraid",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "cap"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/longbraid-cap.png",
+      "model": "scripts/characters/blockbench/models/hair-longbraid-cap.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "longbraid-witch",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "longbraid",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "witch"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/longbraid-witch.png",
+      "model": "scripts/characters/blockbench/models/hair-longbraid-witch.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "longbraid-beret",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "longbraid",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "beret"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/longbraid-beret.png",
+      "model": "scripts/characters/blockbench/models/hair-longbraid-beret.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "longbraid-ribbon",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "longbraid",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "ribbon"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/longbraid-ribbon.png",
+      "model": "scripts/characters/blockbench/models/hair-longbraid-ribbon.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "longbraid-catears",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "longbraid",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "catears"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/longbraid-catears.png",
+      "model": "scripts/characters/blockbench/models/hair-longbraid-catears.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "longbraid-blossom",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "longbraid",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "blossom"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/longbraid-blossom.png",
+      "model": "scripts/characters/blockbench/models/hair-longbraid-blossom.bbmodel",
+      "frames": 128
+    },
+    {
+      "layer": "hair",
+      "name": "longbraid-goggles",
+      "appearance": {
+        "gender": "female",
+        "face": "calm",
+        "hairstyle": "longbraid",
+        "upperBody": "street",
+        "lowerBody": "street",
+        "shoes": "street",
+        "headwear": "goggles"
+      },
+      "path": "apps/client/public/characters/blockbench/hair/longbraid-goggles.png",
+      "model": "scripts/characters/blockbench/models/hair-longbraid-goggles.bbmodel",
+      "frames": 128
+    }
+  ]
+}

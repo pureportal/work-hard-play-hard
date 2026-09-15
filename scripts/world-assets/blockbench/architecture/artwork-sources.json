@@ -1,0 +1,113 @@
+{
+  "wall": {
+    "plaster": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/architecture/models/wall-plaster.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/architecture/renders/wall/plaster/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/architecture/renders/wall/plaster/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/architecture/renders/wall/plaster/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/architecture/renders/wall/plaster/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    }
+  },
+  "door": {
+    "plaster": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/architecture/models/door-plaster.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/architecture/renders/door/plaster/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/architecture/renders/door/plaster/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/architecture/renders/door/plaster/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/architecture/renders/door/plaster/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    }
+  },
+  "window": {
+    "plaster": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/architecture/models/window-plaster.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/architecture/renders/window/plaster/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/architecture/renders/window/plaster/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/architecture/renders/window/plaster/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/architecture/renders/window/plaster/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    }
+  }
+}
