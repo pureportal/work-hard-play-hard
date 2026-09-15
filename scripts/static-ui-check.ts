@@ -3,7 +3,7 @@ import { mkdir, readFile } from "node:fs/promises";
 import { dirname, extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer, { type HTTPRequest, type Page } from "puppeteer";
-import { ASSET_CATALOG } from "../packages/shared/src/index.js";
+import { ASSET_CATALOG, type ClientCommand, type MeetingMediaSession, type ServerEvent } from "../packages/shared/src/index.js";
 import { WorkspaceStore } from "../apps/server/src/store.js";
 import { verifyTicTacToeUi } from "./tic-tac-toe-ui-check.js";
 
@@ -558,7 +558,7 @@ async function installApplicationTransport(targetPage: Page): Promise<void> {
       readyState = ApplicationSocket.CONNECTING;
       bufferedAmount = 0;
       floorId = workspace.members.find((member) => member.id === workspace.currentUserId)?.floorId ?? workspace.floors[0]!.id;
-      activeMeetingId: string | undefined;
+      activeMeeting: MeetingMediaSession | undefined;
       commands: unknown[] = [];
       heartbeatTimer: number | undefined;
       gameState: {
@@ -594,24 +594,43 @@ async function installApplicationTransport(targetPage: Page): Promise<void> {
       }
 
       send(source: string): void {
-        const command = JSON.parse(source) as { type: string; requestId?: string; floorId?: string; meetingId?: string; reaction?: string; command?: string; definitionId?: string };
+        const command = JSON.parse(source) as ClientCommand;
         this.commands.push(command);
-        if (command.requestId && (command.type.startsWith("game.") || command.type.startsWith("chess."))) {
-          queueMicrotask(() => this.emit({ type: "command.ack", requestId: command.requestId! }));
+        if ("requestId" in command && (command.type.startsWith("game.") || command.type.startsWith("chess.") || command.type.startsWith("meeting."))) {
+          queueMicrotask(() => this.emit({ type: "command.ack", requestId: command.requestId }));
         }
-        if (command.type === "meeting.join" && command.meetingId) {
+        if (command.type === "meeting.join") {
           const meeting = workspace.meetings.find((candidate) => candidate.id === command.meetingId);
           if (meeting) {
-            this.activeMeetingId = meeting.id;
+            const sessionId = crypto.randomUUID();
+            this.activeMeeting = {
+              sessionId,
+              meetingId: meeting.id,
+              hostUserId: workspace.currentUserId,
+              locked: false,
+              iceServers: [],
+              participants: workspace.members.map((member) => ({
+                sessionId: member.id === workspace.currentUserId ? sessionId : crypto.randomUUID(),
+                userId: member.id,
+                microphone: false,
+                camera: false,
+                screen: false,
+              })),
+            };
             meeting.status = "live";
             meeting.participantIds = workspace.members.map((member) => member.id);
-            this.emit({ type: "meeting.joined", meeting });
+            this.emit({ type: "meeting.joined", requestId: command.requestId, meeting, session: this.activeMeeting } satisfies ServerEvent);
           }
-        } else if (command.type === "meeting.leave" && command.meetingId) {
-          this.activeMeetingId = undefined;
-          this.emit({ type: "meeting.left", meetingId: command.meetingId });
+        } else if (command.type === "meeting.leave") {
+          this.activeMeeting = undefined;
+          this.emit({ type: "meeting.left", requestId: command.requestId, meetingId: command.meetingId, sessionId: command.sessionId } satisfies ServerEvent);
+        } else if (command.type === "meeting.media" && this.activeMeeting?.sessionId === command.sessionId) {
+          this.activeMeeting.participants = this.activeMeeting.participants.map((participant) => participant.sessionId === command.sessionId
+            ? { ...participant, microphone: command.microphone, camera: command.camera, screen: command.screen }
+            : participant);
+          this.emit({ type: "meeting.media_state", session: this.activeMeeting } satisfies ServerEvent);
         } else if (command.type === "interaction.react" && command.reaction) {
-          const meetingId = this.activeMeetingId;
+          const meetingId = this.activeMeeting?.meetingId;
           queueMicrotask(() => this.emit({
             type: "interaction.reaction",
             id: crypto.randomUUID(),
