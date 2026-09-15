@@ -8,6 +8,8 @@
     "node": ">=24.0.0"
   },
   "scripts": {
+    "seed:workplace": "pnpm --filter @workhard/server seed:workplace",
+    "e2e:workplace": "pnpm --filter @workhard/server exec tsx ../../scripts/workplace-browser-check.ts",
     "dev": "concurrently --kill-others --names server,client --prefix-colors blue,magenta \"pnpm --filter @workhard/server dev\" \"pnpm --filter @workhard/client dev\"",
     "dev:client": "pnpm --filter @workhard/client dev",
     "dev:desktop": "concurrently --kill-others --names server,desktop --prefix-colors blue,magenta \"pnpm --filter @workhard/server dev\" \"pnpm --filter @workhard/client desktop:dev\"",

@@ -7,6 +7,7 @@
     "dist"
   ],
   "scripts": {
+    "seed:workplace": "tsx --env-file-if-exists=../../.env.local src/seeding/cli.ts",
     "dev": "tsx watch --env-file-if-exists=../../.env.local src/index.ts",
     "migration:create": "mikro-orm migration:create --config mikro-orm.config.ts",
     "migration:check": "mikro-orm migration:check --config mikro-orm.config.ts",
