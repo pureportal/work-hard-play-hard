@@ -22,3 +22,19 @@
 .room-permission-editor { min-width: 0; }
 .permissions-panel .panel-header { gap: 8px; }
 .permissions-panel .panel-header h2 { flex: 1; }
+
+@media (max-width: 700px) {
+  .permission-content input:not([type="checkbox"]),
+  .permission-content select,
+  .permission-content button,
+  .permission-content summary,
+  .permission-content .permission-check,
+  .permission-tabs button {
+    min-height: 40px;
+  }
+
+  .permission-content input:not([type="checkbox"]):not([type="color"]),
+  .permission-content select {
+    font-size: 16px;
+  }
+}

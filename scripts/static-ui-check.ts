@@ -155,7 +155,7 @@ try {
   await page.click('button[aria-label="Build"]');
   await page.waitForSelector(".build-panel", { visible: true });
   await assertViewport(page, [".nav-rail", ".top-bar", ".build-panel"]);
-  await assertContained(page, ".build-panel", [".room-control", ".room-control select", ".room-control .icon-button"]);
+  await assertContained(page, ".build-panel", [".panel-header", ".build-tools", ".build-workspace"]);
   assert(!(await page.$(".control-dock")), "Gameplay controls remained visible in Build Mode.");
   await assertContained(page, ".build-panel", [".asset-category-tabs"]);
   assert(await page.$eval(".asset-category-tabs", (element) => getComputedStyle(element).overflowX === "auto"), "Compact asset categories must scroll horizontally.");
@@ -173,16 +173,19 @@ try {
   await page.screenshot({ path: resolve(artifactDirectory, "iteration-compact-build.png") });
   const categoryTargetHeight = await page.$$eval(".asset-category-tabs button", (buttons) => Math.min(...buttons.map((button) => button.getBoundingClientRect().height)));
   assert(categoryTargetHeight >= 40, "Compact asset categories have undersized touch targets.");
-  await page.$eval(".room-control", (room) => {
-    (room as HTMLDetailsElement).open = true;
-  });
-  const roomFieldMetrics = await page.$eval('.room-fields input:not([type="color"])', (input) => ({
+  await page.click(".build-access-button");
+  await page.waitForSelector(".room-permission-editor", { visible: true });
+  await assertViewport(page, [".permissions-panel"]);
+  await assertContained(page, ".permissions-panel", ["input", "select", "button"]);
+  const roomFieldMetrics = await page.$eval('.permission-room-name input:not([type="color"])', (input) => ({
     height: input.getBoundingClientRect().height,
     fontSize: Number.parseFloat(getComputedStyle(input).fontSize),
   }));
   assert(roomFieldMetrics.height >= 40, "Compact room fields have undersized touch targets.");
   assert(roomFieldMetrics.fontSize >= 16, "Compact room fields can trigger browser input zoom.");
   await assertTouchUi(page);
+  await page.click('button[aria-label="Back to build"]');
+  await page.waitForSelector(".build-panel", { visible: true });
   await page.keyboard.press("Escape");
   await page.waitForSelector(".build-panel", { hidden: true });
   assert(await page.$eval('button[aria-label="Build"]', (button) => button.getAttribute("aria-pressed") === "false"), "Escape did not dismiss the Build panel.");
@@ -448,11 +451,10 @@ async function verifyDesktopBuildSidebar(page: Page): Promise<void> {
     const activeTool = document.querySelector<HTMLElement>('.build-tools button[aria-pressed="true"]')!;
     return {
       panelWidth: panel.getBoundingClientRect().width,
-      toolCount: tools.length,
+      toolLabels: tools.map((tool) => tool.textContent?.trim()),
       toolRows: new Set(tools.map((tool) => Math.round(tool.getBoundingClientRect().top))).size,
       toolHeight: Math.min(...tools.map((tool) => tool.getBoundingClientRect().height)),
       categoryCount: categories.length,
-      categoryColumns: new Set(categories.map((category) => Math.round(category.getBoundingClientRect().left))).size,
       categoryRows: new Set(categories.map((category) => Math.round(category.getBoundingClientRect().top))).size,
       categoryHeight: Math.min(...categories.map((category) => category.getBoundingClientRect().height)),
       assetHeight: Math.min(...assets.map((asset) => asset.getBoundingClientRect().height)),
@@ -460,15 +462,28 @@ async function verifyDesktopBuildSidebar(page: Page): Promise<void> {
     };
   });
 
-  assert(Math.abs(metrics.panelWidth - 392) <= 1, `Build sidebar width is ${metrics.panelWidth}px.`);
-  assert(metrics.toolCount === 5 && metrics.toolRows === 1, "Build tools are not arranged in one scan line.");
-  assert(metrics.toolHeight >= 56, "Build tool targets are undersized.");
+  assert(metrics.panelWidth >= 420 && metrics.panelWidth <= 640, `Build sidebar width is ${metrics.panelWidth}px.`);
+  assert(metrics.toolLabels.join(",") === "Select,Wall,Door,Window,Start point,Erase", "Build is missing layout tools.");
+  assert(metrics.toolRows === 1, "Build tools are not arranged in one row.");
+  assert(metrics.toolHeight >= 44, "Build tool targets are undersized.");
   const categoryCount = ASSET_CATALOG.categories.filter((category) => category.buildable).length;
   assert(metrics.categoryCount === categoryCount, "Build is missing catalog categories.");
-  assert(metrics.categoryColumns === 4 && metrics.categoryRows === Math.ceil(categoryCount / 4), "Asset categories are not arranged in four columns.");
-  assert(metrics.categoryHeight >= 48, "Asset category targets are undersized.");
+  assert(metrics.categoryRows === 1, "Asset categories are not arranged in one row.");
+  assert(metrics.categoryHeight >= 40, "Asset category targets are undersized.");
   assert(metrics.assetHeight >= 60, "Asset cards are undersized.");
   assert(metrics.activeTool === "Select", "Select is not the initial active build tool.");
+  await assertViewport(page, [".build-panel"]);
+  await assertFullyContained(page, ".build-panel", [".panel-header", ".build-tools", ".build-workspace"]);
+  assert(await page.$eval(".asset-category-tabs", (element) => getComputedStyle(element).overflowX === "auto"), "Desktop asset categories must scroll horizontally.");
+  await page.focus('.asset-category-tabs button[aria-selected="true"]');
+  for (const [key, selector] of [["End", "button:last-child"], ["Home", "button:first-child"]] as const) {
+    await page.keyboard.press(key);
+    await page.waitForFunction((tabSelector) => {
+      const tab = document.querySelector(`.asset-category-tabs ${tabSelector}`);
+      return tab?.getAttribute("aria-selected") === "true" && document.activeElement === tab;
+    }, {}, selector);
+    await assertFullyContained(page, ".asset-category-tabs", ['button[aria-selected="true"]']);
+  }
 
   await page.click('.build-tools button:nth-child(2)');
   assert(await page.$eval('.build-tools button:nth-child(2)', (button) => button.getAttribute("aria-pressed") === "true"), "Wall did not receive the selected state.");
@@ -495,10 +510,13 @@ async function verifyDesktopBuildSidebar(page: Page): Promise<void> {
   await page.waitForFunction(() => document.documentElement.dataset.theme === "dark");
   await page.screenshot({ path: resolve(artifactDirectory, "build-sidebar-dark-selection.png") });
 
-  await page.$eval(".room-control summary", (summary) => (summary as HTMLElement).click());
-  await page.$eval(".room-control", (room) => room.scrollIntoView({ block: "center" }));
-  assert(await page.$eval(".room-control", (room) => (room as HTMLDetailsElement).open), "Room editor did not expand.");
-  await page.screenshot({ path: resolve(artifactDirectory, "build-sidebar-dark-room-open.png") });
+  await page.click(".build-access-button");
+  await page.waitForSelector(".room-permission-editor", { visible: true });
+  await assertViewport(page, [".permissions-panel"]);
+  await assertContained(page, ".permissions-panel", ["input", "select", "button"]);
+  await page.screenshot({ path: resolve(artifactDirectory, "build-sidebar-dark-room-settings.png") });
+  await page.click('button[aria-label="Back to build"]');
+  await page.waitForSelector(".build-panel", { visible: true });
 
   await page.click('button[aria-label="Use light mode"]');
   await page.waitForFunction(() => document.documentElement.dataset.theme === "light");
