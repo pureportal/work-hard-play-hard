@@ -21,6 +21,7 @@ import {
   Table2,
   Trash2,
   TreePine,
+  Utensils,
   X,
 } from "lucide-react";
 import { useId, useRef, useState } from "react";
@@ -78,6 +79,7 @@ const categoryIcons: Record<string, LucideIcon> = {
   storage: Archive,
   lighting: Lightbulb,
   breakroom: Coffee,
+  food: Utensils,
 };
 
 const buildableCategories = ASSET_CATALOG.categories.filter((category) => category.buildable);

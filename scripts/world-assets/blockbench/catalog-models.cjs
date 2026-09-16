@@ -11,6 +11,11 @@ const { expandedFixtures, buildExpandedFixture } = require("./expansion/fixtures
 const { expandedEquipment, buildExpandedEquipment } = require("./expansion/equipment.cjs");
 const { expandedLandscape, buildExpandedLandscape } = require("./expansion/landscape.cjs");
 const { expandedRugs, buildExpandedRug } = require("./expansion/rugs.cjs");
+const { gardenPalette } = require("./garden/botanical-kit.cjs");
+const { indoorPlants, buildIndoorPlant } = require("./garden/indoor.cjs");
+const { outdoorPlants, buildOutdoorPlant } = require("./garden/outdoor.cjs");
+const { foodAssets, foodPalette, buildFood } = require("./food.cjs");
+const { playfulAssets, buildPlayful } = require("./playful.cjs");
 
 function getCatalogFootprint(asset, rasterSize) {
   const cells = asset.footprint.flatMap(region => region.cells ?? [{ x: region.range.x + region.range.width - 1, y: region.range.y + region.range.height - 1 }]);
@@ -53,11 +58,30 @@ async function createCatalogModel(api, asset, variant, rasterSize) {
   if (asset.id === "equipment-gong") Object.assign(palette, gongPalette);
   if (asset.id === "equipment-arcade") Object.assign(palette, arcadePalette);
   if (asset.id === "light-stone-lantern") Object.assign(palette, { stone: "#aba5b2", stoneLight: "#d8d3db", stoneShade: "#777180" });
+  if (indoorPlants.includes(asset.id) || outdoorPlants.includes(asset.id)) Object.assign(palette, gardenPalette);
+  if (asset.id === "plant-echeveria") Object.assign(palette, { leaf: "#84aaa2", leafLight: "#b9cfc0", leafDeep: "#517f76", flower: "#d49baa" });
+  if (asset.id === "plant-zz") Object.assign(palette, { leaf: "#548461", leafLight: "#94b877", leafDeep: "#305846" });
+  if (outdoorPlants.includes(asset.id)) {
+    Object.assign(palette, { leaf: variant.color, leafLight: variant.secondaryColor, leafDeep: variant.accentColor });
+    if (asset.id === "outdoor-maple") Object.assign(palette, { leaf: ["#94ad6b", "#b85e55", "#d39849"][['spring', 'summer', 'autumn'].indexOf(variant.id)], leafLight: variant.id === "spring" ? "#b9cc89" : variant.id === "summer" ? "#d48876" : "#edbd6c", leafDeep: variant.id === "spring" ? "#648154" : "#93574d" });
+    if (["outdoor-pine", "outdoor-agave"].includes(asset.id)) Object.assign(palette, { leaf: "#739b91", leafLight: "#a8bfb0", leafDeep: "#466d68" });
+    if (asset.id === "outdoor-lavender") Object.assign(palette, { flower: "#9e8db9", flowerLight: "#d2b9d7" });
+    if (asset.id === "outdoor-hydrangea") Object.assign(palette, { flower: variant.id === "spring" ? "#91afcf" : variant.id === "summer" ? "#d69ab9" : "#a69dbe" });
+    if (asset.id === "outdoor-mushrooms") Object.assign(palette, { flower: variant.id === "spring" ? "#c96c61" : variant.id === "summer" ? "#bd986d" : "#a79abd" });
+    if (["outdoor-pine", "outdoor-agave"].includes(asset.id) && variant.id !== "spring") Object.assign(palette, { leaf: variant.id === "summer" ? "#527d70" : "#8c9e87", leafLight: variant.id === "summer" ? "#90b79c" : "#bec9ab" });
+    if (asset.id === "outdoor-ginkgo" && variant.id === "autumn") Object.assign(palette, { leaf: "#d8b45a", leafLight: "#f0d789", leafDeep: "#a18b49" });
+    if (asset.id === "outdoor-cypress") Object.assign(palette, { leaf: variant.id === "summer" ? "#497560" : "#638a72", leafLight: variant.id === "autumn" ? "#a7b68a" : "#9bb698", leafDeep: "#355b50" });
+  }
+  if (foodAssets.includes(asset.id)) Object.assign(palette, foodPalette);
   const kit = createModelKit(api, palette);
   await Promise.all(Object.values(kit.textures).map(texture => texture.img.decode()));
   const { width, depth } = getCatalogFootprint(asset, rasterSize);
   let metadata;
-  if (expandedDesks[asset.id]) metadata = buildExpandedDesk(kit, asset, width, depth);
+  if (indoorPlants.includes(asset.id)) buildIndoorPlant(kit, asset, variant, width, depth);
+  else if (outdoorPlants.includes(asset.id)) buildOutdoorPlant(kit, asset, variant, width, depth);
+  else if (foodAssets.includes(asset.id)) buildFood(kit, asset, variant, width, depth);
+  else if (playfulAssets.includes(asset.id)) metadata = buildPlayful(api, kit, asset);
+  else if (expandedDesks[asset.id]) metadata = buildExpandedDesk(kit, asset, width, depth);
   else if (expandedSeating[asset.id]) metadata = buildExpandedSeating(kit, asset, width, depth);
   else if (expandedTables[asset.id]) metadata = buildExpandedTable(kit, asset, width, depth);
   else if (expandedDecor.includes(asset.id)) buildExpandedDecor(kit, asset, width, depth);

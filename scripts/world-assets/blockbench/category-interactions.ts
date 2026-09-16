@@ -6,6 +6,7 @@ import puppeteer from "puppeteer";
 import type { Application, Sprite } from "../../../apps/client/node_modules/pixi.js";
 import { ASSET_CATALOG, ASSET_ROTATIONS, getAssetVariants, getPlacedAssetCells, type Position } from "../../../packages/shared/src/index.js";
 import { installAssetFixture } from "../playwright-fixture.js";
+import { installBuiltAssetClient } from "../built-client.js";
 import { installWorldProbe } from "../../characters/playwright-animation.js";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
@@ -17,6 +18,7 @@ const artwork = JSON.parse(await readFile(`${root}/apps/client/src/world-asset-a
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ headless: true, executablePath: puppeteer.executablePath() });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+if (process.argv.includes("--built")) await installBuiltAssetClient(context);
 const fixture = await installAssetFixture(context, "user-maya", { x: 704, y: 576 }, { currentPlayerOnly: true });
 const initial = fixture.store.getLayout("floor-studio")!;
 Object.assign(initial, { objects: [], tiles: [], walls: [], openings: [], rooms: [], revision: initial.revision + 1 });

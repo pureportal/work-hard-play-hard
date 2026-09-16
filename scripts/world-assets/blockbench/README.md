@@ -18,6 +18,9 @@ pnpm assets:world:review
 - `catalog-models.cjs`: catalog footprints, theme materials and model selection.
 - `flooring/`: ceramic, mineral, timber, woven, resilient and landscape floor models; 30 materials with three designs each.
 - `expansion/`: category-specific furniture, fixtures, equipment, plants and rug models, with shared joinery.
+- `garden/`: indoor foliage, shaped planters, outdoor trees, flowering shrubs and seasonal materials.
+- `food.cjs`, `food/`: tabletop dishes, serving geometry and ingredients with celadon, indigo and clay tableware.
+- `playful.cjs`: four native looping props and four interactive toys.
 - `surfaces.cjs`: rugs and mats in Floor Decor.
 - `source-files.cjs`, `generate-native.cjs`: shared model sources and generation in the desktop editor through Blockbench MCP.
 - `render.cjs`: orthographic rendering, ground calibration and model export.
@@ -30,6 +33,7 @@ pnpm assets:world:review
 - `playwright-floor-review.ts`: every floor design and rotation repeated in the running game at the default zoom.
 - `playwright-floor-interactions.ts`: Build and Shop navigation, designs, placement, rug layering, ownership and narrow-screen controls.
 - `category-review.ts`, `category-sheets.mjs`: every design and cardinal view in the running game at its default zoom, with unscaled review sheets.
+- `collection-report.mjs`: collection coverage checks, before/after comparisons and a game-size review gallery.
 - `category-interactions.ts`, `category-occupancy.ts`: catalog selection, placement, rotation, movement, removal, seating and pergola clearance.
 - `floor-report.mjs`: saved floor evidence checks and the gameplay review gallery.
 - `review-animation.mjs`: animated model round trips and closed-loop checks in Blockbench.
@@ -37,6 +41,8 @@ pnpm assets:world:review
 - `render-office-preview.mjs`: static sign-in illustration composed from production furniture, architecture and character atlases; run with `pnpm assets:world:preview` after changing its artwork.
 - `playwright-inventory.mjs`: complete served-file inventory, native character materials and four-direction creator previews.
 - `playwright-arcade.ts`: arcade materials, selection and movement collision checks in four rotations.
+- `playwright-special-props.ts`: toy actions, shared cooldown controls, directional animation playback and reduced motion.
+- `playwright-food-shop.ts`: new Shop entries, food purchases, ownership, tabletop placement, reload and mobile navigation.
 
 Open files in `models/` directly in Blockbench. The `renders/` directory contains native directional images; `renders/manifest.json` records their projected footprints. Regeneration overwrites these outputs, so make persistent changes in the source modules. The generator accepts catalog IDs; the importer accepts the same IDs. Both default to the complete catalog.
 
@@ -53,3 +59,7 @@ The [gong rebuild](../../../docs/blockbench-gong-2026-09-15.md) includes the car
 The [Floor Types overhaul](../../../docs/floor-types-2026-09-15.md) covers all 24 materials, 72 designs and four orientations, with the review gallery and verification commands.
 
 The [category expansion audit](../../../docs/category-expansion-2026-09-15.md) records the 231-asset catalog, category targets, artwork corrections and gameplay verification. Category review, interaction and occupancy checks accept `--assets=<comma-separated-ids>` and `--output=<directory>`. Without an asset filter, they use the complete applicable catalog.
+
+The [garden, food and toys report](../../../docs/garden-food-2026-09-16.md) records 40 additions and their review evidence. Category review, interaction and food-Shop checks accept `--built` to load `apps/client/dist` through Playwright request routing with the isolated runtime fixture; build the client first. The special-prop check uses this mode directly. These checks do not start a server.
+
+The food-Shop check accepts `--asset=<catalog-id>` to verify a purchase and placement, and `--output=<directory>` for its evidence. The [plant and food refinement](../../../docs/plant-food-refinement-2026-09-16.md) records the additional collection and rebuilt artwork.

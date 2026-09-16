@@ -1,11 +1,158 @@
 {
   "status": "complete",
   "requested": [
-    "floor-resin"
+    "plant-snake",
+    "plant-fern",
+    "plant-rubber",
+    "plant-calathea",
+    "plant-orchid",
+    "plant-peace-lily",
+    "plant-string-pearls",
+    "plant-jade",
+    "plant-citrus",
+    "plant-aloe",
+    "plant-pilea",
+    "plant-spider",
+    "plant-anthurium",
+    "plant-zz",
+    "plant-echeveria",
+    "plant-croton",
+    "food-dim-sum",
+    "food-bento",
+    "food-bibimbap",
+    "food-gyoza",
+    "food-currywurst",
+    "food-apple-strudel"
   ],
   "results": [
     {
-      "assetId": "floor-resin",
+      "assetId": "plant-snake",
+      "blockbenchVersion": "5.1.6",
+      "assets": 1,
+      "frames": 12
+    },
+    {
+      "assetId": "plant-fern",
+      "blockbenchVersion": "5.1.6",
+      "assets": 1,
+      "frames": 12
+    },
+    {
+      "assetId": "plant-rubber",
+      "blockbenchVersion": "5.1.6",
+      "assets": 1,
+      "frames": 12
+    },
+    {
+      "assetId": "plant-calathea",
+      "blockbenchVersion": "5.1.6",
+      "assets": 1,
+      "frames": 12
+    },
+    {
+      "assetId": "plant-orchid",
+      "blockbenchVersion": "5.1.6",
+      "assets": 1,
+      "frames": 12
+    },
+    {
+      "assetId": "plant-peace-lily",
+      "blockbenchVersion": "5.1.6",
+      "assets": 1,
+      "frames": 12
+    },
+    {
+      "assetId": "plant-string-pearls",
+      "blockbenchVersion": "5.1.6",
+      "assets": 1,
+      "frames": 12
+    },
+    {
+      "assetId": "plant-jade",
+      "blockbenchVersion": "5.1.6",
+      "assets": 1,
+      "frames": 12
+    },
+    {
+      "assetId": "plant-citrus",
+      "blockbenchVersion": "5.1.6",
+      "assets": 1,
+      "frames": 12
+    },
+    {
+      "assetId": "plant-aloe",
+      "blockbenchVersion": "5.1.6",
+      "assets": 1,
+      "frames": 12
+    },
+    {
+      "assetId": "plant-pilea",
+      "blockbenchVersion": "5.1.6",
+      "assets": 1,
+      "frames": 12
+    },
+    {
+      "assetId": "plant-spider",
+      "blockbenchVersion": "5.1.6",
+      "assets": 1,
+      "frames": 12
+    },
+    {
+      "assetId": "plant-anthurium",
+      "blockbenchVersion": "5.1.6",
+      "assets": 1,
+      "frames": 12
+    },
+    {
+      "assetId": "plant-zz",
+      "blockbenchVersion": "5.1.6",
+      "assets": 1,
+      "frames": 12
+    },
+    {
+      "assetId": "plant-echeveria",
+      "blockbenchVersion": "5.1.6",
+      "assets": 1,
+      "frames": 12
+    },
+    {
+      "assetId": "plant-croton",
+      "blockbenchVersion": "5.1.6",
+      "assets": 1,
+      "frames": 12
+    },
+    {
+      "assetId": "food-dim-sum",
+      "blockbenchVersion": "5.1.6",
+      "assets": 1,
+      "frames": 12
+    },
+    {
+      "assetId": "food-bento",
+      "blockbenchVersion": "5.1.6",
+      "assets": 1,
+      "frames": 12
+    },
+    {
+      "assetId": "food-bibimbap",
+      "blockbenchVersion": "5.1.6",
+      "assets": 1,
+      "frames": 12
+    },
+    {
+      "assetId": "food-gyoza",
+      "blockbenchVersion": "5.1.6",
+      "assets": 1,
+      "frames": 12
+    },
+    {
+      "assetId": "food-currywurst",
+      "blockbenchVersion": "5.1.6",
+      "assets": 1,
+      "frames": 12
+    },
+    {
+      "assetId": "food-apple-strudel",
       "blockbenchVersion": "5.1.6",
       "assets": 1,
       "frames": 12

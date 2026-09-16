@@ -1118,6 +1118,110 @@
           "accentColor": "#9da2a6"
         }
       ]
+    },
+    {
+      "id": "indoor-planters",
+      "variants": [
+        {
+          "id": "terracotta",
+          "name": "Terracotta",
+          "color": "#bb8469",
+          "secondaryColor": "#e4b296",
+          "accentColor": "#885d50"
+        },
+        {
+          "id": "porcelain",
+          "name": "Fluted porcelain",
+          "color": "#8eaab2",
+          "secondaryColor": "#d1e0db",
+          "accentColor": "#5b7987"
+        },
+        {
+          "id": "woven",
+          "name": "Woven basket",
+          "color": "#b8a47c",
+          "secondaryColor": "#decea3",
+          "accentColor": "#837355"
+        }
+      ]
+    },
+    {
+      "id": "garden-seasons",
+      "variants": [
+        {
+          "id": "spring",
+          "name": "Spring",
+          "color": "#7ea574",
+          "secondaryColor": "#b7cc93",
+          "accentColor": "#507753"
+        },
+        {
+          "id": "summer",
+          "name": "Summer",
+          "color": "#5d8f69",
+          "secondaryColor": "#9cbc83",
+          "accentColor": "#3e6751"
+        },
+        {
+          "id": "autumn",
+          "name": "Autumn",
+          "color": "#98a06b",
+          "secondaryColor": "#c3c393",
+          "accentColor": "#70794e"
+        }
+      ]
+    },
+    {
+      "id": "tableware",
+      "variants": [
+        {
+          "id": "celadon",
+          "name": "Celadon",
+          "color": "#8aada1",
+          "secondaryColor": "#d9e7cb",
+          "accentColor": "#587c73"
+        },
+        {
+          "id": "indigo",
+          "name": "Indigo glaze",
+          "color": "#647d9e",
+          "secondaryColor": "#c4d6e3",
+          "accentColor": "#3d526d"
+        },
+        {
+          "id": "clay",
+          "name": "Warm clay",
+          "color": "#b97f67",
+          "secondaryColor": "#ebbea0",
+          "accentColor": "#80574e"
+        }
+      ]
+    },
+    {
+      "id": "playful",
+      "variants": [
+        {
+          "id": "sakura",
+          "name": "Sakura",
+          "color": "#cb899e",
+          "secondaryColor": "#f3d7ce",
+          "accentColor": "#886178"
+        },
+        {
+          "id": "mint",
+          "name": "Mint",
+          "color": "#81aead",
+          "secondaryColor": "#d1e6d4",
+          "accentColor": "#4f7e80"
+        },
+        {
+          "id": "sunshine",
+          "name": "Sunshine",
+          "color": "#d2ac62",
+          "secondaryColor": "#f4e4b3",
+          "accentColor": "#99764f"
+        }
+      ]
     }
   ],
   "categories": [
@@ -1179,6 +1283,11 @@
     {
       "id": "breakroom",
       "name": "Breakroom",
+      "buildable": true
+    },
+    {
+      "id": "food",
+      "name": "Food",
       "buildable": true
     },
     {
@@ -9478,6 +9587,1862 @@
           "allows": [
             "floor"
           ]
+        }
+      ]
+    },
+    {
+      "id": "plant-snake",
+      "name": "Snake plant",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "indoor-planters",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "plant-fern",
+      "name": "Boston fern",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "indoor-planters",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "plant-rubber",
+      "name": "Rubber tree",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "indoor-planters",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "plant-calathea",
+      "name": "Painted calathea",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "indoor-planters",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "plant-orchid",
+      "name": "Moth orchid",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "indoor-planters",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "plant-peace-lily",
+      "name": "Peace lily",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "indoor-planters",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "plant-string-pearls",
+      "name": "Trailing pearls",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "indoor-planters",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "plant-jade",
+      "name": "Jade plant",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "indoor-planters",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "plant-citrus",
+      "name": "Potted orange tree",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "indoor-planters",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "plant-aloe",
+      "name": "Aloe vera",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "indoor-planters",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "outdoor-maple",
+      "name": "Japanese maple",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "garden-seasons",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 5,
+            "height": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "outdoor-pine",
+      "name": "Blue pine",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "garden-seasons",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "outdoor-birch",
+      "name": "Silver birch",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "garden-seasons",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "outdoor-willow",
+      "name": "Weeping willow",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "garden-seasons",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 5,
+            "height": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "outdoor-apple",
+      "name": "Apple tree",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "garden-seasons",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "outdoor-hydrangea",
+      "name": "Hydrangea bush",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "garden-seasons",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "outdoor-rose-hedge",
+      "name": "Rose hedge",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "garden-seasons",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 5,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "outdoor-lavender",
+      "name": "Lavender clump",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "garden-seasons",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "outdoor-agave",
+      "name": "Desert agave",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "garden-seasons",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "outdoor-mushrooms",
+      "name": "Woodland mushrooms",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "garden-seasons",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-ramen",
+      "name": "Ramen bowl",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-sushi",
+      "name": "Sushi platter",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-bento",
+      "name": "Bento box",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-dim-sum",
+      "name": "Dim sum basket",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-curry",
+      "name": "Japanese curry",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-poke",
+      "name": "Poke bowl",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-pho",
+      "name": "Pho bowl",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-pretzel",
+      "name": "Soft pretzel",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-bratwurst",
+      "name": "Bratwurst plate",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-schnitzel",
+      "name": "Schnitzel plate",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-burger",
+      "name": "Burger and fries",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-pancakes",
+      "name": "Pancake stack",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "decor-kinetic-mobile",
+      "name": "Kinetic mobile",
+      "category": "decor",
+      "kind": "decoration",
+      "themeSetId": "playful",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "decor-jellyfish-lamp",
+      "name": "Jellyfish lamp",
+      "category": "decor",
+      "kind": "decoration",
+      "themeSetId": "playful",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "decor-rocking-bird",
+      "name": "Balancing bird",
+      "category": "decor",
+      "kind": "decoration",
+      "themeSetId": "playful",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "outdoor-mini-windmill",
+      "name": "Garden windmill",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "playful",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "special-confetti",
+      "name": "Confetti cannon",
+      "category": "equipment",
+      "kind": "decoration",
+      "themeSetId": "playful",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 160,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "special-bubbles",
+      "name": "Bubble machine",
+      "category": "equipment",
+      "kind": "decoration",
+      "themeSetId": "playful",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 160,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "special-fortune",
+      "name": "Fortune dispenser",
+      "category": "equipment",
+      "kind": "decoration",
+      "themeSetId": "playful",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 160,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "special-break-wheel",
+      "name": "Break wheel",
+      "category": "equipment",
+      "kind": "decoration",
+      "themeSetId": "playful",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 160,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "plant-pilea",
+      "name": "Chinese money plant",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "indoor-planters",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "plant-spider",
+      "name": "Spider plant",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "indoor-planters",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "plant-anthurium",
+      "name": "Coral anthurium",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "indoor-planters",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "plant-zz",
+      "name": "ZZ plant",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "indoor-planters",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "plant-echeveria",
+      "name": "Echeveria rosette",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "indoor-planters",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "plant-croton",
+      "name": "Painted croton",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "indoor-planters",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "outdoor-cypress",
+      "name": "Italian cypress",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "garden-seasons",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "outdoor-date-palm",
+      "name": "Date palm",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "garden-seasons",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": "outdoor-ginkgo",
+      "name": "Ginkgo tree",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "garden-seasons",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 5,
+            "height": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "outdoor-dogwood",
+      "name": "Flowering dogwood",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "garden-seasons",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 5,
+            "height": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "outdoor-boxwood",
+      "name": "Boxwood cluster",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "garden-seasons",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "outdoor-pampas",
+      "name": "Pampas grass",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "garden-seasons",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 75,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-bibimbap",
+      "name": "Bibimbap bowl",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-onigiri",
+      "name": "Onigiri plate",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-tempura",
+      "name": "Shrimp tempura",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-gyoza",
+      "name": "Gyoza platter",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-currywurst",
+      "name": "Currywurst and fries",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-spaetzle",
+      "name": "Cheese spaetzle",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-apple-strudel",
+      "name": "Apple strudel",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-pizza",
+      "name": "Pepperoni pizza",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-tacos",
+      "name": "Taco trio",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-hotdog",
+      "name": "Hotdog plate",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-waffles",
+      "name": "Strawberry waffle",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-strawberry-cake",
+      "name": "Strawberry shortcake",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "tableware",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 25,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
         }
       ]
     }

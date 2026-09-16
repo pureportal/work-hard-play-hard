@@ -7,6 +7,7 @@ import puppeteer from "puppeteer";
 import type { Application, Sprite } from "../../../apps/client/node_modules/pixi.js";
 import { ASSET_CATALOG, ASSET_ROTATIONS, getAssetVariants, type WorldObject } from "../../../packages/shared/src/index.js";
 import { installAssetFixture } from "../playwright-fixture.js";
+import { installBuiltAssetClient } from "../built-client.js";
 import { installWorldProbe } from "../../characters/playwright-animation.js";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
@@ -18,6 +19,7 @@ const sharp = createRequire(new URL("../../../apps/server/package.json", import.
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ headless: true, executablePath: puppeteer.executablePath() });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+if (process.argv.includes("--built")) await installBuiltAssetClient(context);
 const fixture = await installAssetFixture(context, "user-maya", { x: 800, y: 704 }, { currentPlayerOnly: true });
 const layout = fixture.store.getLayout("floor-studio")!;
 Object.assign(layout, { objects: [], tiles: [], walls: [], openings: [], rooms: [], revision: layout.revision + 1 });
