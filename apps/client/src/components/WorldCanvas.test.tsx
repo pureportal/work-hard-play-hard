@@ -1,5 +1,5 @@
 import { createOrganisation } from "@workhard/shared";
-import { ASSET_ROTATIONS, DEFAULT_CHARACTER_APPEARANCE, getPlacedAssetBounds, getPlacedAssetInteractions, requireAssetDefinition } from "@workhard/shared";
+import { ASSET_ROTATIONS, DEFAULT_CHARACTER_APPEARANCE, getDefaultAssetVariantId, getPlacedAssetBounds, getPlacedAssetInteractions, requireAssetDefinition } from "@workhard/shared";
 import type { Container, Sprite } from "pixi.js";
 import { Graphics } from "pixi.js";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WorldCanvas, type WorldCanvasProps } from "./WorldCanvas";
 import { ConfirmationDialog } from "./ConfirmationDialog";
 import { getWorldAssetArtwork, getWorldAssetSurfaceHeight } from "../world-asset-artwork";
+import { getPlacedWorldAssetBounds } from "../world-asset-placement";
 import * as characterRenderer from "../character-renderer";
 import { MusicIndicator } from "../spotify/music-indicator";
 import { CharacterSprite } from "../character-sprite";
@@ -136,6 +137,66 @@ describe("WorldCanvas start point", () => {
     dispatchPointer(canvas, "pointerdown", point.x, point.y);
     dispatchPointer(canvas, "pointerup", point.x, point.y);
     expect(onEdit).not.toHaveBeenCalled();
+  });
+});
+
+describe("WorldCanvas asset focus", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it.each(["chair-office", "rug-woven"])("centers and briefly animates a focused %s, including repeated selections", async (assetId) => {
+    const now = vi.spyOn(Date, "now").mockReturnValue(10_000);
+    const props = createProps();
+    const object = { id: "mine", floorId: "floor", assetId, x: 600, y: 400, rotation: 0 as const, variantId: getDefaultAssetVariantId(requireAssetDefinition(assetId)) };
+    const placedLayout = { ...props.layout, objects: [object] };
+    const focusTarget = { floorId: "floor", objectId: object.id, requestId: "first" };
+    const { container, rerender } = render(<WorldCanvas {...props} layout={placedLayout} focusTarget={focusTarget} />);
+    await findCanvas(container);
+    const app = getApplication();
+    const view = app.stage.getChildByLabel("world-asset:mine", true)!;
+    const bounds = getPlacedWorldAssetBounds(placedLayout, object);
+    expect(getScreenPoint(app, bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)).toEqual({ x: 400, y: 300 });
+    expect(screen.getByRole("button", { name: "Follow" })).toBeTruthy();
+    now.mockReturnValue(10_375);
+    runFrames(app, 1);
+    expect(view.scale.x).toBeGreaterThan(1);
+    expect(props.onDestination).not.toHaveBeenCalled();
+    now.mockReturnValue(11_501);
+    runFrames(app, 1);
+    expect(view.scale.x).toBe(1);
+    expect(view.tint).toBe(0xffffff);
+    expect({ x: view.x, y: view.y }).toEqual({ x: object.x, y: object.y });
+    expect(app.stage.getChildByLabel("asset-focus", true)!.width).toBe(0);
+    rerender(<WorldCanvas {...props} layout={placedLayout} focusTarget={{ ...focusTarget, requestId: "again" }} />);
+    now.mockReturnValue(11_876);
+    runFrames(app, 1);
+    expect(view.scale.x).toBeGreaterThan(1);
+    rerender(<WorldCanvas {...props} layout={{ ...placedLayout, revision: 2, objects: [] }} />);
+    runFrames(app, 1);
+    expect(app.stage.getChildByLabel("asset-focus", true)!.width).toBe(0);
+  });
+
+  it("waits for the requested floor and uses a static highlight with reduced motion", async () => {
+    vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
+    const now = vi.spyOn(Date, "now").mockReturnValue(10_000);
+    const props = createProps();
+    const focusTarget = { floorId: "upstairs", objectId: "mine", requestId: "focus" };
+    const { container, rerender } = render(<WorldCanvas {...props} focusTarget={focusTarget} />);
+    await findCanvas(container);
+    expect(screen.queryByRole("button", { name: "Follow" })).toBeNull();
+    const object = { id: "mine", floorId: "upstairs", assetId: "chair-office", x: 600, y: 400, rotation: 0 as const, variantId: "white" };
+    rerender(<WorldCanvas {...props} floor={{ ...props.floor, id: "upstairs" }} layout={{ ...props.layout, floorId: "upstairs", objects: [object] }} focusTarget={focusTarget} />);
+    const app = getApplication();
+    const view = app.stage.getChildByLabel("world-asset:mine", true)!;
+    expect(screen.getByRole("button", { name: "Follow" })).toBeTruthy();
+    now.mockReturnValue(10_375);
+    runFrames(app, 1);
+    expect(view.scale.x).toBe(1);
+    expect({ x: view.x, y: view.y }).toEqual({ x: object.x, y: object.y });
+    expect(app.stage.getChildByLabel("asset-focus", true)!.width).toBeGreaterThan(0);
+    now.mockReturnValue(11_501);
+    runFrames(app, 1);
+    expect(view.tint).toBe(0xffffff);
+    expect(app.stage.getChildByLabel("asset-focus", true)!.width).toBe(0);
   });
 });
 

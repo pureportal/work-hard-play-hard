@@ -100,6 +100,7 @@ export interface WorldObject {
   label?: string;
   ownerUserId?: string;
   ownedAssetId?: string;
+  publicFundId?: string;
   workState?: WorkObjectState;
 }
 

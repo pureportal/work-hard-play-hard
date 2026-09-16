@@ -1,0 +1,22 @@
+.workspace-dialog { width: min(1040px, 100%); height: min(810px, 100%); min-height: 0; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--line); border-radius: 22px; background: var(--panel); color: var(--text); box-shadow: 0 24px 80px #0005; }
+.workspace-dialog-header { display: flex; align-items: center; gap: 12px; padding: 20px 24px; border-bottom: 1px solid var(--line); flex-shrink: 0; }
+.workspace-dialog-header h2 { flex: 1; margin: 0; font-size: 22px; letter-spacing: -.04em; }
+.dialog-tabs { display: flex; gap: 6px; padding: 10px 24px; border-bottom: 1px solid var(--line); overflow-x: auto; flex-shrink: 0; }
+.dialog-tabs button { display: flex; align-items: center; justify-content: center; gap: 8px; flex: 0 0 auto; border: 0; border-radius: 10px; min-height: 42px; padding: 10px 16px; background: transparent; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.dialog-tabs button[aria-selected="true"] { background: var(--accent-soft); color: var(--accent-text); }
+.dialog-tab-count { min-width: 20px; border-radius: 12px; padding: 1px 6px; background: var(--accent); color: white; font-size: 11px; }
+.dialog-tab-content { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 24px; }
+.workspace-dialog button:focus-visible, .workspace-dialog input:focus-visible, .workspace-dialog select:focus-visible, .workspace-dialog summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.dialog-empty { display: grid; place-items: center; gap: 14px; padding: 48px 16px; text-align: center; color: var(--muted); }
+.dialog-empty p { margin: 0; }
+.workspace-dialog-error { flex-shrink: 0; margin: 12px 24px 0; padding: 12px 16px; border: 1px solid var(--danger); border-radius: 10px; font-size: 13px; }
+@media (max-width: 700px) {
+  .workspace-dialog-backdrop { padding: 8px; }
+  .workspace-dialog { height: 100%; border-radius: 16px; }
+  .workspace-dialog-header { padding: 14px 16px; gap: 8px; }
+  .workspace-dialog-header .icon-button { flex-shrink: 0; width: 44px; height: 44px; }
+  .workspace-dialog-header h2 { font-size: 20px; }
+  .dialog-tabs { padding: 8px 12px; }
+  .dialog-tabs button { padding: 10px 12px; }
+  .dialog-tab-content { padding: 16px; }
+}

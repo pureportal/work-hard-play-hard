@@ -1,5 +1,6 @@
 import { applyOrganisationEdit, validateOrganisation, validateRoomPermission } from "./organisation/organisation-store.js";
 import { gameSettingsSchema } from "./organisation/organisation-schema.js";
+import { PublicEconomyStore, validatePublicEconomy, type PublicEconomyState } from "./economy/public-economy-store.js";
 import { canEditRoomPermissions, type OrganisationEdit, type OrganisationState } from "@workhard/shared";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import {
@@ -82,6 +83,7 @@ export interface MutableStoreState {
   gameStatistics: PlayerGameStatistics[];
   chessMatches: ChessMatchRecord[];
   economy: EconomyPersistenceState;
+  publicEconomy: PublicEconomyState;
   kidnapping: KidnappingPersistenceState;
   registrationSettings: RegistrationSettings;
   corporateIdentity: CorporateIdentitySettings;
@@ -129,6 +131,7 @@ export class WorkspaceStore {
   private data: BootstrapData;
   private messageSequenceByConversation: Map<string, number>;
   private readonly economy: EconomyStore;
+  readonly publicEconomy: PublicEconomyStore;
   private globalKidnappingSettings: GlobalKidnappingSettings;
   private readonly playerKidnappingSettings = new Map<string, PlayerKidnappingSettings>();
   private registrationSettings = structuredClone(DEFAULT_REGISTRATION_SETTINGS);
@@ -138,6 +141,7 @@ export class WorkspaceStore {
 
   constructor(initialData: BootstrapData = createInitialData()) {
     this.data = structuredClone(initialData);
+    this.publicEconomy = new PublicEconomyStore(initialData.publicEconomy);
     for (const layout of this.data.layouts) {
       assertLayoutIntegrity(layout);
     }
@@ -174,6 +178,7 @@ export class WorkspaceStore {
       currentUserId,
       layouts,
       economy: this.economy.getPlayerEconomy(currentUserId),
+      publicEconomy: this.getPublicEconomy(),
       gameSettings: this.economy.getGameSettings(),
       kidnapping: {
         global: this.getGlobalKidnappingSettings(),
@@ -262,15 +267,17 @@ export class WorkspaceStore {
     return this.data.organisation;
   }
 
-  editOrganisation(actorId: string, baseRevision: number, edit: OrganisationEdit): OrganisationState {
+  editOrganisation(actorId: string, baseRevision: number, edit: OrganisationEdit, approved = false): OrganisationState {
+    if (!approved && this.publicEconomy.fund("workspace").mode === "equal") throw new Error("PROJECT_APPROVAL_REQUIRED");
     if (edit.type === "unit.delete") {
       const unitId = edit.unitId;
+      if (this.publicEconomy.view().funds.some((fund) => fund.unitId === unitId)) throw new Error("ORGANISATION_UNIT_IN_USE");
       const permissions = [this.getGameSettings().roomAccess, this.getGameSettings().roomBuild,
         ...this.data.layouts.flatMap((layout) => layout.rooms.flatMap((room) => [room.access, ...(room.build ? [room.build] : [])]))];
       if (permissions.some((permission) => permission.unitGrants?.some((grant) => grant.unitId === unitId))
         || this.data.layouts.some((layout) => layout.rooms.some((room) => room.organisationUnitId === unitId))) throw new Error("ORGANISATION_UNIT_IN_USE");
     }
-    this.data.organisation = applyOrganisationEdit(this.data.organisation, this.data.members.map((member) => member.id), actorId, baseRevision, edit);
+    this.data.organisation = applyOrganisationEdit(this.data.organisation, this.data.members.map((member) => member.id), actorId, baseRevision, edit, approved);
     this.dirty = true;
     return this.getOrganisation();
   }
@@ -401,8 +408,8 @@ export class WorkspaceStore {
       floorId: floor.id,
       position: structuredClone(floor.spawn),
     };
-    if (this.data.members.length === 0) this.data.organisation.ceoIds = [member.id];
     this.data.members.push(member);
+    this.data.organisation.revision += 1;
     this.economy.createAccount(member.id);
     this.playerKidnappingSettings.set(member.id, structuredClone(DEFAULT_PLAYER_KIDNAPPING_SETTINGS));
     this.dirty = true;
@@ -956,6 +963,44 @@ export class WorkspaceStore {
     return this.economy.getPlayerEconomy(userId);
   }
 
+  getPublicEconomy() {
+    this.publicEconomy.invalidateLayoutProposals(this.data.layouts);
+    this.publicEconomy.refresh(this.data.organisation, this.data.members.map((member) => member.id));
+    this.dirty = true;
+    return this.publicEconomy.view();
+  }
+
+  donateMoney(userId: string, fundId: string, amount: number, operationKey: string): EconomyOperationResult {
+    this.getPublicEconomy();
+    const fund = this.publicEconomy.fund(fundId);
+    if (!Number.isSafeInteger(amount) || amount <= 0 || fund.balance + amount > 2_000_000_000) throw new Error("COIN_BALANCE_INVALID");
+    const result = this.economy.donateMoney(userId, amount, fundId, operationKey);
+    if (!result.replayed) {
+      this.publicEconomy.record(fundId, userId, "donation", amount, result.transaction.id);
+      this.publicEconomy.fundAllowances(fundId);
+    }
+    this.dirty = true;
+    return result;
+  }
+
+  disposeAsset(userId: string, ownedAssetId: string, kind: "asset_sale" | "asset_donation", operationKey: string, fundId?: string): EconomyOperationResult {
+    const fingerprint = `${kind}:${ownedAssetId}:${fundId ?? ""}`;
+    if (this.publicEconomy.findOperation(userId, operationKey, fingerprint) !== undefined) {
+      return this.economy.disposeAsset(userId, ownedAssetId, kind, operationKey, fundId);
+    }
+    const asset = this.economy.getOwnedAsset(userId, ownedAssetId);
+    if (asset.placement) throw new Error("ASSET_ALREADY_PLACED");
+    if (kind === "asset_donation") this.publicEconomy.fund(fundId!);
+    const result = this.economy.disposeAsset(userId, ownedAssetId, kind, operationKey, fundId);
+    if (!result.replayed && kind === "asset_donation") {
+      this.publicEconomy.addDonation({ id: asset.id, assetId: asset.assetId, fundId: fundId!, paid: asset.purchasePrice });
+      this.publicEconomy.record(fundId!, userId, "asset_donation", 0, result.transaction.id);
+    }
+    this.publicEconomy.recordOperation(userId, operationKey, fingerprint, result.transaction.id);
+    this.dirty = true;
+    return result;
+  }
+
   getOwnedAsset(userId: string, ownedAssetId: string) {
     return this.economy.getOwnedAsset(userId, ownedAssetId);
   }
@@ -1059,6 +1104,7 @@ export class WorkspaceStore {
       gameStatistics: this.data.gameStatistics,
       chessMatches: this.chessMatches,
       economy: this.economy.exportState(),
+      publicEconomy: this.publicEconomy.exportState(),
       kidnapping: {
         global: this.globalKidnappingSettings,
         players: [...this.playerKidnappingSettings].map(([userId, settings]) => ({ userId, settings })),
@@ -1074,6 +1120,7 @@ export class WorkspaceStore {
       throw new Error("STORE_STATE_INVALID");
     }
     validateOrganisation(next.organisation, next.members.map((member) => member.id));
+    validatePublicEconomy(next.publicEconomy);
     const memberIds = next.members.map((member) => member.id);
     for (const permission of [next.economy.gameSettings.roomAccess, next.economy.gameSettings.roomBuild]) {
       validateRoomPermission(permission, next.organisation, memberIds);
@@ -1107,6 +1154,7 @@ export class WorkspaceStore {
       throw new Error("STORE_STATE_INVALID");
     }
     this.economy.restoreState(next.economy);
+    this.publicEconomy.restoreState(next.publicEconomy);
     this.data.members = next.members;
     this.data.organisation = next.organisation;
     this.data.floors = floors;

@@ -1,9 +1,10 @@
-import { canManageUnit, canMoveOrganisationMember, isUnitWithin, type Member, type OrganisationEdit, type OrganisationState } from "@workhard/shared";
+import { canManageUnit as mayManageUnit, canMoveOrganisationMember as mayMoveMember, isUnitWithin, type Member, type OrganisationEdit, type OrganisationState } from "@workhard/shared";
 import { useId, type DragEvent, type ReactNode } from "react";
 
 export type OrganisationSelection = { type: "unit" | "person"; id: string };
 
 interface OrganisationTreeProps {
+  equalTeam?: boolean;
   organisation: OrganisationState;
   members: Member[];
   currentUserId: string;
@@ -16,8 +17,10 @@ interface OrganisationTreeProps {
 
 const dragType = "application/x-organisation";
 
-export function OrganisationTree({ organisation, members, currentUserId, pending, selection, editor, onSelect, onEdit }: OrganisationTreeProps) {
+export function OrganisationTree({ equalTeam = false, organisation, members, currentUserId, pending, selection, editor, onSelect, onEdit }: OrganisationTreeProps) {
   const treeId = useId();
+  const canManageUnit = (...args: Parameters<typeof mayManageUnit>) => equalTeam || mayManageUnit(...args);
+  const canMoveOrganisationMember = (...args: Parameters<typeof mayMoveMember>) => equalTeam || mayMoveMember(...args);
   const isCeo = organisation.ceoIds.includes(currentUserId);
   const drop = (event: DragEvent, parentId: string | null) => {
     event.preventDefault();
@@ -43,7 +46,7 @@ export function OrganisationTree({ organisation, members, currentUserId, pending
   const person = (member: Member) => {
     const assignment = organisation.assignments.find((item) => item.userId === member.id);
     const ceo = organisation.ceoIds.includes(member.id);
-    const manageable = !ceo && (isCeo || Boolean(assignment && canMoveOrganisationMember(organisation, currentUserId, member.id, assignment.unitId)));
+    const manageable = !ceo && (equalTeam || isCeo || Boolean(assignment && canMoveOrganisationMember(organisation, currentUserId, member.id, assignment.unitId)));
     const selectable = manageable || (isCeo && ceo && member.id !== currentUserId
       && !organisation.removalVotes.some((vote) => vote.subjectId === member.id && vote.status === "open"));
     const selected = selection?.type === "person" && selection.id === member.id;
@@ -74,7 +77,7 @@ export function OrganisationTree({ organisation, members, currentUserId, pending
     </li>; })}
   </ul>;
   return <div className="organisation-tree">
-    <section aria-label="CEOs"><h3>CEOs</h3><ul className="organisation-members">{members.filter((member) => organisation.ceoIds.includes(member.id)).map(person)}</ul></section>
+    {organisation.ceoIds.length > 0 && <section aria-label="CEOs"><h3>CEOs</h3><ul className="organisation-members">{members.filter((member) => organisation.ceoIds.includes(member.id)).map(person)}</ul></section>}
     <section aria-label="Units" data-drop="root" onDragOver={(event) => event.preventDefault()} onDrop={(event) => drop(event, null)}><h3>Units</h3>{branch(null)}</section>
     <section aria-label="Unassigned" data-drop="unassigned" onDragOver={(event) => event.preventDefault()} onDrop={(event) => drop(event, null)}><h3>Unassigned</h3>
       <ul className="organisation-members">{members.filter((member) => !organisation.ceoIds.includes(member.id) && !organisation.assignments.some((assignment) => assignment.userId === member.id)).map(person)}</ul>

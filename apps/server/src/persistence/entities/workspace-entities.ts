@@ -1,4 +1,5 @@
-import type { OrganisationState } from "@workhard/shared";
+import type { OrganisationState, CoinTransactionKind } from "@workhard/shared";
+import type { PublicEconomyState } from "../../economy/public-economy-store.js";
 import { EntitySchema } from "@mikro-orm/core";
 import type {
   AssignableMemberPermission,
@@ -162,6 +163,7 @@ export class OwnedAssetEntity {
   userId!: string;
   assetId!: string;
   acquiredAt!: Date;
+  purchasePrice!: number;
   placement!: OwnedAssetPlacement | null;
   sortOrder!: number;
 }
@@ -171,7 +173,7 @@ export class CoinTransactionEntity {
   userId!: string;
   operationKey!: string;
   operationFingerprint!: string;
-  kind!: "welcome" | "daily_bonus" | "game_reward" | "shop_purchase";
+  kind!: CoinTransactionKind;
   amount!: number;
   balanceAfter!: number;
   createdAt!: Date;
@@ -182,6 +184,7 @@ export class CoinTransactionEntity {
 }
 
 export class WorkspaceSettingsEntity {
+  publicEconomy!: PublicEconomyState;
   organisation!: OrganisationState;
   id!: string;
   floors!: Floor[];
@@ -495,6 +498,7 @@ export const ownedAssetSchema = new EntitySchema({
     } as never,
     assetId: { type: String, fieldName: "asset_id" },
     acquiredAt: { type: Date, fieldName: "acquired_at" },
+    purchasePrice: { type: Number, fieldName: "purchase_price" },
     placement: { type: "json", nullable: true },
     sortOrder: { type: Number, fieldName: "sort_order" },
   },
@@ -527,7 +531,7 @@ export const coinTransactionSchema = new EntitySchema({
   },
   uniques: [{ properties: ["userId", "operationKey"] }],
   checks: [
-    { name: "coin_transactions_kind_check", expression: "kind in ('welcome', 'daily_bonus', 'game_reward', 'shop_purchase')" },
+    { name: "coin_transactions_kind_check", expression: "kind in ('welcome', 'daily_bonus', 'game_reward', 'shop_purchase', 'donation', 'asset_sale', 'asset_donation')" },
     { name: "coin_transactions_balance_after_check", expression: "balance_after >= 0" },
     { name: "coin_transactions_sort_order_check", expression: "sort_order >= 0" },
   ],
@@ -541,6 +545,7 @@ export const workspaceSettingsSchema = new EntitySchema({
     floors: { type: "json" },
     gameSettings: { type: "json", fieldName: "game_settings" },
     organisation: { type: "json" },
+    publicEconomy: { type: "json", fieldName: "public_economy" },
     kidnappingSettings: { type: "json", fieldName: "kidnapping_settings" },
     playerKidnappingSettings: { type: "json", fieldName: "player_kidnapping_settings" },
     registrationSettings: { type: "json", fieldName: "registration_settings" },

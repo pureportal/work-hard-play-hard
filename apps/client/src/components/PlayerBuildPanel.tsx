@@ -1,12 +1,14 @@
-import { Coins, Move, RotateCw, ShoppingBag, Trash2, X } from "lucide-react";
-import { useId, useMemo, useState } from "react";
+import { Archive, Coins, Gift, Move, RotateCw, ShoppingBag, X } from "lucide-react";
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { ASSET_CATALOG, MAX_LAYOUT_OBJECTS_PER_FLOOR, getDefaultAssetVariantId, roomBuildAllows } from "@workhard/shared";
-import type { AssetRotation, FloorLayout, GameSettings, LayoutItemReference, LayoutTool, OrganisationState, PlayerEconomy } from "@workhard/shared";
+import type { AssetRotation, Floor, FloorLayout, GameSettings, LayoutItemReference, LayoutTool, OrganisationState, PlayerEconomy } from "@workhard/shared";
 import { getAssetOrientationLabel, rotateAssetClockwise } from "../asset-orientation";
 import { AssetShape } from "./AssetShape";
 import { AssetVariantPicker } from "./AssetVariantPicker";
 import { IconButton } from "./IconButton";
 import { PlayerAssetShop } from "./PlayerAssetShop";
+import { AssetDispositionDialog } from "./economy/AssetDispositionDialog";
+import { PersonalPlacedAssets } from "./PersonalPlacedAssets";
 import "../player-build-panel.css";
 
 type EconomyRequest =
@@ -14,12 +16,18 @@ type EconomyRequest =
   | { id: string; type: "purchase"; assetId: string };
 
 interface PlayerBuildPanelProps {
+  accountControls?: ReactNode;
+  onSell?: (ownedAssetId: string) => void;
+  onDonate?: (ownedAssetId: string) => void;
   currentUserId: string;
+  playerFloorId: string;
   organisation: OrganisationState;
   onOpenRooms: () => void;
   economy: PlayerEconomy;
   gameSettings: GameSettings;
   layout: FloorLayout;
+  layouts: FloorLayout[];
+  floors: Floor[];
   tool: LayoutTool | null;
   assetId: string;
   assetVariantId: string;
@@ -28,9 +36,12 @@ interface PlayerBuildPanelProps {
   selectedItem?: LayoutItemReference | undefined;
   movingItem?: LayoutItemReference | undefined;
   pendingEconomyRequest?: EconomyRequest | undefined;
+  pendingPublicAction?: boolean;
+  publicActionError?: string | undefined;
   onClaimDaily: () => void;
   onPurchase: (assetId: string) => void;
   onPlace: (ownedAssetId: string, assetId: string) => void;
+  onFocus: (floorId: string, objectId: string) => void;
   onAssetVariantChange: (variantId: string) => void;
   onAssetRotationChange: (rotation: AssetRotation) => void;
   onMoveSelected: () => void;
@@ -40,12 +51,18 @@ interface PlayerBuildPanelProps {
 }
 
 export function PlayerBuildPanel({
+  accountControls,
+  onSell,
+  onDonate,
   currentUserId,
+  playerFloorId,
   organisation,
   onOpenRooms,
   economy,
   gameSettings,
   layout,
+  layouts,
+  floors,
   tool,
   assetId,
   assetVariantId,
@@ -54,9 +71,12 @@ export function PlayerBuildPanel({
   selectedItem,
   movingItem,
   pendingEconomyRequest,
+  pendingPublicAction = false,
+  publicActionError,
   onClaimDaily,
   onPurchase,
   onPlace,
+  onFocus,
   onAssetVariantChange,
   onAssetRotationChange,
   onMoveSelected,
@@ -64,8 +84,12 @@ export function PlayerBuildPanel({
   onRemoveSelected,
   onClose,
 }: PlayerBuildPanelProps) {
-  const [view, setView] = useState<"inventory" | "shop">("inventory");
+  const tabs = ["inventory", "placed", "shop"] as const;
+  const [view, setView] = useState<typeof tabs[number]>("inventory");
   const panelId = useId();
+  const [disposition, setDisposition] = useState<{ assetId: string; action: "sell" | "donate" }>();
+  const disposingAsset = economy.inventory.find((asset) => asset.id === disposition?.assetId && !asset.placement);
+  useEffect(() => { if (disposition && !disposingAsset) setDisposition(undefined); }, [disposition, disposingAsset]);
   const selectedObject = selectedItem?.type === "asset"
     ? layout.objects.find((object) => object.id === selectedItem.id && object.ownerUserId === currentUserId)
     : undefined;
@@ -77,6 +101,22 @@ export function PlayerBuildPanel({
     return instances.length > 0 ? [{ asset, instances }] : [];
   }), [economy.inventory]);
   const floorFull = layout.objects.length >= MAX_LAYOUT_OBJECTS_PER_FLOOR;
+  const viewingPlayerFloor = layout.floorId === playerFloorId;
+  const selectionControls = <>
+    {!viewingPlayerFloor && <p className="personal-floor-notice">Visit this floor to edit or place items.</p>}
+    {selectedObject && selectedAsset && (
+      <section className="build-selection" aria-label={`Selected ${selectedAsset.name}`}>
+        <strong>{selectedObject.label ?? selectedAsset.name}</strong>
+        <div>
+          <button className={`inventory-action${selectedItemMatches(selectedItem, movingItem) ? " active" : ""}`} disabled={!viewingPlayerFloor} onClick={onMoveSelected}>
+            <Move size={16} aria-hidden="true" />Move
+          </button>
+          <button className="inventory-action" disabled={!viewingPlayerFloor} onClick={onRotateSelected}><RotateCw size={16} aria-hidden="true" />Rotate</button>
+          <button className="inventory-action inventory-action-store" disabled={!viewingPlayerFloor} onClick={onRemoveSelected}><Archive size={16} aria-hidden="true" />Store</button>
+        </div>
+      </section>
+    )}
+  </>;
   const dailyBonus = (
     <section className="economy-summary" aria-label="Daily bonus">
       <div className="daily-reward">
@@ -109,35 +149,30 @@ export function PlayerBuildPanel({
           <IconButton label="Close build tools" icon={X} onClick={onClose} />
         </div>
       </div>
+      {accountControls}
       <div className="asset-view-tabs" role="tablist" aria-label="Assets">
-        {(["inventory", "shop"] as const).map((tab) => <button key={tab} id={`${panelId}-${tab}-tab`} role="tab"
+        {tabs.map((tab) => <button key={tab} id={`${panelId}-${tab}-tab`} role="tab"
           aria-selected={view === tab} aria-controls={`${panelId}-${tab}`} tabIndex={view === tab ? 0 : -1}
           className={view === tab ? "active" : ""} onClick={() => setView(tab)} onKeyDown={(event) => {
             if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
             event.preventDefault();
-            const next = event.key === "Home" ? "inventory" : event.key === "End" ? "shop" : view === "inventory" ? "shop" : "inventory";
+            const next = event.key === "Home" ? tabs[0] : event.key === "End" ? tabs[tabs.length - 1]!
+              : tabs[(tabs.indexOf(tab) + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length]!;
             setView(next);
             document.getElementById(`${panelId}-${next}-tab`)?.focus();
-          }}>{tab === "inventory" ? "Inventory" : "Shop"}</button>)}
+          }}>{tab === "inventory" ? "Inventory" : tab === "placed" ? "Placed" : "Shop"}</button>)}
       </div>
       <div className="player-shop-view" id={`${panelId}-shop`} role="tabpanel" aria-labelledby={`${panelId}-shop-tab`} hidden={view !== "shop"}>
         <PlayerAssetShop economy={economy} pending={Boolean(pendingEconomyRequest)}
           purchasingAssetId={pendingEconomyRequest?.type === "purchase" ? pendingEconomyRequest.assetId : undefined} onPurchase={onPurchase} />
       </div>
+      <div className="panel-scroll build-panel-scroll" id={`${panelId}-placed`} role="tabpanel" aria-labelledby={`${panelId}-placed-tab`} hidden={view !== "placed"}>
+        {view === "placed" && selectionControls}
+        <PersonalPlacedAssets currentUserId={currentUserId} layouts={layouts} floors={floors}
+          activeFloorId={layout.floorId} selectedItem={selectedItem} onFocus={onFocus} />
+      </div>
       <div className="panel-scroll build-panel-scroll" id={`${panelId}-inventory`} role="tabpanel" aria-labelledby={`${panelId}-inventory-tab`} hidden={view !== "inventory"}>
-        {selectedObject && selectedAsset && (
-          <section className="build-selection" aria-label={`Selected ${selectedAsset.name}`}>
-            <strong>{selectedAsset.name}</strong>
-            <div>
-              <button className={selectedItemMatches(selectedItem, movingItem) ? "active" : ""} onClick={onMoveSelected}>
-                <Move size={16} />Move
-              </button>
-              <button onClick={onRotateSelected}><RotateCw size={16} />Rotate</button>
-              <button className="danger" onClick={onRemoveSelected}><Trash2 size={16} />Remove</button>
-            </div>
-          </section>
-        )}
-
+        {view === "inventory" && selectionControls}
         <section className="build-section asset-library" aria-label="Inventory">
           {inventoryGroups.length === 0 ? (
             <div className="inventory-empty">
@@ -155,11 +190,20 @@ export function PlayerBuildPanel({
                     <AssetShape asset={asset} rotation={asset.id === assetId ? assetRotation : 0} variantId={asset.id === assetId ? assetVariantId : getDefaultAssetVariantId(asset)} />
                     <div><strong>{asset.name}</strong><span>{available.length} available · {instances.length - available.length} placed</span></div>
                     <button
-                      disabled={available.length === 0 || !canPlaceOnFloor || floorFull}
+                      disabled={pendingPublicAction || Boolean(pendingEconomyRequest) || available.length === 0 || !viewingPlayerFloor || !canPlaceOnFloor || floorFull}
                       onClick={() => onPlace(available[0]!.id, asset.id)}
                     >
                       {placing ? "Placing…" : floorFull ? "Floor full" : "Place"}
                     </button>
+                    {available[0] && (onSell || onDonate) && <div className="inventory-actions">
+                      {onSell && <button className="inventory-action inventory-action-sell" disabled={pendingPublicAction || Boolean(pendingEconomyRequest)}
+                        aria-label={`Sell ${asset.name} for ${Math.floor(available[0]!.purchasePrice / 3)} coins`} onClick={() => setDisposition({ assetId: available[0]!.id, action: "sell" })}>
+                        <Coins size={17} aria-hidden="true" />Sell <span className="inventory-sale-value">{Math.floor(available[0]!.purchasePrice / 3)}</span>
+                      </button>}
+                      {onDonate && <button className="inventory-action" disabled={pendingPublicAction || Boolean(pendingEconomyRequest)} onClick={() => setDisposition({ assetId: available[0]!.id, action: "donate" })}>
+                        <Gift size={16} aria-hidden="true" />Donate
+                      </button>}
+                    </div>}
                   </article>
                 );
               })}
@@ -183,6 +227,12 @@ export function PlayerBuildPanel({
         )}
       </div>
       {dailyBonus}
+      {disposition && disposingAsset && <AssetDispositionDialog asset={disposingAsset} action={disposition.action} pending={pendingPublicAction}
+        error={publicActionError}
+        onClose={() => setDisposition(undefined)} onConfirm={() => {
+          if (disposition.action === "sell") onSell?.(disposingAsset.id);
+          else onDonate?.(disposingAsset.id);
+        }} />}
     </aside>
   );
 }

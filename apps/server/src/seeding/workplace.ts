@@ -1,4 +1,4 @@
-import { FALLING_BLOCKS_DEFINITION_ID, type MemberRole, type WorldPlayer } from "@workhard/shared";
+import { createPublicEconomy, FALLING_BLOCKS_DEFINITION_ID, type MemberRole, type WorldPlayer } from "@workhard/shared";
 import { hashPassword } from "../auth/passwords.js";
 import { EconomyStore } from "../economy/economy-store.js";
 import { createInitialData } from "../initial-data.js";
@@ -16,6 +16,7 @@ export interface WorkplaceCredentials {
 
 export function createSimulatedWorkplace(now = new Date()): WorkspacePersistenceState {
   const data = { ...createInitialData(now), ...createWorkplaceBuilding(), ...createWorkplacePeople(), currentUserId: "person-rowan" };
+  data.publicEconomy = createPublicEconomy("hierarchical");
   data.corporateIdentity = { ...data.corporateIdentity, applicationName: "Alder Works", primaryColor: "#527b70", secondaryColor: "#c18a60" };
   data.gameSettings = { roomAccess: { mode: "open", assignedPersonIds: [] }, roomBuild: { mode: "none", assignedPersonIds: [] } };
   populateWorkplaceActivity(data, now);

@@ -1,3 +1,4 @@
+import { applyBuildingProject } from "../testing/building-project.js";
 import { createTestData } from "../testing/workspace-data.js";
 import { getOutdoorBounds, getOutdoorWindowLights, type ClientCommand, type ServerEvent } from "@workhard/shared";
 import { describe, expect, it, vi } from "vitest";
@@ -853,17 +854,38 @@ describe("WorldRuntime layout safety", () => {
     runtime.stop();
   });
 
-  it("opens a private room when its final door is removed", () => {
+  it("requires opening room access before removing its final door", () => {
     const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const mayaEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
     const revision = store.getLayout("floor-studio")?.revision ?? 0;
 
-    send(runtime, mayaPeer, {
-      type: "layout.apply",
+    applyBuildingProject(runtime, store, mayaPeer, mayaEvents, {
       requestId: "erase-final-door",
       baseRevision: revision,
+      edit: { tool: "erase", position: { x: 1216, y: 448 } },
+    });
+
+    expect(mayaEvents.at(-1)).toMatchObject({ type: "command.error", code: "ROOM_PRIVACY_PROTECTED" });
+    expect(store.getRoom("room-focus")).toMatchObject({ privateEligible: true, access: { mode: "assigned" } });
+    expect(store.getLayout("floor-studio")?.revision).toBe(revision);
+
+    send(runtime, mayaPeer, {
+      type: "room.update_settings",
+      requestId: "open-room-access",
+      baseRevision: revision,
+      roomId: "room-focus",
+      settings: {
+        name: "Focus Suite",
+        color: "#d9cdf4",
+        access: { mode: "open", assignedPersonIds: [], knockable: false },
+      },
+    });
+    mayaEvents.length = 0;
+    applyBuildingProject(runtime, store, mayaPeer, mayaEvents, {
+      requestId: "erase-open-room-door",
+      baseRevision: revision + 1,
       edit: { tool: "erase", position: { x: 1216, y: 448 } },
     });
 
@@ -873,8 +895,7 @@ describe("WorldRuntime layout safety", () => {
       doorIds: [],
       access: { mode: "open", knockable: false },
     });
-    expect(mayaEvents).toContainEqual({ type: "room.access_revoked", roomId: "room-focus" });
-    expect(store.getLayout("floor-studio")?.revision).toBe(revision + 1);
+    expect(store.getLayout("floor-studio")?.revision).toBe(revision + 2);
 
     send(runtime, mayaPeer, {
       type: "room.update_settings",
@@ -898,8 +919,7 @@ describe("WorldRuntime layout safety", () => {
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
     const before = store.getLayout("floor-studio")!;
 
-    send(runtime, mayaPeer, {
-      type: "layout.apply",
+    applyBuildingProject(runtime, store, mayaPeer, mayaEvents, {
       requestId: "split-arcade",
       baseRevision: before.revision,
       edit: { tool: "wall", start: { x: 1024, y: 448 }, end: { x: 1024, y: 928 } },
@@ -910,8 +930,7 @@ describe("WorldRuntime layout safety", () => {
     expect(divided.rooms).toHaveLength(before.rooms.length + 1);
     expect(divided.rooms.find((room) => room.bounds.x === 1024)).toMatchObject({ privateEligible: true });
 
-    send(runtime, mayaPeer, {
-      type: "layout.apply",
+    applyBuildingProject(runtime, store, mayaPeer, mayaEvents, {
       requestId: "add-small-room-door",
       baseRevision: divided.revision,
       edit: { tool: "door", position: { x: 1024, y: 704 } },
@@ -926,8 +945,7 @@ describe("WorldRuntime layout safety", () => {
     const mayaEvents: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
 
-    send(runtime, mayaPeer, {
-      type: "layout.apply",
+    applyBuildingProject(runtime, store, mayaPeer, mayaEvents, {
       requestId: "door-at-junction",
       baseRevision: store.getLayout("floor-studio")!.revision,
       edit: { tool: "door", position: { x: 960, y: 448 } },
@@ -948,8 +966,7 @@ describe("WorldRuntime layout safety", () => {
     const mayaPeer = connect(runtime, "user-maya", mayaEvents);
     const layout = store.getLayout("floor-studio")!;
 
-    send(runtime, mayaPeer, {
-      type: "layout.apply",
+    applyBuildingProject(runtime, store, mayaPeer, mayaEvents, {
       requestId: "add-window",
       baseRevision: layout.revision,
       edit: { tool: "window", position: { x: 1100, y: 928 } },
@@ -973,8 +990,7 @@ describe("WorldRuntime layout safety", () => {
     const leoEvents: ServerEvent[] = [];
     const leoPeer = connect(runtime, "user-leo", leoEvents);
 
-    send(runtime, leoPeer, {
-      type: "layout.apply",
+    applyBuildingProject(runtime, store, leoPeer, leoEvents, {
       requestId: "place-after-disconnect",
       baseRevision: store.getLayout("floor-studio")?.revision ?? 0,
       edit: { tool: "asset", assetId: "plant-floor", variantId: "forest", rotation: 0, position: { x: 410, y: 650 } },
@@ -988,33 +1004,19 @@ describe("WorldRuntime layout safety", () => {
     runtime.stop();
   });
 
-  it("enforces build permission for every layout command", () => {
+  it("requires public funding even after build permission is granted", () => {
     const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const events: ServerEvent[] = [];
     const peer = connect(runtime, "user-jonas", events);
-    const initialRevision = store.getLayout("floor-studio")!.revision;
-    const edit = { tool: "wall" as const, start: { x: 1024, y: 448 }, end: { x: 1024, y: 928 } };
-
-    send(runtime, peer, { type: "layout.apply", requestId: "denied", baseRevision: initialRevision, edit });
-    expect(events.at(-1)).toMatchObject({ type: "command.error", requestId: "denied", code: "EDIT_FORBIDDEN" });
-    expect(store.getLayout("floor-studio")!.revision).toBe(initialRevision);
-
-    store.updateMemberAccess("user-jonas", "member", ["build"]);
-    events.length = 0;
-    send(runtime, peer, { type: "layout.apply", requestId: "allowed", baseRevision: initialRevision, edit });
-    expect(events.some((event) => event.type === "command.error" && event.requestId === "allowed")).toBe(false);
-    expect(store.getLayout("floor-studio")!.revision).toBe(initialRevision + 1);
-
-    store.updateMemberAccess("user-jonas", "member", []);
-    events.length = 0;
-    send(runtime, peer, {
-      type: "layout.apply",
-      requestId: "revoked",
-      baseRevision: initialRevision + 1,
-      edit: { tool: "erase", position: { x: 1024, y: 700 } },
-    });
-    expect(events.at(-1)).toMatchObject({ type: "command.error", requestId: "revoked", code: "EDIT_FORBIDDEN" });
+    for (const permissions of [[], ["build"]] as const) {
+      store.updateMemberAccess("user-jonas", "member", permissions);
+      runtime.handleCommand(peer, { type: "project.edit", requestId: "preview", fundId: "workspace", baseRevision: store.getLayout("floor-studio")!.revision,
+        edit: { tool: "wall", start: { x: -256, y: -256 }, end: { x: -128, y: -256 } } });
+      const preview = events.filter((event) => event.type === "project.preview").at(-1)!;
+      runtime.handleCommand(peer, { type: "project.submit", requestId: "submit", draftId: preview.project.id, title: "Wall" });
+      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "PUBLIC_FUNDS_INSUFFICIENT" });
+    }
     runtime.stop();
   });
 });

@@ -23,7 +23,7 @@ describe("room access and build editor", () => {
     fireEvent.click(screen.getByText("Preview", { exact: true }));
     expect(within(screen.getByRole("row", { name: "Lead Yes Yes" })).getAllByRole("cell").map((cell) => cell.textContent)).toEqual(["Yes", "Yes"]);
     expect(screen.getByRole("row", { name: "Member Yes No" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Save room" }));
+    fireEvent.click(screen.getByRole("button", { name: "Propose changes" }));
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
       access: { mode: "open", assignedPersonIds: [], knockable: false },
       build: { mode: "assigned", assignedPersonIds: [], unitGrants: [{ unitId: "team", rank: "leads", descendants: true }] },
@@ -37,9 +37,9 @@ describe("room access and build editor", () => {
     const { rerender } = render(<RoomPermissionEditor {...props} />);
     fireEvent.change(screen.getByRole("combobox", { name: "Access" }), { target: { value: "assigned" } });
     expect(screen.getByRole("alert").textContent).toBe("Add a door before restricting access.");
-    expect((screen.getByRole("button", { name: "Save room" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "Propose changes" }) as HTMLButtonElement).disabled).toBe(true);
     rerender(<RoomPermissionEditor {...props} editable={false} />);
-    expect(screen.queryByRole("button", { name: "Save room" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Propose changes" })).toBeNull();
     expect(screen.getByLabelText("Name").closest("fieldset")!.disabled).toBe(true);
   });
 });

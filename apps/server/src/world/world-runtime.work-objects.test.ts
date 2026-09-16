@@ -1,3 +1,4 @@
+import { applyBuildingProject } from "../testing/building-project.js";
 import { createTestData } from "../testing/workspace-data.js";
 import {
   ASSET_ROTATIONS, CHECKLIST_ITEM_LIMIT, CHECKLIST_TEXT_LIMIT, WHITEBOARD_TEXT_LIMIT,
@@ -44,7 +45,7 @@ describe("work objects", () => {
   it("rejects a board that would trap a standing player", () => {
     const { runtime, store, peer, events } = fixture();
     const count = store.getLayout("floor-studio")!.objects.length;
-    runtime.handleCommand(peer, { type: "layout.apply", requestId: "overlap", baseRevision: store.getLayout("floor-studio")!.revision,
+    applyBuildingProject(runtime, store, peer, events, { requestId: "overlap", baseRevision: store.getLayout("floor-studio")!.revision,
       edit: { tool: "asset", assetId: "equipment-checklist", position: { x: 288, y: 224 }, rotation: 0, variantId: "graphite" } });
     expect(events.at(-1)).toMatchObject({ code: "PLAYER_IN_THE_WAY", requestId: "overlap" });
     expect(store.getLayout("floor-studio")!.objects).toHaveLength(count);
@@ -104,11 +105,11 @@ describe("work objects", () => {
   });
 
   it("preserves content across movement, rotation, persistence, and restores without sharing instances", async () => {
-    const { store, runtime, peer, update } = fixture();
+    const { store, runtime, peer, update, events } = fixture();
     update("notes", { type: "whiteboard.save", document: { text: "Saved notes", cards: [] } });
     update("tasks", { type: "checklist.add", text: "Saved task" });
     const before = structuredClone(store.getObject("notes")!.workState);
-    runtime.handleCommand(peer, { type: "layout.apply", requestId: "move", baseRevision: store.getLayout("floor-studio")!.revision,
+    applyBuildingProject(runtime, store, peer, events, { requestId: "move", baseRevision: store.getLayout("floor-studio")!.revision,
       edit: { tool: "asset.move", objectId: "notes", position: { x: 128, y: 320 }, rotation: 90, variantId: "violet" } });
     expect(store.getObject("notes")).toMatchObject({ x: 128, y: 320, rotation: 90, variantId: "violet", workState: before });
     const database = new MemoryDatabase();
@@ -117,7 +118,7 @@ describe("work objects", () => {
     restored.restoreMutableState((await database.loadWorkspaceState())!.store);
     expect(restored.getLayout("floor-studio")).toEqual(store.getLayout("floor-studio"));
     expect(restored.getObject("notes")!.workState).not.toBe(store.getObject("notes")!.workState);
-    runtime.handleCommand(peer, { type: "layout.apply", requestId: "remove", baseRevision: store.getLayout("floor-studio")!.revision,
+    applyBuildingProject(runtime, store, peer, events, { requestId: "remove", baseRevision: store.getLayout("floor-studio")!.revision,
       edit: { tool: "item.remove", item: { type: "asset", id: "notes" } } });
     expect(store.getObject("notes")).toBeUndefined();
     expect(store.getObject("tasks")!.workState).toMatchObject({ items: [{ text: "Saved task" }] });

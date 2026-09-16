@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-import { canManageUnit, canMoveOrganisationMember, isUnitWithin, type Member, type OrganisationEdit, type OrganisationState } from "@workhard/shared";
+import { canManageUnit as mayManageUnit, canMoveOrganisationMember as mayMoveMember, isUnitWithin, type Member, type OrganisationEdit, type OrganisationState } from "@workhard/shared";
 import { IconButton } from "../IconButton";
 import { ConfirmationDialog } from "../ConfirmationDialog";
 import { OrganisationTree, type OrganisationSelection } from "./OrganisationTree";
 import "../../organisation.css";
 
 interface OrganisationPanelProps {
+  equalTeam?: boolean;
   organisation: OrganisationState;
   members: Member[];
   currentUserId: string;
@@ -15,10 +16,12 @@ interface OrganisationPanelProps {
   onClose: () => void;
 }
 
-export function OrganisationPanel({ organisation, members, currentUserId, pending, onEdit, onClose }: OrganisationPanelProps) {
+export function OrganisationPanel({ equalTeam = false, organisation, members, currentUserId, pending, onEdit, onClose }: OrganisationPanelProps) {
   const [selection, setSelection] = useState<OrganisationSelection>();
   const [creating, setCreating] = useState<{ parentId: string | null }>();
   const [promoting, setPromoting] = useState<Member>();
+  const canManageUnit = (...args: Parameters<typeof mayManageUnit>) => equalTeam || mayManageUnit(...args);
+  const canMoveOrganisationMember = (...args: Parameters<typeof mayMoveMember>) => equalTeam || mayMoveMember(...args);
   const isCeo = organisation.ceoIds.includes(currentUserId);
   const unit = selection?.type === "unit" ? organisation.units.find((candidate) => candidate.id === selection.id) : undefined;
   const person = selection?.type === "person" ? members.find((candidate) => candidate.id === selection.id) : undefined;
@@ -38,7 +41,7 @@ export function OrganisationPanel({ organisation, members, currentUserId, pendin
           {editable && <button className="primary-button">Save unit</button>}
         </fieldset></form>
         {canManageUnit(organisation, currentUserId, unit.parentId) && <label>Parent<select aria-label="Move unit" disabled={pending} value={unit.parentId ?? ""} onChange={(event) => onEdit({ type: "unit.move", unitId: unit.id, parentId: event.target.value || null })}>
-          {isCeo && <option value="">Organisation</option>}
+          {(equalTeam || isCeo) && <option value="">Organisation</option>}
           {organisation.units.filter((candidate) => canManageUnit(organisation, currentUserId, candidate.id) && !isUnitWithin(organisation, candidate.id, unit.id)).map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name}</option>)}
         </select></label>}
         {editable && <button className="secondary-button" disabled={pending} onClick={() => setCreating({ parentId: unit.id })}>Add subteam</button>}
@@ -59,14 +62,14 @@ export function OrganisationPanel({ organisation, members, currentUserId, pendin
         <button className="secondary-button" type="button" onClick={() => setCreating(undefined)}>Cancel</button>
       </fieldset></form>}
       {person && <section className="organisation-edit" aria-label={`Edit ${person.name}`}>
-        {!personIsCeo && (isCeo || Boolean(personAssignment && canMoveOrganisationMember(organisation, currentUserId, person.id, personAssignment.unitId))) && <>
+        {!personIsCeo && (equalTeam || isCeo || Boolean(personAssignment && canMoveOrganisationMember(organisation, currentUserId, person.id, personAssignment.unitId))) && <>
           <label>Unit<select aria-label={`Move ${person.name}`} disabled={pending} value={personAssignment?.unitId ?? ""} onChange={(event) => onEdit({ type: "member.move", userId: person.id, unitId: event.target.value || null, rank: "member" })}>
-            {isCeo && <option value="">Unassigned</option>}
+            {(equalTeam || isCeo) && <option value="">Unassigned</option>}
             {organisation.units.filter((candidate) => canMoveOrganisationMember(organisation, currentUserId, person.id, candidate.id)).map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name}</option>)}
           </select></label>
           {personAssignment && <label>Rank<select disabled={pending} value={personAssignment.rank} onChange={(event) => onEdit({ type: "member.move", userId: person.id, unitId: personAssignment.unitId, rank: event.target.value as "lead" | "member" })}>
             <option value="member">Member</option>
-            {(isCeo || !organisation.assignments.some((assignment) => assignment.userId === currentUserId && assignment.unitId === personAssignment.unitId)) && <option value="lead">Lead</option>}
+            {(equalTeam || isCeo || !organisation.assignments.some((assignment) => assignment.userId === currentUserId && assignment.unitId === personAssignment.unitId)) && <option value="lead">Lead</option>}
           </select></label>}
         </>}
         {isCeo && !personIsCeo && <button className="secondary-button" disabled={pending} onClick={() => setPromoting(person)}>Promote to CEO</button>}
@@ -82,9 +85,9 @@ export function OrganisationPanel({ organisation, members, currentUserId, pendin
       }} />}
     <div className="panel-header"><h2>Organisation</h2><IconButton label="Close organisation" icon={X} onClick={onClose} /></div>
     <div className="panel-scroll organisation-content">
-      {isCeo && <button className="secondary-button" disabled={pending} onClick={() => { setCreating({ parentId: null }); setSelection(undefined); }}>Add unit</button>}
+      {(equalTeam || isCeo) && <button className="secondary-button" disabled={pending} onClick={() => { setCreating({ parentId: null }); setSelection(undefined); }}>Add unit</button>}
       {creating?.parentId === null && editor}
-      <OrganisationTree organisation={organisation} members={members} currentUserId={currentUserId} pending={pending} onEdit={onEdit}
+      <OrganisationTree equalTeam={equalTeam} organisation={organisation} members={members} currentUserId={currentUserId} pending={pending} onEdit={onEdit}
         selection={selection} editor={editor} onSelect={(value) => {
           setSelection(selection?.type === value.type && selection.id === value.id ? undefined : value);
           setCreating(undefined);

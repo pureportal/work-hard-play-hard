@@ -126,6 +126,14 @@
 }
 
 @media (max-width: 700px), (max-height: 550px) {
+  .side-panel.build-layout-panel {
+    overflow-y: auto;
+  }
+
+  .build-layout-panel .build-workspace {
+    flex: 1 0 260px;
+  }
+
   .side-panel.build-layout-panel .panel-header {
     min-height: 48px;
     padding-block: 4px;

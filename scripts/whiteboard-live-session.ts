@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium, type Browser, type BrowserContextOptions, type Page } from "playwright-core";
-import { getPlacedAssetBounds, type BootstrapData, type ClientCommand, type ServerEvent, type WorldObject } from "../packages/shared/src/index.js";
+import { getPlacedAssetBounds, type BootstrapData, type ClientCommand, type LayoutEdit, type ServerEvent, type WorldObject } from "../packages/shared/src/index.js";
 
 declare global {
   var whiteboardReview: { socket: WebSocket; events: ServerEvent[]; commands: ClientCommand[] };
@@ -81,6 +81,20 @@ export async function command(page: Page, command: ClientCommand) {
   await page.waitForFunction((id) => globalThis.whiteboardReview.events.some((event) => "requestId" in event && event.requestId === id), command.requestId);
   const error = await page.evaluate((id) => globalThis.whiteboardReview.events.find((event) => event.type === "command.error" && event.requestId === id), command.requestId);
   if (error?.type === "command.error") throw new Error(`${error.code}: ${error.message}`);
+}
+
+export async function buildingProject(page: Page, baseRevision: number, edit: LayoutEdit) {
+  const requestId = crypto.randomUUID();
+  await command(page, { type: "project.edit", requestId, baseRevision, fundId: "workspace", edit });
+  const preview = await page.evaluate((id) => globalThis.whiteboardReview.events.find((event) => event.type === "project.preview" && event.requestId === id), requestId);
+  assert(preview?.type === "project.preview", "Building preview received");
+  const submitId = crypto.randomUUID();
+  await command(page, { type: "project.submit", requestId: submitId, draftId: preview.project.id, title: "Whiteboard review" });
+  const proposal = (await bootstrap(page)).publicEconomy.proposals.find((entry) => entry.action.kind === "project" && entry.action.project.id === preview.project.id);
+  if (proposal) {
+    assert.equal(proposal.status, "approved", "The review fixture requires approval from the responsible members");
+    await command(page, { type: "public_economy.execute", requestId: crypto.randomUUID(), proposalId: proposal.id });
+  }
 }
 
 export async function openBoard(page: Page, board: WorldObject) {

@@ -26,6 +26,15 @@ async function addUnit(page: Page, name: string, parentId?: string) {
   await until(() => Boolean(store.getOrganisation().units.find((unit) => unit.name === name)), `Unit ${name} not created`);
 }
 
+async function proposeSettings(page: Page, label: string) {
+  const previous = new Set(store.getPublicEconomy().proposals.map((proposal) => proposal.id));
+  await page.getByRole("button", { name: label, exact: true }).click();
+  await until(() => store.getPublicEconomy().proposals.some((proposal) => !previous.has(proposal.id)), "Settings proposal not created");
+  const proposal = store.getPublicEconomy().proposals.find((entry) => !previous.has(entry.id))!;
+  assert.equal(proposal.status, "approved");
+  await send(page, "user-maya", { type: "public_economy.execute", requestId: crypto.randomUUID(), proposalId: proposal.id });
+}
+
 async function preview(page: Page, name: string, access: string, build: string) {
   const details = page.locator(".permission-preview");
   if (!(await details.evaluate((element) => (element as HTMLDetailsElement).open))) await details.locator("summary").click();
@@ -101,7 +110,7 @@ try {
   await preview(maya, "Jonas Berg", "Yes", "Yes");
   await preview(maya, "Priya Nair", "Yes", "No");
   await preview(maya, "Maya Chen", "Yes", "No");
-  await maya.getByRole("button", { name: "Save room" }).click();
+  await proposeSettings(maya, "Propose changes");
   await until(() => store.getRoom("room-commons")?.build?.mode === "assigned", "Room permissions not saved");
   await maya.screenshot({ path: resolve(artifacts, "room-lead-build.png") });
   report("Room remains open while only its direct team lead can build; preview agrees");
@@ -120,18 +129,18 @@ try {
 
   active = maya;
   await maya.getByRole("combobox", { name: "Build", exact: true }).selectOption("none");
-  await maya.getByRole("button", { name: "Save room" }).click();
+  await proposeSettings(maya, "Propose changes");
   await until(() => store.getRoom("room-commons")?.build?.mode === "none", "Build revocation not saved");
   await send(jonas, "user-jonas", { type: "player_asset.remove", requestId: "remove-forbidden", baseRevision: store.getLayout("floor-studio")!.revision, objectId: placed.id }, "ASSET_ROOM_FORBIDDEN");
   const room = store.getRoom("room-commons")!;
-  await send(maya, "user-maya", { type: "layout.apply", requestId: "builder-forbidden", baseRevision: store.getLayout("floor-studio")!.revision,
+  await send(maya, "user-maya", { type: "project.edit", fundId: "workspace", requestId: "builder-forbidden", baseRevision: store.getLayout("floor-studio")!.revision,
     edit: { tool: "asset", assetId: "chair-office", variantId: "white", rotation: 0, position: { x: room.bounds.x + 64, y: room.bounds.y + 64 } } }, "ASSET_ROOM_FORBIDDEN");
   assert(store.getObject(placed.id));
   report("Build revocation blocks owned removal and office-builder placement on the server");
 
   await maya.getByRole("combobox", { name: "Access", exact: true }).selectOption("default");
   await maya.getByRole("combobox", { name: "Build", exact: true }).selectOption("default");
-  await maya.getByRole("button", { name: "Save room" }).click();
+  await proposeSettings(maya, "Propose changes");
   await until(() => store.getRoom("room-commons")?.access.mode === "default", "Room did not inherit defaults");
   await maya.getByRole("tab", { name: "Defaults", exact: true }).click();
   for (const label of ["Access", "Build"]) {
@@ -144,7 +153,7 @@ try {
   await preview(maya, "Jonas Berg", "Yes", "Yes");
   await preview(maya, "Priya Nair", "Yes", "No");
   await preview(maya, "Maya Chen", "No", "No");
-  await maya.getByRole("button", { name: "Save defaults" }).click();
+  await proposeSettings(maya, "Propose defaults");
   await until(() => store.getGameSettings().roomAccess.mode === "assigned", "Defaults not saved");
   await send(jonas, "user-jonas", { type: "player_asset.remove", requestId: "remove-permitted", baseRevision: store.getLayout("floor-studio")!.revision, objectId: placed.id });
   assert.equal(store.getOwnedAsset("user-jonas", ownedAssetId).placement, undefined);

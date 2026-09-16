@@ -1,3 +1,4 @@
+import { applyBuildingProject } from "../testing/building-project.js";
 import { createTestData } from "../testing/workspace-data.js";
 import { type ServerEvent, type Wall, type WallOpening } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
@@ -30,8 +31,7 @@ function createEditorSession(walls: Wall[], openings: WallOpening[] = []): Edito
 
 function erase(session: EditorSession, x: number, y: number): void {
   const revision = session.store.getLayout("floor-studio")?.revision ?? 0;
-  session.runtime.handleCommand(session.peerId, {
-    type: "layout.apply",
+  applyBuildingProject(session.runtime, session.store, session.peerId, session.events, {
     requestId: `erase-${x}-${y}`,
     baseRevision: revision,
     edit: { tool: "erase", position: { x, y } },

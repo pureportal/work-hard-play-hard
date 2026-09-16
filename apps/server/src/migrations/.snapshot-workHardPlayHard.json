@@ -967,7 +967,10 @@
             "welcome",
             "daily_bonus",
             "game_reward",
-            "shop_purchase"
+            "shop_purchase",
+            "donation",
+            "asset_sale",
+            "asset_donation"
           ],
           "mappedType": "enum"
         },
@@ -1126,8 +1129,8 @@
         },
         {
           "name": "coin_transactions_kind_check",
-          "expression": "\"kind\" in ('welcome', 'daily_bonus', 'game_reward', 'shop_purchase')",
-          "definition": "check (\"kind\" in ('welcome', 'daily_bonus', 'game_reward', 'shop_purchase'))",
+          "expression": "\"kind\" in ('welcome', 'daily_bonus', 'game_reward', 'shop_purchase', 'donation', 'asset_sale', 'asset_donation')",
+          "definition": "check (\"kind\" in ('welcome', 'daily_bonus', 'game_reward', 'shop_purchase', 'donation', 'asset_sale', 'asset_donation'))",
           "columnName": "kind"
         },
         {
@@ -3091,6 +3094,23 @@
           "enumItems": [],
           "mappedType": "json"
         },
+        "purchase_price": {
+          "name": "purchase_price",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
         "sort_order": {
           "name": "sort_order",
           "type": "int",
@@ -3850,6 +3870,23 @@
         },
         "player_kidnapping_settings": {
           "name": "player_kidnapping_settings",
+          "type": "jsonb",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "json"
+        },
+        "public_economy": {
+          "name": "public_economy",
           "type": "jsonb",
           "unsigned": false,
           "autoincrement": false,

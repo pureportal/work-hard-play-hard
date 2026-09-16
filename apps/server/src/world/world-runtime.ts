@@ -1,3 +1,5 @@
+import { ProjectRuntime, type ProjectPeer } from "../economy/project-runtime.js";
+import { isPermanentAsset, publicFundForUnit, type ProjectEdit, type PublicAction } from "@workhard/shared";
 import { roomAccessAllows } from "@workhard/shared";
 import { randomUUID } from "node:crypto";
 import {
@@ -42,6 +44,7 @@ import {
   requireAssetVariant,
   snapToAssetRaster,
   snapToBuildGrid,
+  subtractRect,
   type AssetRotation,
   type Door,
   type Floor,
@@ -57,7 +60,6 @@ import {
   type FloorLayout,
   type GlobalKidnappingSettings,
   type KidnappingEndReason,
-  type LayoutEdit,
   type LayoutItemReference,
   type Member,
   type Meeting,
@@ -107,7 +109,6 @@ const SNAPSHOT_COMMAND_TYPES = new Set<ClientCommand["type"]>([
   "presence.set_availability",
   "proximity.set_media",
   "proximity.leave",
-  "layout.apply",
   "player_asset.place",
   "player_asset.move",
   "player_asset.remove",
@@ -127,7 +128,6 @@ const SPATIAL_COMMAND_TYPES = new Set<ClientCommand["type"]>([
   "movement.approach_user",
   "kidnapping.start",
   "kidnapping.stop",
-  "layout.apply",
   "player_asset.place",
   "player_asset.move",
   "player_asset.remove",
@@ -220,6 +220,7 @@ export class WorldRuntime {
   private readonly lastSnapshotTickByFloor = new Map<string, number>();
   private readonly dirtySnapshotFloorIds = new Set<string>();
   private reconciliationDirty = false;
+  private readonly projects: ProjectRuntime;
   private economyDayKey = getUtcDayKey(new Date());
   dirty = false;
 
@@ -227,6 +228,8 @@ export class WorldRuntime {
     for (const meeting of store.getMeetings()) {
       for (const userId of meeting.participantIds) store.leaveMeeting(meeting.id, userId);
     }
+    this.projects = new ProjectRuntime(store, { edit: (peer, layout, edit, fundId) => this.prepareProjectEdit(peer, layout, edit, fundId),
+      apply: (peer, action, requestId) => this.applyPublicAction(peer, action, requestId), broadcast: (event) => this.broadcast(event) });
     this.gameRuntime = new GamesRuntime(store);
     this.chessRuntime = new ChessMultiplayerRuntime(store, options.chessNow);
     for (const member of store.getMembers()) {
@@ -303,6 +306,7 @@ export class WorldRuntime {
 
     const peer: Peer = { id: randomUUID(), userId, floorId: floor.id, send };
     this.addPeer(peer);
+    peer.send({ type: "public_economy.updated", economy: this.store.getPublicEconomy() });
     this.dirtySnapshotFloorIds.add(peer.floorId);
     let player = existing;
     if (player) {
@@ -468,9 +472,39 @@ export class WorldRuntime {
         case "chat.send":
           this.sendChat(peer, command.requestId, command.conversationId, command.body);
           break;
-        case "layout.apply":
-          this.applyLayout(peer, command.requestId, command.baseRevision, command.edit);
+        case "project.edit":
+          this.projects.edit(peer, command.requestId, command.baseRevision, command.fundId, command.edit, command.draftId);
           break;
+        case "project.submit":
+          this.projects.submit(peer, command.requestId, command.draftId, command.title);
+          break;
+        case "public_economy.propose":
+          this.projects.propose(peer, command.requestId, command.title, command.action);
+          break;
+        case "public_economy.vote":
+          this.projects.vote(peer, command.requestId, command.proposalId, command.approve);
+          break;
+        case "public_economy.execute":
+          this.projects.execute(peer, command.requestId, command.proposalId);
+          break;
+        case "public_economy.cancel":
+          this.projects.cancel(peer, command.requestId, command.proposalId);
+          break;
+        case "economy.donate": {
+          const result = this.store.donateMoney(peer.userId, command.fundId, command.amount, command.requestId);
+          this.publishEconomy(peer.userId, command.requestId, result.transaction);
+          this.projects.publish(command.requestId);
+          break;
+        }
+        case "economy.sell_asset":
+        case "economy.donate_asset": {
+          const result = this.store.disposeAsset(peer.userId, command.ownedAssetId,
+            command.type === "economy.sell_asset" ? "asset_sale" : "asset_donation", command.requestId,
+            command.type === "economy.donate_asset" ? command.fundId : undefined);
+          this.publishEconomy(peer.userId, command.requestId, result.transaction);
+          this.projects.publish(command.requestId);
+          break;
+        }
         case "player_asset.place":
           this.placePlayerAsset(peer, command.requestId, command.baseRevision, command.ownedAssetId, command.position, command.variantId, command.rotation);
           break;
@@ -804,6 +838,7 @@ export class WorldRuntime {
       const economyDayKey = getUtcDayKey(new Date());
       if (economyDayKey !== this.economyDayKey) {
         this.economyDayKey = economyDayKey;
+        this.projects.publish();
         for (const userId of this.connectedUserIds()) {
           this.publishEconomy(userId);
         }
@@ -1836,34 +1871,14 @@ export class WorldRuntime {
     peer.send({ type: "chat.ack", requestId, messageId: message.id });
   }
 
-  private applyLayout(peer: Peer, requestId: string, baseRevision: number, edit: LayoutEdit): void {
-    if (!this.store.canBuild(peer.userId)) {
-      throw new Error("EDIT_FORBIDDEN");
-    }
-    const layout = this.store.getLayout(peer.floorId);
+  private prepareProjectEdit(peer: ProjectPeer, layout: FloorLayout, edit: ProjectEdit, fundId: string): FloorLayout {
     const floor = this.store.getFloor(peer.floorId);
-    if (!layout || !floor) {
-      throw new Error("FLOOR_NOT_FOUND");
-    }
-    if (layout.revision !== baseRevision) {
-      peer.send({ type: "layout.conflict", requestId, revision: layout.revision });
-      return;
-    }
-    if (edit.tool === "spawn") {
-      const spawn = { x: snapToBuildGrid(edit.position.x), y: snapToBuildGrid(edit.position.y) };
-      const error = getSpawnPlacementError(layout, getOutdoorBounds(floor), spawn,
-        [...this.players.values()].filter((player) => player.floorId === floor.id), this.store.getGameSettings().roomAccess.mode);
-      if (error) throw new Error(error);
-      const replacement = this.store.replaceLayout({ ...structuredClone(layout), revision: layout.revision + 1 });
-      const updatedFloor = this.store.updateFloorSpawn(floor.id, spawn);
-      this.broadcast({ type: "floor.updated", floor: updatedFloor });
-      this.broadcastLayout(replacement.layout, { userId: peer.userId, requestId });
-      return;
-    }
+    if (!floor) throw new Error("FLOOR_NOT_FOUND");
     const next = structuredClone(layout);
     const normalizedSegments = mergeWallSegments(next.walls, next.openings);
     next.walls = normalizedSegments.walls;
     next.openings = normalizedSegments.openings;
+    if (edit.tool === "spawn") return next;
     if (edit.tool === "wall") {
       const wall = this.createWall(edit.start, edit.end);
       const wallRect = getWallRect(wall);
@@ -1874,10 +1889,17 @@ export class WorldRuntime {
       this.eraseLayoutItem(peer.floorId, next, snapToAssetRaster(edit.position.x), snapToAssetRaster(edit.position.y));
     } else if (edit.tool === "door" || edit.tool === "window") {
       this.addWallOpening(next, edit.tool, edit.position);
-    } else if (edit.tool === "asset") {
+    } else if (edit.tool === "asset" || edit.tool === "public_asset") {
+      if (next.objects.length >= MAX_LAYOUT_OBJECTS_PER_FLOOR) throw new Error("LAYOUT_CAPACITY_REACHED");
+      if (edit.tool === "asset") {
+        const definition = requireAssetDefinition(edit.assetId);
+        if (!definition.buildable || !definition.shop) throw new Error("ASSET_UNAVAILABLE");
+      }
+      const donated = edit.tool === "public_asset" ? this.store.publicEconomy.inventory.find((asset) => asset.id === edit.publicAssetId && asset.fundId === fundId) : undefined;
+      if (edit.tool === "public_asset" && !donated) throw new Error("PUBLIC_ASSET_UNAVAILABLE");
       const object = this.createAsset(
         peer.floorId,
-        edit.assetId,
+        edit.tool === "asset" ? edit.assetId : donated!.assetId,
         edit.variantId,
         edit.rotation,
         snapToAssetRaster(edit.position.x),
@@ -1885,6 +1907,7 @@ export class WorldRuntime {
       );
       this.assertNoPlayerOverlap(peer.floorId, getPlacedAssetCellRects(object, true));
       this.assertAssetPlacement(next, floor, object);
+      object.publicFundId = fundId;
       next.objects.push(object);
     } else if (edit.tool === "asset.move") {
       this.moveAsset(peer.floorId, next, floor, edit.objectId, edit.position, edit.variantId, edit.rotation);
@@ -1897,31 +1920,67 @@ export class WorldRuntime {
     } else {
       throw new Error("EDIT_INVALID");
     }
-    for (const object of layout.objects) {
-      const after = next.objects.find((candidate) => candidate.id === object.id);
-      if (!after || after.x !== object.x || after.y !== object.y || after.rotation !== object.rotation || after.variantId !== object.variantId) {
-        const error = getPlayerAssetRoomError(layout, object, peer.userId, this.store.getGameSettings(), this.store.getOrganisation(), true);
-        if (error) throw new Error(error);
-      }
-    }
-    for (const object of next.objects) {
-      const before = layout.objects.find((candidate) => candidate.id === object.id);
-      if (!before || before.x !== object.x || before.y !== object.y || before.rotation !== object.rotation || before.variantId !== object.variantId) {
-        const error = getPlayerAssetRoomError(layout, object, peer.userId, this.store.getGameSettings(), this.store.getOrganisation(), true);
-        if (error) throw new Error(error);
-      }
-    }
     const mergedSegments = mergeWallSegments(next.walls, next.openings);
     next.walls = mergedSegments.walls;
     next.openings = mergedSegments.openings;
-    next.revision += 1;
-    const replacement = this.store.replaceLayout(detectLayoutRooms(next, floor));
-    const saved = replacement.layout;
-    this.reconcileLayoutRooms(layout, saved);
-    this.broadcastLayout(saved, { userId: peer.userId, requestId });
-    for (const userId of replacement.economyUserIds) {
-      this.publishEconomy(userId);
+    return detectLayoutRooms(next, floor);
+  }
+
+  private applyPublicAction(peer: ProjectPeer, action: PublicAction, requestId: string): void {
+    if (action.kind === "project") {
+      const project = action.project;
+      const before = this.store.getLayout(project.floorId)!;
+      const next = project.layout;
+      const floor = this.store.getFloor(project.floorId)!;
+      let addedWallRects = next.walls.flatMap((wall) => getWallSolidRects(wall, next.openings));
+      for (const wall of before.walls) {
+        for (const rect of getWallSolidRects(wall, before.openings)) addedWallRects = addedWallRects.flatMap((candidate) => subtractRect(candidate, rect));
+      }
+      this.assertNoPlayerOverlap(project.floorId, addedWallRects);
+      for (const object of next.objects) {
+        const old = before.objects.find((item) => item.id === object.id);
+        if (!old || old.x !== object.x || old.y !== object.y || old.rotation !== object.rotation) {
+          this.assertNoPlayerOverlap(project.floorId, getPlacedAssetCellRects(object, true), object.id);
+        }
+      }
+      if (project.spawn) {
+        const error = getSpawnPlacementError(next, getOutdoorBounds(floor), project.spawn,
+          [...this.players.values()].filter((player) => player.floorId === floor.id), this.store.getGameSettings().roomAccess.mode);
+        if (error) throw new Error(error);
+      }
+      this.store.publicEconomy.applyProject(peer.userId, project);
+      const replacement = this.store.replaceLayout(next);
+      for (const object of before.objects) {
+        if (JSON.stringify(object) !== JSON.stringify(next.objects.find((item) => item.id === object.id))) this.releaseSeatsForObject(object.id);
+      }
+      if (project.spawn) this.broadcast({ type: "floor.updated", floor: this.store.updateFloorSpawn(floor.id, project.spawn) });
+      this.reconcileLayoutRooms(before, replacement.layout);
+      this.broadcastLayout(replacement.layout, { userId: peer.userId, requestId });
+      this.reconciliationDirty = true;
+      this.dirtySnapshotFloorIds.add(project.floorId);
+    } else if (action.kind === "organisation") {
+      const organisation = this.store.editOrganisation(peer.userId, action.baseRevision, action.edit, true);
+      this.broadcast({ type: "organisation.updated", organisation });
+      this.reconcilePermissionChanges();
+    } else if (action.kind === "governance") {
+      const organisation = this.store.getOrganisation();
+      organisation.ceoIds = [...action.ceoIds];
+      organisation.assignments = organisation.assignments.filter((assignment) => !action.ceoIds.includes(assignment.userId));
+      organisation.removalVotes = organisation.removalVotes.map((vote) => vote.status === "open" ? { ...vote, status: "cancelled" } : vote);
+      organisation.revision += 1;
+      this.store.publicEconomy.applyFundAction(peer.userId, action, requestId);
+      this.broadcast({ type: "organisation.updated", organisation });
+      this.reconcilePermissionChanges();
+    } else if (action.kind === "room.settings") {
+      this.updateRoomSettings(peer, requestId, action.baseRevision, action.roomId, action.settings, true);
+    } else if (action.kind === "game.settings") {
+      const settings = this.store.updateGameSettings(action.settings);
+      this.broadcast({ type: "game.settings_updated", settings });
+      this.reconcilePermissionChanges();
+    } else {
+      this.store.publicEconomy.applyFundAction(peer.userId, action, requestId);
     }
+    this.store.dirty = true;
   }
 
   private placePlayerAsset(
@@ -1946,6 +2005,7 @@ export class WorldRuntime {
       throw new Error("LAYOUT_CAPACITY_REACHED");
     }
     const ownedAsset = this.store.getOwnedAsset(peer.userId, ownedAssetId);
+    if (isPermanentAsset(ownedAsset.assetId)) throw new Error("PERMANENT_ASSET_PUBLIC");
     if (ownedAsset.placement) {
       throw new Error("ASSET_ALREADY_PLACED");
     }
@@ -2005,6 +2065,7 @@ export class WorldRuntime {
     });
     next.revision += 1;
     const replacement = this.store.replaceLayout(next);
+    this.releaseSeatsForObject(objectId);
     this.broadcastLayout(replacement.layout, { userId: peer.userId, requestId });
     this.publishEconomy(peer.userId, requestId);
   }
@@ -2031,6 +2092,7 @@ export class WorldRuntime {
     this.removeLayoutItem(peer.floorId, next, { type: "asset", id: objectId });
     next.revision += 1;
     const replacement = this.store.replaceLayout(next);
+    this.releaseSeatsForObject(objectId);
     this.broadcastLayout(replacement.layout, { userId: peer.userId, requestId });
     this.publishEconomy(peer.userId, requestId);
   }
@@ -2046,7 +2108,8 @@ export class WorldRuntime {
   }
 
   private updateGameSettings(peer: Peer, settings: Parameters<WorkspaceStore["updateGameSettings"]>[0]): void {
-    if (!this.store.canManageMembers(peer.userId) && !this.store.getOrganisation().ceoIds.includes(peer.userId)) {
+    if (this.store.publicEconomy.fund("workspace").mode === "equal") throw new Error("PROJECT_APPROVAL_REQUIRED");
+    if (!this.store.getOrganisation().ceoIds.includes(peer.userId)) {
       throw new Error("GAME_SETTINGS_FORBIDDEN");
     }
     const updated = this.store.updateGameSettings(settings);
@@ -2168,7 +2231,6 @@ export class WorldRuntime {
     this.assertAssetPlacement(layout, floor, candidate);
     this.assertNoPlayerOverlap(floorId, getPlacedAssetCellRects(candidate, true), objectId);
     authorize?.(candidate);
-    this.releaseSeatsForObject(objectId);
     layout.objects = layout.objects.map((current) => current.id === objectId ? candidate : current);
   }
 
@@ -2254,7 +2316,6 @@ export class WorldRuntime {
       if (getAssetsSupportedBy(layout, object).length > 0) {
         throw new Error("ASSET_SUPPORT_OCCUPIED");
       }
-      this.releaseSeatsForObject(object.id);
       layout.objects = layout.objects.filter((candidate) => candidate.id !== object.id);
       return;
     }
@@ -2601,13 +2662,16 @@ export class WorldRuntime {
   }
 
   private updateRoomSettings(
-    peer: Peer,
+    peer: ProjectPeer,
     requestId: string,
     baseRevision: number,
     roomId: string,
     settings: RoomSettings,
+    approved = false,
   ): void {
-    if (!this.store.canManageRoom(peer.userId, roomId)) {
+    const roomFund = publicFundForUnit(this.store.publicEconomy.view(), this.store.getOrganisation(), this.store.getRoom(roomId)?.organisationUnitId);
+    if (!approved && (this.store.publicEconomy.fund("workspace").mode === "equal" || roomFund.mode === "equal")) throw new Error("PROJECT_APPROVAL_REQUIRED");
+    if (!approved && !this.store.canManageRoom(peer.userId, roomId)) {
       throw new Error("EDIT_FORBIDDEN");
     }
     const currentRoom = this.store.getRoom(roomId);
@@ -2619,7 +2683,7 @@ export class WorldRuntime {
       peer.send({ type: "layout.conflict", requestId, revision: currentLayout.revision });
       return;
     }
-    if (settings.organisationUnitId !== currentRoom?.organisationUnitId && !this.store.canBuild(peer.userId)
+    if (!approved && settings.organisationUnitId !== currentRoom?.organisationUnitId && !this.store.canBuild(peer.userId)
       && !this.store.getOrganisation().ceoIds.includes(peer.userId)) throw new Error("ORGANISATION_FORBIDDEN");
     const layout = this.store.updateRoomSettings(roomId, settings);
     const room = layout.rooms.find((item) => item.id === roomId);
@@ -3719,6 +3783,7 @@ export class WorldRuntime {
   }
 
   private broadcastLayout(layout: FloorLayout, source?: { userId: string; requestId: string }): void {
+    if (this.store.publicEconomy.invalidateLayoutProposals(this.store.getLayouts())) this.projects.publish();
     for (const peer of this.peers.values()) {
       const visibleLayout = this.store.getVisibleLayout(layout.floorId, peer.userId);
       if (visibleLayout) {
@@ -3779,6 +3844,24 @@ export class WorldRuntime {
       ASSET_SUPPORT_OCCUPIED: "Remove the items on top first.",
       ASSET_NOT_BUILDABLE: "That asset cannot be placed.",
       ASSET_UNAVAILABLE: "That asset is unavailable.",
+      PROJECT_APPROVAL_REQUIRED: "Submit a project for approval before applying this change.",
+      PUBLIC_FUNDS_INSUFFICIENT: "The project reserve is too low. Donate coins or reduce the cost.",
+      PUBLIC_FUND_FORBIDDEN: "Choose a fund for your team.",
+      PUBLIC_FUND_SCOPE: "These changes affect another area. Use the workspace fund.",
+      PRIVATE_ASSET_PROTECTED: "This project changes a personal asset. Its owner must move or store it first.",
+      ROOM_PRIVACY_PROTECTED: "This change would expose or divide a private room. Open its access in Room settings before changing its boundary or removing its last door.",
+      PERMANENT_ASSET_PUBLIC: "Buy permanent flooring with a shared fund.",
+      PROJECT_STALE: "The layout changed. Discard this draft and prepare a new project.",
+      PROJECT_LIMIT: "This project is full. Submit it before starting another.",
+      PROJECT_EMPTY: "This draft has no changes. Place or remove something before submitting it.",
+      PROPOSAL_CLOSED: "This proposal is closed. Create a new proposal.",
+      PROPOSAL_ALREADY_VOTED: "Your vote has already been recorded.",
+      PROPOSAL_VOTE_FORBIDDEN: "Only the affected team can vote on or apply this proposal.",
+      PROPOSAL_NO_APPROVERS: "Assign members or a team lead before proposing changes to this fund.",
+      PROPOSAL_LIMIT: "Finish or cancel an open proposal before creating another.",
+      PUBLIC_ASSET_UNAVAILABLE: "This shared asset is no longer available. Choose another asset.",
+      PUBLIC_FUND_EXISTS: "This unit already has a fund. Choose its existing fund.",
+      GOVERNANCE_INVALID: "Choose an equal team or select at least one CEO for a hierarchical company.",
       ASSET_NOT_OWNED: "You do not own that asset.",
       ASSET_ALREADY_PLACED: "That asset is already placed.",
       ASSET_OWNERSHIP_INVALID: "That asset could not be verified.",

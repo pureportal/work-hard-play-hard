@@ -20,11 +20,12 @@ function organisation(): OrganisationState {
 const edit = (state: OrganisationState, actor: string, change: OrganisationEdit) => applyOrganisationEdit(state, people, actor, state.revision, change);
 
 describe("organisation authority", () => {
-  it("starts with the setup member as CEO and later members unassigned", () => {
+  it("starts as an equal team without assigning CEO authority to the creator", () => {
     const store = new WorkspaceStore(createInitialData());
-    const first = store.addInitialMember({ id: "first", username: "first", email: "first@example.test" });
+    store.addInitialMember({ id: "first", username: "first", email: "first@example.test" });
     store.addMember({ id: "next", username: "next", email: "next@example.test" });
-    expect(store.getOrganisation().ceoIds).toEqual([first.id]);
+    expect(store.getOrganisation().ceoIds).toEqual([]);
+    expect(store.getPublicEconomy().funds[0]!.mode).toBe("equal");
     expect(store.getOrganisation().assignments).toEqual([]);
   });
 
@@ -66,7 +67,7 @@ describe("organisation authority", () => {
     expect(() => edit(state, "ceo", { type: "unit.delete", unitId: "engineering" })).toThrow("ORGANISATION_UNIT_NOT_EMPTY");
     expect(() => edit(state, "ceo", { type: "member.move", userId: "unassigned", unitId: "missing", rank: "member" })).toThrow("ORGANISATION_UNIT_NOT_FOUND");
     expect(() => applyOrganisationEdit(state, people, "ceo", 99, { type: "ceo.promote", userId: "second" })).toThrow("ORGANISATION_CONFLICT");
-    expect(() => validateOrganisation({ ...state, ceoIds: [] }, people)).toThrow("ORGANISATION_INVALID");
+    expect(() => validateOrganisation({ ...state, ceoIds: [] }, people)).not.toThrow();
   });
 });
 

@@ -20,6 +20,7 @@ import {
   TIC_TAC_TOE_DEFINITION_ID,
   WELCOME_COIN_REWARD,
   getDailyRewardStatus,
+  createPublicEconomy,
   randomCharacterAppearance,
 } from "@workhard/shared";
 import { createTestWorld } from "./workspace-world.js";
@@ -316,6 +317,7 @@ export function createTestData(currentUserId = "user-maya", now = new Date()): B
   return structuredClone({
     currentUserId,
     organisation: createTestOrganisation(members[0]!.id),
+    publicEconomy: createPublicEconomy("hierarchical"),
     corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
     team,
     office,

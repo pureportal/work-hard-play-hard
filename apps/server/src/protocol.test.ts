@@ -322,7 +322,7 @@ describe("proximity media protocol", () => {
 describe("asset protocol", () => {
   it("accepts raster asset placement and seating commands", () => {
     expect(clientCommandSchema.safeParse({
-      type: "layout.apply",
+      type: "project.edit", fundId: "workspace",
       requestId: "place",
       baseRevision: 1,
       edit: { tool: "asset", position: { x: 32, y: 48 }, assetId: "desk-corner", variantId: "sage", rotation: 90 },
@@ -337,7 +337,7 @@ describe("asset protocol", () => {
 
   it("rejects arbitrary asset rotations", () => {
     expect(clientCommandSchema.safeParse({
-      type: "layout.apply",
+      type: "project.edit", fundId: "workspace",
       requestId: "place",
       baseRevision: 1,
       edit: { tool: "asset", position: { x: 32, y: 48 }, assetId: "desk-corner", variantId: "sage", rotation: 45 },
@@ -352,7 +352,7 @@ describe("asset protocol", () => {
       { tool: "item.remove", item: { type: "opening", id: "door" } },
     ]) {
       expect(clientCommandSchema.safeParse({
-        type: "layout.apply",
+        type: "project.edit", fundId: "workspace",
         requestId: "edit",
         baseRevision: 1,
         edit,

@@ -28,3 +28,17 @@ export function circleIntersectsRect(x: number, y: number, radius: number, rect:
   const distanceY = y - closestY;
   return distanceX * distanceX + distanceY * distanceY < radius * radius;
 }
+
+export function subtractRect(rect: Rect, obstacle: Rect): Rect[] {
+  if (!rectanglesOverlap(rect, obstacle)) return [rect];
+  const left = Math.max(rect.x, obstacle.x);
+  const top = Math.max(rect.y, obstacle.y);
+  const right = Math.min(rect.x + rect.width, obstacle.x + obstacle.width);
+  const bottom = Math.min(rect.y + rect.height, obstacle.y + obstacle.height);
+  return [
+    { x: rect.x, y: rect.y, width: rect.width, height: top - rect.y },
+    { x: rect.x, y: bottom, width: rect.width, height: rect.y + rect.height - bottom },
+    { x: rect.x, y: top, width: left - rect.x, height: bottom - top },
+    { x: right, y: top, width: rect.x + rect.width - right, height: bottom - top },
+  ].filter((piece) => piece.width > 0 && piece.height > 0);
+}

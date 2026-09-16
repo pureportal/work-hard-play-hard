@@ -16,11 +16,14 @@ interface RoomPermissionEditorProps {
 export function RoomPermissionEditor({ room, members, organisation, settings, editable, canAssignUnit, pending, onSave }: RoomPermissionEditorProps) {
   const [draft, setDraft] = useState(room);
   useEffect(() => setDraft(room), [room]);
-  const needsDoor = !room.privateEligible && draft.access.mode !== "open" && draft.access.mode !== "default";
+  const accessMode = draft.access.mode === "default" ? settings.roomAccess.mode : draft.access.mode;
+  const needsDoor = !room.privateEligible && accessMode !== "open";
+  const changed = JSON.stringify(draft) !== JSON.stringify(room);
   return <div className="room-permission-editor">
     <form onSubmit={(event) => {
       event.preventDefault();
-      onSave({ name: draft.name, color: draft.color, access: draft.access, build: draft.build ?? { mode: "default", assignedPersonIds: [] },
+      if (!editable || pending || !changed || needsDoor || !draft.name.trim()) return;
+      onSave({ name: draft.name.trim(), color: draft.color, access: draft.access, build: draft.build ?? { mode: "default", assignedPersonIds: [] },
         ...(draft.organisationUnitId ? { organisationUnitId: draft.organisationUnitId } : {}) });
     }}>
       <fieldset disabled={!editable || pending} className="permission-form-fields">
@@ -32,13 +35,17 @@ export function RoomPermissionEditor({ room, members, organisation, settings, ed
           else delete next.organisationUnitId;
           setDraft(next);
         }}><option value="">None</option>{organisation.units.map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select></label>
-        <PermissionEditor label="Access" value={draft.access} members={members} organisation={organisation} onChange={(access) => setDraft({ ...draft, access: { ...access, knockable: access.mode !== "open" && draft.access.knockable } })} />
-        {draft.access.mode !== "open" && <label className="permission-check"><input type="checkbox" checked={draft.access.knockable} onChange={(event) => setDraft({ ...draft, access: { ...draft.access, knockable: event.target.checked } })} />Allow knocking</label>}
+        <div className="room-permission-columns"><div>
+        <PermissionEditor label="Access" value={draft.access} members={members} organisation={organisation} onChange={(access) => setDraft({ ...draft, access: { ...access, knockable: (access.mode === "default" ? settings.roomAccess.mode : access.mode) !== "open" && draft.access.knockable } })} />
+        {accessMode !== "open" && <label className="permission-check room-knocking"><input type="checkbox" checked={draft.access.knockable} onChange={(event) => setDraft({ ...draft, access: { ...draft.access, knockable: event.target.checked } })} />Allow knocking</label>}
+        </div>
         <PermissionEditor label="Build" value={draft.build ?? { mode: "default", assignedPersonIds: [] }} members={members} organisation={organisation} onChange={(build) => setDraft({ ...draft, build })} />
+        </div>
         {needsDoor && <p role="alert">Add a door before restricting access.</p>}
-        {editable && <button className="primary-button" type="submit" disabled={!draft.name.trim() || needsDoor}>Save room</button>}
+        {editable && <div className="room-settings-save"><button className="primary-button" type="submit" disabled={!changed || !draft.name.trim() || needsDoor}>{pending ? "Submitting…" : "Propose changes"}</button></div>}
       </fieldset>
     </form>
+    {!editable && <p className="room-settings-readonly">You cannot change this room’s settings.</p>}
     <PermissionPreview room={draft} members={members} settings={settings} organisation={organisation} />
   </div>;
 }

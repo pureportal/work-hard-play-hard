@@ -1,3 +1,4 @@
+import { createPublicEconomy } from "@workhard/shared";
 import { createOrganisation } from "@workhard/shared";
 import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
@@ -300,12 +301,14 @@ describe("Workspace floor navigation", () => {
     fireEvent.click(screen.getByRole("button", { name: "Select build item" }));
 
     fireEvent.keyDown(window, { key: "r" });
+    acknowledgeProjectEdit();
     fireEvent.click(await screen.findByRole("button", { name: "Move" }));
     expect(screen.getByTestId("world").getAttribute("data-moving")).toBe("asset:chair");
     fireEvent.click(screen.getByRole("button", { name: "Place selected item" }));
+    acknowledgeProjectEdit();
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
 
-    const edits = realtime.send.mock.calls.flatMap(([command]) => command.type === "layout.apply" ? [command.edit] : []);
+    const edits = realtime.send.mock.calls.flatMap(([command]) => command.type === "project.edit" ? [command.edit] : []);
     expect(edits).toContainEqual({ tool: "asset.move", objectId: "chair", position: { x: 160, y: 160 }, variantId: "white", rotation: 0 });
     expect(edits).toContainEqual({ tool: "asset.move", objectId: "chair", position: { x: 96, y: 96 }, variantId: "white", rotation: 90 });
     expect(edits).toContainEqual({ tool: "item.remove", item: { type: "asset", id: "chair" } });
@@ -357,6 +360,7 @@ function workspace(): BootstrapData {
     currentUserId: "user-maya",
     corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
     organisation: createOrganisation(),
+    publicEconomy: createPublicEconomy(),
     team: { id: "team", name: "Northstar", slug: "northstar", accent: "#6c5ce7" },
     office: { id: "office", teamId: "team", name: "Northstar" },
     floors,
@@ -426,4 +430,12 @@ function movementCommands() {
   return realtime.send.mock.calls
     .map(([command]) => command)
     .filter((command) => command.type === "movement.set_destination");
+}
+
+function acknowledgeProjectEdit(): void {
+  const command = realtime.send.mock.calls.map(([entry]) => entry).filter((entry) => entry.type === "project.edit").at(-1)!;
+  const layout = workspace().layouts[0]!;
+  act(() => realtime.handler?.({ type: "project.preview", requestId: command.requestId,
+    project: { id: "draft", fundId: "workspace", floorId: layout.floorId, baseRevision: layout.revision, edits: 1,
+      layout, quote: { cost: 0, refund: 0, refunds: [], structural: false, destructive: false, requiresApproval: true, purchases: [], removedKeys: [], inventoryIds: [] } } }));
 }

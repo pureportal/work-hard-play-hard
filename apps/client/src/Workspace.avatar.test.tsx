@@ -1,3 +1,4 @@
+import { createPublicEconomy } from "@workhard/shared";
 import { createOrganisation } from "@workhard/shared";
 import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { useEffect } from "react";
@@ -49,6 +50,7 @@ const workspace: BootstrapData = {
   currentUserId: member.id,
   corporateIdentity: createTestCorporateIdentity(),
     organisation: createOrganisation(),
+    publicEconomy: createPublicEconomy(),
   team: { id: "team-one", name: "Team", slug: "team", accent: "#000000" },
   office: { id: "office-one", teamId: "team-one", name: "Office" },
   floors: [{

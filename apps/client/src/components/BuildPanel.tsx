@@ -24,7 +24,7 @@ import {
   Utensils,
   X,
 } from "lucide-react";
-import { useId, useRef, useState } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
 import { ASSET_CATALOG, ASSET_RARITIES, getDefaultAssetVariantId } from "@workhard/shared";
 import type { AssetRarity, AssetRotation, FloorLayout, LayoutItemReference, LayoutTool } from "@workhard/shared";
 import type { LucideIcon } from "lucide-react";
@@ -38,6 +38,9 @@ import { AssetRarityFilter } from "./AssetRarityFilter";
 import "../build-panel.css";
 
 interface BuildPanelProps {
+  accountControls?: ReactNode;
+  projectControls?: ReactNode;
+  disabled?: boolean;
   layout: FloorLayout;
   tool: LayoutTool | null;
   assetId: string;
@@ -52,7 +55,7 @@ interface BuildPanelProps {
   onMoveSelected: () => void;
   onRotateSelected: () => void;
   onRemoveSelected: () => void;
-  onInspectAccess: () => void;
+  onInspectAccess?: (() => void) | undefined;
   onOpenRooms: () => void;
   onClose: () => void;
 }
@@ -85,6 +88,9 @@ const categoryIcons: Record<string, LucideIcon> = {
 const buildableCategories = ASSET_CATALOG.categories.filter((category) => category.buildable);
 
 export function BuildPanel({
+  accountControls,
+  projectControls,
+  disabled = false,
   layout,
   tool,
   assetId,
@@ -126,12 +132,14 @@ export function BuildPanel({
         <h2>Build</h2>
         <div className="build-panel-actions">
           <button className="secondary-button build-access-button" onClick={onOpenRooms}>Room settings</button>
-          <IconButton label="Room access" icon={KeyRound} onClick={onInspectAccess} />
+          {onInspectAccess && <IconButton label="Room access" icon={KeyRound} onClick={onInspectAccess} />}
           <IconButton label="Close build tools" icon={X} onClick={onClose} />
         </div>
       </div>
 
-      <div className="build-tools layout-tools" role="toolbar" aria-label="Layout tools">
+      {accountControls}
+      {projectControls}
+      <div className="build-tools layout-tools" role="toolbar" aria-label="Layout tools" inert={disabled}>
         {tools.map(({ id, label, icon: Icon }) => (
           <button
             key={label}
@@ -145,7 +153,7 @@ export function BuildPanel({
         ))}
       </div>
 
-      <div className="build-workspace">
+      <div className="build-workspace" inert={disabled}>
         <section className="build-section asset-library" aria-labelledby={`${panelId}-assets`}>
           <div className="build-assets-header">
             <h3 id={`${panelId}-assets`}>Assets</h3>
@@ -204,9 +212,10 @@ export function BuildPanel({
               {categoryAssets.map((asset) => (
                 <button
                   key={asset.id}
+                  aria-label={asset.name}
                   className={tool === "asset" && asset.id === assetId ? "active" : ""}
                   aria-pressed={tool === "asset" && asset.id === assetId}
-                  aria-description={asset.rarity[0]!.toUpperCase() + asset.rarity.slice(1)}
+                  aria-description={`${asset.rarity[0]!.toUpperCase() + asset.rarity.slice(1)} · ${asset.shop?.price} coins`}
                   data-rarity={asset.rarity}
                   onClick={() => {
                     onAssetChange(asset.id);
@@ -215,6 +224,7 @@ export function BuildPanel({
                 >
                   <AssetShape asset={asset} rotation={asset.id === assetId ? assetRotation : 0} variantId={asset.id === assetId ? assetVariantId : getDefaultAssetVariantId(asset)} />
                   <span>{asset.name}</span>
+                  <span className="asset-price">{asset.shop?.price} coins</span>
                 </button>
               ))}
             </div>

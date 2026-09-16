@@ -876,14 +876,15 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
         return;
       }
       runtime.handleCommand(peerId, parsed.data as ClientCommand);
-      if (parsed.data.type.startsWith("chess.")) {
+      const economyCommand = parsed.data.type.startsWith("economy.") || parsed.data.type.startsWith("public_economy.") || parsed.data.type === "project.submit";
+      if (parsed.data.type.startsWith("chess.") || economyCommand) {
         void persist().catch((error: unknown) => {
           app.log.error(error);
           sendEvent(socket, {
             type: "command.error",
             ...requestIdFromCandidate(candidate),
-            code: "CHESS_SAVE_FAILED",
-            message: "Your game could not be saved. Reconnect to check its state.",
+            code: economyCommand ? "ECONOMY_SAVE_FAILED" : "CHESS_SAVE_FAILED",
+            message: economyCommand ? "The transaction could not be saved. Reconnect to check your balances." : "Your game could not be saved. Reconnect to check its state.",
           });
         });
       }

@@ -37,10 +37,11 @@ export interface OwnedAsset {
   id: string;
   assetId: string;
   acquiredAt: string;
+  purchasePrice: number;
   placement?: OwnedAssetPlacement;
 }
 
-export type CoinTransactionKind = "welcome" | "daily_bonus" | "game_reward" | "shop_purchase";
+export type CoinTransactionKind = "welcome" | "daily_bonus" | "game_reward" | "shop_purchase" | "donation" | "asset_sale" | "asset_donation";
 
 export interface CoinTransaction {
   id: string;

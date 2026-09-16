@@ -7,6 +7,7 @@ import { MusicIndicator } from "../spotify/music-indicator";
 import type { SpotifyActivity } from "@workhard/shared";
 import { getCharacterSeatLayout } from "../character-seat";
 import { createWorldAssetView } from "../world-asset-view";
+import { WorldAssetFocus } from "../world-asset-focus";
 import { WorldAssetTextures } from "../world-asset-textures";
 import { getPlacedWorldAssetArtwork, getPlacedWorldAssetBounds, getWorldAssetPlacementPosition, getWorldAssetSurfaceOffset } from "../world-asset-placement";
 import { createWorldArchitecture } from "../world-architecture";
@@ -71,6 +72,7 @@ import type { DisplaySpecialPropUse } from "../special-props";
 import { createSpecialPropEffect, type SpecialPropView } from "../world-special-props";
 import { renderCharacter } from "../character-renderer";
 import { getAssetDirectionIndicators, getAssetOrientationLabel, rotateAssetClockwise } from "../asset-orientation";
+import { projectPreviewMarks } from "../project-preview";
 import { REACTION_EMOJI, type DisplayHighFive, type DisplayReaction } from "../reactions";
 import type { ColorTheme } from "../theme";
 import { isPointInWorldTarget, resolveWorldPointTarget } from "../world-point-target";
@@ -78,7 +80,13 @@ import { IconButton } from "./IconButton";
 import { roomEntryAppearance } from "../room-accessibility";
 import type { InteractionHighlight } from "../hooks/useInteractionAreas";
 
+export type WorldFocusTarget = { requestId: string } & (
+  | { userId: string }
+  | { floorId: string; objectId: string }
+);
+
 export interface WorldCanvasProps {
+  projectPreview?: { savedLayout: FloorLayout; status: string; removing: boolean } | undefined;
   listeningActivities?: Readonly<Record<string, SpotifyActivity>>;
   activeInteraction?: InteractionHighlight | undefined;
   floor: Floor;
@@ -101,7 +109,7 @@ export interface WorldCanvasProps {
   colorTheme: ColorTheme;
   editing: boolean;
   inputEnabled: boolean;
-  focusTarget?: { userId: string; requestId: string } | undefined;
+  focusTarget?: WorldFocusTarget | undefined;
   onDestination: (x: number, y: number) => void;
   onPlayerSelect: (userId: string, anchor: ContextAnchor) => void;
   onEdit: (edit: LayoutEdit) => void;
@@ -322,13 +330,14 @@ export function WorldCanvas(props: WorldCanvasProps) {
           current.colorTheme,
         );
         renderer.setPlayers(current.players, current.members, current.currentUserId);
+        renderer.setProjectPreview(current.projectPreview?.savedLayout);
         renderer.setListeningActivities(current.listeningActivities ?? {});
         renderer.setActiveInteraction(current.editing ? undefined : current.activeInteraction);
         renderer.setReactions(current.reactions);
         renderer.setHighFives(current.highFives);
         renderer.setGongRings(current.gongRings);
         renderer.setSpecialPropUses(current.specialPropUses ?? []);
-        if (current.focusTarget && renderer.focusUser(current.focusTarget.userId)) {
+        if (current.focusTarget && renderer.focus(current.focusTarget)) {
           handledFocusRequestRef.current = current.focusTarget.requestId;
         }
       }).catch((error: unknown) => {
@@ -394,6 +403,10 @@ export function WorldCanvas(props: WorldCanvasProps) {
     && (props.editingTool === "asset" || props.editingTool === "spawn" || props.movingBuildItem?.type === "asset");
 
   useEffect(() => {
+    rendererRef.current?.setProjectPreview(props.projectPreview?.savedLayout);
+  }, [props.layout, props.projectPreview?.savedLayout]);
+
+  useEffect(() => {
     rendererRef.current?.setRoomAccessibility(props.roomAccessibility);
   }, [props.roomAccessibility]);
 
@@ -433,10 +446,10 @@ export function WorldCanvas(props: WorldCanvasProps) {
 
   useEffect(() => {
     const target = props.focusTarget;
-    if (target && handledFocusRequestRef.current !== target.requestId && rendererRef.current?.focusUser(target.userId)) {
+    if (target && handledFocusRequestRef.current !== target.requestId && rendererRef.current?.focus(target)) {
       handledFocusRequestRef.current = target.requestId;
     }
-  }, [props.focusTarget, props.players]);
+  }, [props.focusTarget, props.players, props.floor, props.layout]);
 
   useEffect(() => {
     const pressed = new Set<string>();
@@ -521,6 +534,8 @@ export function WorldCanvas(props: WorldCanvasProps) {
           <button onClick={() => window.location.reload()}>Reload</button>
         </div>
       )}
+      {props.projectPreview && <div className="world-project-state" role="status"><span>{props.projectPreview.status}</span>
+        {props.projectPreview.removing && <span className="project-removal-key">To remove</span>}</div>}
       <div className="world-zoom-controls" role="toolbar" aria-label="Camera">
         <IconButton label="Zoom in" icon={Plus} onClick={() => rendererRef.current?.zoomBy(0.12)} />
         <IconButton label="Zoom out" icon={Minus} onClick={() => rendererRef.current?.zoomBy(-0.12)} />
@@ -567,6 +582,8 @@ class OfficeRenderer {
   private readonly world = new Container();
   private readonly layoutLayer = new Container();
   private readonly selectionOverlay = new Graphics();
+  private readonly projectOverlay = new Graphics();
+  private readonly assetFocus = new WorldAssetFocus();
   private readonly interactionOverlay = new Graphics();
   private readonly accessibilityOverlay = new Graphics();
   private roomAccessibility: PlayerRoomAccessibility | undefined;
@@ -626,7 +643,7 @@ class OfficeRenderer {
   ) {
     this.app.stage.addChild(this.world);
     this.world.scale.set(this.zoom);
-    this.world.addChild(this.layoutLayer, this.accessibilityOverlay, this.interactionOverlay, this.depth.container, this.selectionOverlay, this.assetPreviewLayer, this.buildPreview, this.celebrationLayer);
+    this.world.addChild(this.layoutLayer, this.accessibilityOverlay, this.interactionOverlay, this.depth.container, this.projectOverlay, this.selectionOverlay, this.assetFocus.overlay, this.assetPreviewLayer, this.buildPreview, this.celebrationLayer);
     this.app.canvas.addEventListener("pointerdown", this.handlePointerDown);
     this.app.canvas.addEventListener("pointermove", this.handlePointerMove);
     this.app.canvas.addEventListener("pointerup", this.handlePointerUp);
@@ -709,6 +726,18 @@ class OfficeRenderer {
   }
 
   private listeningActivities: Readonly<Record<string, SpotifyActivity>> = {};
+  setProjectPreview(savedLayout: FloorLayout | undefined): void {
+    this.projectOverlay.clear();
+    if (!savedLayout || !this.layout) return;
+    for (const { bounds, change } of projectPreviewMarks(savedLayout, this.layout)) {
+      const color = change === "added" ? "#edb34f" : "#ef6666";
+      const { x, y, width, height } = bounds;
+      this.projectOverlay.rect(x, y, width, height).fill({ color, alpha: 0.22 }).stroke({ color, width: 3 });
+      if (change === "removed") {
+        this.projectOverlay.moveTo(x, y).lineTo(x + width, y + height).moveTo(x + width, y).lineTo(x, y + height).stroke({ color, width: 2, alpha: 0.85 });
+      }
+    }
+  }
   private readonly musicReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   setListeningActivities(activities: Readonly<Record<string, SpotifyActivity>>): void {
@@ -932,11 +961,27 @@ class OfficeRenderer {
     }
   }
 
+  focus(target: WorldFocusTarget): boolean {
+    if ("userId" in target) return this.focusUser(target.userId);
+    if (target.floorId !== this.floor?.id || !this.layout) return false;
+    const object = this.layout.objects.find((candidate) => candidate.id === target.objectId);
+    const view = this.objectViews.get(target.objectId);
+    if (!object || !view) return false;
+    const bounds = getPlacedWorldAssetBounds(this.layout, object);
+    this.freeCameraX = bounds.x + bounds.width / 2;
+    this.freeCameraY = bounds.y + bounds.height / 2;
+    this.updateCameraMode("free");
+    this.applyFreeCameraTransform();
+    this.assetFocus.start(view, bounds, Date.now(), this.musicReducedMotion.matches);
+    return true;
+  }
+
   focusUser(userId: string): boolean {
     if (!this.playerViews.has(userId)) {
       return false;
     }
     this.cameraUserId = userId;
+    this.assetFocus.clear();
     this.updateCameraMode("follow");
     return true;
   }
@@ -997,6 +1042,7 @@ class OfficeRenderer {
   }
 
   destroy(): void {
+    this.assetFocus.clear();
     this.app.ticker.remove(this.renderFrame);
     this.app.canvas.removeEventListener("pointerdown", this.handlePointerDown);
     this.app.canvas.removeEventListener("pointermove", this.handlePointerMove);
@@ -1013,6 +1059,7 @@ class OfficeRenderer {
     if (!this.floor || !this.layout) {
       return;
     }
+    this.assetFocus.clear();
     this.gongViews.clear();
     for (const view of this.objectViews.values()) view.destroy({ children: true });
     this.objectViews.clear();
@@ -1121,6 +1168,7 @@ class OfficeRenderer {
 
   private drawObject(object: WorldObject): void {
     const view = createWorldAssetView(this.assetTextures, object, this.layout!, this.colorTheme, this.callbacks.current.onArtworkError);
+    this.objectViews.set(object.id, view.container);
     if (view.animate) {
       this.assetAnimations.set(view.container, view.animate);
       view.container.once("destroyed", () => this.assetAnimations.delete(view.container));
@@ -1130,7 +1178,6 @@ class OfficeRenderer {
     } else {
       const position = getWorldAssetDepth(object);
       this.depth.setPosition(view.container, position.x, position.y);
-      this.objectViews.set(object.id, view.container);
     }
     if (requireAssetDefinition(object.assetId).kind === "gong") {
       this.gongViews.set(object.id, { body: view.body, ringStartedAt: 0, ringUntil: 0 });
@@ -1231,6 +1278,7 @@ class OfficeRenderer {
 
   private readonly renderFrame = (): void => {
     const now = Date.now();
+    this.assetFocus.update(now, this.musicReducedMotion.matches);
     for (const animate of this.assetAnimations.values()) animate(this.musicReducedMotion.matches ? 0 : now);
     for (const view of this.specialPropViews.values()) view.animate(now);
     const interpolation = 1 - Math.exp(-Math.min(this.app.ticker.deltaMS, 100) / 67);

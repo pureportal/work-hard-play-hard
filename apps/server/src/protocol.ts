@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { publicEconomyCommands } from "./economy/public-economy-schema.js";
 import { organisationEditSchema, roomPermissionSchema, gameSettingsSchema } from "./organisation/organisation-schema.js";
 import { meetingCommands } from "./meetings/meeting-protocol.js";
 import { mediaSignalSchema } from "./media/media-protocol.js";
@@ -130,6 +131,7 @@ const layoutEdit = z.discriminatedUnion("tool", [
 ]);
 
 export const clientCommandSchema = z.discriminatedUnion("type", [
+  ...publicEconomyCommands(z.union([layoutEdit, z.object({ tool: z.literal("public_asset"), publicAssetId: z.string().uuid(), position, variantId: assetVariantId, rotation: assetRotation }).strict()])),
   z.object({ type: z.literal("organisation.edit"), requestId, baseRevision: z.number().int().nonnegative(), edit: organisationEditSchema }).strict(),
   z.object({ type: z.literal("movement.input"), sequence: z.number().int().nonnegative(), dx: z.number().min(-1).max(1), dy: z.number().min(-1).max(1) }),
   z.object({
@@ -150,12 +152,6 @@ export const clientCommandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("proximity.leave"), requestId, sessionId: z.string().uuid() }).strict(),
   z.object({ type: z.literal("proximity.signal"), requestId, sessionId: z.string().uuid(), targetSessionId: z.string().uuid(), signal: mediaSignalSchema }).strict(),
   z.object({ type: z.literal("chat.send"), requestId, conversationId: z.string().min(1).max(100), body: z.string().trim().min(1).max(500) }),
-  z.object({
-    type: z.literal("layout.apply"),
-    requestId,
-    baseRevision: z.number().int().nonnegative(),
-    edit: layoutEdit,
-  }).strict(),
   z.object({
     type: z.literal("player_asset.place"),
     requestId,

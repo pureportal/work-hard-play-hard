@@ -1,6 +1,7 @@
+import { applyBuildingProject } from "../testing/building-project.js";
 import { createTestData } from "../testing/workspace-data.js";
 import { describe, expect, it } from "vitest";
-import type { ClientCommand, ServerEvent } from "@workhard/shared";
+import type { ServerEvent } from "@workhard/shared";
 import { WorkspaceStore } from "../store.js";
 import { MemoryDatabase } from "../persistence/memory-database.js";
 import { clientCommandSchema } from "../protocol.js";
@@ -8,16 +9,16 @@ import { WorldRuntime } from "./world-runtime.js";
 
 describe("player start point", () => {
   it.each([
-    { role: "member" as const, permissions: [] as ("build")[], allowed: false },
-    { role: "guest" as const, permissions: [] as ("build")[], allowed: false },
+    { role: "member" as const, permissions: [] as ("build")[], allowed: true },
+    { role: "guest" as const, permissions: [] as ("build")[], allowed: true },
     { role: "member" as const, permissions: ["build"] as ("build")[], allowed: true },
     { role: "admin" as const, permissions: [] as ("build")[], allowed: true },
-  ])("enforces $role build access ($allowed)", ({ role, permissions, allowed }) => {
+  ])("applies approved start points for $role without free build privileges", ({ role, permissions, allowed }) => {
     const { store, runtime, events } = fixture();
     store.updateMemberAccess("user-leo", role, permissions);
     const peer = runtime.connect("user-leo", "floor-studio", (event) => events.push(event));
     const before = structuredClone(store.getFloor("floor-studio")!.spawn);
-    moveSpawn(runtime, peer, store);
+    moveSpawn(runtime, peer, store, events);
     expect(store.getFloor("floor-studio")!.spawn).toEqual(allowed ? { x: 320, y: 320 } : before);
     expect(events.some((event) => event.type === "command.error" && event.code === "EDIT_FORBIDDEN")).toBe(!allowed);
     runtime.stop();
@@ -28,7 +29,7 @@ describe("player start point", () => {
     const peer = runtime.connect("user-maya", "floor-studio", (event) => events.push(event));
     const before = runtime.serializePlayers().find((player) => player.userId === "user-maya")!;
     const revision = store.getLayout("floor-studio")!.revision;
-    moveSpawn(runtime, peer, store, { x: 325, y: 314 });
+    moveSpawn(runtime, peer, store, events, { x: 325, y: 314 });
     expect(store.getLayout("floor-studio")!.revision).toBe(revision + 1);
     expect(events).toContainEqual(expect.objectContaining({ type: "floor.updated", floor: expect.objectContaining({ spawn: { x: 320, y: 320 } }) }));
     expect(events).toContainEqual(expect.objectContaining({ type: "layout.updated", requestId: "move-spawn" }));
@@ -49,17 +50,14 @@ describe("player start point", () => {
     reloaded.stop();
   });
 
-  it("rejects stale revisions and revoked build permission without changing the point", () => {
+  it("rejects stale project revisions without changing the start point", () => {
     const { store, runtime, events } = fixture();
     store.updateMemberAccess("user-leo", "member", ["build"]);
     const peer = runtime.connect("user-leo", "floor-studio", (event) => events.push(event));
     const revision = store.getLayout("floor-studio")!.revision;
-    moveSpawn(runtime, peer, store);
-    runtime.handleCommand(peer, { type: "layout.apply", requestId: "stale", baseRevision: revision, edit: { tool: "spawn", position: { x: 400, y: 400 } } });
-    expect(events).toContainEqual({ type: "layout.conflict", requestId: "stale", revision: revision + 1 });
-    store.updateMemberAccess("user-leo", "member", []);
-    moveSpawn(runtime, peer, store, { x: 400, y: 400 });
-    expect(events.at(-1)).toMatchObject({ type: "command.error", code: "EDIT_FORBIDDEN" });
+    moveSpawn(runtime, peer, store, events);
+    runtime.handleCommand(peer, { type: "project.edit", fundId: "workspace", requestId: "stale", baseRevision: revision, edit: { tool: "spawn", position: { x: 400, y: 400 } } });
+    expect(events).toContainEqual(expect.objectContaining({ type: "command.error", requestId: "stale", code: "PROJECT_STALE" }));
     expect(store.getFloor("floor-studio")!.spawn).toEqual({ x: 320, y: 320 });
     runtime.stop();
   });
@@ -81,14 +79,14 @@ describe("player start point", () => {
       runtime.restorePlayers([{ userId: "user-maya", floorId: layout.floorId, x: 320, y: 320, facing: "down", availability: "available", connected: true }]);
     }
     if (obstacle === "bounds") position = { x: -512, y: -512 };
-    moveSpawn(runtime, peer, store, position);
+    moveSpawn(runtime, peer, store, events, position);
     expect(events.at(-1)).toMatchObject({ type: "command.error", code: obstacle === "private" ? "SPAWN_RESTRICTED" : obstacle === "player" ? "SPACE_OCCUPIED" : obstacle === "bounds" ? "EDIT_OUT_OF_RANGE" : "SPAWN_BLOCKED" });
     expect(store.getFloor("floor-studio")!.spawn).toEqual(spawn);
     runtime.stop();
   });
 
   it("validates start point coordinates at the protocol boundary", () => {
-    const command = { type: "layout.apply", requestId: "spawn", baseRevision: 1, edit: { tool: "spawn", position: { x: 32, y: 64 } } };
+    const command = { type: "project.edit", fundId: "workspace", requestId: "spawn", baseRevision: 1, edit: { tool: "spawn", position: { x: 32, y: 64 } } };
     expect(clientCommandSchema.safeParse(command).success).toBe(true);
     for (const x of [NaN, Infinity, "32"]) {
       expect(clientCommandSchema.safeParse({ ...command, edit: { tool: "spawn", position: { x, y: 64 } } }).success).toBe(false);
@@ -110,7 +108,7 @@ function fixture() {
   return { store, runtime: new WorldRuntime(store), events: [] as ServerEvent[] };
 }
 
-function moveSpawn(runtime: WorldRuntime, peer: string, store: WorkspaceStore, position = { x: 320, y: 320 }) {
-  const command: ClientCommand = { type: "layout.apply", requestId: "move-spawn", baseRevision: store.getLayout("floor-studio")!.revision, edit: { tool: "spawn", position } };
-  runtime.handleCommand(peer, command);
+function moveSpawn(runtime: WorldRuntime, peer: string, store: WorkspaceStore, events: ServerEvent[], position = { x: 320, y: 320 }) {
+  const command = { requestId: "move-spawn", baseRevision: store.getLayout("floor-studio")!.revision, edit: { tool: "spawn" as const, position } };
+  applyBuildingProject(runtime, store, peer, events, command);
 }

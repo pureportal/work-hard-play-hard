@@ -12,7 +12,7 @@ export * from "./github.js";
 import type { WorkObjectEdit } from "./work-objects.js";
 import type { CharacterAppearance } from "./character.js";
 import type { GameBot } from "./game-bot.js";
-import type { FloorLayout, LayoutEdit, RoomSettings } from "./building.js";
+import type { FloorLayout, RoomSettings } from "./building.js";
 import type {
   ChessLobbyState,
   ChessMatchSettings,
@@ -49,6 +49,7 @@ export * from "./geometry.js";
 export * from "./floor-portals.js";
 export * from "./room-detection.js";
 export * from "./economy.js";
+export * from "./public-economy.js";
 export * from "./player-asset-placement.js";
 export * from "./kidnapping.js";
 export * from "./falling-blocks.js";
@@ -342,6 +343,7 @@ export interface BootstrapData extends WorkspaceAccessData {
   scores: GameScore[];
   gameStatistics: PlayerGameStatistics[];
   economy: PlayerEconomy;
+  publicEconomy: import("./public-economy.js").PublicEconomy;
   gameSettings: GameSettings;
   kidnapping: KidnappingConfiguration;
   registrationSettings?: RegistrationSettings;
@@ -464,6 +466,9 @@ export type ServerEvent =
     coinRewards: GameCoinReward[];
   }
   | { type: "economy.updated"; economy: PlayerEconomy; requestId?: string; transaction?: CoinTransaction }
+  | { type: "public_economy.updated"; economy: import("./public-economy.js").PublicEconomy; requestId?: string }
+  | { type: "project.preview"; requestId: string; project: import("./public-economy.js").BuildProject }
+  | { type: "project.submitted"; requestId: string; proposalId?: string }
   | { type: "game.settings_updated"; settings: GameSettings }
   | { type: "chess.lobby_updated"; lobby: ChessLobbyState }
   | { type: "chess.lobby_closed"; definitionId: ChessLobbyState["definitionId"] }
@@ -491,12 +496,20 @@ export type ClientCommand =
   | { type: "proximity.leave"; requestId: string; sessionId: string }
   | { type: "proximity.signal"; requestId: string; sessionId: string; targetSessionId: string; signal: import("./media.js").MediaSignal }
   | { type: "chat.send"; requestId: string; conversationId: string; body: string }
-  | { type: "layout.apply"; requestId: string; baseRevision: number; edit: LayoutEdit }
   | { type: "player_asset.place"; requestId: string; baseRevision: number; ownedAssetId: string; position: Position; variantId: string; rotation: AssetRotation }
   | { type: "player_asset.move"; requestId: string; baseRevision: number; objectId: string; position: Position; variantId: string; rotation: AssetRotation }
   | { type: "player_asset.remove"; requestId: string; baseRevision: number; objectId: string }
   | { type: "economy.claim_daily"; requestId: string }
   | { type: "economy.purchase_asset"; requestId: string; assetId: string }
+  | { type: "economy.donate"; requestId: string; fundId: string; amount: number }
+  | { type: "economy.sell_asset"; requestId: string; ownedAssetId: string }
+  | { type: "economy.donate_asset"; requestId: string; ownedAssetId: string; fundId: string }
+  | { type: "project.edit"; requestId: string; baseRevision: number; fundId: string; draftId?: string; edit: import("./public-economy.js").ProjectEdit }
+  | { type: "project.submit"; requestId: string; draftId: string; title: string }
+  | { type: "public_economy.propose"; requestId: string; title: string; action: Exclude<import("./public-economy.js").PublicAction, { kind: "project" }> }
+  | { type: "public_economy.vote"; requestId: string; proposalId: string; approve: boolean }
+  | { type: "public_economy.execute"; requestId: string; proposalId: string }
+  | { type: "public_economy.cancel"; requestId: string; proposalId: string }
   | { type: "game.settings_update"; requestId: string; settings: GameSettings }
   | { type: "asset.interact"; requestId: string; objectId: string; interactionId: string }
   | { type: "work.update"; requestId: string; objectId: string; baseRevision: number; edit: WorkObjectEdit }

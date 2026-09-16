@@ -1,3 +1,4 @@
+import { createPublicEconomy } from "@workhard/shared";
 import { createOrganisation } from "@workhard/shared";
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -59,6 +60,7 @@ const workspaceSnapshot: BootstrapData = {
   currentUserId: "user-one",
   corporateIdentity: createTestCorporateIdentity(),
     organisation: createOrganisation(),
+    publicEconomy: createPublicEconomy(),
   team: { id: "team-one", name: "Team", slug: "team", accent: "#000000" },
   office: { id: "office-one", teamId: "team-one", name: "Office" },
   floors: [],

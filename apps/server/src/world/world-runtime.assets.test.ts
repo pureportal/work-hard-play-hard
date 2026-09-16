@@ -1,3 +1,4 @@
+import { applyBuildingProject } from "../testing/building-project.js";
 import { createTestData } from "../testing/workspace-data.js";
 import type { ClientCommand, ServerEvent, WorldPlayer } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
@@ -118,8 +119,7 @@ describe("WorldRuntime asset placement", () => {
     const events: ServerEvent[] = [];
     const peer = runtime.connect("user-maya", "floor-studio", (event) => events.push(event));
 
-    send(runtime, peer, {
-      type: "layout.apply",
+    applyBuildingProject(runtime, store, peer, events, {
       requestId: "place-laptop",
       baseRevision: store.getLayout("floor-studio")!.revision,
       edit: { tool: "asset", assetId: "decor-laptop", variantId: "graphite", rotation: 0, position: { x: 288, y: 608 } },
@@ -132,16 +132,14 @@ describe("WorldRuntime asset placement", () => {
       y: 608,
     }));
 
-    send(runtime, peer, {
-      type: "layout.apply",
+    applyBuildingProject(runtime, store, peer, events, {
       requestId: "stack-lamp",
       baseRevision: store.getLayout("floor-studio")!.revision,
       edit: { tool: "asset", assetId: "decor-lamp", variantId: "graphite", rotation: 0, position: { x: 288, y: 608 } },
     });
     expect(events.at(-1)).toMatchObject({ type: "command.error", requestId: "stack-lamp", code: "ASSET_BLOCKED" });
 
-    send(runtime, peer, {
-      type: "layout.apply",
+    applyBuildingProject(runtime, store, peer, events, {
       requestId: "floating-lamp",
       baseRevision: store.getLayout("floor-studio")!.revision,
       edit: { tool: "asset", assetId: "decor-lamp", variantId: "graphite", rotation: 0, position: { x: 1008, y: 800 } },

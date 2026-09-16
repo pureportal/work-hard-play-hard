@@ -2,12 +2,12 @@ import { randomUUID } from "node:crypto";
 import { canManageUnit, canMoveOrganisationMember, isUnitWithin, type OrganisationEdit, type OrganisationState, type RoomPermission } from "@workhard/shared";
 import { organisationEditSchema, organisationStateSchema, roomPermissionSchema } from "./organisation-schema.js";
 
-export function applyOrganisationEdit(state: OrganisationState, memberIds: string[], actorId: string, baseRevision: number, input: OrganisationEdit): OrganisationState {
+export function applyOrganisationEdit(state: OrganisationState, memberIds: string[], actorId: string, baseRevision: number, input: OrganisationEdit, approved = false): OrganisationState {
   const edit = organisationEditSchema.parse(input);
   if (state.revision !== baseRevision) throw new Error("ORGANISATION_CONFLICT");
   if (!memberIds.includes(actorId)) throw new Error("USER_NOT_FOUND");
   const next = structuredClone(state);
-  const isCeo = next.ceoIds.includes(actorId);
+  const isCeo = approved || next.ceoIds.includes(actorId);
   const requireUnit = (unitId: string) => {
     const unit = next.units.find((candidate) => candidate.id === unitId);
     if (!unit) throw new Error("ORGANISATION_UNIT_NOT_FOUND");
@@ -15,7 +15,7 @@ export function applyOrganisationEdit(state: OrganisationState, memberIds: strin
   };
   const requireManagement = (unitId: string | null) => {
     if (unitId) requireUnit(unitId);
-    if (!canManageUnit(next, actorId, unitId)) throw new Error("ORGANISATION_FORBIDDEN");
+    if (!approved && !canManageUnit(next, actorId, unitId)) throw new Error("ORGANISATION_FORBIDDEN");
   };
   if ("userId" in edit && !memberIds.includes(edit.userId)) throw new Error("USER_NOT_FOUND");
   switch (edit.type) {
@@ -47,7 +47,7 @@ export function applyOrganisationEdit(state: OrganisationState, memberIds: strin
     case "member.move": {
       if (next.ceoIds.includes(edit.userId)) throw new Error("CEO_VOTE_REQUIRED");
       if (edit.unitId) requireUnit(edit.unitId);
-      if (!canMoveOrganisationMember(next, actorId, edit.userId, edit.unitId)) throw new Error("ORGANISATION_FORBIDDEN");
+      if (!approved && !canMoveOrganisationMember(next, actorId, edit.userId, edit.unitId)) throw new Error("ORGANISATION_FORBIDDEN");
       const actor = next.assignments.find((person) => person.userId === actorId);
       if (!isCeo && edit.rank === "lead" && actor?.unitId === edit.unitId) throw new Error("ORGANISATION_FORBIDDEN");
       next.assignments = next.assignments.filter((person) => person.userId !== edit.userId);
@@ -95,7 +95,7 @@ export function applyOrganisationEdit(state: OrganisationState, memberIds: strin
 export function validateOrganisation(state: OrganisationState, memberIds: string[]): void {
   organisationStateSchema.parse(state);
   const unique = (ids: string[]) => new Set(ids).size === ids.length;
-  if (!unique(state.ceoIds) || (memberIds.length > 0 && !state.ceoIds.length)
+  if (!unique(state.ceoIds)
     || state.ceoIds.some((id) => !memberIds.includes(id)) || !unique(state.units.map((unit) => unit.id))
     || !unique(state.assignments.map((person) => person.userId))) throw new Error("ORGANISATION_INVALID");
   for (const unit of state.units) {

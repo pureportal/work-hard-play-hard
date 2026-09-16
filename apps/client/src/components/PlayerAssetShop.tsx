@@ -1,6 +1,6 @@
 import { Search, X } from "lucide-react";
 import { useId, useRef, useState } from "react";
-import { ASSET_CATALOG, MAX_OWNED_ASSETS, type AssetRarity, type PlayerEconomy } from "@workhard/shared";
+import { ASSET_CATALOG, MAX_OWNED_ASSETS, isPermanentAsset, type AssetRarity, type PlayerEconomy } from "@workhard/shared";
 import { useHorizontalWheelScroll } from "../hooks/useHorizontalWheelScroll";
 import { useSelectedTabVisibility } from "../hooks/useSelectedTabVisibility";
 import { AssetRarityFilter } from "./AssetRarityFilter";
@@ -15,7 +15,7 @@ interface PlayerAssetShopProps {
 
 const categories = [
   { id: "all", name: "All" },
-  ...ASSET_CATALOG.categories.filter((category) => ASSET_CATALOG.assets.some((asset) => asset.category === category.id && asset.shop)),
+  ...ASSET_CATALOG.categories.filter((category) => ASSET_CATALOG.assets.some((asset) => asset.category === category.id && asset.shop && !isPermanentAsset(asset.id))),
 ];
 
 export function PlayerAssetShop({ economy, pending, purchasingAssetId, onPurchase }: PlayerAssetShopProps) {
@@ -27,6 +27,7 @@ export function PlayerAssetShop({ economy, pending, purchasingAssetId, onPurchas
   const [search, setSearch] = useState("");
   const query = search.trim().toLocaleLowerCase();
   const assets = ASSET_CATALOG.assets.filter((asset) => asset.shop
+    && !isPermanentAsset(asset.id)
     && (categoryId === "all" || asset.category === categoryId)
     && (rarity === "all" || asset.rarity === rarity)
     && asset.name.toLocaleLowerCase().includes(query));

@@ -7,15 +7,75 @@ import { PlayerBuildPanel } from "./PlayerBuildPanel";
 afterEach(cleanup);
 
 describe("PlayerBuildPanel", () => {
-  it("keeps floor materials separate from rugs in the shop", () => {
-    const onPurchase = vi.fn();
-    renderPanel({ onPurchase });
+  it("lists each personal placement across floors and focuses the chosen copy", () => {
+    const onFocus = vi.fn();
+    const firstFloor = floorLayout(assignedRoom());
+    firstFloor.objects = [
+      { id: "my-chair", floorId: "floor", assetId: "chair-office", x: 32, y: 32, rotation: 0, variantId: "white", ownerUserId: "player" },
+      { id: "their-chair", floorId: "floor", assetId: "chair-office", x: 64, y: 32, rotation: 0, variantId: "white", ownerUserId: "other" },
+      { id: "shared-chair", floorId: "floor", assetId: "chair-office", x: 96, y: 32, rotation: 0, variantId: "white" },
+    ];
+    const secondFloor = { ...floorLayout(assignedRoom()), floorId: "upstairs", rooms: [], objects: [
+      { ...firstFloor.objects[0]!, id: "second-chair", floorId: "upstairs", variantId: "blue" },
+      { ...firstFloor.objects[0]!, id: "third-chair", floorId: "upstairs" },
+    ] };
+    renderPanel({ layout: firstFloor, layouts: [firstFloor, secondFloor],
+      floors: ["floor", "upstairs"].map((id, level) => ({ id, officeId: "office", name: id, level, width: 256, height: 256, spawn: { x: 200, y: 200 }, background: "#fff" })),
+      onFocus, selectedItem: { type: "asset", id: "my-chair" } });
+    fireEvent.click(screen.getByRole("tab", { name: "Placed" }));
+
+    expect(screen.getAllByRole("button", { name: /^Focus / })).toHaveLength(3);
+    expect(screen.getByRole("button", { name: "Focus Office chair in Room, floor" }).getAttribute("aria-pressed")).toBe("true");
+    const upstairs = screen.getAllByRole("button", { name: "Focus Office chair in upstairs" });
+    fireEvent.click(upstairs[0]!);
+    fireEvent.click(upstairs[1]!);
+    expect(onFocus.mock.calls).toEqual([["upstairs", "second-chair"], ["upstairs", "third-chair"]]);
+  });
+
+  it("supports keyboard navigation through all three tabs", () => {
+    renderPanel();
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Inventory" }), { key: "ArrowRight" });
+    expect(screen.getByRole("tab", { name: "Placed" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByText("No placed items yet.")).toBeTruthy();
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Placed" }), { key: "End" });
+    expect(screen.getByRole("tab", { name: "Shop" }).getAttribute("aria-selected")).toBe("true");
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Shop" }), { key: "ArrowRight" });
+    expect(screen.getByRole("tab", { name: "Inventory" }).getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("sells an available copy with its actual resale value and stores the selected placement", () => {
+    const onSell = vi.fn();
+    const onRemoveSelected = vi.fn();
+    const economy = createTestEconomy();
+    economy.inventory = [
+      { id: "placed", assetId: "chair-office", purchasePrice: 90, acquiredAt: "2026-09-01", placement: { objectId: "chair", floorId: "floor", placedAt: "2026-09-01" } },
+      { id: "available", assetId: "chair-office", purchasePrice: 70, acquiredAt: "2026-09-01" },
+    ];
+    const layout = floorLayout(assignedRoom());
+    layout.objects = [{ id: "chair", floorId: "floor", assetId: "chair-office", x: 32, y: 32, rotation: 0, variantId: "white", ownerUserId: "player" }];
+    renderPanel({ economy, layout, onSell, onRemoveSelected, selectedItem: { type: "asset", id: "chair" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sell Office chair for 23 coins" }));
+    expect(onSell).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Sell item" }));
+    expect(onSell).toHaveBeenCalledWith("available");
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    fireEvent.click(screen.getByRole("button", { name: "Store" }));
+    expect(onRemoveSelected).toHaveBeenCalledOnce();
+  });
+
+  it("keeps editing unavailable when viewing a different floor", () => {
+    const layout = floorLayout(assignedRoom());
+    layout.objects = [{ id: "chair", floorId: "floor", assetId: "chair-office", x: 32, y: 32, rotation: 0, variantId: "white", ownerUserId: "player" }];
+    renderPanel({ layout, playerFloorId: "upstairs", selectedItem: { type: "asset", id: "chair" } });
+    expect((screen.getByRole("button", { name: "Store" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "Move" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText("Visit this floor to edit or place items.")).toBeTruthy();
+  });
+
+  it("keeps permanent floors out of the personal shop while offering rugs", () => {
+    renderPanel();
     fireEvent.click(screen.getByRole("tab", { name: "Shop" }));
-    fireEvent.click(screen.getByRole("tab", { name: "Floor types" }));
-    expect(screen.getAllByRole("button", { name: /^Buy / })).toHaveLength(30);
-    fireEvent.click(screen.getByRole("button", { name: "Buy Parquet" }));
-    expect(onPurchase).toHaveBeenCalledWith("floor-parquet");
-    expect(screen.queryByRole("button", { name: "Buy Woven rug" })).toBeNull();
+    expect(screen.queryByRole("tab", { name: "Floor types" })).toBeNull();
     fireEvent.click(screen.getByRole("tab", { name: "Floor decor" }));
     expect(screen.getByRole("button", { name: "Buy Woven rug" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Buy Parquet" })).toBeNull();
@@ -70,7 +130,7 @@ describe("PlayerBuildPanel", () => {
     economy.inventory = Array.from({ length: MAX_OWNED_ASSETS }, (_, index) => ({
       id: `owned-chair-${index}`,
       assetId: "chair-office",
-      acquiredAt: "2026-09-01T12:00:00.000Z",
+      purchasePrice: 90, acquiredAt: "2026-09-01T12:00:00.000Z",
     }));
 
     renderPanel({ economy });
@@ -88,7 +148,7 @@ describe("PlayerBuildPanel", () => {
     economy.inventory = [{
       id: "owned-chair",
       assetId: "chair-office",
-      acquiredAt: "2026-09-01T12:00:00.000Z",
+      purchasePrice: 90, acquiredAt: "2026-09-01T12:00:00.000Z",
     }];
 
     renderPanel({ economy, onPlace });
@@ -103,7 +163,7 @@ describe("PlayerBuildPanel", () => {
     economy.inventory = [{
       id: "owned-chair",
       assetId: "chair-office",
-      acquiredAt: "2026-09-01T12:00:00.000Z",
+      purchasePrice: 90, acquiredAt: "2026-09-01T12:00:00.000Z",
     }];
     const closedRoom = assignedRoom();
     closedRoom.access.assignedPersonIds = ["someone-else"];
@@ -119,7 +179,7 @@ describe("PlayerBuildPanel", () => {
     economy.inventory = [{
       id: "owned-chair",
       assetId: "chair-office",
-      acquiredAt: "2026-09-01T12:00:00.000Z",
+      purchasePrice: 90, acquiredAt: "2026-09-01T12:00:00.000Z",
     }];
     const layout = floorLayout(assignedRoom());
     layout.objects = Array.from({ length: MAX_LAYOUT_OBJECTS_PER_FLOOR }, (_, index) => ({
@@ -141,11 +201,14 @@ describe("PlayerBuildPanel", () => {
 function renderPanel(overrides: Partial<React.ComponentProps<typeof PlayerBuildPanel>> = {}) {
   const props: React.ComponentProps<typeof PlayerBuildPanel> = {
     currentUserId: "player",
+    playerFloorId: "floor",
     organisation: createOrganisation(),
     onOpenRooms: vi.fn(),
     economy: createTestEconomy(),
     gameSettings: createTestGameSettings(),
     layout: floorLayout(assignedRoom()),
+    layouts: [floorLayout(assignedRoom())],
+    floors: [{ id: "floor", officeId: "office", name: "Floor", level: 1, width: 256, height: 256, spawn: { x: 200, y: 200 }, background: "#ffffff" }],
     tool: null,
     assetId: "chair-office",
     assetVariantId: "white",
@@ -153,6 +216,7 @@ function renderPanel(overrides: Partial<React.ComponentProps<typeof PlayerBuildP
     onClaimDaily: vi.fn(),
     onPurchase: vi.fn(),
     onPlace: vi.fn(),
+    onFocus: vi.fn(),
     onAssetVariantChange: vi.fn(),
     onAssetRotationChange: vi.fn(),
     onMoveSelected: vi.fn(),

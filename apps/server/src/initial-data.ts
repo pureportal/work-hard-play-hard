@@ -7,6 +7,7 @@ import {
   FALLING_BLOCKS_DEFINITION_ID,
   TIC_TAC_TOE_DEFINITION_ID,
   createOrganisation,
+  createPublicEconomy,
   getDailyRewardStatus,
   type BootstrapData,
 } from "@workhard/shared";
@@ -23,6 +24,7 @@ export function createInitialData(now = new Date()): BootstrapData {
     layouts: [house.layout],
     members: [],
     organisation: createOrganisation(),
+    publicEconomy: createPublicEconomy(),
     conversations: [{ id: "conversation-team", name: "Team", type: "team", unread: 0 }],
     messages: [],
     invitations: [],

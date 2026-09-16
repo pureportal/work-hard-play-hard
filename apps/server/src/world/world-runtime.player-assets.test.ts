@@ -9,51 +9,9 @@ afterEach(() => {
 });
 
 describe("WorldRuntime player-owned assets", () => {
-  it.each([
-    ["horizontal", 0], ["horizontal", 1], ["vertical", 0], ["vertical", 1],
-  ] as const)("places and moves owned flooring beside a %s wall on side %i without bypassing room permissions", (orientation, side) => {
-    const position = (along: number, across: number) => orientation === "horizontal" ? { x: along, y: across } : { x: across, y: along };
-    const data = workspace(room("assigned", [side === 0 ? "user-jonas" : "user-priya"]));
-    const otherRoom = room("assigned", [side === 1 ? "user-jonas" : "user-priya"]);
-    const otherBounds = { ...position(0, 128), width: 128, height: 128 };
-    data.layouts[0]!.rooms.push({ ...otherRoom, id: "other-room", bounds: otherBounds, footprint: [otherBounds] });
-    data.layouts[0]!.walls = [{ id: "divider", start: position(0, 128), end: position(256, 128) }];
-    const store = new WorkspaceStore(data);
-    const ownedAssetId = store.purchaseAsset("user-jonas", "floor-wood", "buy-floor").transaction.ownedAssetId!;
-    const runtime = new WorldRuntime(store);
-    const events: ServerEvent[] = [];
-    const peer = runtime.connect("user-jonas", "floor-player", (event) => events.push(event));
-    try {
-      const place = (requestId: string, across: number) => send(runtime, peer, {
-        type: "player_asset.place", requestId, baseRevision: store.getLayout("floor-player")!.revision,
-        ownedAssetId, position: position(32, across), variantId: "oak", rotation: 0,
-      });
-      place("cross-divider", 96);
-      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "ASSET_BLOCKED" });
-      place("other-room", side === 0 ? 128 : 64);
-      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "ASSET_ROOM_FORBIDDEN" });
-      place("wall-edge", side === 0 ? 64 : 128);
-      expect(events).toContainEqual(expect.objectContaining({ type: "layout.updated", requestId: "wall-edge" }));
-      const placed = store.getLayout("floor-player")!.objects[0]!;
-      expect(placed).toMatchObject({ ...position(32, side === 0 ? 64 : 128), ownerUserId: "user-jonas", ownedAssetId });
-      send(runtime, peer, {
-        type: "player_asset.move", requestId: "move-through-wall", baseRevision: store.getLayout("floor-player")!.revision,
-        objectId: placed.id, position: position(32, 96), variantId: "oak", rotation: 90,
-      });
-      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "ASSET_BLOCKED" });
-      send(runtime, peer, {
-        type: "player_asset.move", requestId: "move-along-wall", baseRevision: store.getLayout("floor-player")!.revision,
-        objectId: placed.id, position: position(64, side === 0 ? 64 : 128), variantId: "oak", rotation: 90,
-      });
-      expect(store.getObject(placed.id)).toMatchObject({ ...position(64, side === 0 ? 64 : 128), rotation: 90 });
-      expect(store.getOwnedAsset("user-jonas", ownedAssetId).placement?.objectId).toBe(placed.id);
-      send(runtime, peer, {
-        type: "player_asset.remove", requestId: "remove-floor", baseRevision: store.getLayout("floor-player")!.revision, objectId: placed.id,
-      });
-      expect(store.getOwnedAsset("user-jonas", ownedAssetId).placement).toBeUndefined();
-    } finally {
-      runtime.stop();
-    }
+  it("requires public ownership for permanent flooring", () => {
+    const store = new WorkspaceStore(workspace(room("open", [])));
+    expect(() => store.purchaseAsset("user-jonas", "floor-wood", "buy-floor")).toThrow("ASSET_UNAVAILABLE");
   });
 
   it("places, moves, and removes only the player's inventory in assigned rooms", () => {

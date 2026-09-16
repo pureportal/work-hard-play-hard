@@ -67,9 +67,13 @@ try {
   const before = structuredClone(store.getFloor("floor-studio")!.spawn);
   for (const offset of [-120, -80, -40, 40, 80, 120]) {
     await page.mouse.click(bounds.x + bounds.width / 2 + offset, bounds.y + bounds.height / 2 + 64);
-    if (commands.some((command) => command.type === "layout.apply" && command.edit.tool === "spawn")) break;
+    if (commands.some((command) => command.type === "project.edit" && command.edit.tool === "spawn")) break;
   }
-  assert(commands.some((command) => command.type === "layout.apply" && command.edit.tool === "spawn"));
+  assert(commands.some((command) => command.type === "project.edit" && command.edit.tool === "spawn"));
+  await page.getByRole("button", { name: "Propose project", exact: true }).click();
+  await page.getByRole("button", { name: "Apply proposal", exact: true }).click();
+  await page.getByText("applied", { exact: true }).waitFor();
+  await page.getByRole("button", { name: "Shared", exact: true }).click();
   assert.notDeepEqual(store.getFloor("floor-studio")!.spawn, before);
   await page.screenshot({ path: resolve(artifacts, "start-point-desktop.png") });
   await page.getByRole("button", { name: "Room access", exact: true }).click();

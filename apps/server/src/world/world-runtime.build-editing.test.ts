@@ -1,5 +1,6 @@
+import { applyBuildingProject } from "../testing/building-project.js";
 import { createTestData } from "../testing/workspace-data.js";
-import type { ClientCommand, ServerEvent } from "@workhard/shared";
+import type { ServerEvent } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
 import { WorkspaceStore } from "../store.js";
 import { WorldRuntime } from "./world-runtime.js";
@@ -19,8 +20,7 @@ describe("WorldRuntime build editing", () => {
     const events: ServerEvent[] = [];
     const peer = runtime.connect("user-maya", "floor-studio", (event) => events.push(event));
 
-    send(runtime, peer, {
-      type: "layout.apply",
+    applyBuildingProject(runtime, store, peer, events, {
       requestId: "extend-wall",
       baseRevision: layout.revision,
       edit: { tool: "wall", start: { x: 160, y: 96 }, end: { x: 192, y: 96 } },
@@ -46,8 +46,7 @@ describe("WorldRuntime build editing", () => {
     const events: ServerEvent[] = [];
     const peer = runtime.connect("user-maya", "floor-studio", (event) => events.push(event));
 
-    send(runtime, peer, {
-      type: "layout.apply",
+    applyBuildingProject(runtime, store, peer, events, {
       requestId: "replace-opening",
       baseRevision: layout.revision,
       edit: { tool: "window", position: { x: 192, y: 96 } },
@@ -59,8 +58,7 @@ describe("WorldRuntime build editing", () => {
     ]);
 
     const opening = store.getLayout("floor-studio")!.openings[0]!;
-    send(runtime, peer, {
-      type: "layout.apply",
+    applyBuildingProject(runtime, store, peer, events, {
       requestId: "move-opening",
       baseRevision: store.getLayout("floor-studio")!.revision,
       edit: { tool: "opening.move", openingId: opening.id, position: { x: 224, y: 96 } },
@@ -73,8 +71,7 @@ describe("WorldRuntime build editing", () => {
       type: "window",
     }));
 
-    send(runtime, peer, {
-      type: "layout.apply",
+    applyBuildingProject(runtime, store, peer, events, {
       requestId: "remove-opening",
       baseRevision: store.getLayout("floor-studio")!.revision,
       edit: { tool: "item.remove", item: { type: "opening", id: opening.id } },
@@ -95,8 +92,7 @@ describe("WorldRuntime build editing", () => {
     const events: ServerEvent[] = [];
     const peer = runtime.connect("user-maya", "floor-studio", (event) => events.push(event));
 
-    send(runtime, peer, {
-      type: "layout.apply",
+    applyBuildingProject(runtime, store, peer, events, {
       requestId: "move-wall",
       baseRevision: layout.revision,
       edit: { tool: "wall.move", wallId: "wall", start: { x: 352, y: 96 }, end: { x: 352, y: 224 } },
@@ -127,8 +123,7 @@ describe("WorldRuntime build editing", () => {
     const events: ServerEvent[] = [];
     const peer = runtime.connect("user-maya", "floor-studio", (event) => events.push(event));
 
-    send(runtime, peer, {
-      type: "layout.apply",
+    applyBuildingProject(runtime, store, peer, events, {
       requestId: "place-pool",
       baseRevision: layout.revision,
       edit: { tool: "asset", assetId: "outdoor-pool", variantId: "coastal", rotation: 0, position: { x: -256, y: 64 } },
@@ -137,8 +132,7 @@ describe("WorldRuntime build editing", () => {
     expect(commandError(events, "place-pool")).toBeUndefined();
     expect(placed).toBeDefined();
 
-    send(runtime, peer, {
-      type: "layout.apply",
+    applyBuildingProject(runtime, store, peer, events, {
       requestId: "move-pool",
       baseRevision: store.getLayout("floor-studio")!.revision,
       edit: { tool: "asset.move", objectId: placed!.id, position: { x: -224, y: 96 }, variantId: "slate", rotation: 90 },
@@ -152,8 +146,7 @@ describe("WorldRuntime build editing", () => {
       rotation: 90,
     }));
 
-    send(runtime, peer, {
-      type: "layout.apply",
+    applyBuildingProject(runtime, store, peer, events, {
       requestId: "remove-pool",
       baseRevision: store.getLayout("floor-studio")!.revision,
       edit: { tool: "item.remove", item: { type: "asset", id: placed!.id } },
@@ -174,8 +167,7 @@ describe("WorldRuntime build editing", () => {
     const events: ServerEvent[] = [];
     const peer = runtime.connect("user-maya", "floor-studio", (event) => events.push(event));
 
-    send(runtime, peer, {
-      type: "layout.apply",
+    applyBuildingProject(runtime, store, peer, events, {
       requestId: "place-falling-blocks",
       baseRevision: layout.revision,
       edit: { tool: "asset", assetId: "equipment-falling-blocks", variantId: "graphite", rotation: 0, position: { x: 1088, y: 576 } },
@@ -201,8 +193,7 @@ describe("WorldRuntime build editing", () => {
     const events: ServerEvent[] = [];
     const peer = runtime.connect("user-maya", "floor-studio", (event) => events.push(event));
 
-    send(runtime, peer, {
-      type: "layout.apply",
+    applyBuildingProject(runtime, store, peer, events, {
       requestId: "place-grass",
       baseRevision: layout.revision,
       edit: { tool: "asset", assetId: "floor-grass", variantId: "lawn", rotation: 0, position: { x: -256, y: 128 } },
@@ -210,24 +201,21 @@ describe("WorldRuntime build editing", () => {
     const tile = store.getLayout("floor-studio")!.objects.find((object) => object.assetId === "floor-grass")!;
     expect(tile).toMatchObject({ variantId: "lawn", rotation: 0 });
 
-    send(runtime, peer, {
-      type: "layout.apply",
+    applyBuildingProject(runtime, store, peer, events, {
       requestId: "place-chair-on-grass",
       baseRevision: store.getLayout("floor-studio")!.revision,
       edit: { tool: "asset", assetId: "chair-office", variantId: "blue", rotation: 90, position: { x: -240, y: 144 } },
     });
     expect(commandError(events, "place-chair-on-grass")).toBeUndefined();
 
-    send(runtime, peer, {
-      type: "layout.apply",
+    applyBuildingProject(runtime, store, peer, events, {
       requestId: "change-to-meadow",
       baseRevision: store.getLayout("floor-studio")!.revision,
       edit: { tool: "asset.move", objectId: tile.id, variantId: "meadow", rotation: 90, position: { x: -256, y: 128 } },
     });
     expect(store.getObject(tile.id)).toMatchObject({ variantId: "meadow", rotation: 90 });
 
-    send(runtime, peer, {
-      type: "layout.apply",
+    applyBuildingProject(runtime, store, peer, events, {
       requestId: "invalid-surface",
       baseRevision: store.getLayout("floor-studio")!.revision,
       edit: { tool: "asset", assetId: "floor-grass", variantId: "lava", rotation: 0, position: { x: -160, y: 128 } },
@@ -237,9 +225,6 @@ describe("WorldRuntime build editing", () => {
   });
 });
 
-function send(runtime: WorldRuntime, peerId: string, command: ClientCommand): void {
-  runtime.handleCommand(peerId, command);
-}
 
 function commandError(events: ServerEvent[], requestId: string): ServerEvent | undefined {
   return events.find((event) => event.type === "command.error" && event.requestId === requestId);

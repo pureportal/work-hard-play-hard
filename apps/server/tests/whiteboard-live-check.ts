@@ -6,7 +6,7 @@ import { MikroORM } from "@mikro-orm/postgresql";
 import type { Page } from "playwright-core";
 import { getAssetPlacementError, getPlacedAssetBounds, type WhiteboardDocument, type WorldObject } from "@workhard/shared";
 import { createDatabaseConfig } from "../src/persistence/database-config.js";
-import { bootstrap, command, launchWhiteboardBrowser, openBoard, playerSession, saved } from "../../../scripts/whiteboard-live-session.js";
+import { bootstrap, buildingProject, launchWhiteboardBrowser, openBoard, playerSession, saved } from "../../../scripts/whiteboard-live-session.js";
 
 const output = resolve("../../artifacts/whiteboard-polish");
 await mkdir(output, { recursive: true });
@@ -32,8 +32,7 @@ async function createBoard(x: number) {
       && Math.hypot(player.x - Math.max(bounds.x, Math.min(player.x, bounds.x + bounds.width)), player.y - Math.max(bounds.y, Math.min(player.y, bounds.y + bounds.height))) < 40);
   });
   assert(position, "A free whiteboard position in Product Studio");
-  await command(admin!, { type: "layout.apply", requestId: crypto.randomUUID(), baseRevision: layout.revision,
-    edit: { tool: "asset", assetId: "equipment-whiteboard", variantId: "violet", rotation: 0, position } });
+  await buildingProject(admin!, layout.revision, { tool: "asset", assetId: "equipment-whiteboard", variantId: "violet", rotation: 0, position });
   const next = (await bootstrap(admin!)).layouts.find((candidate) => candidate.floorId === layout.floorId)!;
   const board = next.objects.find((object) => !layout.objects.some((before) => before.id === object.id));
   assert(board, "Created a dedicated review whiteboard");
@@ -92,7 +91,7 @@ async function drag(page: Page, name: string, dx: number, dy: number, touch = fa
 async function removeBoard(board: Pick<WorldObject, "id" | "floorId">) {
   const layout = (await bootstrap(admin!)).layouts.find((layout) => layout.floorId === board.floorId)!;
   if (!layout.objects.some((object) => object.id === board.id)) return;
-  await command(admin!, { type: "layout.apply", requestId: crypto.randomUUID(), baseRevision: layout.revision, edit: { tool: "item.remove", item: { type: "asset", id: board.id } } });
+  await buildingProject(admin!, layout.revision, { tool: "item.remove", item: { type: "asset", id: board.id } });
 }
 
 try {

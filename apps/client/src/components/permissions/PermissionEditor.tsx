@@ -20,7 +20,7 @@ export function PermissionEditor({ label, value, members, organisation, allowDef
     </select>
     {value.mode === "assigned" && <>
       <label className="permission-check"><input type="checkbox" checked={Boolean(value.ceos)} onChange={(event) => onChange({ ...value, ceos: event.target.checked })} />CEOs</label>
-      {organisation.units.length > 0 && <details><summary>Organisation</summary>
+      {organisation.units.length > 0 && <details><summary>Organisation{Boolean(value.unitGrants?.length) && ` (${value.unitGrants!.length})`}</summary>
         {organisation.units.map((unit) => {
           const grant = value.unitGrants?.find((candidate) => candidate.unitId === unit.id);
           const parent = organisation.units.find((candidate) => candidate.id === unit.parentId);
@@ -36,7 +36,7 @@ export function PermissionEditor({ label, value, members, organisation, allowDef
           </div>;
         })}
       </details>}
-      <details><summary>People</summary><div className="permission-people">
+      <details><summary>People{value.assignedPersonIds.length > 0 && ` (${value.assignedPersonIds.length})`}</summary><div className="permission-people">
         {members.map((member) => <label className="permission-check" key={member.id}>
           <input type="checkbox" checked={value.assignedPersonIds.includes(member.id)} onChange={(event) => onChange({ ...value,
             assignedPersonIds: event.target.checked ? [...value.assignedPersonIds, member.id] : value.assignedPersonIds.filter((id) => id !== member.id),

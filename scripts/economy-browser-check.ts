@@ -1,0 +1,215 @@
+import assert from "node:assert/strict";
+import { mkdir, writeFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { chromium, type Page } from "playwright-core";
+import puppeteer from "puppeteer";
+import type { Application } from "../apps/client/node_modules/pixi.js";
+import { createOrganisation, createPublicEconomy, type ClientCommand } from "../packages/shared/src/index.js";
+import { WorkspaceStore } from "../apps/server/src/store.js";
+import { WorldRuntime } from "../apps/server/src/world/world-runtime.js";
+import { createTestData } from "../apps/server/src/testing/workspace-data.js";
+import { clientCommandSchema } from "../apps/server/src/protocol.js";
+import { installBuiltAssetClient } from "./world-assets/built-client.js";
+import { installWorldProbe } from "./characters/playwright-animation.js";
+
+const output = fileURLToPath(new URL("../artifacts/economy/", import.meta.url));
+await mkdir(output, { recursive: true });
+const data = createTestData();
+data.members = data.members.filter((member) => ["user-maya", "user-jonas", "user-priya"].includes(member.id));
+data.organisation = createOrganisation();
+data.publicEconomy = createPublicEconomy();
+data.gameSettings.roomBuild = { mode: "open", assignedPersonIds: [] };
+data.layouts = data.layouts.map((layout) => ({ ...layout, revision: 0, walls: [], openings: [], rooms: [], objects: [], tiles: [] }));
+for (const member of data.members) member.position = { x: 640, y: 576 };
+const store = new WorkspaceStore(data);
+const runtime = new WorldRuntime(store);
+const browser = await chromium.launch({ headless: true, executablePath: puppeteer.executablePath() });
+const commands: ClientCommand[] = [];
+const errors: string[] = [];
+const checks: string[] = [];
+
+async function connect(userId: string): Promise<Page> {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, colorScheme: "light" });
+  await installBuiltAssetClient(context);
+  await context.route("**/v1/**", async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    const headers = { "access-control-allow-origin": route.request().headers().origin ?? "*", "access-control-allow-credentials": "true" };
+    if (route.request().method() === "OPTIONS") await route.fulfill({ status: 204, headers: { ...headers, "access-control-allow-headers": "content-type", "access-control-allow-methods": "GET, POST" } });
+    else if (path === "/v1/auth/session") await route.fulfill({ headers, json: { user: { id: userId, username: userId, email: `${userId}@example.test` }, setupRequired: false, registration: { enabled: false, invitationRequired: true }, magicLinkEnabled: false, corporateIdentity: store.getCorporateIdentity() } });
+    else if (path === "/v1/bootstrap") await route.fulfill({ headers, json: store.getBootstrap(userId) });
+    else await route.fulfill({ headers, status: 404, json: { error: "Unexpected review request" } });
+  });
+  await context.routeWebSocket(/\/v1\//, (socket) => {
+    const peer = runtime.connect(userId, "floor-studio", (event) => {
+      if (event.type === "command.error") errors.push(`${event.code}: ${event.message}`);
+      socket.send(JSON.stringify(event));
+    });
+    socket.onMessage((message) => {
+      const command = clientCommandSchema.parse(JSON.parse(String(message)));
+      commands.push(command);
+      runtime.handleCommand(peer, command);
+    });
+    socket.onClose(() => runtime.disconnect(peer));
+  });
+  const page = await context.newPage();
+  page.setDefaultTimeout(15000);
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
+  await installWorldProbe(page);
+  await page.goto("http://127.0.0.1:5173", { waitUntil: "domcontentloaded" });
+  await page.getByRole("status").filter({ hasText: /^Connected$/ }).waitFor();
+  await page.waitForFunction(() => Boolean(globalThis.avatarWorld?.stage.children?.[0]?.children?.length));
+  const people = page.getByRole("button", { name: "Close people", exact: true });
+  if (await people.isVisible()) await people.click();
+  await page.getByRole("button", { name: "Build", exact: true }).click();
+  return page;
+}
+
+async function worldPoint(page: Page, x: number, y: number) {
+  return page.evaluate(({ x, y }) => {
+    const app = globalThis.avatarWorld as unknown as Application;
+    const point = app.stage.children[0]!.toGlobal({ x, y });
+    const canvas = app.canvas.getBoundingClientRect();
+    return { x: canvas.x + point.x * canvas.width / app.screen.width, y: canvas.y + point.y * canvas.height / app.screen.height };
+  }, { x, y });
+}
+
+runtime.start();
+let maya: Page | undefined;
+try {
+  maya = await connect("user-maya");
+  const jonas = await connect("user-jonas");
+  await maya.getByRole("button", { name: "Personal", exact: true }).click();
+  await maya.getByRole("tab", { name: "Shop", exact: true }).click();
+  await maya.getByRole("tab", { name: "Plants", exact: true }).click();
+  await maya.getByRole("button", { name: "Buy Floor plant", exact: true }).click();
+  await maya.getByRole("tab", { name: "Inventory", exact: true }).click();
+  await maya.locator(".inventory-asset").getByRole("button", { name: "Donate", exact: true }).click();
+  await maya.getByRole("dialog", { name: "Donate Floor plant?" }).getByRole("button", { name: "Donate item", exact: true }).click();
+  await maya.getByRole("dialog", { name: "Donate Floor plant?" }).waitFor({ state: "hidden" });
+  assert.equal(store.getPlayerEconomy("user-maya").coinBalance, 190);
+  assert.equal(store.getPublicEconomy().inventory.length, 1);
+  checks.push("Private purchase and asset donation preserve wallet and public ownership.");
+  await maya.getByRole("button", { name: "Funds & votes", exact: true }).click();
+  await maya.getByRole("tab", { name: "Donate", exact: true }).click();
+  await maya.getByRole("spinbutton", { name: "Donation", exact: true }).fill("150");
+  await maya.getByRole("button", { name: "Review donation", exact: true }).click();
+  await maya.screenshot({ path: `${output}/donation-review.png` });
+  await maya.getByRole("button", { name: "Donate coins", exact: true }).click();
+  await maya.getByText("Donation sent.", { exact: true }).waitFor();
+  assert.equal(store.getPublicEconomy().funds[0]!.balance, 150);
+  assert.equal(store.getPlayerEconomy("user-maya").coinBalance, 40);
+  checks.push("Donation funds equal allowances and a shared project reserve.");
+  await maya.getByRole("button", { name: "Back to build", exact: true }).click();
+  await maya.getByRole("button", { name: "Wall", exact: true }).click();
+  const start = await worldPoint(maya, 384, 416);
+  const end = await worldPoint(maya, 512, 416);
+  await maya.mouse.click(start.x, start.y);
+  await maya.mouse.move(end.x, end.y);
+  await maya.mouse.click(end.x, end.y);
+  await maya.getByRole("textbox", { name: "Project name" }).fill("Garden wall");
+  await maya.locator(".world-project-state").filter({ hasText: "Draft · not placed" }).waitFor();
+  assert.equal(store.getLayout("floor-studio")!.walls.length, 0);
+  await maya.screenshot({ path: `${output}/project-preview.png` });
+  await maya.getByRole("button", { name: "Propose project", exact: true }).click();
+  await maya.getByText("1 / 2 approvals", { exact: true }).waitFor();
+  const action = store.getPublicEconomy().proposals[0]!.action;
+  assert.equal(action.kind, "project");
+  if (action.kind !== "project") throw new Error("Missing project quote");
+  let expectedBalance = 150 - action.project.quote.cost;
+  await jonas.getByRole("button", { name: "Funds & votes", exact: true }).click();
+  await jonas.getByRole("button", { name: "View layout", exact: true }).click();
+  await jonas.locator(".world-project-state").filter({ hasText: "Proposal · not placed" }).waitFor();
+  assert.equal(store.getLayout("floor-studio")!.walls.length, 0);
+  await jonas.screenshot({ path: `${output}/proposal-preview.png` });
+  await jonas.getByRole("button", { name: "Back to votes", exact: true }).click();
+  await jonas.getByRole("button", { name: "Approve", exact: true }).click();
+  await maya.getByRole("button", { name: "Apply proposal", exact: true }).click();
+  await maya.getByText("Past proposals (1)", { exact: true }).click();
+  await maya.getByText("Applied", { exact: true }).waitFor();
+  assert.equal(store.getLayout("floor-studio")!.walls.length, 1);
+  assert.equal(store.getPublicEconomy().funds[0]!.balance, expectedBalance);
+  const wall = store.getLayout("floor-studio")!.walls[0]!;
+  assert.equal(action.project.quote.cost, (Math.abs(wall.end.x - wall.start.x) + Math.abs(wall.end.y - wall.start.y)) / 32 * 12);
+  assert.equal(store.getPlayerEconomy("user-maya").coinBalance, 40);
+  checks.push("A shared construction preview needs a second member's vote and charges the quoted cost once.");
+  await maya.screenshot({ path: `${output}/funds-light.png` });
+  await maya.getByRole("button", { name: "Back to build", exact: true }).click();
+  await maya.getByRole("button", { name: "Select", exact: true }).click();
+  const middle = await worldPoint(maya, (wall.start.x + wall.end.x) / 2, (wall.start.y + wall.end.y) / 2);
+  await maya.mouse.click(middle.x, middle.y);
+  await maya.getByRole("region", { name: "Selected Wall", exact: true }).getByRole("button", { name: "Remove", exact: true }).click();
+  await maya.getByRole("textbox", { name: "Project name" }).fill("Remove garden wall");
+  await maya.locator(".world-project-state").getByText("To remove", { exact: true }).waitFor();
+  assert.equal(store.getLayout("floor-studio")!.walls.length, 1);
+  await maya.screenshot({ path: `${output}/demolition-preview.png` });
+  await maya.getByRole("button", { name: "Propose project", exact: true }).click();
+  await maya.getByText("1 / 2 approvals", { exact: true }).waitFor();
+  const demolition = store.getPublicEconomy().proposals.at(-1)!.action;
+  assert.equal(demolition.kind, "project");
+  if (demolition.kind !== "project") throw new Error("Missing demolition quote");
+  assert.equal(demolition.project.quote.cost, 0);
+  assert.equal(demolition.project.quote.refund, action.project.quote.cost / 3);
+  await jonas.getByRole("button", { name: "Approve", exact: true }).click();
+  await maya.getByRole("button", { name: "Apply proposal", exact: true }).click();
+  await maya.getByText("Past proposals (2)", { exact: true }).waitFor();
+  expectedBalance += demolition.project.quote.refund;
+  assert.equal(store.getLayout("floor-studio")!.walls.length, 0);
+  assert.equal(store.getPublicEconomy().funds[0]!.balance, expectedBalance);
+  assert.equal(store.getPlayerEconomy("user-maya").coinBalance, 40);
+  checks.push("Demolition stays a red removal preview until approved and refunds one third into shared funds only.");
+  await maya.getByRole("button", { name: "Close funds & votes", exact: true }).click();
+  await maya.getByRole("button", { name: "Use dark mode", exact: true }).click();
+  await maya.getByRole("button", { name: "Build", exact: true }).click();
+  await maya.getByRole("dialog", { name: "Funds & votes", exact: true }).waitFor();
+  await maya.screenshot({ path: `${output}/funds-dark.png` });
+  await maya.setViewportSize({ width: 390, height: 844 });
+  assert(await maya.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+  await maya.screenshot({ path: `${output}/funds-mobile.png` });
+  const restored = new WorkspaceStore(createTestData());
+  restored.restoreMutableState(store.exportMutableState());
+  assert.equal(restored.getPublicEconomy().funds[0]!.balance, expectedBalance);
+  assert.equal(restored.getPublicEconomy().proposals[0]!.status, "applied");
+  checks.push("Balances, ownership and approvals survive a state round trip; mobile has no page overflow.");
+  const organisation = store.getOrganisation();
+  organisation.ceoIds = ["user-maya"];
+  organisation.units = [{ id: "design", name: "Design", kind: "department", parentId: null },
+    { id: "studio", name: "Studio", kind: "team", parentId: "design" }];
+  organisation.assignments = ["user-jonas", "user-priya"].map((userId) => ({ userId, unitId: "studio", rank: "member" }));
+  organisation.revision += 1;
+  store.publicEconomy.fund("workspace").mode = "hierarchical";
+  store.publicEconomy.applyFundAction("user-maya", { kind: "fund.create", unitId: "design", mode: "equal", weeklyAllowance: 50 }, "design-fixture");
+  store.getLayout("floor-studio")!.rooms.push({ id: "design-room", floorId: "floor-studio", name: "Design room", color: "#ffffff", capacity: 4,
+    bounds: { x: 96, y: 96, width: 64, height: 64 }, footprint: [{ x: 96, y: 96, width: 64, height: 64 }], boundary: [], doorIds: [], windowIds: [],
+    privateEligible: false, organisationUnitId: "studio", access: { mode: "open", assignedPersonIds: [], knockable: false }, build: { mode: "open", assignedPersonIds: [] } });
+  await jonas.reload({ waitUntil: "domcontentloaded" });
+  await jonas.getByRole("status").filter({ hasText: /^Connected$/ }).waitFor();
+  await jonas.getByRole("button", { name: "Build", exact: true }).click();
+  await jonas.getByRole("button", { name: "Room settings", exact: true }).click();
+  await jonas.getByRole("dialog", { name: "Room settings", exact: true }).waitFor();
+  await jonas.screenshot({ path: `${output}/room-settings.png` });
+  await jonas.getByRole("textbox", { name: "Name", exact: true }).fill("Design studio");
+  await jonas.getByRole("button", { name: "Propose changes", exact: true }).click();
+  await jonas.getByRole("dialog", { name: "Funds & votes", exact: true }).waitFor();
+  assert.equal(await jonas.getByRole("combobox", { name: "Fund", exact: true }).inputValue(), "design");
+  const priya = await connect("user-priya");
+  await priya.getByRole("button", { name: "Funds & votes", exact: true }).click();
+  await priya.getByRole("combobox", { name: "Fund", exact: true }).selectOption("design");
+  await priya.getByRole("button", { name: "Approve", exact: true }).click();
+  await priya.getByRole("button", { name: "Apply proposal", exact: true }).click();
+  await priya.getByText("Past proposals (1)", { exact: true }).click();
+  await priya.getByText("Applied", { exact: true }).waitFor();
+  assert.equal(store.getRoom("design-room")!.name, "Design studio");
+  assert.deepEqual(store.getPublicEconomy().proposals.at(-1)!.electorate, ["user-jonas", "user-priya"]);
+  checks.push("Ordinary members of an equal department propose and approve subteam room changes inside a hierarchical company.");
+  for (const page of [maya, jonas, priya]) assert.equal(await page.getByText("Artwork could not load.", { exact: true }).count(), 0);
+  assert.deepEqual(errors, []);
+} catch (error) {
+  if (maya) await maya.screenshot({ path: `${output}/failure.png` });
+  throw error;
+} finally {
+  await writeFile(`${output}/checks.json`, JSON.stringify({ checks, errors, commands: commands.map((command) => command.type) }, null, 2) + "\n");
+  runtime.stop();
+  await browser.close();
+}
+console.log(`Verified ${checks.length} economy browser checks.`);

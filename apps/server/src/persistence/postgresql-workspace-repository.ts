@@ -93,6 +93,7 @@ export class PostgreSqlWorkspaceRepository {
       store: {
         floors: settings.floors,
         organisation: settings.organisation,
+        publicEconomy: settings.publicEconomy,
         members: members.map((member) => ({
           id: member.id,
           name: member.name,
@@ -191,6 +192,7 @@ export class PostgreSqlWorkspaceRepository {
                 id: asset.id,
                 assetId: asset.assetId,
                 acquiredAt: asset.acquiredAt.toISOString(),
+                purchasePrice: asset.purchasePrice,
                 ...(asset.placement ? { placement: asset.placement } : {}),
               })),
           })),
@@ -354,6 +356,7 @@ export class PostgreSqlWorkspaceRepository {
           userId: account.userId,
           assetId: asset.assetId,
           acquiredAt: new Date(asset.acquiredAt),
+          purchasePrice: asset.purchasePrice,
           placement: asset.placement ?? null,
           sortOrder,
         }))),
@@ -390,6 +393,7 @@ export class PostgreSqlWorkspaceRepository {
         id: WORKSPACE_SETTINGS_ID,
         floors: state.store.floors,
         organisation: state.store.organisation,
+        publicEconomy: state.store.publicEconomy,
         gameSettings: state.store.economy.gameSettings,
         kidnappingSettings: state.store.kidnapping.global,
         playerKidnappingSettings: state.store.kidnapping.players,

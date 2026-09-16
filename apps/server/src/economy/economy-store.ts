@@ -10,6 +10,8 @@ import {
   getAssetDefinition,
   getDailyRewardStatus,
   getUtcDayKey,
+  isPermanentAsset,
+  assetResaleValue,
   type CoinTransaction,
   type DailyRewardProgress,
   type FloorLayout,
@@ -166,7 +168,7 @@ export class EconomyStore {
       return { economy: this.getPlayerEconomy(userId, now), transaction: replay, replayed: true };
     }
     const definition = getAssetDefinition(assetId);
-    if (!definition?.buildable || !definition.shop?.available) {
+    if (!definition?.buildable || !definition.shop?.available || isPermanentAsset(assetId)) {
       throw new Error("ASSET_UNAVAILABLE");
     }
     const account = this.requireAccount(userId);
@@ -181,6 +183,7 @@ export class EconomyStore {
       id: randomUUID(),
       assetId,
       acquiredAt: createdAt,
+      purchasePrice: definition.shop.price,
     };
     const transaction = this.applyTransaction(account, {
       operationKey,
@@ -192,6 +195,31 @@ export class EconomyStore {
       ownedAssetId: ownedAsset.id,
     });
     account.inventory.push(ownedAsset);
+    return { economy: this.getPlayerEconomy(userId, now), transaction, replayed: false };
+  }
+
+  donateMoney(userId: string, amount: number, fundId: string, operationKey: string, now = new Date()): EconomyOperationResult {
+    const fingerprint = `donation:${fundId}:${amount}`;
+    const replay = this.findOperation(userId, operationKey, fingerprint);
+    if (replay) return { economy: this.getPlayerEconomy(userId, now), transaction: replay, replayed: true };
+    const account = this.requireAccount(userId);
+    if (!Number.isSafeInteger(amount) || amount <= 0) throw new Error("COIN_BALANCE_INVALID");
+    if (account.coinBalance < amount) throw new Error("INSUFFICIENT_COINS");
+    const transaction = this.applyTransaction(account, { kind: "donation", amount: -amount, sourceId: fundId,
+      operationKey, operationFingerprint: fingerprint, createdAt: isoTimestamp(now) });
+    return { economy: this.getPlayerEconomy(userId, now), transaction, replayed: false };
+  }
+
+  disposeAsset(userId: string, ownedAssetId: string, kind: "asset_sale" | "asset_donation", operationKey: string, fundId?: string, now = new Date()): EconomyOperationResult {
+    const fingerprint = `${kind}:${ownedAssetId}:${fundId ?? ""}`;
+    const replay = this.findOperation(userId, operationKey, fingerprint);
+    if (replay) return { economy: this.getPlayerEconomy(userId, now), transaction: replay, replayed: true };
+    const account = this.requireAccount(userId);
+    const asset = this.getOwnedAsset(userId, ownedAssetId);
+    if (asset.placement) throw new Error("ASSET_ALREADY_PLACED");
+    const transaction = this.applyTransaction(account, { kind, amount: kind === "asset_sale" ? assetResaleValue(asset.purchasePrice) : 0,
+      ownedAssetId, assetId: asset.assetId, ...(fundId ? { sourceId: fundId } : {}), operationKey, operationFingerprint: fingerprint, createdAt: isoTimestamp(now) });
+    account.inventory = account.inventory.filter((entry) => entry.id !== ownedAssetId);
     return { economy: this.getPlayerEconomy(userId, now), transaction, replayed: false };
   }
 
@@ -596,8 +624,10 @@ function validatePersistenceState(state: EconomyPersistenceState): void {
         || typeof asset.id !== "string"
         || !asset.id
         || !definition?.buildable
+        || isPermanentAsset(asset.assetId)
         || ownedAssetIds.has(asset.id)
         || !isValidTimestamp(asset.acquiredAt)
+        || !Number.isSafeInteger(asset.purchasePrice) || asset.purchasePrice < 0
         || (asset.placement && (
           typeof asset.placement !== "object"
           || typeof asset.placement.objectId !== "string"
@@ -680,6 +710,8 @@ function validatePersistenceState(state: EconomyPersistenceState): void {
     const purchasesByOwnedAssetId = new Map(accountTransactions
       .filter((transaction) => transaction.kind === "shop_purchase")
       .map((transaction) => [transaction.ownedAssetId!, transaction]));
+    const disposals = accountTransactions.filter((transaction) => transaction.kind === "asset_sale" || transaction.kind === "asset_donation");
+    const disposedIds = new Set(disposals.map((transaction) => transaction.ownedAssetId));
     if (
       welcomeTransactions.length !== 1
       || accountTransactions[0]?.kind !== "welcome"
@@ -692,9 +724,15 @@ function validatePersistenceState(state: EconomyPersistenceState): void {
       || hasInvalidGameRewardLedger(accountTransactions)
       || account.inventory.some((asset) => {
         const purchase = purchasesByOwnedAssetId.get(asset.id);
-        return !purchase || purchase.assetId !== asset.assetId || purchase.createdAt !== asset.acquiredAt;
+        return !purchase || purchase.assetId !== asset.assetId || purchase.createdAt !== asset.acquiredAt || -purchase.amount !== asset.purchasePrice || disposedIds.has(asset.id);
       })
-      || purchasesByOwnedAssetId.size !== account.inventory.length
+      || purchasesByOwnedAssetId.size !== account.inventory.length + disposals.length
+      || disposedIds.size !== disposals.length
+      || disposals.some((disposal) => {
+        const purchase = purchasesByOwnedAssetId.get(disposal.ownedAssetId!);
+        return !purchase || purchase.assetId !== disposal.assetId || purchase.createdAt > disposal.createdAt
+          || disposal.amount !== (disposal.kind === "asset_sale" ? assetResaleValue(-purchase.amount) : 0);
+      })
       || purchasesByOwnedAssetId.size !== accountTransactions.filter((transaction) => transaction.kind === "shop_purchase").length
     ) {
       throw new Error("ECONOMY_STATE_INVALID");
@@ -768,9 +806,19 @@ function isValidTransaction(transaction: PersistedCoinTransaction): boolean {
       && definition.shop
       && transaction.ownedAssetId
       && transaction.operationFingerprint === `shop_purchase:${transaction.assetId}`
-      && transaction.amount === -definition.shop.price
+      && transaction.amount <= 0
       && transaction.sourceId === undefined,
     );
+  }
+  if (transaction.kind === "donation") {
+    return transaction.amount < 0 && Boolean(transaction.sourceId)
+      && transaction.operationFingerprint === `donation:${transaction.sourceId}:${-transaction.amount}`
+      && transaction.assetId === undefined && transaction.ownedAssetId === undefined;
+  }
+  if (transaction.kind === "asset_sale" || transaction.kind === "asset_donation") {
+    return transaction.amount >= 0 && Boolean(transaction.ownedAssetId && transaction.assetId)
+      && transaction.operationFingerprint === `${transaction.kind}:${transaction.ownedAssetId}:${transaction.sourceId ?? ""}`
+      && (transaction.kind === "asset_sale" ? transaction.sourceId === undefined : Boolean(transaction.sourceId) && transaction.amount === 0);
   }
   return false;
 }

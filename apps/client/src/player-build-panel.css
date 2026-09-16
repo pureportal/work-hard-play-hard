@@ -4,6 +4,131 @@
 
 .player-build-panel .asset-view-tabs {
   flex-shrink: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.player-build-panel .build-selection {
+  margin-bottom: 4px;
+}
+
+.player-build-panel .inventory-asset > .inventory-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.player-build-panel button.inventory-action,
+.player-build-panel .build-selection button.inventory-action {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 7px 11px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--panel-strong) 94%, white), var(--panel));
+  border: 1px solid var(--line);
+  border-bottom-width: 3px;
+  border-radius: 9px;
+  box-shadow: inset 0 1px #ffffff12;
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.player-build-panel button.inventory-action-sell {
+  color: var(--coin-text);
+  background: linear-gradient(180deg, color-mix(in srgb, #eab650 19%, var(--panel-strong)), color-mix(in srgb, #bc8420 10%, var(--panel)));
+  border-color: color-mix(in srgb, #c69230 60%, var(--line));
+}
+
+.player-build-panel button.inventory-action-store,
+.player-build-panel .build-selection button.inventory-action-store,
+.player-build-panel .build-selection button.inventory-action.active {
+  color: var(--accent-text);
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+}
+
+.player-build-panel .inventory-action .inventory-sale-value {
+  padding: 1px 6px;
+  color: inherit;
+  font-size: inherit;
+  font-variant-numeric: tabular-nums;
+  background: color-mix(in srgb, #c69230 15%, transparent);
+  border-radius: 5px;
+}
+
+.player-build-panel .inventory-action svg {
+  flex-shrink: 0;
+}
+
+.player-build-panel button.inventory-action:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: currentColor;
+}
+
+.player-build-panel button.inventory-action:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.placed-asset {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 10px;
+  min-height: 62px;
+  padding: 9px 12px 9px 8px;
+  color: var(--ink);
+  text-align: left;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.placed-asset:hover,
+.placed-asset.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.placed-asset > svg {
+  color: var(--accent-text);
+}
+
+.placed-asset-details {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.placed-asset-details strong {
+  font-size: 12px;
+}
+
+.placed-asset-details > span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.personal-floor-notice {
+  flex-shrink: 0;
+  margin: 8px 16px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .player-build-panel button.inventory-action {
+    transition: none;
+    transform: none !important;
+  }
 }
 
 .player-shop-view,
@@ -141,6 +266,21 @@
   padding: 8px 10px;
 }
 
+@media (min-width: 701px) and (max-width: 980px) {
+  .workspace-shell:has(.player-build-panel) .world-viewport {
+    width: auto;
+    right: var(--side-panel-width);
+  }
+
+  .workspace-shell:has(.player-build-panel) .world-zoom-controls {
+    right: 12px;
+  }
+
+  .workspace-shell:has(.player-build-panel) .placement-controls {
+    left: 50%;
+  }
+}
+
 @media (max-width: 700px) {
   .workspace-shell:has(.player-build-panel) {
     --player-build-height: min(62dvh, 600px);
@@ -150,7 +290,12 @@
     height: var(--player-build-height);
   }
 
+  .workspace-shell:has(.player-build-panel) .world-viewport {
+    height: auto;
+    bottom: var(--player-build-height);
+  }
+
   .workspace-shell:has(.player-build-panel) .placement-controls {
-    bottom: calc(var(--player-build-height) + 10px);
+    bottom: 10px;
   }
 }

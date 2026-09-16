@@ -48,10 +48,10 @@ describe("BuildPanel", () => {
     expect(onAssetChange).toHaveBeenCalledWith("light-crystal");
     fireEvent.change(screen.getByRole("combobox", { name: "Rarity" }), { target: { value: "all" } });
     const lighting = screen.getByRole("tabpanel", { name: "Lighting" });
-    expect(within(lighting).getAllByRole("button").filter((button) => button.hasAttribute("data-rarity")).map((button) => button.textContent)).toEqual([
+    expect(within(lighting).getAllByRole("button").filter((button) => button.hasAttribute("data-rarity")).map((button) => button.getAttribute("aria-label"))).toEqual([
       "Drum floor lamp", "Paper lantern", "Stone lantern", "Tripod lamp", "Mushroom lamp", "Tulip lamp", "Cage lamp", "Studio spotlight", "Arc floor lamp", "Crystal floor lamp",
     ]);
-    expect(screen.getByRole("button", { name: "Crystal floor lamp" }).getAttribute("aria-description")).toBe("Legendary");
+    expect(screen.getByRole("button", { name: "Crystal floor lamp" }).getAttribute("aria-description")).toBe("Legendary \u00b7 1100 coins");
 
     const lightingTab = screen.getByRole("tab", { name: "Lighting" });
     fireEvent.keyDown(lightingTab, { key: "End" });

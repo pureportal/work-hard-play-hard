@@ -113,21 +113,28 @@ describe("seeded organisation and permissions", () => {
       const placed = store.getLayout("floor-studio")!.objects.find((object) => object.ownedAssetId === ownedAssetId)!;
       expect(placed).toMatchObject({ ownerUserId: "user-jonas", assetId: "desk-straight" });
       expect(store.getOwnedAsset("user-jonas", ownedAssetId).placement?.objectId).toBe(placed.id);
-      runtime.handleCommand(jonas, { type: "layout.apply", requestId: "office-denied", baseRevision: revision(),
+      runtime.handleCommand(jonas, { type: "project.edit", fundId: "workspace", requestId: "office-denied", baseRevision: revision(),
         edit: { tool: "asset", assetId: "chair-office", variantId: "white", rotation: 0, position: { x: 560, y: 768 } } });
-      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "EDIT_FORBIDDEN" });
-      runtime.handleCommand(maya, { type: "layout.apply", requestId: "office-chair", baseRevision: revision(),
+      const unfunded = events.filter((event) => event.type === "project.preview").at(-1)!;
+      runtime.handleCommand(jonas, { type: "project.submit", requestId: "unfunded", draftId: unfunded.project.id, title: "Chair" });
+      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "PUBLIC_FUNDS_INSUFFICIENT" });
+      store.donateMoney("user-maya", "workspace", 250, "fund-build");
+      runtime.handleCommand(maya, { type: "project.edit", fundId: "workspace", requestId: "office-chair", baseRevision: revision(),
         edit: { tool: "asset", assetId: "chair-office", variantId: "white", rotation: 0, position: { x: 560, y: 768 } } });
+      const preview = events.filter((event) => event.type === "project.preview").at(-1)!;
+      runtime.handleCommand(maya, { type: "project.submit", requestId: "chair-submit", draftId: preview.project.id, title: "Chair" });
+      const proposal = store.getPublicEconomy().proposals.at(-1)!;
+      runtime.handleCommand(maya, { type: "public_economy.execute", requestId: "chair-apply", proposalId: proposal.id });
       expect(store.getLayout("floor-studio")!.objects).toContainEqual(expect.objectContaining({ assetId: "chair-office", x: 560, y: 768 }));
       for (const peer of [jonas, maya]) {
         if (peer === jonas) {
           runtime.handleCommand(peer, { type: "player_asset.move", requestId: `move-${peer}`, baseRevision: revision(),
             objectId: placed.id, position: { x: 128, y: 304 }, variantId: "sage", rotation: 0 });
         } else {
-          runtime.handleCommand(peer, { type: "layout.apply", requestId: `move-${peer}`, baseRevision: revision(),
+          runtime.handleCommand(peer, { type: "project.edit", fundId: "workspace", requestId: `move-${peer}`, baseRevision: revision(),
             edit: { tool: "asset.move", objectId: placed.id, position: { x: 128, y: 304 }, variantId: "sage", rotation: 0 } });
         }
-        expect(events.at(-1)).toMatchObject({ type: "command.error", code: "ASSET_ROOM_FORBIDDEN" });
+        expect(events.at(-1)).toMatchObject({ type: "command.error", code: peer === jonas ? "ASSET_ROOM_FORBIDDEN" : "PRIVATE_ASSET_PROTECTED" });
       }
       const room = store.getRoom("room-product")!;
       store.updateRoomSettings(room.id, { name: room.name, color: room.color,
