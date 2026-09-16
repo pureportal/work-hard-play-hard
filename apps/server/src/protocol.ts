@@ -206,6 +206,7 @@ export const clientCommandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("interaction.wave"), requestId, targetUserId: z.string().min(1).max(100) }),
   z.object({ type: z.literal("interaction.react"), requestId, reaction: z.enum(REACTION_KINDS) }),
   z.object({ type: z.literal("interaction.ring_gong"), requestId, objectId: z.string().min(1).max(100) }).strict(),
+  z.object({ type: z.literal("interaction.use_prop"), requestId, objectId: z.string().min(1).max(100) }).strict(),
   z.object({ type: z.literal("call.request"), requestId, targetUserId: z.string().min(1).max(100) }),
   z.object({ type: z.literal("call.respond"), requestId, callId: z.string().min(1).max(100), accept: z.boolean() }),
   z.object({ type: z.literal("call.end"), requestId, callId: z.string().min(1).max(100) }),

@@ -67,6 +67,8 @@ import type {
   WorldPlayer,
 } from "@workhard/shared";
 import type { DisplayGongRing } from "../gong";
+import type { DisplaySpecialPropUse } from "../special-props";
+import { createSpecialPropEffect, type SpecialPropView } from "../world-special-props";
 import { renderCharacter } from "../character-renderer";
 import { getAssetDirectionIndicators, getAssetOrientationLabel, rotateAssetClockwise } from "../asset-orientation";
 import { REACTION_EMOJI, type DisplayHighFive, type DisplayReaction } from "../reactions";
@@ -86,6 +88,7 @@ export interface WorldCanvasProps {
   reactions: DisplayReaction[];
   highFives: DisplayHighFive[];
   gongRings: DisplayGongRing[];
+  specialPropUses?: DisplaySpecialPropUse[];
   currentUserId: string;
   editingTool: LayoutTool | null;
   editingAssetId: string;
@@ -324,6 +327,7 @@ export function WorldCanvas(props: WorldCanvasProps) {
         renderer.setReactions(current.reactions);
         renderer.setHighFives(current.highFives);
         renderer.setGongRings(current.gongRings);
+        renderer.setSpecialPropUses(current.specialPropUses ?? []);
         if (current.focusTarget && renderer.focusUser(current.focusTarget.userId)) {
           handledFocusRequestRef.current = current.focusTarget.requestId;
         }
@@ -422,6 +426,10 @@ export function WorldCanvas(props: WorldCanvasProps) {
   useEffect(() => {
     rendererRef.current?.setGongRings(props.gongRings);
   }, [props.gongRings]);
+
+  useEffect(() => {
+    rendererRef.current?.setSpecialPropUses(props.specialPropUses ?? []);
+  }, [props.specialPropUses, props.floor.id]);
 
   useEffect(() => {
     const target = props.focusTarget;
@@ -569,6 +577,7 @@ class OfficeRenderer {
   private readonly highFiveViews = new Map<string, HighFiveView>();
   private readonly gongViews = new Map<string, GongObjectView>();
   private readonly gongCelebrationViews = new Map<string, GongCelebrationView>();
+  private readonly specialPropViews = new Map<string, SpecialPropView>();
   private readonly reactions = new Map<string, DisplayReaction>();
   private readonly pointerStart = { x: 0, y: 0 };
   private memberMap = new Map<string, Member>();
@@ -677,6 +686,8 @@ class OfficeRenderer {
         view.container.destroy({ children: true });
       }
       this.gongCelebrationViews.clear();
+      for (const view of this.specialPropViews.values()) view.container.destroy({ children: true });
+      this.specialPropViews.clear();
     }
     if (layoutChanged) {
       this.drawLayout();
@@ -896,6 +907,23 @@ class OfficeRenderer {
       if (!this.isObjectVisible(bounds)) {
         this.callbacks.current.onGongOffscreen(ring);
       }
+    }
+  }
+
+  setSpecialPropUses(uses: DisplaySpecialPropUse[]): void {
+    const visible = uses.filter(use => use.floorId === this.floor?.id && this.layout?.objects.some(object => object.id === use.objectId));
+    for (const [id, view] of this.specialPropViews) {
+      if (visible.some(use => use.id === id)) continue;
+      view.container.destroy({ children: true });
+      this.specialPropViews.delete(id);
+    }
+    for (const use of visible) {
+      if (this.specialPropViews.has(use.id)) continue;
+      const object = this.layout!.objects.find(object => object.id === use.objectId)!;
+      const view = createSpecialPropEffect(object, use);
+      this.celebrationLayer.addChild(view.container);
+      this.specialPropViews.set(use.id, view);
+      view.animate(Date.now());
     }
   }
 
@@ -1209,6 +1237,7 @@ class OfficeRenderer {
   private readonly renderFrame = (): void => {
     const now = Date.now();
     for (const animate of this.assetAnimations.values()) animate(this.musicReducedMotion.matches ? 0 : now);
+    for (const view of this.specialPropViews.values()) view.animate(now);
     const interpolation = 1 - Math.exp(-Math.min(this.app.ticker.deltaMS, 100) / 67);
     for (const [userId, view] of this.playerViews) {
       const moving = view.canWalk && Math.hypot(view.targetX - view.container.x, view.targetY - view.container.y) > 0.4;

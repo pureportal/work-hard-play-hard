@@ -21,6 +21,8 @@ import type {
 } from "./chess.js";
 import type { CoinTransaction, GameCoinReward, GameSettings, PlayerEconomy } from "./economy.js";
 import type { Position } from "./geometry.js";
+import type { SpecialPropUse } from "./special-props.js";
+export * from "./special-props.js";
 import type { TetrominoType, FallingBlocksCellPosition, FallingBlocksCommand, FallingBlocksSettings, FallingBlocksRoundState, FallingBlocksClear, FallingBlocksSpecialCounts, FallingBlocksStatistics } from "./falling-blocks.js";
 import {
   TIC_TAC_TOE_DEFINITION_ID,
@@ -438,6 +440,7 @@ export type ServerEvent =
   | { type: "interaction.reaction"; id: string; userId: string; reaction: ReactionKind; scope: ReactionScope }
   | { type: "interaction.high_five"; id: string; userIds: [string, string]; floorId: string }
   | { type: "interaction.gong_rang"; ring: GongRing }
+  | { type: "interaction.prop_used"; use: SpecialPropUse }
   | { type: "interaction.gong_cooldown"; objectId: string; floorId: string; cooldownUntil: number }
   | { type: "call.state"; callId: string; peerUserId: string; direction: CallDirection; state: CallState }
   | { type: "proximity.media_state"; session: import("./media.js").ProximityMediaSession }
@@ -506,6 +509,7 @@ export type ClientCommand =
   | { type: "interaction.wave"; requestId: string; targetUserId: string }
   | { type: "interaction.react"; requestId: string; reaction: ReactionKind }
   | { type: "interaction.ring_gong"; requestId: string; objectId: string }
+  | { type: "interaction.use_prop"; requestId: string; objectId: string }
   | { type: "call.request"; requestId: string; targetUserId: string }
   | { type: "call.respond"; requestId: string; callId: string; accept: boolean }
   | { type: "call.end"; requestId: string; callId: string }

@@ -7,6 +7,8 @@ import {
   getWorkObjectState,
   GITHUB_TRAY_ASSET_ID,
   GONG_COOLDOWN_MS,
+  SPECIAL_PROPS,
+  SPECIAL_PROP_RANGE,
   GONG_INTERACTION_RANGE,
   MAX_LAYOUT_OBJECTS_PER_FLOOR,
   detectLayoutRooms,
@@ -89,6 +91,7 @@ import { getMovementSpeed, MAX_MOVEMENT_STEP } from "./movement-speed.js";
 import { reconcileProximityGroups } from "./proximity-groups.js";
 import { ProximitySessions } from "./proximity-sessions.js";
 import { canReachSeat } from "./seat-reachability.js";
+import { SpecialPropInteractions } from "./special-props.js";
 
 const TICK_MS = 50;
 const SNAPSHOT_INTERVAL_TICKS = 2;
@@ -210,6 +213,7 @@ export class WorldRuntime {
   private readonly lastReactionAt = new Map<string, number>();
   private readonly recentWaves = new Map<string, RecentWave>();
   private readonly gongCooldowns = new Map<string, number>();
+  private readonly specialProps = new SpecialPropInteractions();
   private readonly seatOrigins = new Map<string, { x: number; y: number }>();
   private timer: NodeJS.Timeout | undefined;
   private tickNumber = 0;
@@ -280,6 +284,7 @@ export class WorldRuntime {
     this.lastReactionAt.clear();
     this.recentWaves.clear();
     this.gongCooldowns.clear();
+    this.specialProps.clear();
     this.seatOrigins.clear();
   }
 
@@ -529,6 +534,9 @@ export class WorldRuntime {
           break;
         case "interaction.ring_gong":
           this.ringGong(peer, command.objectId);
+          break;
+        case "interaction.use_prop":
+          this.useSpecialProp(peer, command.objectId);
           break;
         case "call.request":
           this.requestCall(peer, command.targetUserId);
@@ -3047,6 +3055,22 @@ export class WorldRuntime {
     }
   }
 
+  private useSpecialProp(peer: Peer, objectId: string): void {
+    const player = this.players.get(peer.userId);
+    const layout = player ? this.store.getVisibleLayout(player.floorId, peer.userId) : undefined;
+    const object = layout?.objects.find(candidate => candidate.id === objectId);
+    if (!player?.connected || !object || !SPECIAL_PROPS[object.assetId]) throw new Error("PROP_NOT_FOUND");
+    if (this.activeMeetings.has(peer.userId)) throw new Error("PROP_IN_MEETING");
+    if (this.gameRuntime.isPlaying(peer.userId)) throw new Error("GAME_IN_PROGRESS");
+    if (this.getDistanceToBounds(player.x, player.y, getPlacedAssetBounds(object)) > SPECIAL_PROP_RANGE) throw new Error("PROP_TOO_FAR");
+    const use = this.specialProps.use(object, peer.userId);
+    for (const candidate of this.peers.values()) {
+      if (candidate.floorId !== player.floorId || this.activeMeetings.has(candidate.userId)) continue;
+      if (!this.store.getVisibleLayout(player.floorId, candidate.userId)?.objects.some(visible => visible.id === object.id)) continue;
+      candidate.send({ type: "interaction.prop_used", use });
+    }
+  }
+
   private registerWave(userId: string, targetUserId?: string): void {
     const now = Date.now();
     for (const [candidateUserId, wave] of this.recentWaves) {
@@ -3789,6 +3813,10 @@ export class WorldRuntime {
       CHECKLIST_ITEM_NOT_FOUND: "This item was removed. Add it again if needed.",
       REACTION_RATE_LIMITED: "Give it a moment.",
       GONG_NOT_FOUND: "That gong is no longer available.",
+      PROP_NOT_FOUND: "That object is no longer available.",
+      PROP_TOO_FAR: "Move closer to use this object.",
+      PROP_COOLDOWN: "Wait a moment, then try again.",
+      PROP_IN_MEETING: "Leave your meeting to use this object.",
       GONG_TOO_FAR: "Move closer to ring the gong.",
       GONG_COOLDOWN: "The gong is cooling down.",
       GONG_IN_MEETING: "Leave your meeting before ringing the gong.",

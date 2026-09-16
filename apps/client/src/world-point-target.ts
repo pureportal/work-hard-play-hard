@@ -5,6 +5,7 @@ import {
   isPointInPlacedInteraction,
   pointInRect,
   requireAssetDefinition,
+  SPECIAL_PROPS,
 } from "@workhard/shared";
 import type { AssetKind, FloorLayout, Rect, WorldObject } from "@workhard/shared";
 import { getPlacedWorldAssetArtwork } from "./world-asset-placement";
@@ -19,7 +20,8 @@ export function resolveWorldPointTarget(layout: FloorLayout, x: number, y: numbe
   for (let index = layout.objects.length - 1; index >= 0; index -= 1) {
     const object = layout.objects[index]!;
     const asset = requireAssetDefinition(object.assetId);
-    const artwork = directlyInteractiveAssetKinds.has(asset.kind) ? getPlacedWorldAssetArtwork(layout, object).bounds : undefined;
+    const interactive = directlyInteractiveAssetKinds.has(asset.kind) || Boolean(SPECIAL_PROPS[asset.id]);
+    const artwork = interactive ? getPlacedWorldAssetArtwork(layout, object).bounds : undefined;
     const artworkHit = artwork && (hitsArtwork ? hitsArtwork(object) : isPointInWorldTarget(x, y, {
       ...artwork, x: object.x + artwork.x, y: object.y + artwork.y,
     }, minimumTargetSize));
@@ -31,7 +33,7 @@ export function resolveWorldPointTarget(layout: FloorLayout, x: number, y: numbe
     if (interaction) {
       return { type: "object", object, interactionId: interaction.id };
     }
-    if (directlyInteractiveAssetKinds.has(asset.kind)) {
+    if (interactive) {
       return { type: "object", object };
     }
   }
@@ -45,7 +47,7 @@ export function resolveWorldPointTarget(layout: FloorLayout, x: number, y: numbe
         return { type: "object", object, interactionId: interaction.id };
       }
       if (
-        directlyInteractiveAssetKinds.has(requireAssetDefinition(object.assetId).kind)
+        (directlyInteractiveAssetKinds.has(requireAssetDefinition(object.assetId).kind) || Boolean(SPECIAL_PROPS[object.assetId]))
         && isPointInWorldTarget(x, y, getPlacedAssetBounds(object), minimumTargetSize)
       ) {
         return { type: "object", object };

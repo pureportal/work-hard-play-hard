@@ -112,6 +112,8 @@ import { Music2 } from "lucide-react";
 import { preloadWorldCanvas, WorldCanvas } from "./components/WorldCanvasLoader";
 import { playGongChime, prepareGongChime } from "./gong-audio";
 import { GONG_EFFECT_DURATION_MS, type DisplayGongRing } from "./gong";
+import { useSpecialProps } from "./special-props";
+import { SpecialPropAction } from "./components/SpecialPropAction";
 import { useRealtime } from "./hooks/useRealtime";
 import { useGameRequest } from "./hooks/useGameRequest";
 import { REACTION_LABEL, REACTION_OPTIONS, type DisplayHighFive, type DisplayReaction } from "./reactions";
@@ -537,6 +539,7 @@ export function Workspace({
   const [selection, setSelection] = useState<WorldSelection>();
   const [songUserId, setSongUserId] = useState<string>();
   const { activities: spotifyActivities, handleEvent: handleSpotifyEvent, clear: clearSpotifyActivities } = useSpotifyPresence();
+  const { uses: specialPropUses, now: specialPropClock, handleEvent: handleSpecialPropEvent, reset: resetSpecialProps } = useSpecialProps();
   const [workObject, setWorkObject] = useState<WorldObject>();
   const [githubRepository, setGitHubRepository] = useState("");
   const { update: updateWorkObject, handleEvent: handleWorkEvent, disconnect: disconnectWorkUpdates } = useWorkObjectUpdates();
@@ -776,6 +779,7 @@ export function Workspace({
     lobbyRequest.handleEvent(event);
     turnRequest.handleEvent(event);
     handleSpotifyEvent(event);
+    handleSpecialPropEvent(event);
     if (handleWorkEvent(event)) return;
     if (event.type === "session.ready") {
       synchronizingSession.current = true;
@@ -1028,6 +1032,8 @@ export function Workspace({
         const peer = data.members.find((member) => member.id === peerId);
         showToast(`High five with ${peer?.name ?? "a teammate"}!`);
       }
+    } else if (event.type === "interaction.prop_used") {
+      if (event.use.userId === data.currentUserId && event.use.result) setReactionAnnouncement(event.use.result);
     } else if (event.type === "interaction.gong_cooldown") {
       setGongCooldowns((current) => ({
         ...current,
@@ -1216,7 +1222,7 @@ export function Workspace({
       }
       showToast(event.message);
     }
-  }, [activeCall, activeConversationId, activePanel, announceOffscreenGong, currentMeeting, currentUser.availability, data.currentUserId, data.members, displayGongRing, displayHighFive, displayReaction, floorId, handleSpotifyEvent, handleWorkEvent, onCorporateIdentityChange, showToast]);
+  }, [activeCall, activeConversationId, activePanel, announceOffscreenGong, currentMeeting, currentUser.availability, data.currentUserId, data.members, displayGongRing, displayHighFive, displayReaction, floorId, handleSpotifyEvent, handleSpecialPropEvent, handleWorkEvent, onCorporateIdentityChange, showToast]);
 
   const { connection, snapshot, send } = useRealtime({
     floorId,
@@ -1310,6 +1316,7 @@ export function Workspace({
     setReactions([]);
     setHighFives([]);
     setGongRings([]);
+    resetSpecialProps();
     setGongCooldowns({});
     setReactionAnnouncement("");
     for (const timer of reactionTimers.current.values()) {
@@ -1344,7 +1351,7 @@ export function Workspace({
     pendingKnockRequest.current = undefined;
     pendingMeetingOpen.current = undefined;
     pendingMeetingLeave.current = undefined;
-  }, [connection]);
+  }, [connection, resetSpecialProps]);
 
   useEffect(() => {
     setSelection((current) => {
@@ -2220,6 +2227,7 @@ export function Workspace({
           reactions={floorReactions}
           highFives={floorHighFives}
           gongRings={floorGongRings}
+          specialPropUses={specialPropUses}
           currentUserId={data.currentUserId}
           editing={activePanel === "build"}
           roomAccessibility={activePanel === "build" && canBuild && connection === "online" && roomAccessibility?.userId === accessInspectionUserId ? roomAccessibility : undefined}
@@ -2492,6 +2500,18 @@ export function Workspace({
                 <BellRing size={16} />Walk to gong
               </button>
             ))}
+            {selectedObject && <SpecialPropAction
+              object={selectedObject}
+              player={currentPlayer}
+              unavailable={Boolean(currentMeeting)}
+              uses={specialPropUses}
+              now={specialPropClock}
+              onUse={() => request({ type: "interaction.use_prop", requestId: requestId(), objectId: selectedObject.id })}
+              onApproach={() => {
+                const destination = closestObjectApproachPoint(selectedObject, currentPlayer ?? floor.spawn);
+                navigateToDestination(selectedObject.floorId, destination.x, destination.y);
+              }}
+            />}
             {selectedPortalDestination && currentPlayer && (
               <button
                 className="primary-button"

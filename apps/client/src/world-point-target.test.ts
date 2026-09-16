@@ -44,6 +44,18 @@ describe("world point targets", () => {
     expect(resolveWorldPointTarget(layout, 48, 48)).toEqual({ type: "object", object: gong });
   });
 
+  it.each(["special-confetti", "special-bubbles", "special-fortune", "special-break-wheel"])("selects %s from its artwork and footprint at every rotation", assetId => {
+    for (const rotation of [0, 90, 180, 270] as const) {
+      const object = { ...createObject("toy", assetId, 64, 64), rotation };
+      const layout = createLayout(object);
+      expect(resolveWorldPointTarget(layout, 72, 72)).toEqual({ type: "object", object });
+      const { bounds } = getWorldAssetArtwork(requireAssetDefinition(assetId), object.variantId, rotation);
+      expect(resolveWorldPointTarget(layout, object.x + bounds.x + bounds.width / 2, object.y + bounds.y + 3, 0, () => true)).toEqual({ type: "object", object });
+      const narrowX = assetId !== "special-break-wheel" || rotation % 180 !== 0;
+      expect(resolveWorldPointTarget(layout, narrowX ? 62 : 72, narrowX ? 72 : 62, 44)).toEqual({ type: "object", object });
+    }
+  });
+
   it.each(["equipment-whiteboard", "equipment-checklist"])("selects %s with pointer and touch targets in every rotation", (assetId) => {
     for (const rotation of [0, 90, 180, 270] as const) {
       const board = { ...createObject("board", assetId, 32, 32), rotation };
