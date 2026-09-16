@@ -29,20 +29,23 @@ describe("workplace seeds", () => {
     expect(new Set(getFloorPortals(floors, layouts).map((portal) => portal.destinationFloorId))).toEqual(new Set(floors.map((floor) => floor.id)));
   }, 30_000);
 
-  it("keeps the starter sparse, open and free of simulated identities or activity", () => {
+  it("furnishes the three open starter rooms and leaves the surrounding land empty", () => {
     const data = createInitialData();
     const layout = data.layouts[0]!;
     verifyLayout(data.floors[0]!, layout);
-    expect(layout.objects.filter((object) => requireAssetDefinition(object.assetId).kind !== "floor-tile")).toHaveLength(3);
-    expect(layout.objects.filter((object) => {
+    expect(layout.rooms.map((room) => room.name)).toEqual(["Lounge", "Studio", "Kitchen"]);
+    for (const room of layout.rooms) expect(layout.objects.some((object) => {
       const bounds = getPlacedAssetBounds(object);
-      return layout.rooms.some((room) => isPointInRoom(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2, room));
-    })).toHaveLength(1);
+      return requireAssetDefinition(object.assetId).kind !== "floor-tile" && isPointInRoom(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2, room);
+    })).toBe(true);
     expect(layout.rooms.every((room) => room.access.mode === "open" && !room.organisationUnitId && !room.access.knockable)).toBe(true);
     for (const records of [data.members, data.messages, data.meetings, data.invitations, data.scores, data.organisation.units, data.organisation.assignments]) {
       expect(records).toEqual([]);
     }
-    expect(data.layouts[0]!.objects.some((object) => object.assetId === "outdoor-garden-bed")).toBe(true);
+    expect(layout.objects.every((object) => {
+      const bounds = getPlacedAssetBounds(object);
+      return layout.rooms.some((room) => isPointInRoom(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2, room));
+    })).toBe(true);
   });
 
   it("restores valid relationships, real inventory instances and score-derived rewards", () => {

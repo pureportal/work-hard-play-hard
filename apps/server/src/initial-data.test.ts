@@ -10,8 +10,10 @@ describe("workspace initialization", () => {
     const state = store.exportMutableState();
     expect(store.needsSetup()).toBe(true);
     expect(state.floors).toHaveLength(1);
-    expect(state.layouts[0]!.walls).toHaveLength(4);
-    expect(state.layouts[0]!.rooms).toEqual([expect.objectContaining({ access: { mode: "open", assignedPersonIds: [], knockable: false } })]);
+    expect(state.layouts[0]!.rooms.map((room) => room.name)).toEqual(["Lounge", "Studio", "Kitchen"]);
+    for (const room of state.layouts[0]!.rooms) {
+      expect(room.access).toEqual({ mode: "open", assignedPersonIds: [], knockable: false });
+    }
     for (const records of [state.members, state.messages, state.meetings, state.invitations, state.scores, state.gameStatistics,
       state.organisation.units, state.organisation.assignments, state.economy.accounts, state.economy.transactions]) expect(records).toEqual([]);
     expect(state.conversations).toEqual([{ id: "conversation-team", name: "Team", type: "team", unread: 0 }]);

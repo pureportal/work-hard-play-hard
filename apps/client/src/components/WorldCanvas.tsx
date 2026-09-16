@@ -1019,32 +1019,22 @@ class OfficeRenderer {
     const outdoors = new Graphics()
       .rect(outdoorBounds.x, outdoorBounds.y, outdoorBounds.width, outdoorBounds.height)
       .fill(dark ? "#1d2925" : "#d8e6dc");
-    const baseShadow = new Graphics()
-      .roundRect(7, 9, this.floor.width, this.floor.height, 24)
-      .fill({ color: dark ? "#08090e" : "#34303a", alpha: dark ? 0.38 : 0.13 });
-    const base = new Graphics()
-      .roundRect(0, 0, this.floor.width, this.floor.height, 24)
-      .fill(dark ? mixHex(this.floor.background, "#171922", 0.72) : this.floor.background)
-      .stroke({ color: dark ? "#4a4856" : "#bfb6aa", width: 2 });
-    this.layoutLayer.addChild(outdoors, baseShadow, base);
+    this.layoutLayer.addChild(outdoors);
 
-    const grid = new Graphics();
-    const gridSize = this.editing ? (this.editingTool === "asset" ? ASSET_RASTER_SIZE : BUILD_GRID_SIZE) : 80;
-    const gridColor = dark
-      ? this.editing ? "#d9d2eb25" : "#d9d2eb10"
-      : this.editing ? "#766f6728" : "#766f6713";
-    const startX = this.editing ? outdoorBounds.x : 0;
-    const startY = this.editing ? outdoorBounds.y : 0;
-    const endX = this.editing ? outdoorBounds.x + outdoorBounds.width : this.floor.width;
-    const endY = this.editing ? outdoorBounds.y + outdoorBounds.height : this.floor.height;
-    for (let x = startX; x <= endX; x += gridSize) {
-      grid.moveTo(x, startY).lineTo(x, endY);
+    if (this.editing) {
+      const grid = new Graphics();
+      const gridSize = this.editingTool === "asset" ? ASSET_RASTER_SIZE : BUILD_GRID_SIZE;
+      const endX = outdoorBounds.x + outdoorBounds.width;
+      const endY = outdoorBounds.y + outdoorBounds.height;
+      for (let x = outdoorBounds.x; x <= endX; x += gridSize) {
+        grid.moveTo(x, outdoorBounds.y).lineTo(x, endY);
+      }
+      for (let y = outdoorBounds.y; y <= endY; y += gridSize) {
+        grid.moveTo(outdoorBounds.x, y).lineTo(endX, y);
+      }
+      grid.stroke({ color: dark ? "#d9d2eb25" : "#766f6728", width: 1 });
+      this.layoutLayer.addChild(grid);
     }
-    for (let y = startY; y <= endY; y += gridSize) {
-      grid.moveTo(startX, y).lineTo(endX, y);
-    }
-    grid.stroke({ color: gridColor, width: 1 });
-    this.layoutLayer.addChild(grid);
 
     if (this.layout.tiles.length > 0) {
       const tiles = new Graphics();
@@ -1059,7 +1049,7 @@ class OfficeRenderer {
         roomGraphic.rect(rect.x, rect.y, rect.width, rect.height);
       }
       roomGraphic
-        .fill({ color: dark ? mixHex(room.color, "#20222d", 0.62) : room.color, alpha: dark ? 0.82 : 0.7 })
+        .fill(dark ? mixHex(room.color, "#20222d", 0.62) : room.color)
         .stroke({ color: "#ffffff", width: 1, alpha: dark ? 0.12 : 0.26 });
       this.layoutLayer.addChild(roomGraphic);
     }
