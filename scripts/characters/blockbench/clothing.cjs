@@ -69,7 +69,7 @@ function createCharacterClothing(geometry, appearance) {
     const prefix = side < 0 ? "left" : "right";
     const legX = side * 4;
     const wide = ["kimono", "sailor"].includes(appearance.lowerBody);
-    patch("Trouser fold", `${prefix}_thigh`, [[legX - 0.5, 17, 3.05], [legX + 0.2, 17, 3.1], [legX + 0.9, 25.8, 3.75], [legX - 0.1, 25.8, 3.9]], "trouserLight");
+    if (!["frog", "velvet", "starlight", "sunset"].includes(appearance.lowerBody)) patch("Trouser fold", `${prefix}_thigh`, [[legX - 0.5, 17, 3.05], [legX + 0.2, 17, 3.1], [legX + 0.9, 25.8, 3.75], [legX - 0.1, 25.8, 3.9]], "trouserLight");
     if (wide) loft("Trouser hem", `${prefix}_shin`, [[5, 2.55, 2.5, legX], [6.2, 2.65, 2.6, legX]], "trouserLight");
     if (["ranger", "arcane"].includes(appearance.shoes)) {
       loft("Boot shaft", `${prefix}_foot`, [[3.1, 2.6, 2.7, legX], [9, 2.5, 2.45, legX]], "shoe");

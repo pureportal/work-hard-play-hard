@@ -17,7 +17,7 @@ try {
   const groups = [{ name: "hairstyles", samples: (selected ?? CHARACTER_HAIRSTYLES).map(hairstyle => ({ ...DEFAULT_CHARACTER_APPEARANCE, hairstyle })) }];
   if (!selected) groups.push(
     { name: "faces", samples: CHARACTER_FACES.map(face => ({ ...DEFAULT_CHARACTER_APPEARANCE, hairstyle: "curtains", face })) },
-    { name: "outfits", samples: CHARACTER_OUTFITS.map((outfit, index) => ({ ...DEFAULT_CHARACTER_APPEARANCE, gender: index % 2 ? "male" : "female", hairstyle: CHARACTER_HAIRSTYLES[index + 6], upperBody: outfit, lowerBody: outfit, shoes: outfit })) },
+    { name: "outfits", samples: CHARACTER_OUTFITS.map((outfit, index) => ({ ...DEFAULT_CHARACTER_APPEARANCE, hairstyle: CHARACTER_HAIRSTYLES[(index + 6) % CHARACTER_HAIRSTYLES.length], upperBody: outfit, lowerBody: outfit, shoes: outfit })) },
   );
   for (const group of groups) {
     const height = Math.ceil(group.samples.length / 3) * 180;

@@ -34,7 +34,7 @@ export function createWorkplacePeople(): { members: Member[]; organisation: Orga
       email: `${username}@alder.example.test`, title, role, permissions: permissionsForMemberRole(role),
       color: colors[index % colors.length]!, availability, online: availability !== "away",
       floorId: upper ? "floor-retreat" : "floor-workplace", position: { x, y },
-      character: { gender: index % 2 === 0 ? "female" : "male", face: CHARACTER_FACES[index % CHARACTER_FACES.length]!,
+      character: { face: CHARACTER_FACES[index % CHARACTER_FACES.length]!,
         hairstyle: CHARACTER_HAIRSTYLES[index % CHARACTER_HAIRSTYLES.length]!, upperBody: outfit, lowerBody: outfit,
         shoes: outfit, headwear: index === 7 ? "beret" : "none" },
     };

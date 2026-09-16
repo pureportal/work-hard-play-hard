@@ -31,13 +31,13 @@ describe("AvatarDialog", () => {
     const onClose = vi.fn();
     const onSave = vi.fn().mockRejectedValueOnce(new Error("Connection lost. Try again.")).mockResolvedValue(undefined);
     render(<AvatarDialog currentUser={member} onClose={onClose} onSaveCharacter={onSave} />);
-    fireEvent.click(screen.getByRole("button", { name: "Male" }));
+    fireEvent.click(screen.getByRole("button", { name: "Fierce" }));
     fireEvent.click(screen.getByRole("button", { name: "Use character" }));
     expect((await screen.findByRole("alert")).textContent).toContain("Connection lost");
     expect(onClose).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Use character" }));
     await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
-    expect(onSave).toHaveBeenLastCalledWith({ ...DEFAULT_CHARACTER_APPEARANCE, gender: "male" });
+    expect(onSave).toHaveBeenLastCalledWith({ ...DEFAULT_CHARACTER_APPEARANCE, face: "fierce" });
   });
 
   it("prevents closing while the save is in flight", async () => {

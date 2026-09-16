@@ -27,7 +27,7 @@ vi.mock("./components/WorldCanvasLoader", () => ({
 vi.mock("./components/CharacterPreview", () => ({
   CharacterPreview: ({ appearance, onReady }: { appearance: CharacterAppearance; onReady?: (ready: boolean) => void }) => {
     useEffect(() => { onReady?.(true); }, [appearance, onReady]);
-    return <span data-testid="rendered-character">{JSON.stringify(appearance)}</span>;
+    return <span aria-hidden="true" data-testid="rendered-character">{JSON.stringify(appearance)}</span>;
   },
 }));
 
@@ -92,13 +92,13 @@ afterEach(cleanup);
 
 describe("Workspace avatar customization", () => {
   it("saves from the editor and immediately updates profile portraits", async () => {
-    const character: CharacterAppearance = { ...DEFAULT_CHARACTER_APPEARANCE, gender: "male" };
+    const character: CharacterAppearance = { ...DEFAULT_CHARACTER_APPEARANCE, face: "fierce" };
     apiMocks.updatePlayerCharacter.mockResolvedValue({ ...member, character });
     const { container } = render(<Workspace initialData={workspace} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Customize avatar" }));
     expect(screen.queryByRole("button", { name: "Photo" })).toBeNull();
     expect(container.querySelector('input[type="file"]')).toBeNull();
-    fireEvent.click(await screen.findByRole("button", { name: "Male" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Fierce" }));
     fireEvent.click(screen.getByRole("button", { name: "Use character" }));
     await waitFor(() => expect(apiMocks.updatePlayerCharacter).toHaveBeenCalledWith(character));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Avatar" })).toBeNull());

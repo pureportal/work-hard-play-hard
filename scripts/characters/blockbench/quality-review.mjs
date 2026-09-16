@@ -2,14 +2,14 @@ import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { chromium } from "playwright-core";
 import puppeteer from "puppeteer";
-import { CHARACTER_FACES, CHARACTER_GENDERS, CHARACTER_HAIRSTYLES, CHARACTER_HEADWEAR, CHARACTER_OUTFITS, DEFAULT_CHARACTER_APPEARANCE, getCharacterLayerPaths } from "../../../packages/shared/src/character.ts";
+import { CHARACTER_FACES, CHARACTER_HAIRSTYLES, CHARACTER_HEADWEAR, CHARACTER_OUTFITS, DEFAULT_CHARACTER_APPEARANCE, getCharacterLayerPaths } from "../../../packages/shared/src/character.ts";
 
 const output = process.argv.find(value => value.startsWith("--output="))?.slice(9) ?? "artifacts/asset-quality-2026-09-15/before/characters";
 const selected = process.argv.find(value => value.startsWith("--sample="))?.slice(9).split(",");
 const samples = [
   ...CHARACTER_HAIRSTYLES.flatMap(hairstyle => CHARACTER_HEADWEAR.map(headwear => ({ id: `hair-${hairstyle}-${headwear}`, appearance: { ...DEFAULT_CHARACTER_APPEARANCE, hairstyle, headwear } }))),
-  ...CHARACTER_GENDERS.flatMap(gender => CHARACTER_FACES.map(face => ({ id: `face-${gender}-${face}`, appearance: { ...DEFAULT_CHARACTER_APPEARANCE, gender, face, hairstyle: "curtains" } }))),
-  ...CHARACTER_GENDERS.flatMap(gender => CHARACTER_OUTFITS.map(outfit => ({ id: `outfit-${gender}-${outfit}`, appearance: { ...DEFAULT_CHARACTER_APPEARANCE, gender, upperBody: outfit, lowerBody: outfit, shoes: outfit } }))),
+  ...CHARACTER_FACES.map(face => ({ id: `face-${face}`, appearance: { ...DEFAULT_CHARACTER_APPEARANCE, face, hairstyle: "curtains" } })),
+  ...CHARACTER_OUTFITS.map(outfit => ({ id: `outfit-${outfit}`, appearance: { ...DEFAULT_CHARACTER_APPEARANCE, upperBody: outfit, lowerBody: outfit, shoes: outfit } })),
 ].filter(sample => !selected || selected.includes(sample.id));
 const manifest = JSON.parse(await readFile("scripts/characters/blockbench/manifest.json", "utf8"));
 const covered = new Set(samples.flatMap(sample => getCharacterLayerPaths(sample.appearance)));

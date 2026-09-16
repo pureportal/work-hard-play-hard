@@ -15,29 +15,28 @@ vi.mock("./CharacterPreview", () => ({
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe("CharacterEditor", () => {
-  it("offers gender without a size selector and saves the appearance", async () => {
+  it("offers appearance choices without gender or size selectors", async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(<CharacterEditor appearance={DEFAULT_CHARACTER_APPEARANCE} onSave={onSave} onClose={vi.fn()} />);
     expect(screen.queryByRole("group", { name: /breast size/i })).toBeNull();
     expect(screen.queryByRole("button", { name: /^(No Breast|Flat|Medium|Big)$/ })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Male" }));
-    expect(screen.queryByRole("group", { name: /breast size/i })).toBeNull();
+    expect(screen.queryByText("Gender")).toBeNull();
+    expect(screen.queryByRole("button", { name: /^(Female|Male)$/ })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Fierce" }));
     fireEvent.click(screen.getByRole("button", { name: "Use character" }));
-    await waitFor(() => expect(onSave).toHaveBeenCalledWith({ ...DEFAULT_CHARACTER_APPEARANCE, gender: "male" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith({ ...DEFAULT_CHARACTER_APPEARANCE, face: "fierce" }));
   });
 
-  it("previews interchangeable options, preserves them across gender changes and saves only on request", async () => {
+  it("previews interchangeable options and saves only on request", async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     const onClose = vi.fn();
     render(<CharacterEditor appearance={DEFAULT_CHARACTER_APPEARANCE} onSave={onSave} onClose={onClose} />);
-    fireEvent.click(screen.getByRole("button", { name: "Male" }));
     fireEvent.click(screen.getByRole("button", { name: "Fierce" }));
     for (const [tab, option] of [["Hair", "Silver tousle"], ["Tops", "Moon armor"], ["Bottoms", "Ranger breeches"], ["Shoes", "Leather boots"], ["Headwear", "Star cap"]] as const) {
       fireEvent.click(screen.getByRole("tab", { name: tab }));
       fireEvent.click(screen.getByRole("button", { name: option }));
     }
-    fireEvent.click(screen.getByRole("button", { name: "Female" }));
-    const expected: CharacterAppearance = { gender: "female", face: "fierce", hairstyle: "tousled", upperBody: "arcane", lowerBody: "ranger", shoes: "ranger", headwear: "cap" };
+    const expected: CharacterAppearance = { face: "fierce", hairstyle: "tousled", upperBody: "arcane", lowerBody: "ranger", shoes: "ranger", headwear: "cap" };
     expect(JSON.parse(screen.getByTestId("character-preview").textContent!)).toEqual(expected);
     expect(onSave).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Use character" }));
@@ -48,7 +47,7 @@ describe("CharacterEditor", () => {
   it("keeps the draft after a failed save and lets the user retry", async () => {
     const onSave = vi.fn().mockRejectedValueOnce(new Error("Connection lost. Try again.")).mockResolvedValue(undefined);
     const onClose = vi.fn();
-    render(<CharacterEditor appearance={{ ...DEFAULT_CHARACTER_APPEARANCE, gender: "male" }} onSave={onSave} onClose={onClose} />);
+    render(<CharacterEditor appearance={DEFAULT_CHARACTER_APPEARANCE} onSave={onSave} onClose={onClose} />);
     fireEvent.click(screen.getByRole("button", { name: "Bright" }));
     fireEvent.click(screen.getByRole("button", { name: "Use character" }));
     expect((await screen.findByRole("alert")).textContent).toContain("Connection lost");
@@ -72,9 +71,9 @@ describe("CharacterEditor", () => {
     expect(onSave).not.toHaveBeenCalled();
   });
 
-  it("leaves saving enabled when reselecting the active body option", () => {
+  it("leaves saving enabled when reselecting the active face", () => {
     render(<CharacterEditor appearance={DEFAULT_CHARACTER_APPEARANCE} onSave={vi.fn()} onClose={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "Female" }));
+    fireEvent.click(screen.getByRole("button", { name: "Calm" }));
     expect((screen.getByRole("button", { name: "Use character" }) as HTMLButtonElement).disabled).toBe(false);
   });
 

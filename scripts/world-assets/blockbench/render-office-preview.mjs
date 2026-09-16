@@ -104,7 +104,7 @@ try {
     await character({ hairstyle: "twintails", face: "shy", upperBody: "kimono", lowerBody: "kimono", headwear: "ribbon" }, 556, 293);
     await asset("equipment-arcade", "white", 124, 396);
     await asset("equipment-chess", "graphite", 236, 403);
-    await character({ gender: "male", hairstyle: "spiky", face: "bright", upperBody: "sailor", shoes: "sailor" }, 209, 503, "left");
+    await character({ hairstyle: "spiky", face: "bright", upperBody: "sailor", shoes: "sailor" }, 209, 503, "left");
     await asset("outdoor-bench", "white", 386, 372);
     await asset("plant-sakura", "sakura", 599, 369);
     await asset("outdoor-koi-pond", "coastal", 411, 431);

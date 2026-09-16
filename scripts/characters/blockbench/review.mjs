@@ -2,20 +2,21 @@ import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { chromium } from "playwright-core";
 import puppeteer from "puppeteer";
-import { CHARACTER_GENDERS, CHARACTER_FACES, CHARACTER_OUTFITS, CHARACTER_HAIRSTYLES, CHARACTER_HEADWEAR, DEFAULT_CHARACTER_APPEARANCE } from "../../../packages/shared/src/character.ts";
+import { CHARACTER_FACES, CHARACTER_OUTFITS, CHARACTER_HAIRSTYLES, CHARACTER_HEADWEAR, DEFAULT_CHARACTER_APPEARANCE } from "../../../packages/shared/src/character.ts";
 
 const output = process.argv.find(argument => argument.startsWith("--output="))?.slice(9) ?? "artifacts/blockbench-migration";
 await mkdir(output, { recursive: true });
 const manifest = JSON.parse(await readFile(new URL("manifest.json", import.meta.url), "utf8"));
-assert.equal(manifest.layers.length, CHARACTER_GENDERS.length * (CHARACTER_FACES.length + CHARACTER_OUTFITS.length * 3) + CHARACTER_HAIRSTYLES.length * CHARACTER_HEADWEAR.length);
+assert.equal(manifest.layers.length, (CHARACTER_FACES.length + CHARACTER_OUTFITS.length * 3) + CHARACTER_HAIRSTYLES.length * CHARACTER_HEADWEAR.length);
 const models = [];
+const statementOutfits = ["cyber", "pirate", "astronaut", "dragon", "jester", "frog", "biker", "velvet", "starlight", "sunset"];
 for (const layer of manifest.layers) {
   const model = JSON.parse(await readFile(layer.model, "utf8"));
   assert.equal(model.animations.length, 5);
   assert(model.animations.every(animation => animation.loop === "loop" && Object.keys(animation.animators).length > 0));
   assert(model.elements.length > 0 && model.textures.length > 0);
   for (const element of model.elements) for (const face of Object.values(element.faces)) assert(Number.isInteger(face.texture) && model.textures[face.texture], `${layer.name}/${element.name}: missing material`);
-  if (["upper/female-street-flat", "upper/male-kimono-flat", "hair/ponytail-witch", "hair/twintails-catears", "hair/braid-cap", "hair/pixie-beret", "hair/curtains", "hair/hime-witch", "hair/tousled-cap", "hair/buns-ribbon", "hair/swept-catears", "upper/female-traveler-flat", "upper/male-festival-flat", "hair/curls-goggles", "hair/longbraid-blossom"].includes(`${layer.layer}/${layer.name}`)) models.push({ name: layer.name, model });
+  if (statementOutfits.includes(layer.name) || ["upper/street", "upper/kimono", "hair/ponytail-witch", "hair/twintails-catears", "hair/braid-cap", "hair/pixie-beret", "hair/curtains", "hair/hime-witch", "hair/tousled-cap", "hair/buns-ribbon", "hair/swept-catears", "upper/traveler", "upper/festival", "hair/curls-goggles", "hair/longbraid-blossom"].includes(`${layer.layer}/${layer.name}`)) models.push({ name: `${layer.layer}-${layer.name}`, path: layer.model });
 }
 const browser = await chromium.launch({ headless: true, executablePath: puppeteer.executablePath() });
 const errors = [];
@@ -24,9 +25,9 @@ try {
   page.on("pageerror", error => errors.push(error.message));
   await page.goto("https://web.blockbench.net/", { waitUntil: "domcontentloaded", timeout: 60000 });
   await page.waitForFunction(() => typeof window.newProject === "function");
-  const reopened = await page.evaluate(async models => {
-    const results = [];
-    for (const { name, model } of models) {
+  const reopened = [];
+  for (const { name, path } of models) {
+    const result = await page.evaluate(async ({ name, model }) => {
       Codecs.project.load(model, { path: `${name}.bbmodel` });
       Modes.options.animate.select();
       const clips = Animation.all.map(animation => {
@@ -41,28 +42,33 @@ try {
         });
         return { name: animation.name, animated: poses[0] !== poses[1], closed: poses[0] === poses[2] };
       });
-      results.push({ name, meshes: Mesh.all.length, textures: Texture.all.length, clips });
+      const result = { name, meshes: Mesh.all.length, textures: Texture.all.length, clips };
       Project.saved = true;
       await Project.close();
-    }
-    return results;
-  }, models);
+      return result;
+    }, { name, model: JSON.parse(await readFile(path, "utf8")) });
+    reopened.push(result);
+  }
   assert(reopened.every(model => model.clips.length === 5 && model.clips.every(clip => clip.animated && clip.closed)));
   const samples = [
+    ...statementOutfits.map((outfit, index) => ({ ...DEFAULT_CHARACTER_APPEARANCE, hairstyle: CHARACTER_HAIRSTYLES[index], upperBody: outfit, lowerBody: outfit, shoes: outfit })),
+    { ...DEFAULT_CHARACTER_APPEARANCE, hairstyle: "longbraid", upperBody: "velvet", lowerBody: "biker", shoes: "starlight", headwear: "blossom" },
+    { ...DEFAULT_CHARACTER_APPEARANCE, hairstyle: "pixie", upperBody: "dragon", lowerBody: "starlight", shoes: "frog", headwear: "goggles" },
+    { ...DEFAULT_CHARACTER_APPEARANCE, hairstyle: "buns", upperBody: "sunset", lowerBody: "velvet", shoes: "jester", headwear: "ribbon" },
     { ...DEFAULT_CHARACTER_APPEARANCE, hairstyle: "curls", upperBody: "traveler", lowerBody: "traveler", shoes: "traveler", headwear: "goggles" },
-    { ...DEFAULT_CHARACTER_APPEARANCE, gender: "male", hairstyle: "longbraid", upperBody: "festival", lowerBody: "festival", shoes: "festival", headwear: "blossom" },
+    { ...DEFAULT_CHARACTER_APPEARANCE, hairstyle: "longbraid", upperBody: "festival", lowerBody: "festival", shoes: "festival", headwear: "blossom" },
     { ...DEFAULT_CHARACTER_APPEARANCE, hairstyle: "longbraid", upperBody: "traveler", lowerBody: "kimono", shoes: "festival", headwear: "witch" },
-    { ...DEFAULT_CHARACTER_APPEARANCE, gender: "male", hairstyle: "twintails", upperBody: "festival", lowerBody: "traveler", shoes: "ranger", headwear: "goggles" },
+    { ...DEFAULT_CHARACTER_APPEARANCE, hairstyle: "twintails", upperBody: "festival", lowerBody: "traveler", shoes: "ranger", headwear: "goggles" },
     { ...DEFAULT_CHARACTER_APPEARANCE },
-    { ...DEFAULT_CHARACTER_APPEARANCE, gender: "male", face: "fierce", hairstyle: "spiky", upperBody: "ranger", lowerBody: "ranger", shoes: "ranger" },
+    { ...DEFAULT_CHARACTER_APPEARANCE, face: "fierce", hairstyle: "spiky", upperBody: "ranger", lowerBody: "ranger", shoes: "ranger" },
     { ...DEFAULT_CHARACTER_APPEARANCE, face: "dreamy", hairstyle: "ponytail", upperBody: "arcane", lowerBody: "arcane", shoes: "arcane", headwear: "witch" },
-    { ...DEFAULT_CHARACTER_APPEARANCE, gender: "male", face: "bright", hairstyle: "wavy", upperBody: "cardigan", lowerBody: "street", shoes: "cardigan", headwear: "beret" },
+    { ...DEFAULT_CHARACTER_APPEARANCE, face: "bright", hairstyle: "wavy", upperBody: "cardigan", lowerBody: "street", shoes: "cardigan", headwear: "beret" },
     { ...DEFAULT_CHARACTER_APPEARANCE, face: "shy", hairstyle: "twintails", upperBody: "kimono", lowerBody: "sailor", shoes: "ranger", headwear: "catears" },
     { ...DEFAULT_CHARACTER_APPEARANCE, face: "smile", hairstyle: "braid", upperBody: "sailor", lowerBody: "kimono", shoes: "sailor", headwear: "ribbon" },
-    { ...DEFAULT_CHARACTER_APPEARANCE, gender: "male", face: "bright", hairstyle: "pixie", upperBody: "cardigan", lowerBody: "ranger", shoes: "street", headwear: "beret" },
-    { ...DEFAULT_CHARACTER_APPEARANCE, gender: "male", face: "calm", hairstyle: "curtains", upperBody: "ranger", lowerBody: "sailor", shoes: "ranger" },
+    { ...DEFAULT_CHARACTER_APPEARANCE, face: "bright", hairstyle: "pixie", upperBody: "cardigan", lowerBody: "ranger", shoes: "street", headwear: "beret" },
+    { ...DEFAULT_CHARACTER_APPEARANCE, face: "calm", hairstyle: "curtains", upperBody: "ranger", lowerBody: "sailor", shoes: "ranger" },
     { ...DEFAULT_CHARACTER_APPEARANCE, face: "dreamy", hairstyle: "hime", upperBody: "arcane", lowerBody: "kimono", shoes: "arcane", headwear: "witch" },
-    { ...DEFAULT_CHARACTER_APPEARANCE, gender: "male", face: "fierce", hairstyle: "tousled", upperBody: "street", lowerBody: "cardigan", shoes: "kimono", headwear: "cap" },
+    { ...DEFAULT_CHARACTER_APPEARANCE, face: "fierce", hairstyle: "tousled", upperBody: "street", lowerBody: "cardigan", shoes: "kimono", headwear: "cap" },
     { ...DEFAULT_CHARACTER_APPEARANCE, face: "shy", hairstyle: "buns", upperBody: "kimono", lowerBody: "sailor", shoes: "ranger", headwear: "ribbon" },
     { ...DEFAULT_CHARACTER_APPEARANCE, face: "smile", hairstyle: "swept", upperBody: "sailor", lowerBody: "street", shoes: "cardigan", headwear: "catears" },
   ];

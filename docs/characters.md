@@ -1,12 +1,18 @@
 # Characters
 
-The avatar creator and every in-game portrait use the same Blockbench chibi character. Appearance options include six faces, fourteen hairstyles, eight tops, eight bottoms, eight footwear styles and eight headwear choices, with both genders. Clothing pieces can be mixed independently. Saved appearance fields are validated by the server and published to connected players.
+The avatar creator and every in-game portrait use the same Blockbench chibi character. Appearance options include six faces, fourteen hairstyles, eighteen tops, eighteen bottoms, eighteen footwear styles and eight headwear choices. Clothing pieces can be mixed independently. Saved appearance fields are validated by the server and published to connected players.
 
 ## Artwork and animation
 
-`pnpm assets:characters` builds 172 component designs from native Blockbench geometry and installs them in `apps/client/public/characters/blockbench`. Tops use the fixed Flat fit, with one component per gender/outfit pair. Each component has all four directions and five animations: idle, walk, sit, listen and sit-listen. The game displays an 80px sprite canvas from 120px native frames. Left and right views use a three-quarter angle so the face remains visible.
+`pnpm assets:characters` builds 172 component designs from native Blockbench geometry and installs them in `apps/client/public/characters/blockbench`. All appearances share one body, with one component per outfit. Each component has all four directions and five animations: idle, walk, sit, listen and sit-listen. The game displays an 80px sprite canvas from 120px native frames. Left and right views use a three-quarter angle so the face remains visible.
+
+The statement wardrobe adds 30 interchangeable pieces across cyber, pirate, astronaut, dragon, jester, frog, biker, velvet, starlight and sunset styles. It includes shoulder horns, frog slippers, curled jester shoes, a corset, a halter, a crop top and skirts. Geometry lives in `body.cjs`, `statement-tops.cjs`, `statement-bottoms.cjs` and `statement-shoes.cjs`; materials live in `customization.cjs`.
+
+The designer scrolls its option grid vertically and its category tabs horizontally. Short windows scroll the studio while keeping save and cancel visible. Narrow layouts stack the preview above the options, and touch controls have a minimum 44px target.
 
 Faces use shaped lashes, layered irises, catchlights, blush and expression-specific brows. Hair cuts have distinct fringes, napes and lengths; their highlight meshes follow the locks. Warm key light and cool fill produce cel shading. Garment details are attached to the rig and fitted with the body so collars, straps and trim stay aligned during motion.
+
+Concave detail patches are triangulated in their dominant plane to prevent overlapping triangles. Idle breathing moves the torso without stretching or rotating the head, keeping facial features stable on the pixel grid.
 
 The traveler jacket has an independently animated scarf, and the pearl braid has its own swinging bone. Both follow all five existing motions. The festival haori, indigo hakama and tabi sandals can mix with every clothing family. Blossom clips and goggles are generated for all fourteen hairstyles.
 
@@ -33,15 +39,19 @@ pnpm assets:characters:review
 pnpm e2e:characters
 node scripts/characters/blockbench/appearance-review.mjs
 node scripts/characters/blockbench/creator-review.mjs
+node scripts/characters/blockbench/face-review.mjs
+pnpm --filter @workhard/server exec tsx ../../scripts/characters/blockbench/expansion-check.ts
 pnpm --filter @workhard/server test -- src/avatar
 pnpm --filter @workhard/server exec tsx ../../scripts/characters/playwright-states.ts chair-office chair-stool sofa-corner chair-beanbag outdoor-bench
 pnpm --filter @workhard/server exec tsx ../../scripts/characters/playwright-depth.ts
 ```
 
-The review opens generated models in Blockbench, checks native animation loops and captures sixteen mixed appearances in the running client at 80px and 120px. It also captures all 112 hair/headwear pairings with and without headphones in four directions. Asset tests check all 172 layers and 22,016 component frames for coverage, transparency and clipping, and require the manifest, PNGs and editable models to match the current inventory. Composition tests exercise depth ordering independently of layer loading order.
+The review opens generated models in Blockbench, checks native animation loops and captures coordinated and mixed appearances in the running client at 80px and 120px. It includes all 30 statement wardrobe models. It also captures all 112 hair/headwear pairings with and without headphones in four directions. Asset tests check all 172 layers and 22,016 component frames for coverage, transparency and clipping, and require the manifest, PNGs and editable models to match the current inventory. Composition tests exercise depth ordering independently of layer loading order.
 
 The live creator check signs in to the existing demo instance, saves a mixed appearance, reloads it, checks all 20 motion/direction combinations and mobile layout, then restores the original appearance. The world state check uses an isolated in-memory workspace with the running client to exercise movement, seating, injected music presence and moving water. Neither command starts a development server. External Spotify playback requires a connected account and is separate from the injected presence checks.
 
 Screenshots and reports are in `artifacts/blockbench-migration`. See [the migration record](blockbench-migration.md).
 
-The anime refinement uses `artifacts/avatar-anime` for its before/after captures. The expansion uses `artifacts/asset-expansion`. The creator review checks all 416 directional option previews across both genders and saves/reloads sixteen appearances, including both new clothing sets and headwear choices, comparing its preview with the actual game texture. It checks that saved data contains only current selections and that all requested tops use Flat. It restores the initial saved appearance when the review finishes.
+The anime refinement uses `artifacts/avatar-anime` for its before/after captures. The initial expansion uses `artifacts/asset-expansion`. The creator review checks all 328 directional option previews and saves/reloads eight appearances, comparing its preview with the actual game texture. It checks that saved data contains only current selections and that every outfit resolves to its shared top. It restores the initial saved appearance when the review finishes.
+
+The statement wardrobe check uses an isolated fixture and the running client. It selects all 30 new pieces, saves and reloads ten appearances, compares their game textures with the creator, and checks animation playback, scrollbars, keyboard navigation and compact layouts. Screenshots and reports are in `artifacts/character-expansion`.

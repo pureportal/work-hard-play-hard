@@ -18,7 +18,7 @@ describe("character appearance API", () => {
     const { context, cookie } = await application();
     const initial = context.store.getMember("user-maya")!.character;
     expect((await context.app.inject({ method: "PUT", url: "/v1/members/me/character", payload: DEFAULT_CHARACTER_APPEARANCE })).statusCode).toBe(401);
-    for (const payload of [{ ...DEFAULT_CHARACTER_APPEARANCE, hairstyle: "../../evil" }, { gender: "female" }, { ...DEFAULT_CHARACTER_APPEARANCE, userId: "user-leo" }, { ...DEFAULT_CHARACTER_APPEARANCE, breastSize: "flat" }]) {
+    for (const payload of [{ ...DEFAULT_CHARACTER_APPEARANCE, hairstyle: "../../evil" }, { face: "calm" }, { ...DEFAULT_CHARACTER_APPEARANCE, userId: "user-leo" }, { ...DEFAULT_CHARACTER_APPEARANCE, breastSize: "flat" }, { ...DEFAULT_CHARACTER_APPEARANCE, gender: "female" }]) {
       const response = await context.app.inject({ method: "PUT", url: "/v1/members/me/character", headers: { cookie }, payload });
       expect(response.statusCode).toBe(400);
       expect(response.json().code).toBe("CHARACTER_INVALID");
@@ -29,7 +29,7 @@ describe("character appearance API", () => {
   it("persists the complete appearance, publishes it and restores it after restart", async () => {
     const first = await application();
     const publish = vi.spyOn(first.context.runtime, "publishMember");
-    const character = { ...DEFAULT_CHARACTER_APPEARANCE, gender: "male" as const, face: "fierce" as const, hairstyle: "hime" as const, lowerBody: "ranger" as const, shoes: "arcane" as const, headwear: "witch" as const };
+    const character = { ...DEFAULT_CHARACTER_APPEARANCE, face: "fierce" as const, hairstyle: "hime" as const, lowerBody: "ranger" as const, shoes: "arcane" as const, headwear: "witch" as const };
     const response = await first.context.app.inject({ method: "PUT", url: "/v1/members/me/character", headers: { cookie: first.cookie }, payload: character });
     expect(response.statusCode).toBe(200);
     expect(response.json().character).toEqual(character);
@@ -51,4 +51,18 @@ describe("character appearance API", () => {
     expect((await context.app.inject({ method: "GET", url: "/v1/members/user-maya/avatar.webp?v=old", headers: { cookie } })).statusCode).toBe(404);
     expect((await database.loadWorkspaceState())?.store.members.find((member) => member.id === "user-maya")?.character).toEqual(DEFAULT_CHARACTER_APPEARANCE);
   }, 30_000);
+
+  it("saves and reloads every statement piece in mixed outfits", async () => {
+    const { context, cookie, database } = await application();
+    const outfits = ["cyber", "pirate", "astronaut", "dragon", "jester", "frog", "biker", "velvet", "starlight", "sunset"] as const;
+    for (const [index, upperBody] of outfits.entries()) {
+      const character = { ...DEFAULT_CHARACTER_APPEARANCE, upperBody, lowerBody: outfits[(index + 3) % outfits.length]!, shoes: outfits[(index + 7) % outfits.length]! };
+      const response = await context.app.inject({ method: "PUT", url: "/v1/members/me/character", headers: { cookie }, payload: character });
+      expect(response.statusCode).toBe(200);
+      expect(response.json().character).toEqual(character);
+      expect((await database.loadWorkspaceState())?.store.members.find(member => member.id === "user-maya")?.character).toEqual(character);
+      const bootstrap = await context.app.inject({ method: "GET", url: "/v1/bootstrap", headers: { cookie } });
+      expect(bootstrap.json().members.find((member: Member) => member.id === "user-maya").character).toEqual(character);
+    }
+  });
 });

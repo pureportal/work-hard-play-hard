@@ -1,7 +1,7 @@
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Shuffle } from "lucide-react";
 import { useState } from "react";
 import {
-  CHARACTER_FACES, CHARACTER_GENDERS, CHARACTER_HAIRSTYLES,
+  CHARACTER_FACES, CHARACTER_HAIRSTYLES,
   CHARACTER_HEADWEAR, CHARACTER_OUTFITS, characterAppearanceKey, randomCharacterAppearance,
   type CharacterAppearance, type CharacterDirection, type CharacterMotion,
 } from "@workhard/shared";
@@ -11,9 +11,9 @@ import { useHorizontalWheelScroll } from "../hooks/useHorizontalWheelScroll";
 const categories = [
   { id: "face", label: "Face", crop: "face", options: CHARACTER_FACES, names: ["Calm", "Bright", "Fierce", "Dreamy", "Wink", "Shy"] },
   { id: "hairstyle", label: "Hair", crop: "hair", options: CHARACTER_HAIRSTYLES, names: ["Rose bob", "Midnight spikes", "Lavender ponytail", "Pink twintails", "Honey waves", "Mint braid", "Ash pixie", "Chestnut curtains", "Ink hime cut", "Silver tousle", "Peach buns", "Copper side sweep", "Cocoa curls", "Pearl braid"] },
-  { id: "upperBody", label: "Tops", crop: "upper", options: CHARACTER_OUTFITS, names: ["Bomber jacket", "Ranger jacket", "Moon armor", "Sailor blouse", "Honey cardigan", "Lilac kimono", "Traveler jacket", "Festival haori"] },
-  { id: "lowerBody", label: "Bottoms", crop: "lower", options: CHARACTER_OUTFITS, names: ["Denim trousers", "Ranger breeches", "Moon breeches", "Sailor trousers", "Plum trousers", "Petal hakama", "Travel breeches", "Indigo hakama"] },
-  { id: "shoes", label: "Shoes", crop: "shoes", options: CHARACTER_OUTFITS, names: ["Sneakers", "Leather boots", "Moon boots", "Navy shoes", "Honey shoes", "Rose shoes", "Travel boots", "Tabi sandals"] },
+  { id: "upperBody", label: "Tops", crop: "upper", options: CHARACTER_OUTFITS, names: ["Bomber jacket", "Ranger jacket", "Moon armor", "Sailor blouse", "Honey cardigan", "Lilac kimono", "Traveler jacket", "Festival haori", "Neon runner", "Corsair coat", "Orbital suit", "Dragon armor", "Harlequin tunic", "Froggy hoodie", "Biker vest", "Velvet corset", "Starlight halter", "Sunset crop top"] },
+  { id: "lowerBody", label: "Bottoms", crop: "lower", options: CHARACTER_OUTFITS, names: ["Denim trousers", "Ranger breeches", "Moon breeches", "Sailor trousers", "Plum trousers", "Petal hakama", "Travel breeches", "Indigo hakama", "Circuit cargos", "Corsair trousers", "Orbital trousers", "Dragon greaves", "Harlequin trousers", "Lily-pad shorts", "Ripped black jeans", "Velvet slit skirt", "Starlight mini", "Sunset shorts"] },
+  { id: "shoes", label: "Shoes", crop: "shoes", options: CHARACTER_OUTFITS, names: ["Sneakers", "Leather boots", "Moon boots", "Navy shoes", "Honey shoes", "Rose shoes", "Travel boots", "Tabi sandals", "Neon high-tops", "Corsair boots", "Moonwalk boots", "Dragon claws", "Jester slippers", "Frog slippers", "Studded boots", "Velvet heels", "Silver platforms", "Sunset sandals"] },
   { id: "headwear", label: "Headwear", crop: "headwear", options: CHARACTER_HEADWEAR, names: ["None", "Star cap", "Moon hat", "Beret", "Ribbon", "Cat ears", "Blossom clip", "Goggles"] },
 ] as const;
 
@@ -82,12 +82,6 @@ export function CharacterEditor({ appearance, onSave, onClose }: CharacterEditor
           </div>
         </div>
         <div className="character-controls">
-          <fieldset disabled={saving} className="character-body-controls">
-            <legend>Gender</legend>
-            <div className="character-segmented">
-              {CHARACTER_GENDERS.map((gender) => <button key={gender} type="button" aria-pressed={draft.gender === gender} onClick={() => change("gender", gender)}>{gender === "female" ? "Female" : "Male"}</button>)}
-            </div>
-          </fieldset>
           <div ref={scrollCategories} className="character-categories" role="tablist" aria-label="Appearance">
             {categories.map((item, index) => (
               <button key={item.id} id={`character-tab-${item.id}`} type="button" disabled={saving} role="tab" aria-selected={index === categoryIndex}
@@ -101,7 +95,7 @@ export function CharacterEditor({ appearance, onSave, onClose }: CharacterEditor
                 }}>{item.label}</button>
             ))}
           </div>
-          <div className="character-options" id="character-options" role="tabpanel" aria-labelledby={`character-tab-${category.id}`}>
+          <div className="character-options" id="character-options" role="tabpanel" aria-labelledby={`character-tab-${category.id}`} tabIndex={0}>
             {category.options.map((option, index) => (
               <button key={option} type="button" disabled={saving} className="character-option" aria-pressed={draft[category.id] === option}
                 onClick={() => change(category.id, option)}>

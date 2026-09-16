@@ -1,6 +1,5 @@
 import {
   CHARACTER_FACES,
-  CHARACTER_GENDERS,
   CHARACTER_HAIRSTYLES,
   CHARACTER_HEADWEAR,
   CHARACTER_OUTFITS,
@@ -8,7 +7,6 @@ import {
 import { z } from "zod";
 
 export const characterAppearanceSchema = z.strictObject({
-  gender: z.enum(CHARACTER_GENDERS),
   face: z.enum(CHARACTER_FACES),
   hairstyle: z.enum(CHARACTER_HAIRSTYLES),
   upperBody: z.enum(CHARACTER_OUTFITS),

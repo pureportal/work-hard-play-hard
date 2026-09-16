@@ -1,11 +1,12 @@
-export const CHARACTER_GENDERS = ["female", "male"] as const;
 export const CHARACTER_FACES = ["calm", "bright", "fierce", "dreamy", "smile", "shy"] as const;
 export const CHARACTER_HAIRSTYLES = ["bob", "spiky", "ponytail", "twintails", "wavy", "braid", "pixie", "curtains", "hime", "tousled", "buns", "swept", "curls", "longbraid"] as const;
-export const CHARACTER_OUTFITS = ["street", "ranger", "arcane", "sailor", "cardigan", "kimono", "traveler", "festival"] as const;
+export const CHARACTER_OUTFITS = [
+  "street", "ranger", "arcane", "sailor", "cardigan", "kimono", "traveler", "festival",
+  "cyber", "pirate", "astronaut", "dragon", "jester", "frog", "biker", "velvet", "starlight", "sunset",
+] as const;
 export const CHARACTER_HEADWEAR = ["none", "cap", "witch", "beret", "ribbon", "catears", "blossom", "goggles"] as const;
 
 export interface CharacterAppearance {
-  gender: typeof CHARACTER_GENDERS[number];
   face: typeof CHARACTER_FACES[number];
   hairstyle: typeof CHARACTER_HAIRSTYLES[number];
   upperBody: typeof CHARACTER_OUTFITS[number];
@@ -15,7 +16,6 @@ export interface CharacterAppearance {
 }
 
 export const DEFAULT_CHARACTER_APPEARANCE: Readonly<CharacterAppearance> = {
-  gender: "female",
   face: "calm",
   hairstyle: "bob",
   upperBody: "street",
@@ -62,10 +62,10 @@ export function getCharacterFrame(motion: CharacterMotion, direction: CharacterD
 
 export function getCharacterLayerPaths(appearance: CharacterAppearance): string[] {
   return [
-    `head/${appearance.gender}-${appearance.face}`,
-    `lower/${appearance.gender}-${appearance.lowerBody}`,
-    `shoes/${appearance.gender}-${appearance.shoes}`,
-    `upper/${appearance.gender}-${appearance.upperBody}-flat`,
+    `head/${appearance.face}`,
+    `lower/${appearance.lowerBody}`,
+    `shoes/${appearance.shoes}`,
+    `upper/${appearance.upperBody}`,
     `hair/${appearance.hairstyle}${appearance.headwear === "none" ? "" : `-${appearance.headwear}`}`,
   ].map((layer) => `/characters/blockbench/${layer}.png`);
 }
@@ -73,7 +73,6 @@ export function getCharacterLayerPaths(appearance: CharacterAppearance): string[
 export function randomCharacterAppearance(): CharacterAppearance {
   const pick = <T>(options: readonly T[]): T => options[Math.floor(Math.random() * options.length)]!;
   return {
-    gender: pick(CHARACTER_GENDERS),
     face: pick(CHARACTER_FACES),
     hairstyle: pick(CHARACTER_HAIRSTYLES),
     upperBody: pick(CHARACTER_OUTFITS),
@@ -84,6 +83,6 @@ export function randomCharacterAppearance(): CharacterAppearance {
 }
 
 export function characterAppearanceKey(appearance: CharacterAppearance): string {
-  return [appearance.gender, appearance.face, appearance.hairstyle,
+  return [appearance.face, appearance.hairstyle,
     appearance.upperBody, appearance.lowerBody, appearance.shoes, appearance.headwear].join(":");
 }

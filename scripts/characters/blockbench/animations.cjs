@@ -67,9 +67,7 @@ function createCharacterAnimations(api, model) {
       cycle(animation, "left_arm", "rotation", [[8, 0, -6], [0, 0, -8], [-8, 0, -6], [0, 0, -4]]);
       cycle(animation, "left_forearm", "rotation", [[-12, 0, 0], [-16, 0, 0], [-12, 0, 0], [-8, 0, 0]]);
     } else {
-      cycle(animation, "torso", "scale", [[1, 1, 1], [1.02, 1.045, 1.02], [1, 1, 1], [0.99, 0.98, 0.99]]);
-      cycle(animation, "head", "rotation", [[0, -2, 0], [1.5, 0, 0], [0, 2, 0], [-1.5, 0, 0]]);
-      cycle(animation, "hair", "rotation", [[0, 0, 0], [-0.5, 0, 0], [0, 0, 0], [0.5, 0, 0]]);
+      cycle(animation, "torso", "position", [[0, 0, 0], [0, 0.92, 0], [0, 0, 0], [0, -0.92, 0]]);
     }
   }
   const walking = animations.walk;

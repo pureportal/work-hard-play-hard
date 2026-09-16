@@ -7,6 +7,16 @@ const outfitMaterials = {
   kimono: ["#7e88b6", "#c8cde9", "#414d80", "#93728e", "#c8a4be", "#8a526d"],
   traveler: ["#4f8185", "#a0cbc1", "#30525f", "#504b5e", "#9991a3", "#805b48"],
   festival: ["#c47668", "#f4c6a4", "#693e53", "#444e75", "#99a7cd", "#9a7452"],
+  cyber: ["#303852", "#60eadc", "#191d35", "#292d49", "#50daca", "#6e5aa0"],
+  pirate: ["#913e57", "#e8b56e", "#4d293e", "#534452", "#aa8b8a", "#583938"],
+  astronaut: ["#e4d8c5", "#f8efdb", "#c57246", "#c2c6c9", "#edf0e7", "#e2d7c5"],
+  dragon: ["#388779", "#9acdad", "#22514d", "#386465", "#79a99a", "#41786b"],
+  jester: ["#8a5295", "#f2c164", "#4e326c", "#8c4d82", "#ebbc67", "#954e87"],
+  frog: ["#7eaf6c", "#d7e4a2", "#497959", "#648d66", "#b5d299", "#8abc72"],
+  biker: ["#3e3549", "#9792a5", "#241f32", "#363442", "#757184", "#3c344a"],
+  velvet: ["#9a365b", "#e27b94", "#522139", "#7a2e50", "#c75e80", "#922e53"],
+  starlight: ["#929acb", "#e4e7ff", "#555d95", "#747fae", "#d0dcf4", "#b3bad9"],
+  sunset: ["#ed946e", "#fff0bf", "#bd5d59", "#709cab", "#b5d6da", "#d59463"],
 };
 
 function characterMaterials(appearance) {
@@ -31,6 +41,7 @@ function characterMaterials(appearance) {
   }[appearance.hairstyle];
   return {
     jacket: top[0], jacketLight: top[1], jacketDark: top[2], trousers: bottom[3], trouserLight: bottom[4], shoe: shoes[5],
+    shoeTrim: shoes[1], shoeDark: shoes[2],
     hair: hair[0], hairDark: hair[1], hairLight: hair[2], hairShine: hair[3],
     leather: "#614349", ribbon: "#ab526b",
     teal: appearance.face === "shy" ? "#c49bcf" : appearance.face === "fierce" ? "#d9a05b" : "#7bc9b7",
@@ -42,9 +53,6 @@ function customizeCharacter(geometry, appearance) {
   for (const { element, layer } of geometry.parts) {
     for (const vertex of Object.values(element.vertices)) {
       if (layer === "upper" && vertex[1] > 30 && vertex[1] < 43 && vertex[2] > 0) vertex[2] += 0.35 * Math.sin((vertex[1] - 30) / 13 * Math.PI);
-      if (layer === "upper" && appearance.gender === "male") vertex[0] *= 1.06;
-      if (layer === "lower" && appearance.gender === "female") vertex[0] *= 0.94;
-      if (element.name === "Face" && appearance.gender === "male" && vertex[1] < 54) vertex[0] *= 1.045;
       if (layer === "lower" && ["sailor", "kimono", "festival"].includes(appearance.lowerBody) && element.parent.name !== "pelvis") {
         const center = Math.sign(vertex[0]) * 4;
         vertex[0] = center + (vertex[0] - center) * (appearance.lowerBody === "sailor" ? 1.12 : 1.25);

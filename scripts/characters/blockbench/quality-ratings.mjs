@@ -43,7 +43,7 @@ export function rateCharacterAsset(asset) {
   };
   if (asset.layer === "head") return {
     score: 8.5,
-    reason: `${faceReasons[appearance.face]} on the ${appearance.gender} head. Chibi proportions, side profiles and layer joins remain clean through all 128 frames.`,
+    reason: `${faceReasons[appearance.face]}. Chibi proportions, side profiles and layer joins remain clean through all 128 frames.`,
   };
   const outfit = appearance[{ upper: "upperBody", lower: "lowerBody", shoes: "shoes" }[asset.layer]];
   const detail = {
@@ -51,5 +51,5 @@ export function rateCharacterAsset(asset) {
     lower: "The lower garment retains clear leg separation and a fitted waist in standing, walking and seated poses",
     shoes: "The footwear retains clear toe and sole shapes, aligned foot contacts and distinct walking poses",
   }[asset.layer];
-  return { score: 8, reason: `${appearance.gender} / ${outfit}: ${detail}. The coordinated palette and outlines remain intact through all 128 frames.` };
+  return { score: 8, reason: `${outfit}: ${detail}. The coordinated palette and outlines remain intact through all 128 frames.` };
 }

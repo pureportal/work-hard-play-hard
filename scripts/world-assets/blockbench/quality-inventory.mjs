@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
-import { CHARACTER_ANIMATIONS, CHARACTER_DIRECTIONS, CHARACTER_GENDERS, CHARACTER_FACES, CHARACTER_HAIRSTYLES, CHARACTER_HEADWEAR, CHARACTER_OUTFITS } from "../../../packages/shared/src/character.ts";
+import { CHARACTER_ANIMATIONS, CHARACTER_DIRECTIONS, CHARACTER_FACES, CHARACTER_HAIRSTYLES, CHARACTER_HEADWEAR, CHARACTER_OUTFITS } from "../../../packages/shared/src/character.ts";
 
 const output = process.argv.find(value => value.startsWith("--output="))?.slice(9) ?? "artifacts/asset-quality-2026-09-15";
 await mkdir(output, { recursive: true });
@@ -41,7 +41,7 @@ for (const asset of assets) {
     for (const element of model.elements) for (const face of Object.values(element.faces ?? {})) assert(Number.isInteger(face.texture) && model.textures[face.texture], `${asset.id}/${element.name}: missing material`);
   }
 }
-const report = { createdAt: new Date().toISOString(), criteria: ["visual appeal", "clarity", "style consistency", "proportions", "visible defects"], passingScore: 8, scale: { defaultCameraZoom: 0.78, grid: 16, characterWorldSize: 80, characterScreenSize: 62.4, buildPreview: 38 }, counts: { catalog: catalog.assets.length, variants: assets.filter(asset => asset.family === "world").length, architecture: Object.keys(architecture).length, characterLayers: characters.layers.length, illustrations: illustrations.length, files: assets.length, worldDirectionalFrames: assets.filter(asset => asset.family === "world").reduce((sum, asset) => sum + asset.frames, 0), characterFrames: characters.layers.reduce((sum, layer) => sum + layer.frames, 0) }, customization: { genders: CHARACTER_GENDERS, faces: CHARACTER_FACES, hairstyles: CHARACTER_HAIRSTYLES, headwear: CHARACTER_HEADWEAR, outfits: CHARACTER_OUTFITS }, assets };
+const report = { createdAt: new Date().toISOString(), criteria: ["visual appeal", "clarity", "style consistency", "proportions", "visible defects"], passingScore: 8, scale: { defaultCameraZoom: 0.78, grid: 16, characterWorldSize: 80, characterScreenSize: 62.4, buildPreview: 38 }, counts: { catalog: catalog.assets.length, variants: assets.filter(asset => asset.family === "world").length, architecture: Object.keys(architecture).length, characterLayers: characters.layers.length, illustrations: illustrations.length, files: assets.length, worldDirectionalFrames: assets.filter(asset => asset.family === "world").reduce((sum, asset) => sum + asset.frames, 0), characterFrames: characters.layers.reduce((sum, layer) => sum + layer.frames, 0) }, customization: { faces: CHARACTER_FACES, hairstyles: CHARACTER_HAIRSTYLES, headwear: CHARACTER_HEADWEAR, outfits: CHARACTER_OUTFITS }, assets };
 await writeFile(`${output}/inventory.json`, JSON.stringify(report, null, 2) + "\n");
 console.log(JSON.stringify(report.counts, null, 2));
 console.log(catalog.assets.map(asset => `${asset.id}: ${asset.name} (${Object.keys(world[asset.id].variants).join(", ")})${world[asset.id].animation ? " animated" : ""}`).join("\n"));

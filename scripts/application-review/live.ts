@@ -101,7 +101,7 @@ try {
               await page.locator(".character-option").last().click();
               await review.capture(page, `${prefix}-avatar-${name.toLowerCase()}`);
             }
-            for (const name of ["Back", "Left", "Right", "Front", "Walk", "Idle", "Male", "Female", "Randomize"]) {
+            for (const name of ["Back", "Left", "Right", "Front", "Walk", "Idle", "Randomize"]) {
               await page.getByRole("dialog").getByRole("button", { name, exact: true }).click();
             }
           }

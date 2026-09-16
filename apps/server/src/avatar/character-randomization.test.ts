@@ -16,8 +16,8 @@ describe("initial character appearance", () => {
     const first = randomCharacterAppearance();
     random.mockReturnValue(0.999999);
     const second = randomCharacterAppearance();
-    expect(first).toEqual({ gender: "female", face: "calm", hairstyle: "bob", upperBody: "street", lowerBody: "street", shoes: "street", headwear: "none" });
-    expect(second).toEqual({ gender: "male", face: "shy", hairstyle: "longbraid", upperBody: "festival", lowerBody: "festival", shoes: "festival", headwear: "goggles" });
+    expect(first).toEqual({ face: "calm", hairstyle: "bob", upperBody: "street", lowerBody: "street", shoes: "street", headwear: "none" });
+    expect(second).toEqual({ face: "shy", hairstyle: "longbraid", upperBody: "sunset", lowerBody: "sunset", shoes: "sunset", headwear: "goggles" });
     expect(first).not.toBe(second);
   });
 
@@ -65,7 +65,7 @@ describe("initial character appearance", () => {
         const bootstrap = await first.app.inject({ method: "GET", url: "/v1/bootstrap", headers: { cookie } });
         expect(bootstrap.json().members.find((member: { id: string }) => member.id === userId).character).toEqual(character);
       }
-      const customized = { ...DEFAULT_CHARACTER_APPEARANCE, gender: "male", hairstyle: "swept", headwear: "cap" };
+      const customized = { ...DEFAULT_CHARACTER_APPEARANCE, hairstyle: "swept", headwear: "cap" };
       expect((await first.app.inject({ method: "PUT", url: "/v1/members/me/character", headers: { cookie }, payload: customized })).statusCode).toBe(200);
       await first.app.close();
       const restored = await createApplication({ database });

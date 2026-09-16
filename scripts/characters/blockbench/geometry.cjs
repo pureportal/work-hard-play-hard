@@ -70,9 +70,20 @@ function createCharacterGeometry(api, bones, palette) {
   }
 
   function patch(name, parent, points, material) {
+    const normal = new THREE.Vector3();
+    for (let index = 0; index < points.length; index++) {
+      const current = points[index];
+      const next = points[(index + 1) % points.length];
+      normal.x += (current[1] - next[1]) * (current[2] + next[2]);
+      normal.y += (current[2] - next[2]) * (current[0] + next[0]);
+      normal.z += (current[0] - next[0]) * (current[1] + next[1]);
+    }
+    const magnitudes = [Math.abs(normal.x), Math.abs(normal.y), Math.abs(normal.z)];
+    const axis = magnitudes.indexOf(Math.max(...magnitudes));
+    const contour = points.map(point => new THREE.Vector2(...point.filter((_, index) => index !== axis)));
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.Float32BufferAttribute(points.flat(), 3));
-    geometry.setIndex(Array.from({ length: points.length - 2 }, (_, index) => [0, index + 1, index + 2]).flat());
+    geometry.setIndex(THREE.ShapeUtils.triangulateShape(contour, []).flat());
     geometry.computeVertexNormals();
     return mesh(name, parent, geometry, material, false);
   }

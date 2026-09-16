@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { chromium } from "playwright-core";
 import puppeteer from "puppeteer";
-import { CHARACTER_GENDERS, CHARACTER_HAIRSTYLES, CHARACTER_FACES, CHARACTER_OUTFITS, CHARACTER_HEADWEAR, DEFAULT_CHARACTER_APPEARANCE } from "../../../packages/shared/src/character.ts";
+import { CHARACTER_HAIRSTYLES, CHARACTER_FACES, CHARACTER_OUTFITS, CHARACTER_HEADWEAR, DEFAULT_CHARACTER_APPEARANCE } from "../../../packages/shared/src/character.ts";
 
 const output = process.argv.find(argument => argument.startsWith("--output="))?.slice(9) ?? "artifacts/avatar-anime/after";
 await mkdir(output, { recursive: true });
@@ -24,7 +24,7 @@ try {
     const path = new URL(request.url()).pathname;
     if (!path.startsWith("/characters/blockbench/upper/")) return;
     if (!report.upperPaths.includes(path)) report.upperPaths.push(path);
-    if (!path.endsWith("-flat.png")) report.errors.push(`Unexpected upper-body asset: ${path}`);
+    if (!CHARACTER_OUTFITS.some(outfit => path.endsWith(`/${outfit}.png`))) report.errors.push(`Unexpected upper-body asset: ${path}`);
   });
   await page.addInitScript(() => {
     globalThis.__PIXI_APP_INIT__ = app => { globalThis.avatarReviewWorld = app; };
@@ -77,7 +77,7 @@ try {
   report.original = original;
   await page.emulateMedia({ reducedMotion: "reduce" });
   await openCreator();
-  await page.getByRole("button", { name: "Female", exact: true }).click();
+  assert.equal(await page.getByRole("button", { name: /^(Female|Male)$/ }).count(), 0);
   assert.equal(await page.getByRole("group", { name: /breast size/i }).count(), 0);
   assert.equal(await page.getByRole("button", { name: /^(No Breast|Flat|Medium|Big)$/ }).count(), 0);
   for (const [tab, name] of [["Face", "Calm"], ["Tops", "Bomber jacket"], ["Bottoms", "Denim trousers"], ["Shoes", "Sneakers"], ["Headwear", "None"]]) {
@@ -85,9 +85,7 @@ try {
     await page.getByRole("button", { name, exact: true }).click();
     await ready();
   }
-  for (const gender of CHARACTER_GENDERS) for (const [hairstyle, name] of newStyles) {
-    await page.getByRole("button", { name: gender === "female" ? "Female" : "Male", exact: true }).click();
-    await ready();
+  for (const [hairstyle, name] of newStyles) {
     const outfit = hairstyle === "curls" ? "traveler" : hairstyle === "longbraid" ? "festival" : "street";
     const headwear = hairstyle === "curls" ? "goggles" : hairstyle === "longbraid" ? "blossom" : "none";
     for (const [tab, label] of outfit === "street"
@@ -102,7 +100,7 @@ try {
     await page.getByRole("tab", { name: "Hair", exact: true }).click();
     await page.getByRole("button", { name, exact: true }).click();
     await ready();
-    const expected = { ...DEFAULT_CHARACTER_APPEARANCE, gender, hairstyle, upperBody: outfit, lowerBody: outfit, shoes: outfit, headwear };
+    const expected = { ...DEFAULT_CHARACTER_APPEARANCE, hairstyle, upperBody: outfit, lowerBody: outfit, shoes: outfit, headwear };
     const previewMatches = await page.locator(".character-stage canvas").evaluate(async (canvas, appearance) => {
       const { renderCharacter } = await import("/src/character-renderer.ts");
       const atlas = await renderCharacter(appearance);
@@ -111,7 +109,7 @@ try {
       return actual.length === expected.length && actual.every((value, index) => value === expected[index]);
     }, expected);
     assert(previewMatches, `${hairstyle}: creator composition`);
-    await page.screenshot({ path: `${output}/creator-${gender}-${hairstyle}.png` });
+    await page.screenshot({ path: `${output}/creator-${hairstyle}.png` });
     const saved = page.waitForResponse(response => response.url().endsWith("/v1/members/me/character") && response.request().method() === "PUT");
     await page.getByRole("button", { name: "Use character", exact: true }).click();
     assert.deepEqual((await (await saved).json()).character, expected);
@@ -133,24 +131,22 @@ try {
     assert.equal(world.width, 80);
     assert.equal(world.height, 80);
     assert.deepEqual(world.anchor, { x: 0.5, y: 0.95 });
-    await page.screenshot({ path: `${output}/world-${gender}-${hairstyle}.png` });
+    await page.screenshot({ path: `${output}/world-${hairstyle}.png` });
     report.saved.push({ appearance: expected, previewMatches, persisted: true, world });
     await openCreator();
   }
-  for (const gender of CHARACTER_GENDERS) for (const direction of ["Front", "Left", "Right", "Back"]) {
-    await page.getByRole("button", { name: gender === "female" ? "Female" : "Male", exact: true }).click();
-    await ready();
+  for (const direction of ["Front", "Left", "Right", "Back"]) {
     await page.getByRole("button", { name: direction, exact: true }).click();
     for (const category of ["Face", "Hair", "Tops", "Bottoms", "Shoes", "Headwear"]) {
       await page.getByRole("tab", { name: category, exact: true }).click();
       const count = category === "Hair" ? CHARACTER_HAIRSTYLES.length : category === "Face" ? CHARACTER_FACES.length : category === "Headwear" ? CHARACTER_HEADWEAR.length : CHARACTER_OUTFITS.length;
       await optionsReady(count);
-      report.options.push({ gender, category, direction, count });
+      report.options.push({ category, direction, count });
       await page.locator(".character-controls").evaluate(element => { element.scrollTop = 0; });
-      await page.locator(".character-controls").screenshot({ path: `${output}/options-${gender}-${category}-${direction}.png` });
+      await page.locator(".character-controls").screenshot({ path: `${output}/options-${category}-${direction}.png` });
       if (category === "Hair") {
         await page.getByRole("button", { name: "Pearl braid", exact: true }).scrollIntoViewIfNeeded();
-        await page.locator(".character-controls").screenshot({ path: `${output}/options-${gender}-Hair-${direction}-lower.png` });
+        await page.locator(".character-controls").screenshot({ path: `${output}/options-Hair-${direction}-lower.png` });
       }
     }
   }
@@ -177,7 +173,7 @@ try {
     }
   }
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
-  assert.equal(report.upperPaths.length, CHARACTER_GENDERS.length * CHARACTER_OUTFITS.length);
+  assert.equal(report.upperPaths.length, CHARACTER_OUTFITS.length);
   assert.deepEqual(report.errors, []);
 } finally {
   try {
