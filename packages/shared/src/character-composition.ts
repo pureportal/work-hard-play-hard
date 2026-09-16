@@ -1,7 +1,11 @@
 import { CHARACTER_ATLAS_HEIGHT, CHARACTER_ATLAS_SIZE } from "./character.js";
 
-export function composeCharacterLayers(layers: readonly Uint8ClampedArray[]): Uint8ClampedArray {
-  const pixelCount = CHARACTER_ATLAS_SIZE * CHARACTER_ATLAS_HEIGHT;
+export function composeCharacterLayers(
+  layers: readonly Uint8ClampedArray[],
+  width = CHARACTER_ATLAS_SIZE,
+  height = CHARACTER_ATLAS_HEIGHT,
+): Uint8ClampedArray {
+  const pixelCount = width * height;
   const colorBytes = pixelCount * 4;
   const result = new Uint8ClampedArray(colorBytes);
   const nearest = new Uint16Array(pixelCount).fill(65535);

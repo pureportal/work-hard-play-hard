@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { gzipSync } from "node:zlib";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "playwright-core";
 import puppeteer from "puppeteer";
 
-const distribution = new URL("../apps/client/dist/", import.meta.url);
+const distribution = process.argv[3] ? pathToFileURL(`${resolve(process.argv[3])}/`) : new URL("../apps/client/dist/", import.meta.url);
 const html = await readFile(new URL("index.html", distribution), "utf8");
 const entry = html.match(/src="(\/assets\/[^"]+\.js)"/)?.[1];
 assert(entry, "Build the client before measuring it");

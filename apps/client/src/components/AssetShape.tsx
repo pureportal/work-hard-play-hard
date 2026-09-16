@@ -1,6 +1,7 @@
 import { getDefaultAssetVariantId } from "@workhard/shared";
 import type { AssetDefinition, AssetRotation } from "@workhard/shared";
 import { getWorldAssetArtwork } from "../world-asset-artwork";
+import { getAssetPreviewPath } from "../optimized-images";
 import "../world-asset.css";
 
 export function AssetShape({ asset, rotation = 0, variantId = getDefaultAssetVariantId(asset) }: {
@@ -9,7 +10,7 @@ export function AssetShape({ asset, rotation = 0, variantId = getDefaultAssetVar
   variantId?: string;
 }) {
   const artwork = getWorldAssetArtwork(asset, variantId, rotation);
-  const { bounds, frame } = artwork;
+  const { bounds } = artwork;
   const padding = 6;
 
   return (
@@ -20,18 +21,15 @@ export function AssetShape({ asset, rotation = 0, variantId = getDefaultAssetVar
       preserveAspectRatio="xMidYMid meet"
       viewBox={`${bounds.x - padding} ${bounds.y - padding} ${bounds.width + padding * 2} ${bounds.height + padding * 2}`}
     >
-      <svg
+      <image
         className="asset-shape-artwork"
+        href={getAssetPreviewPath(artwork.path, rotation)}
         x={bounds.x}
         y={bounds.y}
         width={bounds.width}
         height={bounds.height}
-        viewBox={`${frame.x} ${frame.y} ${frame.width} ${frame.height}`}
         preserveAspectRatio="none"
-        overflow="hidden"
-      >
-        <image href={artwork.path} width={artwork.atlasWidth} height={artwork.atlasHeight} />
-      </svg>
+      />
     </svg>
   );
 }

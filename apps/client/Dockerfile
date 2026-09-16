@@ -17,6 +17,7 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 COPY apps/client apps/client
 COPY packages/shared packages/shared
+COPY scripts/images/manifest.json scripts/images/manifest.json
 
 ARG VITE_SERVER_URL=
 RUN VITE_SERVER_URL="$VITE_SERVER_URL" pnpm --filter @workhard/client build

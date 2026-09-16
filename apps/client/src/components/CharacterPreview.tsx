@@ -50,7 +50,9 @@ export function CharacterPreview({ appearance, crop = "full", className = "", la
       return;
     }
     context.clearRect(0, 0, canvasWidth, canvasHeight);
-    void renderCharacter(appearanceRef.current).then((atlas) => {
+    const still = getCharacterFrame("idle", direction, 0);
+    const region = motion ? undefined : { x: still.x + cropX, y: still.y + cropY, width: cropWidth, height: cropHeight };
+    void renderCharacter(appearanceRef.current, region).then((atlas) => {
       if (cancelled) return;
       const startedAt = performance.now();
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -65,7 +67,7 @@ export function CharacterPreview({ appearance, crop = "full", className = "", la
           previousFrame = frameKey;
           context.clearRect(0, 0, canvasWidth, canvasHeight);
           context.imageSmoothingEnabled = false;
-          context.drawImage(atlas, frame.x + cropX, frame.y + cropY, cropWidth, cropHeight, Math.floor((canvasWidth - cropWidth) / 2), Math.floor((canvasHeight - cropHeight) / 2), cropWidth, cropHeight);
+          context.drawImage(atlas, region ? 0 : frame.x + cropX, region ? 0 : frame.y + cropY, cropWidth, cropHeight, Math.floor((canvasWidth - cropWidth) / 2), Math.floor((canvasHeight - cropHeight) / 2), cropWidth, cropHeight);
         }
         if (animate) animationFrame = requestAnimationFrame(draw);
       };

@@ -1,6 +1,7 @@
 import { ASSET_CATALOG, ASSET_ROTATIONS, getDefaultAssetVariantId, requireAssetDefinition, type FloorLayout, type WorldObject } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
-import { getAssetDirectionIndicators, getAssetOrientationLabel, getRotatedAssetPosition, rotateAssetClockwise } from "./asset-orientation";
+import { getAssetOrientationLabel, getRotatedAssetPosition, rotateAssetClockwise } from "./asset-orientation";
+import { getAssetDirectionIndicators } from "./asset-direction-indicators";
 import { getWorldAssetArtwork } from "./world-asset-artwork";
 
 const layout: FloorLayout = { floorId: "floor", revision: 1, objects: [], walls: [], openings: [], rooms: [], tiles: [] };

@@ -17,6 +17,7 @@ beforeEach(() => {
   textures = new WorldAssetTextures();
   vi.stubGlobal("Image", vi.fn(function () {
     const image = document.createElement("img");
+    image.decode = vi.fn().mockResolvedValue(undefined);
     Object.defineProperties(image, {
       naturalWidth: { value: 1024, configurable: true },
       naturalHeight: { value: 256, configurable: true },
@@ -32,6 +33,25 @@ afterEach(() => {
 });
 
 describe("world artwork textures", () => {
+  it("waits for decoding before exposing the texture and retries after decode failure", async () => {
+    const failed = vi.fn();
+    const first = textures.createSprite(artwork(0), failed);
+    let rejectDecode!: (error: Error) => void;
+    const decoding = new Promise<void>((_resolve, reject) => { rejectDecode = reject; });
+    images[0]!.decode = vi.fn(() => decoding);
+    images[0]!.dispatchEvent(new Event("load"));
+    await Promise.resolve();
+    expect(first.visible).toBe(false);
+    rejectDecode(new Error("Invalid WebP data"));
+    await vi.waitFor(() => expect(failed).toHaveBeenCalledOnce());
+    const retry = textures.createSprite(artwork(0), failed);
+    expect(images).toHaveLength(2);
+    images[1]!.dispatchEvent(new Event("load"));
+    await vi.waitFor(() => expect(retry.visible).toBe(true));
+    first.destroy();
+    retry.destroy();
+  });
+
   it("plays synchronized sprite and shadow frames after loading and wraps the loop", async () => {
     const view = artwork(0);
     view.animation = { frames: [view.frame, artwork(512).frame], frameDuration: 100 };
@@ -194,7 +214,7 @@ describe("world artwork textures", () => {
 
 function artwork(x: number): WorldAssetArtwork {
   return {
-    path: "/world-assets/test/oak.png",
+    path: "/world-assets/storage-credenza/ink.png",
     frame: { x: x + 12, y: 20, width: 200, height: 125 },
     bounds: { x: 0, y: -12, width: 96, height: 60 },
     atlasWidth: 1024,

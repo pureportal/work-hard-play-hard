@@ -9,6 +9,7 @@ import { WorldCanvas, type WorldCanvasProps } from "./WorldCanvas";
 import { ConfirmationDialog } from "./ConfirmationDialog";
 import { getWorldAssetArtwork, getWorldAssetSurfaceHeight } from "../world-asset-artwork";
 import { getPlacedWorldAssetBounds } from "../world-asset-placement";
+import { getOptimizedImagePath } from "../optimized-images";
 import * as characterRenderer from "../character-renderer";
 import { MusicIndicator } from "../spotify/music-indicator";
 import { CharacterSprite } from "../character-sprite";
@@ -685,6 +686,7 @@ describe("WorldCanvas artwork", () => {
     images = [];
     vi.stubGlobal("Image", vi.fn(function () {
       const image = document.createElement("img");
+      image.decode = vi.fn().mockResolvedValue(undefined);
       Object.defineProperties(image, {
         naturalWidth: { value: artwork.atlasWidth },
         naturalHeight: { value: artwork.atlasHeight },
@@ -703,7 +705,7 @@ describe("WorldCanvas artwork", () => {
     const { container } = render(<WorldCanvas {...createProps()} players={[]} members={[]} layout={{ ...layout, objects: [object] }} />);
     await findCanvas(container);
     expect(images).toHaveLength(1);
-    expect(images[0]!.getAttribute("src")).toBe("/world-assets/storage-credenza/ink.png");
+    expect(images[0]!.getAttribute("src")).toBe(getOptimizedImagePath("/world-assets/storage-credenza/ink.png"));
     images[0]!.dispatchEvent(new Event("load"));
     const placed = getApplication().stage.getChildByLabel("world-asset:artwork-fixture", true)!;
     const body = placed.getChildByLabel("artwork")!;

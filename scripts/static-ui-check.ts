@@ -6,6 +6,7 @@ import puppeteer, { type HTTPRequest, type Page } from "puppeteer";
 import { ASSET_CATALOG, type ClientCommand, type MeetingMediaSession, type ServerEvent } from "../packages/shared/src/index.js";
 import { WorkspaceStore } from "../apps/server/src/store.js";
 import { verifyTicTacToeUi } from "./tic-tac-toe-ui-check.js";
+import { getAssetPreviewPath } from "../apps/client/src/optimized-images.js";
 
 const workspaceDirectory = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distributionDirectory = resolve(workspaceDirectory, "apps/client/dist");
@@ -175,8 +176,8 @@ try {
   assert(categoryTargetHeight >= 40, "Compact asset categories have undersized touch targets.");
   await page.click(".build-access-button");
   await page.waitForSelector(".room-permission-editor", { visible: true });
-  await assertViewport(page, [".permissions-panel"]);
-  await assertContained(page, ".permissions-panel", ["input", "select", "button"]);
+  await assertViewport(page, [".room-settings-dialog"]);
+  await assertContained(page, ".room-settings-dialog", ["input", "select", "button"]);
   const roomFieldMetrics = await page.$eval('.permission-room-name input:not([type="color"])', (input) => ({
     height: input.getBoundingClientRect().height,
     fontSize: Number.parseFloat(getComputedStyle(input).fontSize),
@@ -402,7 +403,7 @@ try {
   report("compact game ready");
 
   await page.click('button[aria-label="Close game"]');
-  await page.locator('.game-exit-prompt button::-p-text(Leave game)').click();
+  await page.locator('.confirmation-dialog button::-p-text(Leave game)').click();
   await page.waitForSelector(".falling-blocks-game", { hidden: true });
 
   await verifyTicTacToeUi(page, artifactDirectory);
@@ -423,7 +424,8 @@ try {
     const socket = (globalThis as typeof globalThis & { mockSockets: Array<{ emit: (event: unknown) => void }> }).mockSockets.at(-1);
     socket?.emit({ type: "presence.changed", member });
   }, demotedMember);
-  await page.waitForSelector(".build-panel:not(.player-build-panel)", { hidden: true });
+  await page.waitForSelector(".build-layout-panel", { visible: true });
+  await clickButtonWithText(page, "Personal");
   await page.waitForSelector(".player-build-panel", { visible: true });
   assert(await page.$('button[aria-label="Build"]'), "Personal build tools disappeared after demotion.");
   report("live role update ready");
@@ -493,28 +495,29 @@ async function verifyDesktopBuildSidebar(page: Page): Promise<void> {
   await clickButtonWithText(page, "Storage");
   await clickButtonWithText(page, "Credenza");
   await clickButtonWithText(page, "Ink");
-  await page.waitForSelector('.asset-grid > button.active image[href="/world-assets/storage-credenza/ink.png"]');
-  const frontCrop = await page.$eval('.asset-grid > button.active .asset-shape-artwork', (element) => element.getAttribute("viewBox"));
+  const frontPreview = getAssetPreviewPath("/world-assets/storage-credenza/ink.png", 0);
+  await page.waitForSelector(`.asset-grid > button.active image[href="${frontPreview}"]`);
   await page.click(".asset-rotate");
-  await page.waitForFunction((previousCrop) => document.querySelector('.asset-grid > button.active .asset-shape-artwork')?.getAttribute("viewBox") !== previousCrop, {}, frontCrop);
+  const rotatedPreview = getAssetPreviewPath("/world-assets/storage-credenza/ink.png", 90);
+  await page.waitForSelector(`.asset-grid > button.active image[href="${rotatedPreview}"]`);
   await page.screenshot({ path: resolve(artifactDirectory, "build-sidebar-world-assets.png") });
   await page.select(".asset-rarity-filter select", "legendary");
   await clickButtonWithText(page, "Lighting");
-  assert(await page.$$eval(".asset-grid > button", (buttons) => buttons.length === 1 && buttons[0]?.textContent?.trim() === "Crystal floor lamp"), "Rarity filter did not select the legendary lamp.");
+  assert(await page.$$eval(".asset-grid > button", (buttons) => buttons.length === 1 && buttons[0]?.getAttribute("aria-label") === "Crystal floor lamp"), "Rarity filter did not select the legendary lamp.");
   await page.select(".asset-rarity-filter select", "all");
 
   await clickButtonWithText(page, "Seating");
   await clickButtonWithText(page, "Office chair");
   assert(await page.$eval('.asset-category-tabs button[aria-selected="true"]', (button) => button.textContent?.trim() === "Seating"), "Seating did not receive the selected tab state.");
-  assert(await page.$eval('.asset-grid > button[aria-pressed="true"]', (button) => button.textContent?.trim() === "Office chair"), "Office chair did not receive the selected asset state.");
+  assert(await page.$eval('.asset-grid > button[aria-pressed="true"]', (button) => button.getAttribute("aria-label") === "Office chair"), "Office chair did not receive the selected asset state.");
   await page.click('button[aria-label="Use dark mode"]');
   await page.waitForFunction(() => document.documentElement.dataset.theme === "dark");
   await page.screenshot({ path: resolve(artifactDirectory, "build-sidebar-dark-selection.png") });
 
   await page.click(".build-access-button");
   await page.waitForSelector(".room-permission-editor", { visible: true });
-  await assertViewport(page, [".permissions-panel"]);
-  await assertContained(page, ".permissions-panel", ["input", "select", "button"]);
+  await assertViewport(page, [".room-settings-dialog"]);
+  await assertContained(page, ".room-settings-dialog", ["input", "select", "button"]);
   await page.screenshot({ path: resolve(artifactDirectory, "build-sidebar-dark-room-settings.png") });
   await page.click('button[aria-label="Back to build"]');
   await page.waitForSelector(".build-panel", { visible: true });
@@ -866,7 +869,7 @@ async function assertContained(targetPage: Page, containerSelector: string, sele
     return candidates.flatMap((selector) => [...container.querySelectorAll(selector)])
       .filter((element) => {
         const rect = element.getBoundingClientRect();
-        return rect.left < containerRect.left - 1 || rect.right > containerRect.right + 1;
+        return rect.width > 0 && rect.height > 0 && (rect.left < containerRect.left - 1 || rect.right > containerRect.right + 1);
       })
       .map((element) => `${element.tagName}.${element.className}`);
   }, selectors);
@@ -874,19 +877,27 @@ async function assertContained(targetPage: Page, containerSelector: string, sele
 }
 
 async function assertFullyContained(targetPage: Page, containerSelector: string, selectors: string[]): Promise<void> {
-  const failures = await targetPage.$eval(containerSelector, (container, candidates) => {
+  await targetPage.waitForFunction((selector, candidates) => {
+    const container = document.querySelector(selector);
+    if (!container) return false;
     const containerRect = container.getBoundingClientRect();
     return candidates.flatMap((selector) => [...container.querySelectorAll(selector)])
-      .filter((element) => {
+      .every((element) => {
         const rect = element.getBoundingClientRect();
-        return rect.left < containerRect.left - 1
-          || rect.top < containerRect.top - 1
-          || rect.right > containerRect.right + 1
-          || rect.bottom > containerRect.bottom + 1;
-      })
-      .map((element) => `${element.tagName}.${element.className}`);
-  }, selectors);
-  assert(failures.length === 0, `Controls overflow their region: ${failures.join(", ")}`);
+        return rect.left >= containerRect.left - 1
+          && rect.top >= containerRect.top - 1
+          && rect.right <= containerRect.right + 1
+          && rect.bottom <= containerRect.bottom + 1;
+      });
+  }, {}, containerSelector, selectors).catch(async (error: unknown) => {
+    await targetPage.screenshot({ path: resolve(artifactDirectory, "ui-containment-failure.png") });
+    const bounds = await targetPage.$eval(containerSelector, (container, candidates) => ({
+      container: container.getBoundingClientRect().toJSON(),
+      controls: candidates.flatMap((selector) => [...container.querySelectorAll(selector)])
+        .map((element) => ({ label: element.textContent, bounds: element.getBoundingClientRect().toJSON() })),
+    }), selectors);
+    throw new Error(`Controls overflow their region: ${JSON.stringify(bounds)}`, { cause: error });
+  });
 }
 
 async function assertTouchUi(targetPage: Page): Promise<void> {
@@ -916,7 +927,7 @@ async function assertTouchUi(targetPage: Page): Promise<void> {
 
 async function clickButtonWithText(targetPage: Page, text: string): Promise<void> {
   const clicked = await targetPage.evaluate((label) => {
-    const button = [...document.querySelectorAll("button")].find((candidate) => candidate.textContent?.trim() === label);
+    const button = [...document.querySelectorAll("button")].find((candidate) => (candidate.getAttribute("aria-label") ?? candidate.textContent?.trim()) === label);
     button?.click();
     return Boolean(button);
   }, text);

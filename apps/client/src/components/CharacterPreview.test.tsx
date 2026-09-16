@@ -41,6 +41,20 @@ describe("character preview recovery", () => {
     expect(onReady).not.toHaveBeenCalledWith(true);
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     await waitFor(() => expect(onReady).toHaveBeenLastCalledWith(true));
-    expect(renderCharacter).toHaveBeenLastCalledWith(appearance);
+    expect(renderCharacter).toHaveBeenLastCalledWith(appearance, { x: 24, y: 0, width: 72, height: 120 });
+  });
+
+  it("renders the selected direction at the displayed crop size", async () => {
+    const onReady = vi.fn();
+    render(<CharacterPreview appearance={DEFAULT_CHARACTER_APPEARANCE} crop="hair" direction="up" onReady={onReady} />);
+    await waitFor(() => expect(onReady).toHaveBeenLastCalledWith(true));
+    expect(renderCharacter).toHaveBeenLastCalledWith(DEFAULT_CHARACTER_APPEARANCE, { x: 28, y: 376, width: 64, height: 68 });
+  });
+
+  it("retains the full atlas for animated previews", async () => {
+    const onReady = vi.fn();
+    render(<CharacterPreview appearance={DEFAULT_CHARACTER_APPEARANCE} motion="sit-listen" direction="left" onReady={onReady} />);
+    await waitFor(() => expect(onReady).toHaveBeenLastCalledWith(true));
+    expect(renderCharacter).toHaveBeenLastCalledWith(DEFAULT_CHARACTER_APPEARANCE, undefined);
   });
 });

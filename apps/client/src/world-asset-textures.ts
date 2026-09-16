@@ -1,5 +1,7 @@
 import { Rectangle, Sprite, Texture } from "pixi.js";
 import type { WorldAssetArtwork } from "./world-asset-artwork";
+import { getOptimizedImagePath } from "./optimized-images";
+import { decodeImage } from "./image-decoding";
 
 interface AssetTexture {
   image: HTMLImageElement;
@@ -87,31 +89,36 @@ export class WorldAssetTextures {
     let entry = this.textures.get(artwork.path);
     if (!entry) {
       const image = new Image();
+      image.decoding = "async";
       const record: AssetTexture = { image, frames: new Map(), loaded: Promise.resolve(Texture.EMPTY) };
       record.loaded = new Promise<Texture>((resolve, reject) => {
-        image.onload = () => {
-          if (this.destroyed) {
-            resolve(Texture.EMPTY);
-            return;
-          }
-          if (image.naturalWidth !== artwork.atlasWidth || image.naturalHeight !== artwork.atlasHeight) {
+        image.onload = async () => {
+          try {
+            await decodeImage(image);
+            if (this.destroyed) {
+              resolve(Texture.EMPTY);
+              return;
+            }
+            if (image.naturalWidth !== artwork.atlasWidth || image.naturalHeight !== artwork.atlasHeight) {
+              throw new Error(`Invalid world artwork dimensions: ${artwork.path}`);
+            }
+            const texture = Texture.from(image);
+            texture.source.scaleMode = "nearest";
+            texture.source.minFilter = "linear";
+            texture.source.mipmapFilter = "linear";
+            texture.source.autoGenerateMipmaps = true;
+            record.texture = texture;
+            resolve(texture);
+          } catch (error) {
             this.textures.delete(artwork.path);
-            reject(new Error(`Invalid world artwork dimensions: ${artwork.path}`));
-            return;
+            reject(error);
           }
-          const texture = Texture.from(image);
-          texture.source.scaleMode = "nearest";
-          texture.source.minFilter = "linear";
-          texture.source.mipmapFilter = "linear";
-          texture.source.autoGenerateMipmaps = true;
-          record.texture = texture;
-          resolve(texture);
         };
         image.onerror = () => {
           this.textures.delete(artwork.path);
           reject(new Error(`World artwork could not load: ${artwork.path}`));
         };
-        image.src = artwork.path;
+        image.src = getOptimizedImagePath(artwork.path);
       });
       this.textures.set(artwork.path, record);
       entry = record;

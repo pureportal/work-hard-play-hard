@@ -28,7 +28,7 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
     "test:ui": "pnpm --filter @workhard/server exec tsx ../../scripts/static-ui-check.ts && node scripts/static-landing-check.mjs",
-    "check": "pnpm release:validate && pnpm assets:world:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:ui",
+    "check": "pnpm release:validate && pnpm assets:world:check && pnpm assets:optimize:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:ui",
     "e2e": "pnpm --filter @workhard/server exec tsx ../../scripts/empty-workspace-browser-check.ts",
     "e2e:building": "pnpm --filter @workhard/server exec tsx ../../scripts/room-building-browser-check.ts",
     "e2e:economy": "pnpm build:client && pnpm --filter @workhard/server exec tsx ../../scripts/economy-browser-check.ts",
@@ -39,7 +39,7 @@
     "e2e:meetings": "pnpm build:client && pnpm --filter @workhard/server exec tsx ../../scripts/meetings-browser-check.ts",
     "e2e:open-calls": "pnpm --filter @workhard/client typecheck && pnpm --filter @workhard/client exec vite build --outDir ../../artifacts/open-calls/client && pnpm --filter @workhard/server exec tsx ../../scripts/open-calls-browser-check.ts",
     "e2e:whiteboard": "pnpm --filter @workhard/client build && pnpm --filter @workhard/server exec tsx tests/whiteboard-live-check.ts",
-    "assets:characters": "node scripts/characters/blockbench/generate.mjs",
+    "assets:characters": "node scripts/characters/blockbench/generate.mjs && pnpm assets:optimize",
     "assets:characters:review": "node scripts/characters/blockbench/review.mjs && node scripts/characters/blockbench/headwear-review.mjs && node scripts/characters/blockbench/appearance-review.mjs",
     "e2e:auth": "pnpm build:client && pnpm --filter @workhard/server exec tsx ../../scripts/auth-invite-e2e.ts",
     "ui:check": "pnpm build && pnpm test:ui",
@@ -47,7 +47,10 @@
     "assets:world:review": "node scripts/world-assets/blockbench/playwright-review.mjs",
     "assets:world:preview": "node scripts/world-assets/blockbench/render-office-preview.mjs",
     "assets:world:ui": "pnpm --filter @workhard/server exec tsx ../../scripts/world-assets/playwright-check.ts",
-    "assets:world": "node scripts/world-assets/blockbench/generate.mjs && node scripts/world-assets/blockbench/import.mjs && node scripts/world-assets/blockbench/generate.mjs --architecture && node scripts/world-assets/blockbench/import.mjs --architecture"
+    "assets:world": "node scripts/world-assets/blockbench/generate.mjs && node scripts/world-assets/blockbench/import.mjs && node scripts/world-assets/blockbench/generate.mjs --architecture && node scripts/world-assets/blockbench/import.mjs --architecture && pnpm assets:optimize",
+    "assets:audit": "pnpm --filter @workhard/server exec tsx ../../scripts/images/audit.mjs",
+    "assets:optimize": "node scripts/images/optimize.mjs",
+    "assets:optimize:check": "node scripts/images/optimize.mjs --check"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
