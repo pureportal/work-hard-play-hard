@@ -1,5 +1,5 @@
 import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ChessMatchView, Member } from "@workhard/shared";
 import { ChessGame } from "./ChessGame";
@@ -81,7 +81,7 @@ describe("ChessGame", () => {
     expect(onRespondToDraw).toHaveBeenCalledWith(true);
     fireEvent.click(screen.getByRole("button", { name: "Resign" }));
     expect(screen.getByText("Resign game?")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Resign" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Resign game?" })).getByRole("button", { name: "Resign" }));
     expect(onResign).toHaveBeenCalledOnce();
 
     rerender(game({
@@ -118,7 +118,7 @@ describe("ChessGame", () => {
     fireEvent.click(screen.getByRole("button", { name: "Resign" }));
     rerender(game({ ...initialMatch(), turn: "black" }, "user-maya", { onResign }));
     expect(screen.getByText("Resign game?")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Resign" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Resign game?" })).getByRole("button", { name: "Resign" }));
     expect(onResign).toHaveBeenCalledOnce();
   });
 

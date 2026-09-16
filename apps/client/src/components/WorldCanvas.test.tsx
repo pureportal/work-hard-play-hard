@@ -6,6 +6,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { getOutdoorBounds, type Floor, type FloorLayout, type Member, type WorldPlayer } from "@workhard/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WorldCanvas, type WorldCanvasProps } from "./WorldCanvas";
+import { ConfirmationDialog } from "./ConfirmationDialog";
 import { getWorldAssetArtwork, getWorldAssetSurfaceHeight } from "../world-asset-artwork";
 import * as characterRenderer from "../character-renderer";
 import { MusicIndicator } from "../spotify/music-indicator";
@@ -79,6 +80,29 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+});
+
+describe("WorldCanvas modal input", () => {
+  it("stops held movement when a confirmation opens and blocks movement behind it", async () => {
+    const onDirectionalInput = vi.fn();
+    const props = { ...createProps(), onDirectionalInput };
+    const view = (confirming: boolean) => <>
+      <WorldCanvas {...props} />
+      {confirming && <ConfirmationDialog title="Leave game?" confirmLabel="Leave" onCancel={vi.fn()} onConfirm={vi.fn()} />}
+    </>;
+    const { container, rerender } = render(view(false));
+    const canvas = await findCanvas(container);
+    fireEvent.keyDown(canvas, { key: "ArrowDown" });
+    expect(onDirectionalInput).toHaveBeenLastCalledWith(1, 0, 1);
+    rerender(view(true));
+    expect(onDirectionalInput).toHaveBeenLastCalledWith(2, 0, 0);
+    fireEvent.keyDown(document.activeElement!, { key: "ArrowDown" });
+    fireEvent.keyUp(document.activeElement!, { key: "ArrowDown" });
+    expect(onDirectionalInput).toHaveBeenCalledTimes(2);
+    rerender(view(false));
+    fireEvent.keyDown(canvas, { key: "ArrowDown" });
+    expect(onDirectionalInput).toHaveBeenLastCalledWith(3, 0, 1);
+  });
 });
 
 describe("WorldCanvas start point", () => {

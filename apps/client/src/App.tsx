@@ -90,7 +90,7 @@ import { MeetingOverlay } from "./components/MeetingOverlay";
 import { MeetingInvitationNotice } from "./components/MeetingInvitationNotice";
 import { MediaConnection } from "./media-connection";
 import type { MeetingInvitation } from "@workhard/shared";
-import { MeetingSwitchDialog } from "./components/MeetingSwitchDialog";
+import { ConfirmationDialog } from "./components/ConfirmationDialog";
 import { MeetingsPanel } from "./components/MeetingsPanel";
 import { NavRail, type WorkspacePanel } from "./components/NavRail";
 import { PeoplePanel } from "./components/PeoplePanel";
@@ -2828,10 +2828,10 @@ export function Workspace({
       })}
 
       {activePanel !== "build" && meetingSwitch && (
-        <MeetingSwitchDialog
-          meetingTitle={meetingSwitch.meeting.title}
-          consequence={meetingSwitch.consequence}
-          actionLabel={meetingSwitch.view === "small" ? "Open Small" : "Open"}
+        <ConfirmationDialog
+          title={`Open ${meetingSwitch.meeting.title}?`}
+          description={meetingSwitch.consequence}
+          confirmLabel={meetingSwitch.view === "small" ? "Open Small" : "Open"}
           onCancel={() => setMeetingSwitch(undefined)}
           onConfirm={() => {
             const next = meetingSwitch;

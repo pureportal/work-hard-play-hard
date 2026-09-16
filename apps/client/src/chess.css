@@ -662,31 +662,16 @@
   border-radius: 8px;
 }
 
-.chess-draw-response,
-.chess-resign-confirmation {
+.chess-draw-response {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
-.chess-draw-response > span,
-.chess-resign-confirmation > span {
+.chess-draw-response > span {
   grid-column: 1 / -1;
   font-size: 12px;
   text-align: center;
-}
-
-.chess-resign-confirmation button {
-  color: var(--ink);
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-}
-
-.chess-resign-confirmation button.is-danger {
-  color: #fff;
-  background: #a83e4d;
-  border-color: #a83e4d;
 }
 
 @media (max-width: 700px) {

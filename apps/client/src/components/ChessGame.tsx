@@ -15,6 +15,7 @@ import { Avatar } from "./Avatar";
 import { ChessMark } from "./ChessMark";
 import { ChessBoard } from "./ChessBoard";
 import { IconButton } from "./IconButton";
+import { ConfirmationDialog } from "./ConfirmationDialog";
 
 interface ChessGameProps {
   match: ChessMatchView;
@@ -229,14 +230,10 @@ export function ChessGame({
                     <Handshake size={16} />{match.drawOfferByUserId === currentUserId ? "Draw offered" : "Offer draw"}
                   </button>
                 )}
-                {confirmingResignation ? (
-                  <div className="chess-resign-confirmation">
-                    <span>Resign game?</span>
-                    <button onClick={() => setConfirmingResignation(false)}>Cancel</button>
-                    <button className="is-danger" onClick={onResign}>Resign</button>
-                  </div>
-                ) : (
-                  <button className="chess-resign-button" onClick={() => setConfirmingResignation(true)}><Flag size={15} />Resign</button>
+                <button className="chess-resign-button" onClick={() => setConfirmingResignation(true)}><Flag size={15} />Resign</button>
+                {confirmingResignation && (
+                  <ConfirmationDialog title="Resign game?" confirmLabel="Resign" pending={pending}
+                    onCancel={() => setConfirmingResignation(false)} onConfirm={onResign} />
                 )}
               </div>
             )}

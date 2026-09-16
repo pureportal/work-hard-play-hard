@@ -270,8 +270,7 @@
   min-width: 180px;
 }
 
-.game-result-actions,
-.game-exit-prompt {
+.game-result-actions {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -280,17 +279,6 @@
   padding: 14px;
   border-top: 1px solid var(--line);
   flex-shrink: 0;
-}
-
-.game-exit-prompt {
-  background: var(--panel-strong);
-}
-
-.game-exit-prompt p {
-  margin: 0;
-  flex-basis: 100%;
-  text-align: center;
-  font-size: 13px;
 }
 
 .chess-bot-error {
@@ -357,13 +345,6 @@
   .game-header .tic-tac-toe-mark {
     width: 36px;
     height: 36px;
-  }
-  .game-exit-prompt {
-    gap: 8px;
-    padding: 8px;
-  }
-  .game-exit-prompt p {
-    flex-basis: auto;
   }
 }
 

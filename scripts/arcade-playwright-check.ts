@@ -132,7 +132,7 @@ try {
         await page.getByRole("button", { name: "Resume", exact: true }).click();
         await page.getByRole("button", { name: "Close game", exact: true }).click();
         await capture(page, `${prefix}-exit`);
-        await page.locator(".game-exit-prompt").getByRole("button", { name: "Keep playing", exact: true }).click();
+        await page.locator(".confirmation-dialog").getByRole("button", { name: "Keep playing", exact: true }).click();
         await leaveGame(page);
 
         for (const variant of ["Classic", "Ultimate", "Stacking"]) {
@@ -189,7 +189,7 @@ try {
         await chooseArea(page, "object-chess", ".chess-lobby");
         await page.locator(".chess-lobby").getByRole("button", { name: "Resume", exact: true }).click();
         await page.locator(".chess-game-actions").getByRole("button", { name: "Resign", exact: true }).click();
-        await page.locator(".chess-resign-confirmation").getByRole("button", { name: "Resign", exact: true }).click();
+        await page.getByRole("dialog", { name: "Resign game?" }).getByRole("button", { name: "Resign", exact: true }).click();
         await page.locator(".game-result-actions").waitFor();
         await capture(page, `${prefix}-chess-result`);
         await page.getByRole("button", { name: "Play again", exact: true }).click();

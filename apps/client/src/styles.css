@@ -12,10 +12,12 @@
   --brand-on-primary: #ffffff;
   --accent: var(--brand-primary);
   --accent-dark: color-mix(in srgb, var(--brand-primary) 82%, black);
+  --accent-text: color-mix(in srgb, var(--brand-primary) 40%, var(--ink));
   --accent-soft: color-mix(in srgb, var(--brand-primary) 12%, white);
   --nav: #171821;
   --danger: #e45d5d;
   --success: #2eaa6d;
+  --coin-text: #8a6510;
   --shadow: 0 20px 60px rgba(34, 29, 45, 0.16);
   --horizontal-scroll-clearance: 16px;
   --workspace-background: #ded8cd;
@@ -38,6 +40,7 @@
   --nav: #12131a;
   --danger: #ef6b6b;
   --success: #45bc80;
+  --coin-text: #f0ce79;
   --shadow: 0 20px 60px rgba(4, 4, 8, 0.42);
   --workspace-background: #15161d;
   --world-background:
@@ -78,6 +81,18 @@ select {
 
 button {
   color: inherit;
+}
+
+option,
+optgroup {
+  color: var(--ink);
+  background: var(--panel-strong);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+  opacity: 1;
 }
 
 button:focus-visible,
@@ -341,7 +356,7 @@ select:focus-visible,
   width: 40px;
   height: 40px;
   padding: 0;
-  color: #716c78;
+  color: var(--muted);
   background: transparent;
   border: 0;
   border-radius: 9px;
@@ -434,7 +449,7 @@ select:focus-visible,
 }
 
 .auth-server-toggle.active {
-  color: var(--accent-dark);
+  color: var(--accent-text);
   background: var(--accent-soft);
 }
 
@@ -673,7 +688,7 @@ select:focus-visible,
   width: 36px;
   height: 36px;
   padding: 0;
-  color: #666371;
+  color: var(--muted);
   background: transparent;
   border: 0;
   border-radius: 10px;
@@ -765,7 +780,7 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #8a6510;
+  color: var(--coin-text);
   font-size: 12px;
   font-weight: 800;
 }
@@ -848,10 +863,6 @@ button:disabled {
   background: transparent;
   border: 0;
   outline: 0;
-}
-
-.floor-picker select option {
-  color: #44414c;
 }
 
 .floor-picker-value {
@@ -940,7 +951,7 @@ button:disabled {
   gap: 6px;
   height: 34px;
   padding: 0 10px;
-  color: var(--accent-dark);
+  color: var(--accent-text);
   font-size: 12px;
   font-weight: 700;
   background: var(--accent-soft);
@@ -949,7 +960,7 @@ button:disabled {
 }
 
 .camera-follow-button:hover {
-  color: var(--accent);
+  color: var(--ink);
 }
 
 .placement-controls {
@@ -1082,11 +1093,6 @@ button:disabled {
   outline: 0;
 }
 
-.availability-picker select option {
-  color: var(--ink);
-  background: white;
-}
-
 .dock-avatar {
   width: 36px;
   height: 36px;
@@ -1108,8 +1114,9 @@ button:disabled {
   grid-template-columns: repeat(6, 40px);
   gap: 4px;
   padding: 6px;
-  background: rgba(255, 253, 250, 0.98);
-  border: 1px solid #ffffffd1;
+  color: var(--ink);
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
   border-radius: 15px;
   box-shadow: 0 14px 38px #17151f42;
   transform: translateX(-50%);
@@ -1134,7 +1141,7 @@ button:disabled {
 
 .reaction-popover button:hover,
 .reaction-popover button:focus-visible {
-  background: #f0edff;
+  background: var(--accent-soft);
   transform: translateY(-1px);
 }
 
@@ -1142,7 +1149,7 @@ button:disabled {
   position: absolute;
   right: 3px;
   bottom: 2px;
-  color: #8a8592;
+  color: var(--muted);
   font-family: inherit;
   font-size: 7px;
   font-weight: 800;
@@ -1247,7 +1254,7 @@ button:disabled {
   height: 42px;
   margin: 14px 16px 6px;
   padding: 0 12px;
-  color: #8b8792;
+  color: var(--muted);
   background: #f2efeb;
   border: 1px solid #e9e4de;
   border-radius: 11px;
@@ -1325,7 +1332,7 @@ button:disabled {
   display: flex;
   justify-content: space-between;
   padding: 8px 9px;
-  color: #8a8690;
+  color: var(--muted);
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
@@ -1765,7 +1772,7 @@ button:disabled {
 .pending-icon {
   width: 28px;
   height: 28px;
-  color: #756f7f;
+  color: var(--muted);
   background: #ebe7e2;
   border-radius: 8px;
 }
@@ -1791,7 +1798,7 @@ button:disabled {
   max-width: 152px;
   height: 36px;
   padding: 0 11px;
-  color: #706c78;
+  color: var(--ink);
   font-size: 10px;
   font-weight: 700;
   background: #f1eeea;
@@ -1848,7 +1855,7 @@ button:disabled {
   min-height: 40px;
   gap: 6px;
   padding: 0 13px;
-  color: #5143bd;
+  color: var(--accent-text);
   font-size: 11px;
   font-weight: 750;
   background: rgba(252, 251, 248, 0.96);
@@ -1860,8 +1867,8 @@ button:disabled {
 }
 
 .jump-to-latest:hover {
-  color: #4436ad;
-  background: white;
+  color: var(--ink);
+  background: var(--panel-strong);
 }
 
 .chat-panel {
@@ -2008,7 +2015,7 @@ button:disabled {
 }
 
 .message-composer button.composer-attachment {
-  color: #6d6874;
+  color: var(--muted);
   background: #f0ede9;
 }
 
@@ -2801,7 +2808,7 @@ button:disabled {
 }
 
 .meeting-time > span:first-child {
-  color: #de5b5b;
+  color: color-mix(in srgb, var(--danger) 60%, var(--ink));
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -3009,7 +3016,7 @@ button:disabled {
 
 .meeting-entry-action > svg {
   flex: 0 0 auto;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .meeting-entry-action .secondary-button {
@@ -3264,35 +3271,6 @@ button:disabled {
 
 .meeting-window-layer .meeting-overlay {
   pointer-events: auto;
-}
-
-.confirmation-dialog {
-  width: min(380px, 100%);
-  max-height: 100%;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 24px;
-  background: white;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  box-shadow: 0 24px 70px #0d0b1266;
-}
-
-.confirmation-dialog h2 {
-  margin: 0;
-  font-size: 20px;
-}
-
-.confirmation-dialog p {
-  margin: 10px 0 20px;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.confirmation-dialog > div {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
 }
 
 .avatar-dialog {
@@ -3686,7 +3664,7 @@ button:disabled {
 
 .meeting-controls .reaction-popover button:hover,
 .meeting-controls .reaction-popover button:focus-visible {
-  background: #f0edff;
+  background: var(--accent-soft);
 }
 
 .load-state {
@@ -3806,7 +3784,6 @@ button:disabled {
 :root[data-theme="dark"] .inventory-empty button,
 :root[data-theme="dark"] .person-detail-actions button,
 :root[data-theme="dark"] .secondary-button,
-:root[data-theme="dark"] .confirmation-dialog,
 :root[data-theme="dark"] .avatar-dialog {
   color: var(--ink);
   background: #2b2933;
@@ -3836,11 +3813,6 @@ button:disabled {
   color: #ff9d9d;
 }
 
-:root[data-theme="dark"] .auth-server-toggle.active {
-  color: var(--accent);
-  background: var(--accent-soft);
-}
-
 :root[data-theme="dark"] .top-bar,
 :root[data-theme="dark"] .world-zoom-controls,
 :root[data-theme="dark"] .placement-controls,
@@ -3858,7 +3830,6 @@ button:disabled {
 }
 
 :root[data-theme="dark"] .floor-picker-value,
-:root[data-theme="dark"] .floor-picker select option,
 :root[data-theme="dark"] .asset-grid > button,
 :root[data-theme="dark"] .asset-variants button,
 :root[data-theme="dark"] .asset-category-tabs button,
@@ -3919,8 +3890,7 @@ button:disabled {
 :root[data-theme="dark"] .inventory-asset.active,
 :root[data-theme="dark"] .build-selection,
 :root[data-theme="dark"] .asset-rotate,
-:root[data-theme="dark"] .conversation-tabs button.active,
-:root[data-theme="dark"] .reaction-popover {
+:root[data-theme="dark"] .conversation-tabs button.active {
   color: #bdb5ff;
   background: #393451;
   border-color: #5e5684;
@@ -3985,7 +3955,7 @@ button:disabled {
 
 :root[data-theme="dark"] .daily-reward,
 :root[data-theme="dark"] .top-bar-coins {
-  color: #f0ce79;
+  color: var(--coin-text);
   background: #3a3222;
   border-color: #65542e;
 }

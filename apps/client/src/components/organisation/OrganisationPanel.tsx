@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { canManageUnit, canMoveOrganisationMember, isUnitWithin, type Member, type OrganisationEdit, type OrganisationState } from "@workhard/shared";
 import { IconButton } from "../IconButton";
+import { ConfirmationDialog } from "../ConfirmationDialog";
 import { OrganisationTree, type OrganisationSelection } from "./OrganisationTree";
 import "../../organisation.css";
 
@@ -17,6 +18,7 @@ interface OrganisationPanelProps {
 export function OrganisationPanel({ organisation, members, currentUserId, pending, onEdit, onClose }: OrganisationPanelProps) {
   const [selection, setSelection] = useState<OrganisationSelection>();
   const [creating, setCreating] = useState<{ parentId: string | null }>();
+  const [promoting, setPromoting] = useState<Member>();
   const isCeo = organisation.ceoIds.includes(currentUserId);
   const unit = selection?.type === "unit" ? organisation.units.find((candidate) => candidate.id === selection.id) : undefined;
   const person = selection?.type === "person" ? members.find((candidate) => candidate.id === selection.id) : undefined;
@@ -67,13 +69,17 @@ export function OrganisationPanel({ organisation, members, currentUserId, pendin
             {(isCeo || !organisation.assignments.some((assignment) => assignment.userId === currentUserId && assignment.unitId === personAssignment.unitId)) && <option value="lead">Lead</option>}
           </select></label>}
         </>}
-        {isCeo && !personIsCeo && <button className="secondary-button" disabled={pending} onClick={() => {
-          if (window.confirm(`Promote ${person.name} to CEO? Removing them will require a vote.`)) onEdit({ type: "ceo.promote", userId: person.id });
-        }}>Promote to CEO</button>}
+        {isCeo && !personIsCeo && <button className="secondary-button" disabled={pending} onClick={() => setPromoting(person)}>Promote to CEO</button>}
         {isCeo && personIsCeo && person.id !== currentUserId && !votes.some((vote) => vote.subjectId === person.id && vote.status === "open") && <button className="secondary-button" disabled={pending} onClick={() => onEdit({ type: "ceo.propose_removal", userId: person.id })}>Start removal vote</button>}
       </section>}
   </>;
   return <aside className="side-panel organisation-panel" aria-label="Organisation">
+    {promoting && <ConfirmationDialog title={`Promote ${promoting.name} to CEO?`}
+      description="Removing them will require a vote." confirmLabel="Promote to CEO" pending={pending}
+      onCancel={() => setPromoting(undefined)} onConfirm={() => {
+        onEdit({ type: "ceo.promote", userId: promoting.id });
+        setPromoting(undefined);
+      }} />}
     <div className="panel-header"><h2>Organisation</h2><IconButton label="Close organisation" icon={X} onClick={onClose} /></div>
     <div className="panel-scroll organisation-content">
       {isCeo && <button className="secondary-button" disabled={pending} onClick={() => { setCreating({ parentId: null }); setSelection(undefined); }}>Add unit</button>}

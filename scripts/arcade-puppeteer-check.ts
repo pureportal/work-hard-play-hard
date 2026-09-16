@@ -86,7 +86,7 @@ try {
   await maya.keyboard.press("Space");
   await shot(maya, "falling-blocks-solo");
   await maya.click('.falling-blocks-game button[aria-label="Close game"]');
-  await clickText(maya, ".game-exit-prompt button", "Leave game");
+  await clickText(maya, ".confirmation-dialog button", "Leave game");
   await maya.waitForSelector(".falling-blocks-game", { hidden: true });
   console.log("Falling Blocks: entry, solo isolation, controls, exit passed");
 
@@ -103,7 +103,7 @@ try {
     });
     await shot(maya, `tic-tac-toe-${variant!.toLowerCase()}`);
     await maya.click('button[aria-label="Forfeit game"]');
-    await clickText(maya, ".game-exit-prompt button", "Leave game");
+    await clickText(maya, ".confirmation-dialog button", "Leave game");
     await maya.waitForSelector(".tic-tac-toe-game", { hidden: true });
   }
   console.log("Tic-Tac-Toe: bots respond in all variants, difficulty controls and exit passed");
@@ -118,7 +118,7 @@ try {
   await leo.click('.tic-tac-toe-game button[role="gridcell"]:not(:disabled)');
   await maya.waitForFunction(() => document.querySelector(".tic-tac-toe-status")?.textContent === "Your turn");
   await maya.click('button[aria-label="Forfeit game"]');
-  await clickText(maya, ".game-exit-prompt button", "Leave game");
+  await clickText(maya, ".confirmation-dialog button", "Leave game");
   await leo.waitForFunction(() => document.querySelector(".tic-tac-toe-status")?.textContent === "You win");
   await clickText(leo, ".game-result-actions button", "Back to lobby");
   console.log("Tic-Tac-Toe: two-browser turns and forfeit passed");
@@ -166,7 +166,7 @@ async function checkChess(maya: Page) {
   await maya.waitForSelector(".chess-game");
   assert.equal(application.store.getChessMatches()[0]!.moves.length, 2);
   await clickText(maya, ".chess-game-actions button", "Resign");
-  await clickText(maya, ".chess-resign-confirmation button", "Resign");
+  await clickText(maya, ".confirmation-dialog button", "Resign");
   await maya.waitForSelector(".game-result-actions");
   await clickText(maya, ".game-result-actions button", "Play again");
   await maya.waitForFunction(() => document.querySelectorAll(".chess-moves li").length === 0 && !document.querySelector(".game-result-actions"));

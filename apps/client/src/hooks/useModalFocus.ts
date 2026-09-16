@@ -6,6 +6,7 @@ const focusableSelector = [
   "input:not([disabled])",
   "select:not([disabled])",
   "textarea:not([disabled])",
+  "summary",
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
 
@@ -75,8 +76,10 @@ export function useModalFocus<T extends HTMLElement>(onClose: () => void, active
 }
 
 function isVisibleWithin(element: HTMLElement, boundary: HTMLElement): boolean {
+  if (element.matches(":disabled") || element.closest("[inert]")) return false;
   let current: HTMLElement | null = element;
   while (current) {
+    if (current instanceof HTMLDetailsElement && !current.open && !current.querySelector("summary")?.contains(element)) return false;
     const style = getComputedStyle(current);
     if (current.hidden || current.getAttribute("aria-hidden") === "true" || style.display === "none" || style.visibility === "hidden") {
       return false;

@@ -213,8 +213,8 @@ try {
   await page.screenshot({ path: fileURLToPath(new URL("falling-blocks-compact.png", artifactDirectory)) });
 
   await page.click('button[aria-label="Close game"]');
-  await assertContained(page, [".game-exit-prompt", ".game-exit-prompt .primary-button", ".game-exit-prompt .secondary-button"]);
-  await page.locator('.game-exit-prompt button::-p-text(Leave game)').click();
+  await assertContained(page, [".confirmation-dialog", ".confirmation-dialog .primary-button", ".confirmation-dialog .secondary-button"]);
+  await page.locator('.confirmation-dialog button::-p-text(Leave game)').click();
   await page.waitForSelector(".falling-blocks-game", { hidden: true });
   await page.setViewport({ width: 1280, height: 800, deviceScaleFactor: 1 });
   for (const cabinet of cabinets.slice(1)) {
@@ -229,9 +229,9 @@ try {
     const started = await page.evaluate(() => globalThis.__fallingBlocksCommands.findLast((command) => command.type === "game.start"));
     assert(started.objectId === cabinet.id, "Play started the wrong cabinet.");
     await page.click('button[aria-label="Close game"]');
-    await assertContained(page, [".game-exit-prompt", ".game-exit-prompt .primary-button", ".game-exit-prompt .secondary-button"]);
+    await assertContained(page, [".confirmation-dialog", ".confirmation-dialog .primary-button", ".confirmation-dialog .secondary-button"]);
     await page.screenshot({ path: fileURLToPath(new URL("falling-blocks-exit.png", artifactDirectory)) });
-    await page.locator('.game-exit-prompt button::-p-text(Leave game)').click();
+    await page.locator('.confirmation-dialog button::-p-text(Leave game)').click();
     await page.waitForSelector(".falling-blocks-game", { hidden: true });
   }
   if (originalPosition) await moveTo(page, originalPosition.x, originalPosition.y);

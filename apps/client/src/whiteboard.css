@@ -163,10 +163,12 @@
 .board-card .whiteboard-card-content img { flex: none; max-height: 180px; }
 .board-card .whiteboard-card-text { font-size: 12px; -webkit-line-clamp: 4; color: var(--muted); }
 .board-card .whiteboard-card-placeholder { font-size: 14px; color: var(--muted); }
+.board-card .whiteboard-card-status { color: var(--muted); }
+.board-card .whiteboard-card-status.status-done { color: color-mix(in srgb, var(--success) 40%, var(--ink)); }
 .board-card .whiteboard-image-error { color: var(--muted); }
 :root[data-theme="dark"] .board-card { background: color-mix(in srgb, var(--card-color) 8%, var(--panel-strong)); }
 .board-card .whiteboard-card-meta time { color: var(--muted); }
-.board-card .whiteboard-card-meta time.overdue { color: var(--danger); }
+.board-card .whiteboard-card-meta time.overdue { color: color-mix(in srgb, var(--danger) 60%, var(--ink)); }
 .board-card.dragging { opacity: 0.45; }
 .whiteboard-column.drop-target { border-color: var(--accent); background: var(--accent-soft); }
 .board-card.insert-before { box-shadow: 0 -4px 0 var(--accent); }

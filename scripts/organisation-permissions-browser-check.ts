@@ -155,6 +155,7 @@ try {
   for (const id of ["user-leo", "user-amara"]) {
     await personButton(maya, id).click();
     await maya.getByRole("button", { name: "Promote to CEO", exact: true }).click();
+    await maya.locator(".confirmation-dialog").getByRole("button", { name: "Promote to CEO", exact: true }).click();
     await until(() => store.getOrganisation().ceoIds.includes(id), "CEO promotion not saved");
   }
   assert.deepEqual(store.getOrganisation().ceoIds, ["user-maya", "user-leo", "user-amara"]);

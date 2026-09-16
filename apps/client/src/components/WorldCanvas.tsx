@@ -490,14 +490,19 @@ export function WorldCanvas(props: WorldCanvasProps) {
         emit();
       }
     };
+    const focusChanged = (event: FocusEvent) => {
+      if (isInterfaceTarget(event.target)) reset();
+    };
     window.addEventListener("keydown", keyDown);
     window.addEventListener("keyup", keyUp);
     window.addEventListener("blur", reset);
+    window.addEventListener("focusin", focusChanged);
     return () => {
       reset();
       window.removeEventListener("keydown", keyDown);
       window.removeEventListener("keyup", keyUp);
       window.removeEventListener("blur", reset);
+      window.removeEventListener("focusin", focusChanged);
     };
   }, [props.inputEnabled]);
 

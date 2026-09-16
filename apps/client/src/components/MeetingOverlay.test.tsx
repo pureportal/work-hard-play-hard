@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Meeting, Member } from "@workhard/shared";
 import { MediaConnection } from "../media-connection";
 import { MeetingOverlay } from "./MeetingOverlay";
-import { MeetingSwitchDialog } from "./MeetingSwitchDialog";
+import { ConfirmationDialog } from "./ConfirmationDialog";
 
 const member: Member = {
   id: "user-maya",
@@ -54,11 +54,10 @@ describe("MeetingOverlay media", () => {
       currentUserId={member.id} messages={[]} muted cameraOn={false} leaving={false} reactions={[]}
       onMutedChange={vi.fn()} onCameraChange={vi.fn()} onReact={vi.fn()} onSendMessage={vi.fn()}
       onViewChange={vi.fn()} onLeave={onLeave} />);
-    const confirmation = render(<MeetingSwitchDialog meetingTitle="Planning" consequence="This will leave Review."
-      actionLabel="Open" onCancel={onCancel} onConfirm={vi.fn()} />);
-    fireEvent.keyDown(document, { key: "Tab" });
+    const confirmation = render(<ConfirmationDialog title="Open Planning?" description="This will leave Review."
+      confirmLabel="Open" onCancel={onCancel} onConfirm={vi.fn()} />);
     expect(document.activeElement).toBe(confirmation.getByRole("button", { name: "Cancel" }));
-    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.keyDown(document.activeElement!, { key: "Escape" });
     expect(onCancel).toHaveBeenCalledOnce();
     expect(onLeave).not.toHaveBeenCalled();
     confirmation.unmount();

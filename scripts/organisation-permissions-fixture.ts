@@ -79,7 +79,6 @@ export async function createFixture(seed = createPermissionSeed()) {
     const page = await context.newPage();
     page.on("pageerror", (error) => errors.push(`${userId}: ${error.message}`));
     page.on("console", (message) => { if (message.type() === "error") errors.push(`${userId}: ${message.text()}`); });
-    page.on("dialog", (dialog) => dialog.accept());
     page.setDefaultTimeout(45_000);
     await page.goto(origin);
     await page.locator(".world-canvas canvas").waitFor();

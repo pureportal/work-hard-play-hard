@@ -53,7 +53,7 @@ describe("TicTacToeGame", () => {
     expect(document.activeElement?.getAttribute("aria-label")).toBe("Play top left in bottom right board");
     fireEvent.keyDown(document.activeElement!, { key: "Escape" });
     expect(screen.getByRole("grid", { name: "Ultimate board" })).toBeTruthy();
-    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Leave this game?" })).toBeNull();
     fireEvent.click(screen.getByRole("gridcell", { name: "Open bottom right board" }));
     fireEvent.click(screen.getByRole("gridcell", { name: "Play center in bottom right board" }));
     expect(onCommand).toHaveBeenCalledExactlyOnceWith({ kind: "ultimate.place", board: 8, cell: 4 });
@@ -124,7 +124,7 @@ describe("TicTacToeGame", () => {
     const { rerender } = render(<TicTacToeGame {...props} state={classicState()} />);
 
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.getByRole("alert")).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: "Leave this game?" })).toBeTruthy();
     expect(onClose).not.toHaveBeenCalled();
 
     const completed = classicState();
@@ -132,7 +132,7 @@ describe("TicTacToeGame", () => {
     delete completed.turnUserId;
     rerender(<TicTacToeGame {...props} state={completed} />);
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Leave this game?" })).toBeNull();
     expect(onClose).toHaveBeenCalledOnce();
   });
 
