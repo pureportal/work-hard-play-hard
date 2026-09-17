@@ -41,7 +41,7 @@ export function useModalFocus<T extends HTMLElement>(onClose: () => void, active
         return;
       }
       const focusable = [...dialog.querySelectorAll<HTMLElement>(focusableSelector)]
-        .filter((element) => isVisibleWithin(element, dialog));
+        .filter((element) => element.tabIndex >= 0 && isVisibleWithin(element, dialog));
       const first = focusable[0];
       const last = focusable.at(-1);
       if (!first || !last) {

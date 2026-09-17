@@ -1,5 +1,5 @@
 import { ArrowLeft, Eye, EyeOff, Mail, ServerCog } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import type { CorporateIdentity } from "@workhard/shared";
 import { login, registerAccount, requestMagicLink } from "../api";
 import officePreview from "../assets/blockbench-office.webp";
@@ -34,6 +34,13 @@ export function AuthScreen({
   const [mode, setMode] = useState<AuthMode>(
     setupRequired || (registrationsEnabled && invitationToken) ? "register" : "login",
   );
+  const accountTabs = useRef<HTMLDivElement>(null);
+  const focusAccountTab = useRef(false);
+  useLayoutEffect(() => {
+    if (!focusAccountTab.current) return;
+    accountTabs.current?.querySelector<HTMLButtonElement>('[aria-selected="true"]')?.focus();
+    focusAccountTab.current = false;
+  }, [mode]);
   const [error, setError] = useState(initialError);
   const [loading, setLoading] = useState(false);
   const [magicLink, setMagicLink] = useState<string>();
@@ -147,11 +154,22 @@ export function AuthScreen({
           </header>
 
         {mode !== "magic" && !setupRequired && registrationsEnabled && (
-          <div className="auth-tabs" role="tablist" aria-label="Account">
+          <div ref={accountTabs} className="auth-tabs" role="tablist" aria-label="Account" onKeyDown={(event) => {
+            const next = event.key === "Home" ? "login" : event.key === "End" ? "register"
+              : ["ArrowLeft", "ArrowRight"].includes(event.key) ? mode === "login" ? "register" : "login" : undefined;
+            if (!next) return;
+            event.preventDefault();
+            focusAccountTab.current = true;
+            switchMode(next);
+            event.currentTarget.querySelector<HTMLButtonElement>(`#auth-${next}-tab`)?.focus();
+          }}>
             <button
               type="button"
               role="tab"
+              id="auth-login-tab"
+              aria-controls="auth-account-form"
               aria-selected={mode === "login"}
+              tabIndex={mode === "login" ? 0 : -1}
               className={mode === "login" ? "active" : ""}
               onClick={() => switchMode("login")}
             >
@@ -160,7 +178,10 @@ export function AuthScreen({
             <button
               type="button"
               role="tab"
+              id="auth-register-tab"
+              aria-controls="auth-account-form"
               aria-selected={mode === "register"}
+              tabIndex={mode === "register" ? 0 : -1}
               className={mode === "register" ? "active" : ""}
               onClick={() => switchMode("register")}
             >
@@ -170,7 +191,7 @@ export function AuthScreen({
         )}
 
         {mode === "login" && (
-          <form className="auth-form" onSubmit={submitLogin}>
+          <form id="auth-account-form" className="auth-form" onSubmit={submitLogin}>
             <label>
               <span>Username or email</span>
               <input name="identifier" autoComplete="username" required autoFocus />
@@ -182,7 +203,7 @@ export function AuthScreen({
         )}
 
         {mode === "register" && (
-          <form className="auth-form" onSubmit={submitRegistration}>
+          <form id="auth-account-form" className="auth-form" onSubmit={submitRegistration}>
             <label>
               <span>Username</span>
               <input

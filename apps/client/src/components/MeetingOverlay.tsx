@@ -57,9 +57,16 @@ export function MeetingOverlay({ small, meeting, connection, members, currentUse
       <header className="meeting-overlay-header">
         <div><h2 id="meeting-title">{meeting.title}</h2></div>
         <div className="meeting-overlay-actions">
-          {!small && <div className="meeting-mobile-tabs" role="tablist" aria-label="Meeting view">
-            <button role="tab" aria-label="Video" aria-selected={mobileView === "video"} onClick={() => setMobileView("video")}><Video size={17} /></button>
-            <button role="tab" aria-label="Chat" aria-selected={mobileView === "chat"} onClick={() => setMobileView("chat")}><MessageCircle size={17} /></button>
+          {!small && <div className="meeting-mobile-tabs" role="tablist" aria-label="Meeting view" onKeyDown={(event) => {
+            const next = event.key === "Home" ? "video" : event.key === "End" ? "chat"
+              : ["ArrowLeft", "ArrowRight"].includes(event.key) ? mobileView === "video" ? "chat" : "video" : undefined;
+            if (!next) return;
+            event.preventDefault();
+            setMobileView(next);
+            event.currentTarget.querySelector<HTMLButtonElement>(`#meeting-${next}-tab`)?.focus();
+          }}>
+            <button id="meeting-video-tab" role="tab" aria-label="Video" aria-selected={mobileView === "video"} aria-controls="meeting-video-panel" tabIndex={mobileView === "video" ? 0 : -1} onClick={() => setMobileView("video")}><Video size={17} /></button>
+            <button id="meeting-chat-tab" role="tab" aria-label="Chat" aria-selected={mobileView === "chat"} aria-controls="meeting-chat-panel" tabIndex={mobileView === "chat" ? 0 : -1} onClick={() => setMobileView("chat")}><MessageCircle size={17} /></button>
           </div>}
           <span className="meeting-lock" aria-label={`${session.participants.length} participants${session.locked ? ", locked" : ""}`}>
             {session.locked ? <Lock size={14} /> : <Users size={14} />}{session.participants.length}
@@ -70,7 +77,7 @@ export function MeetingOverlay({ small, meeting, connection, members, currentUse
       </header>
 
       <div className={`meeting-main show-${mobileView}`}>
-        <div className="meeting-stage">
+        <div className="meeting-stage" id="meeting-video-panel">
           {(media.errors.length > 0 || failed || !mediaSupported) && <div className="meeting-media-errors" role="alert">
             {media.errors.map((error) => <p key={error}>{error}</p>)}
             {!mediaSupported && <p>Audio and video need a browser with WebRTC support.</p>}
@@ -125,7 +132,7 @@ export function MeetingOverlay({ small, meeting, connection, members, currentUse
             })}
           </div>
         </div>
-        <div className="meeting-chat-container" hidden={small}><MeetingChat messages={messages} members={members} currentUserId={currentUserId} disabled={leaving} onSend={onSendMessage} /></div>
+        <div className="meeting-chat-container" id="meeting-chat-panel" hidden={small}><MeetingChat messages={messages} members={members} currentUserId={currentUserId} disabled={leaving} onSend={onSendMessage} /></div>
       </div>
 
       <footer className="meeting-controls">

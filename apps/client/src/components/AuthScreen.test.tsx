@@ -28,6 +28,21 @@ afterEach(() => {
 });
 
 describe("AuthScreen setup", () => {
+  it("switches account tabs by keyboard and keeps a single tab stop", () => {
+    render(<AuthScreen corporateIdentity={corporateIdentity} setupRequired={false} registrationsEnabled invitationRequired magicLinkEnabled onAuthenticated={vi.fn()} />);
+    const signIn = screen.getByRole("tab", { name: "Sign in" });
+    const register = screen.getByRole("tab", { name: "Create account" });
+    signIn.focus();
+    fireEvent.keyDown(signIn, { key: "ArrowRight" });
+    expect(document.activeElement).toBe(register);
+    expect(register.getAttribute("aria-selected")).toBe("true");
+    expect(signIn.tabIndex).toBe(-1);
+    expect(screen.getByLabelText("Username")).toBeTruthy();
+    fireEvent.keyDown(register, { key: "Home" });
+    expect(document.activeElement).toBe(signIn);
+    expect(screen.getByLabelText("Username or email")).toBeTruthy();
+  });
+
   it("applies the configured name, logo, and centered authentication layout", () => {
     const { container } = render(
       <AuthScreen

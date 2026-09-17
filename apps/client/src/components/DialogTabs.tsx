@@ -1,11 +1,16 @@
-import { useId, type ReactNode } from "react";
+import { useId, useRef, type ReactNode } from "react";
+import { useHorizontalWheelScroll } from "../hooks/useHorizontalWheelScroll";
+import { useSelectedTabVisibility } from "../hooks/useSelectedTabVisibility";
 
 export function DialogTabs<T extends string>({ label, tabs, value, onChange, children }: {
   label: string; tabs: readonly { id: T; label: string; count?: number }[]; value: T; onChange: (value: T) => void; children: ReactNode;
 }) {
   const id = useId();
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const scrollTabs = useHorizontalWheelScroll(tabsRef);
+  useSelectedTabVisibility(tabsRef, value);
   return <>
-    <div className="dialog-tabs" role="tablist" aria-label={label}>
+    <div ref={scrollTabs} className="dialog-tabs" role="tablist" aria-label={label}>
       {tabs.map((tab, index) => <button key={tab.id} id={`${id}-${tab.id}`} type="button" role="tab"
         aria-selected={value === tab.id} aria-controls={`${id}-content`} tabIndex={value === tab.id ? 0 : -1}
         onClick={() => onChange(tab.id)} onKeyDown={(event) => {

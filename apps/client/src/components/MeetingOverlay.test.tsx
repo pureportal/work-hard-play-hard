@@ -202,6 +202,15 @@ describe("MeetingOverlay media", () => {
     first.focus();
     fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
     expect(document.activeElement).toBe(last);
+    first.focus();
+    fireEvent.keyDown(first, { key: "End" });
+    const chat = view.getByRole("tab", { name: "Chat" });
+    expect(document.activeElement).toBe(chat);
+    expect(chat.getAttribute("aria-selected")).toBe("true");
+    expect(first.tabIndex).toBe(-1);
+    fireEvent.keyDown(chat, { key: "ArrowRight" });
+    expect(document.activeElement).toBe(first);
+    expect(first.getAttribute("aria-selected")).toBe("true");
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onLeave).toHaveBeenCalledOnce();
 
