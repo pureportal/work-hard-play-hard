@@ -85,6 +85,9 @@ import { Avatar } from "./components/Avatar";
 import { DeferredContent } from "./components/DeferredContent";
 import { RoomKnockNotice } from "./components/RoomKnockNotice";
 import { AuthScreen } from "./components/AuthScreen";
+import { ServerScreen } from "./components/ServerScreen";
+import { getServerOrigin } from "./server-url";
+import { isNativeClient } from "./native-client";
 import { CallNotice, type ActiveCall } from "./components/CallNotice";
 import { CallRequestNotice } from "./components/CallRequestNotice";
 import { useCallRequest } from "./hooks/useCallRequest";
@@ -259,6 +262,26 @@ function clearInitialInvitationToken(): void {
 }
 
 export function App() {
+  const [server, setServer] = useState(getServerOrigin);
+  const [connectionVersion, setConnectionVersion] = useState(0);
+  const changeServer = () => {
+    initialWorkspacePromise = undefined;
+    initialMagicToken = undefined;
+    initialInvitationToken = undefined;
+    initialResetToken = undefined;
+    initialRegistrationToken = undefined;
+    initialAuthTokensRead = true;
+    writeAuthTokenHistory({}, window.location.pathname);
+    setServer(getServerOrigin());
+    setConnectionVersion((current) => current + 1);
+  };
+
+  return server
+    ? <ConnectedApp key={connectionVersion} onServerChanged={changeServer} />
+    : <ServerScreen onConnected={changeServer} />;
+}
+
+function ConnectedApp({ onServerChanged }: { onServerChanged: () => void }) {
   const [colorTheme, setColorTheme] = useState<ColorTheme>(getInitialColorTheme);
   const [corporateIdentity, setCorporateIdentity] = useState<CorporateIdentity>(() => structuredClone(DEFAULT_CORPORATE_IDENTITY));
   const [bootstrap, setBootstrap] = useState<BootstrapData>();
@@ -468,13 +491,7 @@ export function App() {
         setupRequired={setupRequired}
         corporateIdentity={corporateIdentity}
         onAuthenticated={loadWorkspace}
-        onServerChanged={() => {
-          finishRecovery();
-          setError(undefined);
-          setSetupRequired(false);
-          setAuthState("loading");
-          setRestoreVersion((current) => current + 1);
-        }}
+        onServerChanged={onServerChanged}
       />
     );
   }
@@ -493,6 +510,9 @@ export function App() {
   };
 
   if (error) {
+    if (isNativeClient() && !invitationEmailMismatch) {
+      return <ServerScreen error={error} onConnected={onServerChanged} />;
+    }
     return (
       <main className="load-state error-state">
         <span className="load-mark"><X size={22} /></span>
@@ -546,6 +566,7 @@ export function App() {
       onCorporateIdentityChange={setCorporateIdentity}
       onSignOut={signOut}
       onSessionExpired={handleSessionExpired}
+      onServerChanged={onServerChanged}
     />
   );
 }
@@ -566,6 +587,7 @@ export function Workspace({
   onCorporateIdentityChange?: (identity: CorporateIdentity) => void;
   onSignOut: () => Promise<void>;
   onSessionExpired: () => void;
+  onServerChanged?: (() => void) | undefined;
 }) {
   const [data, setData] = useState(initialData);
   const [buildView, setBuildView] = useState<BuildView>(() => hasMemberPermission(initialData.members.find((member) => member.id === initialData.currentUserId)!, "build") ? "shared" : "personal");

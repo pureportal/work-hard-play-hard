@@ -1,8 +1,9 @@
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ConnectionError } from "./api";
 import { App } from "./App";
 import { createTestCorporateIdentity } from "./test-fixtures";
+import { getServerOrigin, setServerOrigin } from "./server-url";
 
 const apiMocks = vi.hoisted(() => ({
   fetchSession: vi.fn(),
@@ -25,6 +26,7 @@ const registration = { enabled: false, invitationRequired: true };
 const corporateIdentity = createTestCorporateIdentity();
 
 beforeEach(() => {
+  localStorage.clear();
   online = true;
   Object.defineProperty(navigator, "onLine", {
     configurable: true,
@@ -36,10 +38,48 @@ afterEach(() => {
   cleanup();
   vi.useRealTimers();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   apiMocks.fetchSession.mockReset();
 });
 
 describe("App startup recovery", () => {
+  it("waits for an explicit native server and preserves it across relaunches", async () => {
+    vi.stubGlobal("__TAURI_INTERNALS__", {});
+    apiMocks.fetchSession.mockResolvedValue({ user: undefined, setupRequired: false, registration,
+      magicLinkEnabled: false, passwordResetEnabled: false, corporateIdentity });
+    const app = render(<App />);
+    expect(apiMocks.fetchSession).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Sign in" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Use default" })).toBeNull();
+    fireEvent.change(screen.getByRole("textbox", { name: "Server URL" }), { target: { value: "https://private.example.com" } });
+    expect(apiMocks.fetchSession).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Connect" }));
+    await screen.findByRole("button", { name: "Sign in" });
+    expect(getServerOrigin()).toBe("https://private.example.com");
+    app.unmount();
+    render(<App />);
+    await screen.findByRole("button", { name: "Sign in" });
+    expect(apiMocks.fetchSession).toHaveBeenCalledTimes(2);
+    fireEvent.click(screen.getByRole("button", { name: "Server: https://private.example.com" }));
+    expect(screen.queryByRole("button", { name: "Use default" })).toBeNull();
+  });
+
+  it("can replace an unreachable native server without retaining its authentication tokens", async () => {
+    vi.stubGlobal("__TAURI_INTERNALS__", {});
+    setServerOrigin("https://offline.example.com");
+    apiMocks.fetchSession.mockRejectedValueOnce(new ConnectionError("Server could not be reached."))
+      .mockResolvedValue({ user: undefined, setupRequired: false, registration,
+        magicLinkEnabled: false, passwordResetEnabled: false, corporateIdentity });
+    render(<App />);
+    await screen.findByRole("alert");
+    window.history.replaceState({ northstarAuthTokens: { invitation: "old-server-token" } }, "");
+    fireEvent.change(screen.getByRole("textbox", { name: "Server URL" }), { target: { value: "https://next.example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "Connect" }));
+    await screen.findByRole("button", { name: "Sign in" });
+    expect(getServerOrigin()).toBe("https://next.example.com");
+    expect(window.history.state.northstarAuthTokens).toBeUndefined();
+    await waitFor(() => expect(apiMocks.fetchSession).toHaveBeenCalledTimes(2));
+  });
   it("reflects public corporate identity on the authentication experience", async () => {
     const configuredIdentity = {
       applicationName: "Acme Spaces",

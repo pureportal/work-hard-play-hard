@@ -15,6 +15,7 @@ on:
       - .github/workflows/client-packaging.yml
       - .github/workflows/release.yml
       - scripts/validate-release.mjs
+      - scripts/native-client-browser-check.ts
   workflow_dispatch:
 
 permissions:
@@ -35,7 +36,6 @@ env:
   ANDROID_COMPILE_SDK: "36"
   ANDROID_BUILD_TOOLS_VERSION: 36.1.0
   ANDROID_NDK_VERSION: 30.0.14904198
-  VITE_SERVER_URL: ${{ vars.NORTHSTAR_SERVER_URL }}
 
 jobs:
   desktop:
@@ -48,9 +48,11 @@ jobs:
         include:
           - name: Linux desktop
             runner: ubuntu-24.04
-            bundle: deb
+            bundle: deb,appimage
             artifact: northstar-linux
-            path: apps/client/src-tauri/target/release/bundle/deb/*.deb
+            path: |
+              apps/client/src-tauri/target/release/bundle/deb/*.deb
+              apps/client/src-tauri/target/release/bundle/appimage/*.AppImage
           - name: Windows desktop
             runner: windows-latest
             bundle: nsis
@@ -112,7 +114,7 @@ jobs:
           retention-days: 7
 
   android:
-    name: Android unsigned release APK
+    name: Android test-signed APK
     runs-on: ubuntu-24.04
     timeout-minutes: 60
 
@@ -180,10 +182,30 @@ jobs:
       - name: Build universal release APK
         run: pnpm build:android
 
-      - name: Upload unsigned release APK
+      - name: Sign installable test APK
+        env:
+          ANDROID_SIGNING_STORE_FILE: ${{ runner.temp }}/northstar-test.keystore
+          ANDROID_SIGNING_STORE_PASSWORD: northstar-ci-test
+          ANDROID_SIGNING_KEY_ALIAS: northstar-test
+          ANDROID_SIGNING_KEY_PASSWORD: northstar-ci-test
+        run: |
+          keytool -genkeypair -noprompt \
+            -keystore "$ANDROID_SIGNING_STORE_FILE" \
+            -storepass:env ANDROID_SIGNING_STORE_PASSWORD \
+            -keypass:env ANDROID_SIGNING_KEY_PASSWORD \
+            -alias "$ANDROID_SIGNING_KEY_ALIAS" \
+            -keyalg RSA -keysize 2048 -validity 30 \
+            -dname "CN=Northstar CI Test"
+          pnpm --filter @workhard/client android:sign
+
+      - name: Upload test APK
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: northstar-android-unsigned
-          path: apps/client/src-tauri/gen/android/app/build/outputs/apk/universal/release/*-release-unsigned.apk
+          name: northstar-android-test
+          path: artifacts/android/northstar-android.apk
           if-no-files-found: error
           retention-days: 7
+
+      - name: Remove test signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/northstar-test.keystore"

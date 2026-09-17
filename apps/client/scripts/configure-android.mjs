@@ -1,4 +1,4 @@
-import { cp, readFile, writeFile } from "node:fs/promises";
+import { copyFile, cp, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 const manifestPath = fileURLToPath(
@@ -43,3 +43,7 @@ if (configuredManifest.includes("leanback")) {
 }
 await writeFile(manifestPath, configuredManifest);
 await cp(iconSourcePath, resourcePath, { recursive: true, force: true });
+await copyFile(
+  new URL("../src-tauri/android/MainActivity.kt", import.meta.url),
+  new URL("../src-tauri/gen/android/app/src/main/java/io/pureportal/northstar/MainActivity.kt", import.meta.url),
+);

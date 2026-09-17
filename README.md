@@ -23,7 +23,7 @@ Northstar is a self-hosted virtual office for distributed teams. It combines a p
 
 Open the web address supplied by the person hosting your office. On the sign-in screen you can use a password or email sign-in link, create an account when registration permits it, or choose **Server** to connect a packaged client to another Northstar installation.
 
-The server value must be an origin such as `https://office.example.com`, without a path. Desktop installers for Windows, macOS, and Linux, plus the Android APK, are published on the [latest release](https://github.com/pureportal/work-hard-play-hard/releases/latest). Android 7.0 or newer is required. Packaged clients connect to an existing Northstar server; they do not include the server or database.
+Installed clients ask for your private server's HTTPS origin, such as `https://office.example.com`, on first launch. The address is saved on the device and can be changed on the sign-in screen, in Settings, or after a connection error. Switching servers disconnects the current office. Desktop installers for Windows and macOS, Linux DEB and AppImage packages, and the Android APK are published on the [latest release](https://github.com/pureportal/work-hard-play-hard/releases/latest). Android 7.0 or newer is required. Packaged clients do not include a server or database.
 
 Once inside:
 
@@ -172,11 +172,12 @@ pnpm build:landing
 pnpm build:desktop
 ```
 
-The browser build uses its current origin as the server by default. Set `VITE_SERVER_URL` in `apps/client/.env.production` when a packaged build should start with a different server. Users can still change the server from the sign-in screen. The landing build reads `VITE_CLIENT_URL` and defaults to `/app/`.
+The browser build uses its current origin as the server unless `VITE_SERVER_URL` is set. Installed clients have no default server and ignore that browser setting. They require HTTPS with a trusted certificate and a production server, whose secure session cookies support requests from the app. The server already accepts the Tauri origins. The landing build reads `VITE_CLIENT_URL` for its web link and defaults to `/app/`; its download link points to this repository's latest GitHub release.
 
 Desktop packaging builds for the current operating system and requires Rust plus that platform's Tauri system dependencies.
+Native builds use `apps/client/dist-native`, independently of the web build in `apps/client/dist`, and package the optimized game images without their source PNGs. After `pnpm --filter @workhard/client build:native`, set `NORTHSTAR_CLIENT_DIST=apps/client/dist-native` when running `pnpm test:native-client` to check the packaged frontend.
 
-Android builds additionally require JDK 21, Android platform 36, build tools 36.1.0, NDK 30.0.14904198, and the Rust targets `aarch64-linux-android`, `armv7-linux-androideabi`, and `x86_64-linux-android`.
+Android builds additionally require JDK 21, Android platform 36, build tools 36.1.0, NDK 30.0.14904198, and the Rust targets `aarch64-linux-android`, `armv7-linux-androideabi`, and `x86_64-linux-android`. Set `JAVA_HOME`, `ANDROID_HOME`, and `NDK_HOME` to these installations before initializing the Android project.
 
 ```bash
 pnpm android:init
@@ -212,7 +213,7 @@ Pull requests run the full workspace checks; relevant client changes also packag
 
 When the workspace version changes, the release workflow also publishes versioned container images and creates a GitHub release containing Windows, macOS, and Linux desktop packages, a signed universal Android APK, and SHA-256 checksums. Versions in the root packages, workspace packages, Tauri configuration, Cargo manifest, and Cargo lockfile must match.
 
-Release maintainers configure `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD` as GitHub Actions secrets. `NORTHSTAR_SERVER_URL` is an optional Actions variable that sets the packaged clients' initial server.
+Release maintainers configure `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD` as GitHub Actions secrets. Preserve this keystore for future APK updates. Pull-request and manual packaging runs use a temporary test key; those APKs cannot update a release installation or another run's test installation. Windows installers are unsigned unless Windows code signing is configured in Tauri; production distribution should use an Authenticode certificate. Linux packages target Ubuntu 24.04 or newer distributions with compatible WebKitGTK. The release workflow needs permission to write repository contents and GHCR packages; releases appear after a version bump on `main` passes validation and packaging.
 
 ## Help
 

@@ -3,7 +3,8 @@ import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import type { CorporateIdentity } from "@workhard/shared";
 import { login, registerAccount, requestMagicLink } from "../api";
 import officePreview from "../assets/blockbench-office.webp";
-import { clearServerOrigin, getDefaultServerOrigin, getServerOrigin, setServerOrigin } from "../server-url";
+import { getDefaultServerOrigin, getServerOrigin } from "../server-url";
+import { ServerConnectionForm } from "./ServerConnectionForm";
 import { BrandMark } from "./BrandMark";
 import { PasswordField } from "./PasswordField";
 import { PasswordRecovery } from "./PasswordRecovery";
@@ -57,10 +58,8 @@ export function AuthScreen({
   const [registrationEmail, setRegistrationEmail] = useState<string>();
   const [registrationLink, setRegistrationLink] = useState<string>();
   const [activeServer, setActiveServer] = useState(getServerOrigin);
-  const [server, setServer] = useState(activeServer);
-  const [serverError, setServerError] = useState<string>();
   const [showServer, setShowServer] = useState(Boolean(initialError));
-  const customServerActive = activeServer !== getDefaultServerOrigin();
+  const customServerActive = activeServer !== null && activeServer !== getDefaultServerOrigin();
   const serverLabel = customServerActive ? new URL(activeServer).host : "Server";
 
   const switchMode = (nextMode: AuthMode) => {
@@ -116,33 +115,8 @@ export function AuthScreen({
     });
   };
 
-  const submitServer = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    await perform(async () => {
-      const serverOrigin = setServerOrigin(server);
-      setServer(serverOrigin);
-      setActiveServer(serverOrigin);
-      onServerChanged?.();
-    }, setServerError);
-  };
-
-  const useDefaultServer = async () => {
-    await perform(async () => {
-      const serverOrigin = clearServerOrigin();
-      setServer(serverOrigin);
-      setActiveServer(serverOrigin);
-      onServerChanged?.();
-    }, setServerError);
-  };
-
   const toggleServer = () => {
-    setShowServer((current) => {
-      if (!current) {
-        setServer(activeServer);
-        setServerError(undefined);
-      }
-      return !current;
-    });
+    setShowServer((current) => !current);
   };
 
   const perform = async (
@@ -298,27 +272,10 @@ export function AuthScreen({
         )}
 
         {showServer && !magicSent && !registrationEmail && mode !== "forgot" && mode !== "reset" && (
-          <form className="auth-form auth-server-form" onSubmit={submitServer}>
-            <label>
-              <span>Server URL</span>
-              <input
-                type="url"
-                value={server}
-                aria-invalid={Boolean(serverError)}
-                onChange={(event) => setServer(event.target.value)}
-                required
-              />
-            </label>
-            {serverError && <output className="auth-error" role="alert">{serverError}</output>}
-            <div className="auth-server-actions">
-              <button type="submit" className="auth-submit" disabled={loading}>{loading ? "Connecting…" : "Connect"}</button>
-              {customServerActive && (
-                <button type="button" className="auth-server-default" disabled={loading} onClick={useDefaultServer}>
-                  Use default
-                </button>
-              )}
-            </div>
-          </form>
+          <ServerConnectionForm disabled={loading} onConnected={() => {
+            setActiveServer(getServerOrigin());
+            onServerChanged?.();
+          }} />
         )}
 
         {!magicSent && !registrationEmail && mode !== "forgot" && mode !== "reset" && (

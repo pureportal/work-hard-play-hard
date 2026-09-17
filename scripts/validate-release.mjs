@@ -36,6 +36,8 @@ expectEqual(tauriConfig.productName, "Northstar", "Tauri product name");
 expectEqual(tauriConfig.mainBinaryName, "Northstar", "Tauri main binary name");
 expectEqual(tauriConfig.identifier, "io.pureportal.northstar", "Tauri application identifier");
 expectEqual(tauriConfig.bundle?.android?.minSdkVersion, 24, "Android minimum SDK");
+const downloadUrl = readFile("apps/landing/index.html").match(/data-download-link href="([^"]+)"/)?.[1];
+expectEqual(downloadUrl, `${tauriConfig.bundle.homepage}/releases/latest`, "Landing download destination");
 
 for (const target of ["aarch64", "armv7", "x86_64"]) {
   if (!clientScripts["android:build"]?.includes(target)) {
@@ -65,6 +67,7 @@ for (const relativePath of [
   "apps/client/Dockerfile",
   "apps/client/nginx.conf",
   "apps/client/scripts/configure-android.mjs",
+  "apps/client/scripts/prepare-native-assets.mjs",
   "apps/client/scripts/sign-android-apk.mjs",
   "apps/landing/Dockerfile",
   "apps/server/Dockerfile",

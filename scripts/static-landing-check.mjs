@@ -10,6 +10,7 @@ const distribution = resolve(workspace, process.env.LANDING_BUILD_DIR ?? "apps/l
 const output = resolve(workspace, "artifacts/landing");
 const origin = "http://landing.localhost";
 const expectedClient = new URL(process.env.VITE_CLIENT_URL?.trim() || "/app/", origin).href;
+const expectedDownload = "https://github.com/pureportal/work-hard-play-hard/releases/latest";
 const browser = await chromium.launch({ headless: true, executablePath: puppeteer.executablePath({ headless: "shell" }) });
 const errors = [];
 const layouts = [];
@@ -74,9 +75,8 @@ try {
       assert.equal(await page.locator(".skip-link").evaluate(link => getComputedStyle(link).outlineStyle), "solid");
       await page.keyboard.press("Enter");
       assert.equal(new URL(page.url()).hash, "#main");
-      await page.getByRole("link", { name: "Explore features" }).click();
-      assert.equal(new URL(page.url()).hash, "#features");
-      assert(await page.locator("#features").evaluate(element => Math.abs(element.getBoundingClientRect().top) < 60));
+      assert.equal(await page.getByRole("link", { name: "Download client" }).getAttribute("href"), expectedDownload);
+      assert.equal(await page.locator(".download-requirement").innerText(), "Private server required.");
 
       for (const link of await page.locator("[data-screenshot]").all()) {
         await link.focus();

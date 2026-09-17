@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "node scripts/check-optimized-images.mjs && tsc -b && vite build",
+    "build:native": "node scripts/check-optimized-images.mjs && tsc -b && vite build --outDir dist-native && node scripts/prepare-native-assets.mjs",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
     "tauri": "tauri",

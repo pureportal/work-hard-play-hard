@@ -15,6 +15,9 @@ tauri-build = { version = "2.6", features = [] }
 [dependencies]
 tauri = { version = "2.11", features = [] }
 
+[target.'cfg(target_os = "linux")'.dependencies]
+webkit2gtk = "2.0"
+
 [profile.release]
 codegen-units = 1
 lto = true

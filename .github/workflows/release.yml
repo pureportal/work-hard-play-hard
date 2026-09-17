@@ -26,7 +26,6 @@ env:
   ANDROID_BUILD_TOOLS_VERSION: 36.1.0
   ANDROID_NDK_VERSION: 30.0.14904198
   REGISTRY: ghcr.io
-  VITE_SERVER_URL: ${{ vars.NORTHSTAR_SERVER_URL }}
 
 jobs:
   metadata:
@@ -88,9 +87,11 @@ jobs:
         include:
           - name: Linux desktop
             runner: ubuntu-24.04
-            bundle: deb
+            bundle: deb,appimage
             artifact: northstar-linux
-            path: apps/client/src-tauri/target/release/bundle/deb/*.deb
+            path: |
+              apps/client/src-tauri/target/release/bundle/deb/*.deb
+              apps/client/src-tauri/target/release/bundle/appimage/*.AppImage
           - name: Windows desktop
             runner: windows-latest
             bundle: nsis
