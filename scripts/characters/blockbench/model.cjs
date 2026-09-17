@@ -45,9 +45,13 @@ function createCharacter(api, createGeometry, createHead, appearance) {
   createCharacterClothing(geometry, appearance);
   createCharacterWardrobe(geometry, appearance);
   statementTops[appearance.upperBody]?.(geometry);
+  runwayTops[appearance.upperBody]?.(geometry);
   createStatementBottoms(geometry, appearance);
+  createRunwayBottoms(geometry, appearance);
   customizeCharacter(geometry, appearance);
+  const firstHairPart = geometry.parts.length;
   createCharacterHair(api, geometry, appearance);
+  fitHairToHeadwear(geometry, firstHairPart, appearance.headwear);
   createCharacterHeadwear(api, geometry, appearance);
   api.Canvas.updateAll();
   return { bones, parts: geometry.parts, palette };

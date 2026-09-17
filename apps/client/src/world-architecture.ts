@@ -11,7 +11,7 @@ export function getArchitectureArtwork(kind: ArchitectureKind, rotation: 0 | 90 
   const variant = artworkSource[kind].variants.plaster;
   return {
     path: variant.path, frame: variant.frames[rotation / 90]!, bounds: variant.bounds[rotation / 90]!,
-    atlasWidth: variant.width, atlasHeight: variant.height, seatOffset: 0, seatHasBack: false,
+    atlasWidth: variant.width, atlasHeight: variant.height, seatOffset: 0,
   };
 }
 

@@ -23,7 +23,8 @@ async function load(path: string): Promise<Uint8ClampedArray> {
 
 describe("production Blockbench characters", () => {
   it("ships one shared set of components in both assets and editable models", async () => {
-    const paths = [...new Set(appearances.flatMap(getCharacterLayerPaths))].sort();
+    const paths = [...new Set(appearances.flatMap(appearance => getCharacterLayerPaths(appearance)))]
+      .map(path => path.replace("/characters/seated/chair/", "/characters/blockbench/")).sort();
     const publicRoot = new URL("../../../client/public/characters/blockbench/", import.meta.url);
     const sourceRoot = new URL("../../../../scripts/characters/blockbench/", import.meta.url);
     const assets = (await readdir(publicRoot, { recursive: true })).filter(path => path.endsWith(".png"));
@@ -62,7 +63,7 @@ describe("production Blockbench characters", () => {
         }
       }
     }
-  }, 120_000);
+  }, 600_000);
 
   it("composes mixed outfits in depth order across every motion and direction", async () => {
     const appearance: CharacterAppearance = { face: "shy", hairstyle: "twintails", upperBody: "kimono", lowerBody: "sailor", shoes: "ranger", headwear: "catears" };
@@ -102,7 +103,7 @@ describe("production Blockbench characters", () => {
         expect(Math.min(...differences) / (36 * 26), `${face}/idle/${frame}`).toBeLessThan(0.005);
       }
     }
-  });
+  }, 30_000);
 
   it("triangulates the concave wink without overlapping triangles", async () => {
     const model = JSON.parse(await readFile(new URL("../../../../scripts/characters/blockbench/models/head-smile.bbmodel", import.meta.url), "utf8"));

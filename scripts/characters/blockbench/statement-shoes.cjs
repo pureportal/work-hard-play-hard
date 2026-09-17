@@ -1,10 +1,15 @@
-function createCharacterFootwear({ ellipsoid, loft, patch }, appearance) {
+function createCharacterFootwear(geometry, appearance) {
+  const { ellipsoid, loft, patch } = geometry;
   const shoes = appearance.shoes;
   for (const side of [-1, 1]) {
     const prefix = side < 0 ? "left" : "right";
     const foot = `${prefix}_foot`;
     const x = side * 4;
     ellipsoid(`${prefix} sneaker sole`, foot, [x, 1.1, 1.4], [2.9, 1, 4.5], "sole");
+    if (runwayShoes[shoes]) {
+      runwayShoes[shoes](geometry, foot, x);
+      continue;
+    }
     if (shoes === "festival") {
       ellipsoid(`${prefix} tabi foot`, foot, [x, 2.5, 1], [2.5, 1.5, 3.8], "shirt");
       loft(`${prefix} tabi sock`, foot, [[3, 2.1, 2.1, x], [6.5, 2.1, 2.1, x]], "shirt");

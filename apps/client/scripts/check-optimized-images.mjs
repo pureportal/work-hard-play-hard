@@ -3,13 +3,15 @@ import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 
 const client = new URL("../", import.meta.url);
-const [manifest, runtime, world, architecture] = await Promise.all([
+const [manifest, runtime, world, architecture, seating] = await Promise.all([
   readFile(new URL("../../../scripts/images/manifest.json", import.meta.url), "utf8").then(JSON.parse),
   readFile(new URL("src/optimized-images.json", client), "utf8").then(JSON.parse),
   readFile(new URL("src/world-asset-artwork.json", client), "utf8").then(JSON.parse),
   readFile(new URL("src/world-architecture-artwork.json", client), "utf8").then(JSON.parse),
+  readFile(new URL("src/world-seat-occlusion.json", client), "utf8").then(JSON.parse),
 ]);
 const sources = [
+  ...Object.values(seating).filter(asset => asset.path).map(asset => ({ path: asset.path })),
   ...Object.values(world).flatMap(asset => Object.values(asset.variants).map(variant => ({ path: variant.path, frames: variant.frames.slice(0, 4) }))),
   ...Object.values(architecture).flatMap(asset => Object.values(asset.variants).map(variant => ({ path: variant.path }))),
   ...(await readdir(new URL("public/characters/", client), { recursive: true })).filter(path => path.endsWith(".png")).map(path => ({ path: `/characters/${path.replaceAll("\\", "/")}` })),

@@ -1,9 +1,8 @@
-async function renderCharacterLayer(api, model, animations, settings, layer) {
+async function renderCharacterLayer(api, model, animations, settings, layer, renderer) {
   const { THREE } = api;
   const size = settings.frameSize;
   const pixelsPerUnit = 1.1;
   const elevation = 10 * Math.PI / 180;
-  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false, preserveDrawingBuffer: true });
   renderer.setSize(size, size);
   renderer.setClearColor(0, 0);
   renderer.outputEncoding = THREE.sRGBEncoding;
@@ -59,6 +58,22 @@ async function renderCharacterLayer(api, model, animations, settings, layer) {
     root.rotation.y = { down: 0, left: -Math.PI / 3, right: Math.PI / 3, up: Math.PI }[direction];
     root.updateMatrixWorld(true);
     const seated = motion.startsWith("sit");
+    if (seated && settings.seatedProjection) {
+      const cosine = Math.cos(elevation), sine = Math.sin(elevation);
+      const projection = new THREE.Matrix4().set(
+        1, 0, 0, 0,
+        0, cosine / Math.SQRT2 + sine * sine, -cosine + sine * cosine, 0,
+        0, -sine / Math.SQRT2 + cosine * sine, sine + cosine * cosine, 0,
+        0, 0, 0, 1,
+      );
+      const hip = new THREE.Vector3().setFromMatrixPosition(model.bones.pelvis.mesh.matrixWorld);
+      const heading = { down: 0, left: -Math.PI / 2, right: Math.PI / 2, up: Math.PI }[direction];
+      const transform = new THREE.Matrix4().makeTranslation(hip.x, hip.y, hip.z)
+        .multiply(new THREE.Matrix4().makeRotationY(-root.rotation.y)).multiply(projection)
+        .multiply(new THREE.Matrix4().makeRotationY(heading))
+        .multiply(new THREE.Matrix4().makeTranslation(-hip.x, -hip.y, -hip.z));
+      for (const { mesh } of parts) mesh.matrix.premultiply(transform);
+    }
     const point = seated ? new THREE.Vector3().setFromMatrixPosition(model.bones.pelvis.mesh.matrixWorld) : new THREE.Vector3(0, 0, 0);
     point.applyMatrix4(root.matrixWorld).project(camera);
     const anchor = seated ? settings.anchors.hip : settings.anchors.foot;
@@ -117,8 +132,7 @@ async function renderCharacterLayer(api, model, animations, settings, layer) {
     return { png: atlas.toDataURL("image/png").split(",")[1], frames };
   } finally {
     for (const disposable of disposables) disposable.dispose();
-    renderer.dispose();
-    renderer.forceContextLoss();
+    renderer.renderLists.dispose();
   }
 }
 

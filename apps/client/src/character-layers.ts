@@ -1,4 +1,4 @@
-import { CHARACTER_ATLAS_HEIGHT, CHARACTER_ATLAS_SIZE, getCharacterLayerPaths, type CharacterAppearance, type Rect } from "@workhard/shared";
+import { CHARACTER_ATLAS_HEIGHT, CHARACTER_ATLAS_SIZE, getCharacterLayerPaths, type CharacterAppearance, type CharacterSeatedPose, type Rect } from "@workhard/shared";
 import { ImageCache } from "./image-cache";
 import { getOptimizedImagePath } from "./optimized-images";
 import { decodeImage } from "./image-decoding";
@@ -70,6 +70,6 @@ function readRegion(layer: CharacterLayer, region: Rect): Uint8ClampedArray {
   }
 }
 
-export function loadCharacterLayers(appearance: CharacterAppearance, region: Rect): Promise<Uint8ClampedArray[]> {
-  return Promise.all(getCharacterLayerPaths(appearance).map(path => layers.get(path, () => loadLayer(path)).then(layer => readRegion(layer, region))));
+export function loadCharacterLayers(appearance: CharacterAppearance, region: Rect, seatedPose: CharacterSeatedPose = "chair"): Promise<Uint8ClampedArray[]> {
+  return Promise.all(getCharacterLayerPaths(appearance, seatedPose).map(path => layers.get(path, () => loadLayer(path)).then(layer => readRegion(layer, region))));
 }

@@ -1,11 +1,11 @@
-import type { OrganisationState } from "@workhard/shared";
+import type { CharacterSeatedPose, OrganisationState } from "@workhard/shared";
 import { ArrowUp, Check, LocateFixed, Minus, Plus, RotateCw, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Application, Container, Graphics, Text } from "pixi.js";
 import { CharacterSprite } from "../character-sprite";
 import { MusicIndicator } from "../spotify/music-indicator";
 import type { SpotifyActivity } from "@workhard/shared";
-import { getCharacterSeatLayout } from "../character-seat";
+import { CharacterSeatOcclusion, getCharacterSeatLayout } from "../character-seat";
 import { createWorldAssetView } from "../world-asset-view";
 import { WorldAssetFocus } from "../world-asset-focus";
 import { WorldAssetTextures } from "../world-asset-textures";
@@ -177,7 +177,9 @@ interface PlayerView {
   canWalk: boolean;
   seated: boolean;
   seatOffsetY: number;
-  seatHasBack: boolean;
+  seatedPose: CharacterSeatedPose;
+  seatShadow: Graphics;
+  seatOcclusion: CharacterSeatOcclusion;
   reactionBubble: Container;
   reactionText: Text;
   reactionId?: string;
@@ -772,10 +774,6 @@ class OfficeRenderer {
         continue;
       }
       let view = this.playerViews.get(player.userId);
-      if (view && view.characterKey !== characterAppearanceKey(member.character)) {
-        view.characterKey = characterAppearanceKey(member.character);
-        void this.loadPlayerCharacter(view, member.character);
-      }
       if (!view) {
         view = this.createPlayerView(member, player.userId === currentUserId);
         view.container.position.set(player.x, player.y);
@@ -786,15 +784,26 @@ class OfficeRenderer {
       view.seated = Boolean(player.seat || carrier);
       const seat = player.seat && !carrier ? this.layout?.objects.find((object) => object.id === player.seat!.objectId) : undefined;
       const interaction = seat && player.seat && getPlacedAssetInteraction(seat, player.seat.interactionId);
-      const seatLayout = getCharacterSeatLayout(seat);
+      const seatLayout = getCharacterSeatLayout(seat, interaction?.id);
+      if (view.characterKey !== characterAppearanceKey(member.character) || view.seatedPose !== seatLayout.pose) {
+        view.characterKey = characterAppearanceKey(member.character);
+        view.seatedPose = seatLayout.pose;
+        void this.loadPlayerCharacter(view, member.character);
+      }
       view.seatOffsetY = seatLayout.offsetY;
-      view.seatHasBack = seatLayout.hasBack;
-      view.avatarImage.y = view.seatOffsetY;
+      view.seatOcclusion.setSeat(seat, interaction?.id, seat ? this.objectViews.get(seat.id) : undefined);
+      view.avatarImage.position.set(seatLayout.offsetX, view.seatOffsetY);
+      view.seatShadow.visible = Boolean(seat);
+      const sideFacing = interaction?.direction === "left" || interaction?.direction === "right";
+      view.seatShadow.scale.set(sideFacing ? 0.6 : 1, sideFacing ? 1.3 : 1);
+      view.music.container.x = seatLayout.offsetX;
+      view.reactionBubble.x = seatLayout.offsetX;
       view.canWalk = !view.seated;
       view.ground.visible = view.canWalk;
-      view.name.x = carrier ? -18 - view.name.width / 2 : 0;
+      view.name.x = (carrier ? -18 - view.name.width / 2 : 0) + seatLayout.offsetX;
       view.name.y = 10 + (view.seated ? Math.max(SEATED_FEET_OFFSET + view.seatOffsetY, ASSET_RASTER_SIZE) : 0);
       view.status.y = view.seated ? SEATED_CHARACTER_OFFSET + view.seatOffsetY : 0;
+      view.status.x = seatLayout.offsetX;
       view.targetX = carrier?.x ?? player.x;
       view.targetY = (carrier?.y ?? player.y) - (carrier ? CHARACTER_WORLD_SIZE * 0.7 : 0);
       this.depth.setPosition(view.container, view.container.x, view.container.y);
@@ -811,7 +820,7 @@ class OfficeRenderer {
       const support = player.carriedByUserId
         ? this.playerViews.get(player.carriedByUserId)?.container
         : player.seat ? this.objectViews.get(player.seat.objectId) : undefined;
-      this.depth.attach(view.container, support, Boolean(player.carriedByUserId) || view.seatHasBack && view.facingDirection === "up");
+      this.depth.attach(view.container, support, Boolean(player.carriedByUserId));
     }
     this.depth.sort();
   }
@@ -1194,6 +1203,12 @@ class OfficeRenderer {
     const ground = new Container();
     ground.addChild(shadow, square);
     const avatarImage = new Container();
+    avatarImage.label = "character";
+    const seatShadow = new Graphics({ label: "seat-contact" })
+      .ellipse(0, 3, 7, 3).fill({ color: "#292331", alpha: 0.08 })
+      .ellipse(0, 3, 5, 2).fill({ color: "#292331", alpha: 0.12 });
+    seatShadow.visible = false;
+    avatarImage.addChild(seatShadow);
     const name = new Text({ text: current ? "You" : member.name.split(" ")[0] ?? member.name, style: { fontFamily: "Inter, Segoe UI, sans-serif", fontSize: 11, fontWeight: "600", fill: this.colorTheme === "dark" ? "#f4f1f8" : "#292731" } });
     name.anchor.set(0.5, 0);
     name.position.set(0, 10);
@@ -1227,7 +1242,9 @@ class OfficeRenderer {
       canWalk: true,
       seated: false,
       seatOffsetY: 0,
-      seatHasBack: false,
+      seatedPose: "chair",
+      seatShadow,
+      seatOcclusion: new CharacterSeatOcclusion(avatarImage, this.assetTextures, this.callbacks.current.onArtworkError),
       reactionBubble,
       reactionText,
       reactionStartedAt: 0,
@@ -1248,17 +1265,19 @@ class OfficeRenderer {
   }
 
   private async loadPlayerCharacter(view: PlayerView, appearance: CharacterAppearance): Promise<void> {
+    const pose = view.seatedPose;
     try {
-      const image = await renderCharacter(appearance);
-      if (view.container.destroyed || view.characterKey !== characterAppearanceKey(appearance)) return;
+      const image = await renderCharacter(appearance, undefined, pose);
+      if (view.container.destroyed || view.characterKey !== characterAppearanceKey(appearance) || view.seatedPose !== pose) return;
       const character = new CharacterSprite(image);
+      character.sprite.label = `character-pose:${pose}`;
       const moving = view.canWalk && Math.hypot(view.targetX - view.container.x, view.targetY - view.container.y) > 0.4;
       character.update(Date.now(), getCharacterMotion(view.seated, moving, false), view.facingDirection ?? "down");
       view.characterSprite?.sprite.destroy();
       view.characterSprite = character;
       view.avatarImage.addChild(view.characterSprite.sprite);
     } catch (error) {
-      if (!view.container.destroyed && view.characterKey === characterAppearanceKey(appearance)) {
+      if (!view.container.destroyed && view.characterKey === characterAppearanceKey(appearance) && view.seatedPose === pose) {
         this.callbacks.current.onArtworkError(error instanceof Error ? error : new Error(String(error)));
       }
     }
@@ -1289,6 +1308,7 @@ class OfficeRenderer {
       view.characterSprite?.update(this.musicReducedMotion.matches ? 0 : now, getCharacterMotion(view.seated, moving, listening), view.facingDirection ?? "down");
       view.container.x += (view.targetX - view.container.x) * interpolation;
       view.container.y += (view.targetY - view.container.y) * interpolation;
+      view.seatOcclusion.update();
       this.depth.setPosition(view.container, view.container.x, view.container.y);
       const waving = view.wavingUntil > now;
       view.wave.alpha = waving ? 0.35 + Math.sin(now / 100) * 0.2 : 0;

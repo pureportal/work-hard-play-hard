@@ -3,6 +3,8 @@ import type { WorldAssetArtwork } from "./world-asset-artwork";
 import { getOptimizedImagePath } from "./optimized-images";
 import { decodeImage } from "./image-decoding";
 
+export type WorldTextureRegion = Pick<WorldAssetArtwork, "path" | "frame" | "bounds" | "atlasWidth" | "atlasHeight" | "animation">;
+
 interface AssetTexture {
   image: HTMLImageElement;
   loaded: Promise<Texture>;
@@ -15,7 +17,7 @@ export class WorldAssetTextures {
   private readonly textures = new Map<string, AssetTexture>();
   private destroyed = false;
 
-  isPointVisible(artwork: WorldAssetArtwork, x: number, y: number): boolean {
+  isPointVisible(artwork: WorldTextureRegion, x: number, y: number): boolean {
     const { bounds, frame } = artwork;
     if (x < bounds.x || y < bounds.y || x >= bounds.x + bounds.width || y >= bounds.y + bounds.height) return false;
     const entry = this.textures.get(artwork.path);
@@ -38,7 +40,7 @@ export class WorldAssetTextures {
     });
   }
 
-  createSprite(artwork: WorldAssetArtwork, onError: (error: Error) => void): Sprite {
+  createSprite(artwork: WorldTextureRegion, onError: (error: Error) => void): Sprite {
     if (this.destroyed) throw new Error("World artwork textures have been destroyed");
     const sprite = new Sprite({ texture: Texture.EMPTY, label: artwork.path });
     sprite.position.set(artwork.bounds.x, artwork.bounds.y);
@@ -70,7 +72,7 @@ export class WorldAssetTextures {
     this.textures.clear();
   }
 
-  createAnimation(sprites: readonly Sprite[], artwork: WorldAssetArtwork): ((now: number) => void) | undefined {
+  createAnimation(sprites: readonly Sprite[], artwork: WorldTextureRegion): ((now: number) => void) | undefined {
     const animation = artwork.animation;
     if (!animation) return;
     let previousFrame = -1;
@@ -85,7 +87,7 @@ export class WorldAssetTextures {
     };
   }
 
-  private async load(artwork: WorldAssetArtwork): Promise<Texture> {
+  private async load(artwork: WorldTextureRegion): Promise<Texture> {
     let entry = this.textures.get(artwork.path);
     if (!entry) {
       const image = new Image();
@@ -128,7 +130,7 @@ export class WorldAssetTextures {
     return this.frame(entry, artwork);
   }
 
-  private frame(entry: AssetTexture, artwork: WorldAssetArtwork): Texture {
+  private frame(entry: AssetTexture, artwork: WorldTextureRegion): Texture {
     const { x, y, width, height } = artwork.frame;
     const key = `${x}:${y}:${width}:${height}`;
     let frame = entry.frames.get(key);

@@ -882,20 +882,27 @@ describe("WorldCanvas depth", () => {
     const props = { ...createProps(), layout: { ...layout, objects: [chair] }, members: [member, rearMember], players: [seated, { ...rearPlayer, y: 100 }] };
     const { container, rerender } = render(<WorldCanvas {...props} />);
     await findCanvas(container);
-    const seatedOrder = rotation === 180
-      ? ["world-player:player", "world-asset:chair"]
-      : ["world-asset:chair", "world-player:player"];
+    const seatedOrder = ["world-asset:chair", "world-player:player"];
     expect(drawOrder()).toEqual([...seatedOrder, "world-player:rear"]);
     const playerView = getApplication().stage.getChildByLabel("world-player:player", true)!;
+    const mask = playerView.getChildByLabel("seat-occlusion")!;
+    expect(mask).toBeDefined();
+    expect(playerView.children.some(child => child.mask === mask)).toBe(true);
     expect([playerView.x, playerView.y]).toEqual([interaction.center.x, interaction.center.y]);
 
     rerender(<WorldCanvas {...props} colorTheme="dark" />);
     expect(drawOrder()).toEqual([...seatedOrder, "world-player:rear"]);
     expect(getApplication().stage.getChildByLabel("world-player:player", true)).toBe(playerView);
+    expect(mask.destroyed).toBe(true);
+    const refreshedMask = playerView.getChildByLabel("seat-occlusion")!;
+    expect(refreshedMask).toBeDefined();
 
     rerender(<WorldCanvas {...props} players={[{ ...player, x: interaction.center.x, y: 120 }, rearPlayer]} />);
     runFrames(getApplication(), 50);
     expect(drawOrder()).toEqual(["world-player:rear", "world-asset:chair", "world-player:player"]);
+    expect(refreshedMask.destroyed).toBe(true);
+    expect(playerView.getChildByLabel("seat-occlusion")).toBeNull();
+    expect(playerView.children.every(child => !child.mask)).toBe(true);
   });
 
   it("uses the individual seat direction on a corner sofa", async () => {
@@ -904,7 +911,40 @@ describe("WorldCanvas depth", () => {
     const props = { ...createProps(), layout: { ...layout, objects: [sofa] }, players: [{ ...player, ...interaction.center, seat: { objectId: sofa.id, interactionId: interaction.id } }] };
     const { container } = render(<WorldCanvas {...props} />);
     await findCanvas(container);
-    expect(drawOrder()).toEqual(["world-player:player", "world-asset:sofa"]);
+    expect(drawOrder()).toEqual(["world-asset:sofa", "world-player:player"]);
+    expect(getApplication().stage.getChildByLabel("world-player:player", true)!.getChildByLabel("seat-occlusion")).toBeDefined();
+  });
+
+  it("discards a late floor pose after standing and clears cushion contact", async () => {
+    const atlas = document.createElement("canvas");
+    atlas.width = CHARACTER_ATLAS_SIZE;
+    atlas.height = CHARACTER_ATLAS_HEIGHT;
+    let finishFloor!: (image: HTMLCanvasElement) => void;
+    const renderer = vi.spyOn(characterRenderer, "renderCharacter").mockImplementation((_appearance, _region, pose) =>
+      pose === "floor" ? new Promise(resolve => { finishFloor = resolve; }) : Promise.resolve(atlas));
+    try {
+      const chair = { id: "floor-chair", floorId: floor.id, assetId: "chair-zaisu", variantId: "white", rotation: 90 as const, x: 96, y: 64 };
+      const interaction = getPlacedAssetInteractions(chair)[0]!;
+      const props = { ...createProps(), layout: { ...layout, objects: [chair] } };
+      const { container, rerender } = render(<WorldCanvas {...props} />);
+      await findCanvas(container);
+      rerender(<WorldCanvas {...props} players={[{ ...player, ...interaction.center, seat: { objectId: chair.id, interactionId: interaction.id } }]} />);
+      await waitFor(() => expect(finishFloor).toBeTypeOf("function"));
+      const view = getApplication().stage.getChildByLabel("world-player:player", true)!;
+      const avatar = view.getChildByLabel("character")!;
+      expect(avatar.x).toBe(-5);
+      expect(avatar.getChildByLabel("seat-contact")!.visible).toBe(true);
+      rerender(<WorldCanvas {...props} />);
+      await waitFor(() => expect(avatar.getChildByLabel("character-pose:chair")).toBeTruthy());
+      finishFloor(atlas);
+      await Promise.resolve();
+      expect(avatar.getChildByLabel("character-pose:floor")).toBeNull();
+      expect([avatar.x, avatar.y]).toEqual([0, 0]);
+      expect(avatar.getChildByLabel("seat-contact")!.visible).toBe(false);
+      expect(view.getChildByLabel("seat-occlusion")).toBeNull();
+    } finally {
+      renderer.mockRestore();
+    }
   });
 
   it("keeps carried players at the carrier's depth instead of the raised sprite position", async () => {

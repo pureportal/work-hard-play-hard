@@ -1,7 +1,7 @@
 function createCharacterHair(api, geometry, appearance) {
+  if (extendedHairStyles.includes(appearance.hairstyle)) return createExtendedHair(api, geometry, appearance);
   const { mesh, ellipsoid, loft, patch } = geometry;
   const style = appearance.hairstyle;
-  const firstPart = geometry.parts.length;
   const short = ["spiky", "pixie", "curtains", "tousled", "buns", "curls"].includes(style);
   const tied = ["ponytail", "twintails", "braid", "longbraid"].includes(style);
   const nape = short ? 55 : tied ? 53 : style === "hime" ? 37 : style === "wavy" ? 40 : 49;
@@ -98,11 +98,6 @@ function createCharacterHair(api, geometry, appearance) {
     for (const side of [-1, 1]) lock("Gathered braid sweep", [[54, 0.1, 0.1, side * 1.4, -13], [59, 2.8, 1.1, side * 4.2, -12.5], [66, 3.4, 1.3, side * 8, -10.8], [72, 3, 1.3, side * 7.5, -8.4], [77, 0.1, 0.1, side * 2.3, -2.5]], true, true);
   }
 
-  if (["cap", "witch", "beret"].includes(appearance.headwear)) {
-    for (const { element } of geometry.parts.slice(firstPart)) for (const vertex of Object.values(element.vertices)) {
-      if (vertex[1] > 74) vertex[1] = 74 + (vertex[1] - 74) * 0.36;
-    }
-  }
 }
 
 module.exports = { createCharacterHair };

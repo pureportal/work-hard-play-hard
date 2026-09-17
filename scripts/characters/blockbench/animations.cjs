@@ -6,7 +6,7 @@ const characterClips = {
   "sit-listen": { length: 1.6, frames: 8, frameDuration: 200, anchor: "hip" },
 };
 
-function createCharacterAnimations(api, model) {
+function createCharacterAnimations(api, model, seatedPose = "chair") {
   const { bones } = model;
   const animations = {};
   function track(animation, name, channel, samples) {
@@ -49,8 +49,9 @@ function createCharacterAnimations(api, model) {
     } else if (name === "sit" || name === "sit-listen") {
       track(animation, "root", "position", [[0, [0, -12, 0]]]);
       for (const side of ["left", "right"]) {
-        track(animation, `${side}_thigh`, "rotation", [[0, [-90, 0, 0]]]);
-        track(animation, `${side}_shin`, "rotation", [[0, [90, 0, 0]]]);
+        track(animation, `${side}_thigh`, "rotation", [[0, [seatedPose === "floor" ? -85 : -90, side === "left" ? -12 : 12, 0]]]);
+        track(animation, `${side}_shin`, "rotation", [[0, [seatedPose === "floor" ? 40 : 90, 0, 0]]]);
+        if (seatedPose === "floor") track(animation, `${side}_foot`, "rotation", [[0, [45, 0, 0]]]);
         track(animation, `${side}_arm`, "rotation", [[0, [-14, 0, side === "left" ? 8 : -8]]]);
         track(animation, `${side}_forearm`, "rotation", [[0, [-62, 0, 0]]]);
       }

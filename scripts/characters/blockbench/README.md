@@ -9,12 +9,12 @@ pnpm e2e:characters
 ```
 
 - `geometry.cjs`, `head.cjs`, `model.cjs`: native mesh geometry, anime faces and rig.
-- `hair.cjs`, `headwear.cjs`: fourteen hair silhouettes and eight fitted headwear choices.
+- `hair.cjs`, `headwear.cjs`: thirty hair silhouettes and 24 fitted headwear choices.
 - `body.cjs`, `clothing.cjs`, `wardrobe.cjs`, `customization.cjs`: body, garment details and coordinated materials.
 - `statement-tops.cjs`, `statement-bottoms.cjs`, `statement-shoes.cjs`: ten additional wardrobe families with 30 interchangeable pieces.
 - `animations.cjs`: idle, walk, sit, listen and sit-listen keyframes.
 - `render.cjs`: 120px cel-shaded frames, outlines, anchors and depth maps.
-- `generate.mjs`: Blockbench generation and installation of all 172 component atlases.
+- `generate.mjs`: Blockbench generation and installation of all 814 component atlases.
 - `review.mjs`: native model round trips and game-size appearance sheets.
 - `headwear-review.mjs`: every hair/headwear pairing from four directions with headphones on and off.
 - `appearance-review.mjs`: hair, face and outfit sheets at native and game sizes.
@@ -33,3 +33,5 @@ Generation needs the Blockbench web app and starts no development server. Review
 `hair_tail` and `scarf` bones give the pearl braid and traveler jacket secondary motion in all five clips. They retain the shared frame dimensions, foot/hip anchors and component depth composition.
 
 `review.mjs`, `headwear-review.mjs`, `appearance-review.mjs` and `playwright-check.mjs` accept `--output=<directory>` to preserve before/after evidence. `appearance-review.mjs --hair=bob,pixie` limits a draft review to selected cuts. The refinement evidence is in `artifacts/avatar-anime`.
+
+The variety expansion uses `face-styles.cjs`, `hair-styles.cjs`, `headwear-styles.cjs`, `style-materials.cjs` and the three `runway-*.cjs` modules. `style-audit.mjs` checks the styling balance and additions. `catalog-review.mjs` builds artwork sheets; `variety-check.ts` checks all 66 new selections in the running designer and game. See [the variety audit](../../../docs/character-variety-2026-09-17.md).

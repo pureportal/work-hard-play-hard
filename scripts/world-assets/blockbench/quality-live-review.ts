@@ -14,6 +14,7 @@ const requested = process.argv.find(value => value.startsWith("--asset="))?.slic
 const assets = ASSET_CATALOG.assets.filter(asset => !requested || requested.includes(asset.id));
 assert(assets.length > 0 && (!requested || assets.length === requested.length), `Unknown asset selection: ${JSON.stringify(requested)}`);
 const designs = assets.flatMap(asset => getAssetVariants(asset).map(variant => ({ asset, variant })));
+const artwork = JSON.parse(await readFile(new URL("../../../apps/client/src/world-asset-artwork.json", import.meta.url), "utf8"));
 await mkdir(`${output}/scenes`, { recursive: true });
 await mkdir(`${output}/crops`, { recursive: true });
 const browser = await chromium.launch({ headless: true, executablePath: puppeteer.executablePath() });
@@ -46,15 +47,13 @@ try {
       });
       layout.revision++;
       fixture.publish({ type: "layout.updated", layout });
-      await page.waitForFunction(async objects => {
+      await page.waitForFunction(objects => {
         const app = globalThis.avatarWorld as unknown as Application;
-        const artwork = (await import("/src/world-asset-artwork.json?import" as string)).default;
         return objects.every(object => {
           const sprites = app.stage.getChildByLabel(`world-asset:${object.id}`, true)?.getChildByLabel("artwork")?.children.filter((node): node is Sprite => node.label.startsWith("/world-assets/"));
-          const frames = artwork[object.assetId].variants[object.variantId].frames.filter((_frame: unknown, index: number) => index % 4 === object.rotation / 90);
-          return sprites?.length && sprites.every(sprite => sprite.visible) && frames.some((frame: { x: number; y: number }) => sprites.at(-1)!.texture.frame.x === frame.x && sprites.at(-1)!.texture.frame.y === frame.y);
+          return sprites?.length && sprites.every(sprite => sprite.visible) && object.frames.some((frame: { x: number; y: number }) => sprites.at(-1)!.texture.frame.x === frame.x && sprites.at(-1)!.texture.frame.y === frame.y);
         });
-      }, layout.objects);
+      }, layout.objects.map(object => ({ id: object.id, frames: artwork[object.assetId].variants[object.variantId!].frames.filter((_frame: unknown, index: number) => index % 4 === object.rotation / 90) })));
       await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       const regions = await page.evaluate(async ({ ids, layout }) => {
         const app = globalThis.avatarWorld as unknown as Application;
@@ -86,7 +85,10 @@ try {
         assert(region.left >= 72 && region.top >= 80 && region.left + region.width <= 1440 && region.top + region.height < 920, `Artwork outside the visible scene: ${JSON.stringify(region)}`);
         const { asset, variant } = group[index]!;
         const evidence = `${output}/crops/${asset.id}-${variant.id}-${rotation}.png`;
-        await sharp(screenshot).extract({ left: region.left, top: region.top, width: region.width, height: region.height }).toFile(evidence);
+        const crop = sharp(screenshot).extract({ left: region.left, top: region.top, width: region.width, height: region.height });
+        const { data: pixels, info } = await crop.clone().raw().toBuffer({ resolveWithObject: true });
+        assert(pixels.some((value, offset) => value !== pixels[offset % info.channels]), `${asset.id}/${variant.id}/${rotation}: empty game capture`);
+        await crop.toFile(evidence);
         report.views.push({ id: `${asset.id}/${variant.id}`, rotation, evidence, scene, scale: region.scale });
       }
     }

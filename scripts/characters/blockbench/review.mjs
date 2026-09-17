@@ -9,14 +9,17 @@ await mkdir(output, { recursive: true });
 const manifest = JSON.parse(await readFile(new URL("manifest.json", import.meta.url), "utf8"));
 assert.equal(manifest.layers.length, (CHARACTER_FACES.length + CHARACTER_OUTFITS.length * 3) + CHARACTER_HAIRSTYLES.length * CHARACTER_HEADWEAR.length);
 const models = [];
-const statementOutfits = ["cyber", "pirate", "astronaut", "dragon", "jester", "frog", "biker", "velvet", "starlight", "sunset"];
+const statementOutfits = ["cyber", "pirate", "astronaut", "dragon", "jester", "frog", "biker", "velvet", "starlight", "sunset", "jellyfish", "phoenix", "disco", "lace", "satin", "harness"];
 for (const layer of manifest.layers) {
   const model = JSON.parse(await readFile(layer.model, "utf8"));
   assert.equal(model.animations.length, 5);
   assert(model.animations.every(animation => animation.loop === "loop" && Object.keys(animation.animators).length > 0));
   assert(model.elements.length > 0 && model.textures.length > 0);
   for (const element of model.elements) for (const face of Object.values(element.faces)) assert(Number.isInteger(face.texture) && model.textures[face.texture], `${layer.name}/${element.name}: missing material`);
-  if (statementOutfits.includes(layer.name) || ["upper/street", "upper/kimono", "hair/ponytail-witch", "hair/twintails-catears", "hair/braid-cap", "hair/pixie-beret", "hair/curtains", "hair/hime-witch", "hair/tousled-cap", "hair/buns-ribbon", "hair/swept-catears", "upper/traveler", "upper/festival", "hair/curls-goggles", "hair/longbraid-blossom"].includes(`${layer.layer}/${layer.name}`)) models.push({ name: `${layer.layer}-${layer.name}`, path: layer.model });
+  const addedFace = layer.layer === "head" && CHARACTER_FACES.slice(6).includes(layer.name);
+  const addedHair = layer.layer === "hair" && layer.appearance.headwear === "none" && CHARACTER_HAIRSTYLES.slice(14).includes(layer.appearance.hairstyle);
+  const addedHeadwear = layer.layer === "hair" && layer.appearance.hairstyle === "bob" && CHARACTER_HEADWEAR.slice(8).includes(layer.appearance.headwear);
+  if (addedFace || addedHair || addedHeadwear || statementOutfits.includes(layer.name) || ["upper/street", "upper/kimono", "hair/ponytail-witch", "hair/twintails-catears", "hair/braid-cap", "hair/pixie-beret", "hair/curtains", "hair/hime-witch", "hair/tousled-cap", "hair/buns-ribbon", "hair/swept-catears", "upper/traveler", "upper/festival", "hair/curls-goggles", "hair/longbraid-blossom"].includes(`${layer.layer}/${layer.name}`)) models.push({ name: `${layer.layer}-${layer.name}`, path: layer.model });
 }
 const browser = await chromium.launch({ headless: true, executablePath: puppeteer.executablePath() });
 const errors = [];

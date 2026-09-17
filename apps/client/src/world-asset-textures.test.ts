@@ -220,6 +220,5 @@ function artwork(x: number): WorldAssetArtwork {
     atlasWidth: 1024,
     atlasHeight: 256,
     seatOffset: 0,
-    seatHasBack: false,
   };
 }

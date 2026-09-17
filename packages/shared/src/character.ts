@@ -1,10 +1,23 @@
-export const CHARACTER_FACES = ["calm", "bright", "fierce", "dreamy", "smile", "shy"] as const;
-export const CHARACTER_HAIRSTYLES = ["bob", "spiky", "ponytail", "twintails", "wavy", "braid", "pixie", "curtains", "hime", "tousled", "buns", "swept", "curls", "longbraid"] as const;
+export const CHARACTER_FACES = [
+  "calm", "bright", "fierce", "dreamy", "smile", "shy",
+  "freckles", "doe", "catliner", "rosy", "gloss", "square", "stubble", "moustache", "goatee", "grin",
+  "starry", "lightning", "mime", "smoky", "smolder", "playful",
+] as const;
+export const CHARACTER_HAIRSTYLES = [
+  "bob", "spiky", "ponytail", "twintails", "wavy", "braid", "pixie", "curtains", "hime", "tousled", "buns", "swept", "curls", "longbraid",
+  "buzz", "fade", "quiff", "pompadour", "mohawk", "locs", "topknot", "afropuff", "sidepony", "waterfall",
+  "flame", "nebula", "tentacles", "hollywood", "slickback", "wetlook",
+] as const;
 export const CHARACTER_OUTFITS = [
   "street", "ranger", "arcane", "sailor", "cardigan", "kimono", "traveler", "festival",
   "cyber", "pirate", "astronaut", "dragon", "jester", "frog", "biker", "velvet", "starlight", "sunset",
+  "jellyfish", "phoenix", "disco", "lace", "satin", "harness",
 ] as const;
-export const CHARACTER_HEADWEAR = ["none", "cap", "witch", "beret", "ribbon", "catears", "blossom", "goggles"] as const;
+export const CHARACTER_HEADWEAR = [
+  "none", "cap", "witch", "beret", "ribbon", "catears", "blossom", "goggles",
+  "beanie", "fedora", "tricorn", "flatcap", "bandana", "tiara", "sunhat", "roseband", "pearlcomb", "halo",
+  "ufo", "antlers", "octopus", "fascinator", "leathercap", "masquerade",
+] as const;
 
 export interface CharacterAppearance {
   face: typeof CHARACTER_FACES[number];
@@ -30,6 +43,7 @@ export const CHARACTER_WALK_SPEED = 350;
 export const CHARACTER_DIRECTIONS = ["down", "left", "right", "up"] as const;
 export type CharacterDirection = typeof CHARACTER_DIRECTIONS[number];
 export type CharacterMotion = "idle" | "walk" | "sit" | "listen" | "sit-listen";
+export type CharacterSeatedPose = "chair" | "floor";
 export const CHARACTER_ANIMATIONS = {
   idle: { frames: 4, frameDuration: 400, row: 0, column: 0 },
   walk: { frames: 8, frameDuration: 100, row: 4, column: 0 },
@@ -60,14 +74,14 @@ export function getCharacterFrame(motion: CharacterMotion, direction: CharacterD
   };
 }
 
-export function getCharacterLayerPaths(appearance: CharacterAppearance): string[] {
+export function getCharacterLayerPaths(appearance: CharacterAppearance, seatedPose: CharacterSeatedPose = "chair"): string[] {
   return [
-    `head/${appearance.face}`,
-    `lower/${appearance.lowerBody}`,
-    `shoes/${appearance.shoes}`,
-    `upper/${appearance.upperBody}`,
-    `hair/${appearance.hairstyle}${appearance.headwear === "none" ? "" : `-${appearance.headwear}`}`,
-  ].map((layer) => `/characters/blockbench/${layer}.png`);
+    `blockbench/head/${appearance.face}`,
+    `seated/${seatedPose}/lower/${appearance.lowerBody}`,
+    `seated/${seatedPose}/shoes/${appearance.shoes}`,
+    `blockbench/upper/${appearance.upperBody}`,
+    `blockbench/hair/${appearance.hairstyle}${appearance.headwear === "none" ? "" : `-${appearance.headwear}`}`,
+  ].map((layer) => `/characters/${layer}.png`);
 }
 
 export function randomCharacterAppearance(): CharacterAppearance {

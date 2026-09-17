@@ -22,12 +22,16 @@ export function recipeHash(source) {
 }
 
 export async function readImageSources() {
-  const [world, architecture, characters] = await Promise.all([
+  const [world, architecture, characters, seating] = await Promise.all([
     readFile(new URL("apps/client/src/world-asset-artwork.json", root), "utf8").then(JSON.parse),
     readFile(new URL("apps/client/src/world-architecture-artwork.json", root), "utf8").then(JSON.parse),
     readFile(new URL("scripts/characters/blockbench/manifest.json", root), "utf8").then(JSON.parse),
+    readFile(new URL("apps/client/src/world-seat-occlusion.json", root), "utf8").then(JSON.parse),
   ]);
   const sources = [
+    ...Object.values(seating).filter(asset => asset.path).map(asset => ({
+      path: asset.path, group: "world", width: asset.width, height: asset.height,
+    })),
     ...Object.values(world).flatMap(asset => Object.values(asset.variants).map(variant => ({
       path: variant.path, group: "world", width: variant.width, height: variant.height, frames: variant.frames.slice(0, 4),
     }))),
@@ -38,6 +42,10 @@ export async function readImageSources() {
       path: layer.path.replace(/^apps\/client\/public/, ""), group: "characters",
       width: characters.settings.atlasSize, height: characters.settings.atlasHeight * 2,
     })),
+    ...characters.layers.filter(layer => ["lower", "shoes"].includes(layer.layer)).flatMap(layer => ["chair", "floor"].map(pose => ({
+      path: `/characters/seated/${pose}/${layer.layer}/${layer.name}.png`, group: "characters",
+      width: characters.settings.atlasSize, height: characters.settings.atlasHeight * 2,
+    }))),
   ].sort((left, right) => left.path.localeCompare(right.path, "en"));
   assert.equal(new Set(sources.map(source => source.path)).size, sources.length, "Duplicate image sources");
   for (const source of sources) {

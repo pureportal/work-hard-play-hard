@@ -5,7 +5,6 @@ import artworkSource from "./world-asset-artwork.json";
 interface AssetArtwork {
   elevation: number;
   seatHeight?: number;
-  seatHasBack?: boolean;
   surfaceHeight?: number;
   animation?: { frames: number; frameDuration: number };
   variants: Record<string, { path: string; width: number; height: number; frames: readonly Rect[]; bounds: readonly Rect[] }>;
@@ -18,7 +17,6 @@ export interface WorldAssetArtwork {
   atlasWidth: number;
   atlasHeight: number;
   seatOffset: number;
-  seatHasBack: boolean;
   animation?: { frames: readonly Rect[]; frameDuration: number };
 }
 
@@ -40,7 +38,6 @@ export function getWorldAssetArtwork(asset: AssetDefinition, variantId: string, 
   return {
     path: variant.path, frame: crop, bounds: variant.bounds[index]!, atlasWidth: variant.width, atlasHeight: variant.height,
     seatOffset: -(entry.seatHeight ?? 0) / Math.SQRT2,
-    seatHasBack: entry.seatHasBack === true,
     ...(entry.animation ? { animation: { frames: variant.frames.filter((_, frameIndex) => frameIndex % 4 === index), frameDuration: entry.animation.frameDuration } } : {}),
   };
 }

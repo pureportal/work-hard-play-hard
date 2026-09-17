@@ -1,15 +1,15 @@
-import { CHARACTER_ATLAS_HEIGHT, CHARACTER_ATLAS_SIZE, characterAppearanceKey, composeCharacterLayers, type CharacterAppearance, type Rect } from "@workhard/shared";
+import { CHARACTER_ATLAS_HEIGHT, CHARACTER_ATLAS_SIZE, characterAppearanceKey, composeCharacterLayers, type CharacterAppearance, type CharacterSeatedPose, type Rect } from "@workhard/shared";
 import { loadCharacterLayers } from "./character-layers";
 import { ImageCache } from "./image-cache";
 
 const characters = new ImageCache<HTMLCanvasElement>(8 * CHARACTER_ATLAS_SIZE * CHARACTER_ATLAS_HEIGHT * 4, canvas => canvas.width * canvas.height * 4);
 const atlasRegion: Rect = { x: 0, y: 0, width: CHARACTER_ATLAS_SIZE, height: CHARACTER_ATLAS_HEIGHT };
 
-export function renderCharacter(appearance: CharacterAppearance, region: Rect = atlasRegion): Promise<HTMLCanvasElement> {
+export function renderCharacter(appearance: CharacterAppearance, region: Rect = atlasRegion, seatedPose: CharacterSeatedPose = "chair"): Promise<HTMLCanvasElement> {
   const { x, y, width, height } = region;
-  const key = `${characterAppearanceKey(appearance)}:${x}:${y}:${width}:${height}`;
+  const key = `${characterAppearanceKey(appearance)}:${seatedPose}:${x}:${y}:${width}:${height}`;
   return characters.get(key, async () => {
-    const images = await loadCharacterLayers(appearance, region);
+    const images = await loadCharacterLayers(appearance, region, seatedPose);
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;

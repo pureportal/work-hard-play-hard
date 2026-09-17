@@ -1,21 +1,12 @@
 import { Shuffle } from "lucide-react";
 import { useState } from "react";
 import {
-  CHARACTER_FACES, CHARACTER_HAIRSTYLES,
-  CHARACTER_HEADWEAR, CHARACTER_OUTFITS, characterAppearanceKey, randomCharacterAppearance,
+  characterAppearanceKey, randomCharacterAppearance,
   type CharacterAppearance, type CharacterDirection, type CharacterMotion,
 } from "@workhard/shared";
+import { characterCategories as categories } from "./character-options";
 import { CharacterPreview } from "./CharacterPreview";
 import { useHorizontalWheelScroll } from "../hooks/useHorizontalWheelScroll";
-
-const categories = [
-  { id: "face", label: "Face", crop: "face", options: CHARACTER_FACES, names: ["Calm", "Bright", "Fierce", "Dreamy", "Wink", "Shy"] },
-  { id: "hairstyle", label: "Hair", crop: "hair", options: CHARACTER_HAIRSTYLES, names: ["Rose bob", "Midnight spikes", "Lavender ponytail", "Pink twintails", "Honey waves", "Mint braid", "Ash pixie", "Chestnut curtains", "Ink hime cut", "Silver tousle", "Peach buns", "Copper side sweep", "Cocoa curls", "Pearl braid"] },
-  { id: "upperBody", label: "Tops", crop: "upper", options: CHARACTER_OUTFITS, names: ["Bomber jacket", "Ranger jacket", "Moon armor", "Sailor blouse", "Honey cardigan", "Lilac kimono", "Traveler jacket", "Festival haori", "Neon runner", "Corsair coat", "Orbital suit", "Dragon armor", "Harlequin tunic", "Froggy hoodie", "Biker vest", "Velvet corset", "Starlight halter", "Sunset crop top"] },
-  { id: "lowerBody", label: "Bottoms", crop: "lower", options: CHARACTER_OUTFITS, names: ["Denim trousers", "Ranger breeches", "Moon breeches", "Sailor trousers", "Plum trousers", "Petal hakama", "Travel breeches", "Indigo hakama", "Circuit cargos", "Corsair trousers", "Orbital trousers", "Dragon greaves", "Harlequin trousers", "Lily-pad shorts", "Ripped black jeans", "Velvet slit skirt", "Starlight mini", "Sunset shorts"] },
-  { id: "shoes", label: "Shoes", crop: "shoes", options: CHARACTER_OUTFITS, names: ["Sneakers", "Leather boots", "Moon boots", "Navy shoes", "Honey shoes", "Rose shoes", "Travel boots", "Tabi sandals", "Neon high-tops", "Corsair boots", "Moonwalk boots", "Dragon claws", "Jester slippers", "Frog slippers", "Studded boots", "Velvet heels", "Silver platforms", "Sunset sandals"] },
-  { id: "headwear", label: "Headwear", crop: "headwear", options: CHARACTER_HEADWEAR, names: ["None", "Star cap", "Moon hat", "Beret", "Ribbon", "Cat ears", "Blossom clip", "Goggles"] },
-] as const;
 
 interface CharacterEditorProps {
   appearance: CharacterAppearance;
@@ -94,11 +85,11 @@ export function CharacterEditor({ appearance, onSave, onClose }: CharacterEditor
             ))}
           </div>
           <div className="character-options" id="character-options" role="tabpanel" aria-labelledby={`character-tab-${category.id}`} tabIndex={0}>
-            {category.options.map((option, index) => (
+            {category.options.map(({ value: option, label }) => (
               <button key={option} type="button" disabled={saving} className="character-option" aria-pressed={draft[category.id] === option}
                 onClick={() => change(category.id, option)}>
                 <CharacterPreview appearance={{ ...draft, [category.id]: option }} crop={category.crop} direction={direction} />
-                <span>{category.names[index]}</span>
+                <span>{label}</span>
               </button>
             ))}
           </div>

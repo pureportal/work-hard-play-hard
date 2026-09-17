@@ -147,7 +147,7 @@ try {
     await updateScene([chair], [{ ...base, y: chair.y + 44 }]);
     await verifyOverlap(`chair-${rotation}-front`, "world-asset:chair", "world-player:user-maya");
     await updateScene([chair], [{ ...base, ...interaction.center, facing: interaction.direction, seat: { objectId: chair.id, interactionId: interaction.id } }]);
-    await verifyOverlap(`chair-${rotation}-seated`, rotation === 180 ? "world-player:user-maya" : "world-asset:chair", rotation === 180 ? "world-asset:chair" : "world-player:user-maya");
+    await verifyOverlap(`chair-${rotation}-seated`, "world-asset:chair", "world-player:user-maya");
   }
   for (const assetId of ["chair-stool", "chair-ottoman"]) {
     const seat: WorldObject = { id: "backless-seat", floorId: layout.floorId, assetId, variantId: "white", rotation: 180, x: 688, y: 568 };

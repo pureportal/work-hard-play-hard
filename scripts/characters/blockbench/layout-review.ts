@@ -60,7 +60,7 @@ export async function reviewCreatorLayouts(page: Page, output: string) {
         await swipe(page, { x: bounds.x + bounds.width - 16, y: bounds.y + 24 }, { x: bounds.x + 16, y: bounds.y + 24 });
         await page.waitForFunction(() => document.querySelector(".character-categories")!.scrollLeft > 0);
       }
-      await page.getByRole("button", { name: "Sunset crop top", exact: true }).tap();
+      await page.locator(".character-option").last().tap();
       await page.waitForFunction(() => document.querySelector<HTMLButtonElement>(".character-editor-actions .primary-button")?.disabled === false);
       await page.waitForFunction(() => [...document.querySelectorAll<HTMLCanvasElement>(".character-option canvas")].every(canvas => canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height).data.some((value, index) => index % 4 === 3 && value > 0)));
       const layout = await page.evaluate(() => {
@@ -69,7 +69,7 @@ export async function reviewCreatorLayouts(page: Page, output: string) {
         const selected = document.querySelector('.character-option[aria-pressed="true"]')!.getBoundingClientRect();
         const fits = [dialog, footer].every(rect => rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight);
         const reachable = selected.top >= dialog.top && selected.bottom <= footer.top;
-        const targets = [...document.querySelectorAll<HTMLElement>(".character-directions button, .character-segmented button, .character-shuffle, .character-editor-actions button")];
+        const targets = [...document.querySelectorAll<HTMLElement>(".character-playback select, .character-categories button, .character-shuffle, .character-editor-actions button")];
         const smallTargets = targets.flatMap(element => {
           const rect = element.getBoundingClientRect();
           return rect.width >= 44 && rect.height >= 44 ? [] : [{ label: element.textContent || element.getAttribute("aria-label"), width: rect.width, height: rect.height }];

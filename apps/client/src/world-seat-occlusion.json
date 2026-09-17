@@ -1,0 +1,2384 @@
+{
+  "chair-office": {
+    "path": "/world-assets/seat-occlusion/chair-office.png",
+    "width": 788,
+    "height": 128,
+    "seats": {
+      "seat": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 192,
+            "height": 123
+          },
+          "bounds": {
+            "x": 0,
+            "y": -3.1225107893823534,
+            "width": 32,
+            "height": 20.5
+          }
+        },
+        {
+          "frame": {
+            "x": 199,
+            "y": 2,
+            "width": 193,
+            "height": 84
+          },
+          "bounds": {
+            "x": 0,
+            "y": 3.877489210617643,
+            "width": 32.166666666666664,
+            "height": 14
+          }
+        },
+        {
+          "frame": {
+            "x": 396,
+            "y": 2,
+            "width": 192,
+            "height": 124
+          },
+          "bounds": {
+            "x": 0,
+            "y": -3.122510789382357,
+            "width": 32,
+            "height": 20.666666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 593,
+            "y": 2,
+            "width": 193,
+            "height": 82
+          },
+          "bounds": {
+            "x": -0.16666666666666666,
+            "y": 4.210822543950979,
+            "width": 32.166666666666664,
+            "height": 13.666666666666666
+          }
+        }
+      ]
+    }
+  },
+  "sofa-straight": {
+    "path": "/world-assets/seat-occlusion/sofa-straight.png",
+    "width": 2320,
+    "height": 1112,
+    "seats": {
+      "seat-left": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 123
+          },
+          "bounds": {
+            "x": 0,
+            "y": -3.1225107893823534,
+            "width": 96,
+            "height": 20.5
+          }
+        },
+        {
+          "frame": {
+            "x": 582,
+            "y": 2,
+            "width": 193,
+            "height": 552
+          },
+          "bounds": {
+            "x": 1.8947806286936004e-14,
+            "y": -10.122510789382355,
+            "width": 32.166666666666664,
+            "height": 92
+          }
+        },
+        {
+          "frame": {
+            "x": 2,
+            "y": 558,
+            "width": 576,
+            "height": 124
+          },
+          "bounds": {
+            "x": 0,
+            "y": -3.122510789382357,
+            "width": 96,
+            "height": 20.666666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 582,
+            "y": 558,
+            "width": 193,
+            "height": 82
+          },
+          "bounds": {
+            "x": -0.16666666666664773,
+            "y": 68.21082254395098,
+            "width": 32.166666666666664,
+            "height": 13.666666666666666
+          }
+        }
+      ],
+      "seat-middle": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 123
+          },
+          "bounds": {
+            "x": 0,
+            "y": -3.1225107893823534,
+            "width": 96,
+            "height": 20.5
+          }
+        },
+        {
+          "frame": {
+            "x": 1162,
+            "y": 2,
+            "width": 193,
+            "height": 241
+          },
+          "bounds": {
+            "x": 1.8947806286936004e-14,
+            "y": 41.71082254395098,
+            "width": 32.166666666666664,
+            "height": 40.166666666666664
+          }
+        },
+        {
+          "frame": {
+            "x": 2,
+            "y": 558,
+            "width": 576,
+            "height": 124
+          },
+          "bounds": {
+            "x": 0,
+            "y": -3.122510789382357,
+            "width": 96,
+            "height": 20.666666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 1162,
+            "y": 558,
+            "width": 193,
+            "height": 241
+          },
+          "bounds": {
+            "x": -0.16666666666664773,
+            "y": 41.71082254395098,
+            "width": 32.166666666666664,
+            "height": 40.166666666666664
+          }
+        }
+      ],
+      "seat-right": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 123
+          },
+          "bounds": {
+            "x": 0,
+            "y": -3.1225107893823534,
+            "width": 96,
+            "height": 20.5
+          }
+        },
+        {
+          "frame": {
+            "x": 1742,
+            "y": 2,
+            "width": 193,
+            "height": 84
+          },
+          "bounds": {
+            "x": 1.8947806286936004e-14,
+            "y": 67.87748921061764,
+            "width": 32.166666666666664,
+            "height": 14
+          }
+        },
+        {
+          "frame": {
+            "x": 2,
+            "y": 558,
+            "width": 576,
+            "height": 124
+          },
+          "bounds": {
+            "x": 0,
+            "y": -3.122510789382357,
+            "width": 96,
+            "height": 20.666666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 1742,
+            "y": 558,
+            "width": 193,
+            "height": 552
+          },
+          "bounds": {
+            "x": -0.16666666666664773,
+            "y": -10.122510789382355,
+            "width": 32.166666666666664,
+            "height": 92
+          }
+        }
+      ]
+    }
+  },
+  "sofa-corner": {
+    "path": "/world-assets/seat-occlusion/sofa-corner.png",
+    "width": 2324,
+    "height": 1662,
+    "seats": {
+      "seat-left": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 51,
+            "height": 549
+          },
+          "bounds": {
+            "x": 87.66666666666667,
+            "y": -10.122510789382355,
+            "width": 8.5,
+            "height": 91.5
+          }
+        },
+        {
+          "frame": {
+            "x": 1745,
+            "y": 2,
+            "width": 577,
+            "height": 550
+          },
+          "bounds": {
+            "x": 1.8947806286936004e-14,
+            "y": -10.122510789382355,
+            "width": 96.16666666666667,
+            "height": 91.66666666666667
+          }
+        },
+        {
+          "frame": {
+            "x": 1164,
+            "y": 556,
+            "width": 577,
+            "height": 104
+          },
+          "bounds": {
+            "x": -0.16666666666666666,
+            "y": 64.21082254395098,
+            "width": 96.16666666666667,
+            "height": 17.333333333333332
+          }
+        },
+        {
+          "frame": {
+            "x": 583,
+            "y": 1110,
+            "width": 37,
+            "height": 72
+          },
+          "bounds": {
+            "x": -0.16666666666664773,
+            "y": 68.21082254395098,
+            "width": 6.166666666666667,
+            "height": 12
+          }
+        }
+      ],
+      "seat-top": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 51,
+            "height": 549
+          },
+          "bounds": {
+            "x": 87.66666666666667,
+            "y": -10.122510789382355,
+            "width": 8.5,
+            "height": 91.5
+          }
+        },
+        {
+          "frame": {
+            "x": 2,
+            "y": 556,
+            "width": 577,
+            "height": 274
+          },
+          "bounds": {
+            "x": 1.8947806286936004e-14,
+            "y": 35.87748921061765,
+            "width": 96.16666666666667,
+            "height": 45.666666666666664
+          }
+        },
+        {
+          "frame": {
+            "x": 1164,
+            "y": 556,
+            "width": 577,
+            "height": 104
+          },
+          "bounds": {
+            "x": -0.16666666666666666,
+            "y": 64.21082254395098,
+            "width": 96.16666666666667,
+            "height": 17.333333333333332
+          }
+        },
+        {
+          "frame": {
+            "x": 1164,
+            "y": 1110,
+            "width": 51,
+            "height": 357
+          },
+          "bounds": {
+            "x": -0.16666666666664773,
+            "y": 21.877489210617643,
+            "width": 8.5,
+            "height": 59.5
+          }
+        }
+      ],
+      "seat-corner": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 51,
+            "height": 549
+          },
+          "bounds": {
+            "x": 87.66666666666667,
+            "y": -10.122510789382355,
+            "width": 8.5,
+            "height": 91.5
+          }
+        },
+        {
+          "frame": {
+            "x": 583,
+            "y": 556,
+            "width": 576,
+            "height": 104
+          },
+          "bounds": {
+            "x": 1.8947806286936004e-14,
+            "y": 64.21082254395098,
+            "width": 96,
+            "height": 17.333333333333332
+          }
+        },
+        {
+          "frame": {
+            "x": 1164,
+            "y": 556,
+            "width": 577,
+            "height": 104
+          },
+          "bounds": {
+            "x": -0.16666666666666666,
+            "y": 64.21082254395098,
+            "width": 96.16666666666667,
+            "height": 17.333333333333332
+          }
+        },
+        {
+          "frame": {
+            "x": 1745,
+            "y": 1110,
+            "width": 51,
+            "height": 449
+          },
+          "bounds": {
+            "x": -0.16666666666664773,
+            "y": 6.5441558772843145,
+            "width": 8.5,
+            "height": 74.83333333333333
+          }
+        }
+      ],
+      "seat-middle": [
+        {
+          "frame": {
+            "x": 583,
+            "y": 2,
+            "width": 51,
+            "height": 231
+          },
+          "bounds": {
+            "x": 87.66666666666667,
+            "y": 41.71082254395098,
+            "width": 8.5,
+            "height": 38.5
+          }
+        },
+        {
+          "frame": {
+            "x": 583,
+            "y": 556,
+            "width": 576,
+            "height": 104
+          },
+          "bounds": {
+            "x": 1.8947806286936004e-14,
+            "y": 64.21082254395098,
+            "width": 96,
+            "height": 17.333333333333332
+          }
+        },
+        {
+          "frame": {
+            "x": 1745,
+            "y": 556,
+            "width": 577,
+            "height": 239
+          },
+          "bounds": {
+            "x": -0.16666666666666666,
+            "y": 41.71082254395098,
+            "width": 96.16666666666667,
+            "height": 39.833333333333336
+          }
+        },
+        {
+          "frame": {
+            "x": 1745,
+            "y": 1110,
+            "width": 51,
+            "height": 449
+          },
+          "bounds": {
+            "x": -0.16666666666664773,
+            "y": 6.5441558772843145,
+            "width": 8.5,
+            "height": 74.83333333333333
+          }
+        }
+      ],
+      "seat-bottom": [
+        {
+          "frame": {
+            "x": 1164,
+            "y": 2,
+            "width": 37,
+            "height": 74
+          },
+          "bounds": {
+            "x": 90,
+            "y": 67.87748921061765,
+            "width": 6.166666666666667,
+            "height": 12.333333333333334
+          }
+        },
+        {
+          "frame": {
+            "x": 583,
+            "y": 556,
+            "width": 576,
+            "height": 104
+          },
+          "bounds": {
+            "x": 1.8947806286936004e-14,
+            "y": 64.21082254395098,
+            "width": 96,
+            "height": 17.333333333333332
+          }
+        },
+        {
+          "frame": {
+            "x": 2,
+            "y": 1110,
+            "width": 577,
+            "height": 550
+          },
+          "bounds": {
+            "x": -0.16666666666666666,
+            "y": -10.122510789382355,
+            "width": 96.16666666666667,
+            "height": 91.66666666666667
+          }
+        },
+        {
+          "frame": {
+            "x": 1745,
+            "y": 1110,
+            "width": 51,
+            "height": 449
+          },
+          "bounds": {
+            "x": -0.16666666666664773,
+            "y": 6.5441558772843145,
+            "width": 8.5,
+            "height": 74.83333333333333
+          }
+        }
+      ]
+    }
+  },
+  "chair-lounge": {
+    "path": "/world-assets/seat-occlusion/chair-lounge.png",
+    "width": 1172,
+    "height": 176,
+    "seats": {
+      "seat": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 288,
+            "height": 171
+          },
+          "bounds": {
+            "x": 0,
+            "y": 4.877489210617647,
+            "width": 48,
+            "height": 28.5
+          }
+        },
+        {
+          "frame": {
+            "x": 295,
+            "y": 2,
+            "width": 289,
+            "height": 84
+          },
+          "bounds": {
+            "x": 0,
+            "y": 19.877489210617647,
+            "width": 48.166666666666664,
+            "height": 14
+          }
+        },
+        {
+          "frame": {
+            "x": 588,
+            "y": 2,
+            "width": 288,
+            "height": 172
+          },
+          "bounds": {
+            "x": 0,
+            "y": 4.877489210617643,
+            "width": 48,
+            "height": 28.666666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 881,
+            "y": 2,
+            "width": 289,
+            "height": 82
+          },
+          "bounds": {
+            "x": -0.16666666666666666,
+            "y": 20.210822543950975,
+            "width": 48.166666666666664,
+            "height": 13.666666666666666
+          }
+        }
+      ]
+    }
+  },
+  "outdoor-bench": {
+    "path": "/world-assets/seat-occlusion/outdoor-bench.png",
+    "width": 1740,
+    "height": 566,
+    "seats": {
+      "seat-left": [
+        null,
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 12,
+            "height": 562
+          },
+          "bounds": {
+            "x": 29.000000000000018,
+            "y": -12.622510789382357,
+            "width": 2,
+            "height": 93.66666666666667
+          }
+        },
+        {
+          "frame": {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 96
+          },
+          "bounds": {
+            "x": 0,
+            "y": 0.04415587728431092,
+            "width": 96,
+            "height": 16
+          }
+        },
+        null
+      ],
+      "seat-middle": [
+        null,
+        null,
+        {
+          "frame": {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 96
+          },
+          "bounds": {
+            "x": 0,
+            "y": 0.04415587728431092,
+            "width": 96,
+            "height": 16
+          }
+        },
+        null
+      ],
+      "seat-right": [
+        null,
+        null,
+        {
+          "frame": {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 96
+          },
+          "bounds": {
+            "x": 0,
+            "y": 0.04415587728431092,
+            "width": 96,
+            "height": 16
+          }
+        },
+        {
+          "frame": {
+            "x": 1162,
+            "y": 2,
+            "width": 12,
+            "height": 562
+          },
+          "bounds": {
+            "x": 1.0000000000000189,
+            "y": -12.622510789382357,
+            "width": 2,
+            "height": 93.66666666666667
+          }
+        }
+      ]
+    }
+  },
+  "chair-stool": {
+    "seats": {
+      "seat": [
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  },
+  "chair-dining": {
+    "path": "/world-assets/seat-occlusion/chair-dining.png",
+    "width": 588,
+    "height": 108,
+    "seats": {
+      "seat": [
+        null,
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 37,
+            "height": 74
+          },
+          "bounds": {
+            "x": 26,
+            "y": 3.877489210617643,
+            "width": 6.166666666666667,
+            "height": 12.333333333333334
+          }
+        },
+        {
+          "frame": {
+            "x": 198,
+            "y": 2,
+            "width": 192,
+            "height": 104
+          },
+          "bounds": {
+            "x": 0,
+            "y": 0.210822543950977,
+            "width": 32,
+            "height": 17.333333333333332
+          }
+        },
+        {
+          "frame": {
+            "x": 394,
+            "y": 2,
+            "width": 37,
+            "height": 72
+          },
+          "bounds": {
+            "x": -0.16666666666666666,
+            "y": 4.210822543950979,
+            "width": 6.166666666666667,
+            "height": 12
+          }
+        }
+      ]
+    }
+  },
+  "chair-beanbag": {
+    "path": "/world-assets/seat-occlusion/chair-beanbag.png",
+    "width": 240,
+    "height": 203,
+    "seats": {
+      "seat": [
+        null,
+        null,
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 236,
+            "height": 199
+          },
+          "bounds": {
+            "x": 4.333333333333333,
+            "y": 2.377489210617644,
+            "width": 39.333333333333336,
+            "height": 33.166666666666664
+          }
+        },
+        null
+      ]
+    }
+  },
+  "sofa-loveseat": {
+    "path": "/world-assets/seat-occlusion/sofa-loveseat.png",
+    "width": 1552,
+    "height": 728,
+    "seats": {
+      "seat-1": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 384,
+            "height": 171
+          },
+          "bounds": {
+            "x": 0,
+            "y": 4.877489210617647,
+            "width": 64,
+            "height": 28.5
+          }
+        },
+        {
+          "frame": {
+            "x": 390,
+            "y": 2,
+            "width": 289,
+            "height": 360
+          },
+          "bounds": {
+            "x": 0,
+            "y": -10.122510789382355,
+            "width": 48.166666666666664,
+            "height": 60
+          }
+        },
+        {
+          "frame": {
+            "x": 1166,
+            "y": 2,
+            "width": 384,
+            "height": 172
+          },
+          "bounds": {
+            "x": 0,
+            "y": 4.877489210617643,
+            "width": 64,
+            "height": 28.666666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 2,
+            "y": 366,
+            "width": 289,
+            "height": 82
+          },
+          "bounds": {
+            "x": -0.16666666666666666,
+            "y": 36.210822543950975,
+            "width": 48.166666666666664,
+            "height": 13.666666666666666
+          }
+        }
+      ],
+      "seat-2": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 384,
+            "height": 171
+          },
+          "bounds": {
+            "x": 0,
+            "y": 4.877489210617647,
+            "width": 64,
+            "height": 28.5
+          }
+        },
+        {
+          "frame": {
+            "x": 778,
+            "y": 2,
+            "width": 289,
+            "height": 84
+          },
+          "bounds": {
+            "x": 0,
+            "y": 35.87748921061765,
+            "width": 48.166666666666664,
+            "height": 14
+          }
+        },
+        {
+          "frame": {
+            "x": 1166,
+            "y": 2,
+            "width": 384,
+            "height": 172
+          },
+          "bounds": {
+            "x": 0,
+            "y": 4.877489210617643,
+            "width": 64,
+            "height": 28.666666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 390,
+            "y": 366,
+            "width": 289,
+            "height": 360
+          },
+          "bounds": {
+            "x": -0.16666666666666666,
+            "y": -10.122510789382355,
+            "width": 48.166666666666664,
+            "height": 60
+          }
+        }
+      ]
+    }
+  },
+  "sofa-velvet": {
+    "path": "/world-assets/seat-occlusion/sofa-velvet.png",
+    "width": 2320,
+    "height": 1112,
+    "seats": {
+      "seat-1": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 171
+          },
+          "bounds": {
+            "x": 0,
+            "y": 4.877489210617647,
+            "width": 96,
+            "height": 28.5
+          }
+        },
+        {
+          "frame": {
+            "x": 582,
+            "y": 2,
+            "width": 289,
+            "height": 552
+          },
+          "bounds": {
+            "x": 1.8947806286936004e-14,
+            "y": -10.122510789382355,
+            "width": 48.166666666666664,
+            "height": 92
+          }
+        },
+        {
+          "frame": {
+            "x": 2,
+            "y": 558,
+            "width": 576,
+            "height": 172
+          },
+          "bounds": {
+            "x": 0,
+            "y": 4.877489210617643,
+            "width": 96,
+            "height": 28.666666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 582,
+            "y": 558,
+            "width": 289,
+            "height": 129
+          },
+          "bounds": {
+            "x": -0.16666666666664773,
+            "y": 60.37748921061764,
+            "width": 48.166666666666664,
+            "height": 21.5
+          }
+        }
+      ],
+      "seat-2": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 171
+          },
+          "bounds": {
+            "x": 0,
+            "y": 4.877489210617647,
+            "width": 96,
+            "height": 28.5
+          }
+        },
+        {
+          "frame": {
+            "x": 1162,
+            "y": 2,
+            "width": 289,
+            "height": 348
+          },
+          "bounds": {
+            "x": 1.8947806286936004e-14,
+            "y": 23.877489210617647,
+            "width": 48.166666666666664,
+            "height": 58
+          }
+        },
+        {
+          "frame": {
+            "x": 2,
+            "y": 558,
+            "width": 576,
+            "height": 172
+          },
+          "bounds": {
+            "x": 0,
+            "y": 4.877489210617643,
+            "width": 96,
+            "height": 28.666666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 1162,
+            "y": 558,
+            "width": 289,
+            "height": 285
+          },
+          "bounds": {
+            "x": -0.16666666666664773,
+            "y": 34.37748921061765,
+            "width": 48.166666666666664,
+            "height": 47.5
+          }
+        }
+      ],
+      "seat-3": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 171
+          },
+          "bounds": {
+            "x": 0,
+            "y": 4.877489210617647,
+            "width": 96,
+            "height": 28.5
+          }
+        },
+        {
+          "frame": {
+            "x": 1742,
+            "y": 2,
+            "width": 289,
+            "height": 117
+          },
+          "bounds": {
+            "x": 1.8947806286936004e-14,
+            "y": 62.37748921061764,
+            "width": 48.166666666666664,
+            "height": 19.5
+          }
+        },
+        {
+          "frame": {
+            "x": 2,
+            "y": 558,
+            "width": 576,
+            "height": 172
+          },
+          "bounds": {
+            "x": 0,
+            "y": 4.877489210617643,
+            "width": 96,
+            "height": 28.666666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 1742,
+            "y": 558,
+            "width": 289,
+            "height": 552
+          },
+          "bounds": {
+            "x": -0.16666666666664773,
+            "y": -10.122510789382355,
+            "width": 48.166666666666664,
+            "height": 92
+          }
+        }
+      ]
+    }
+  },
+  "chair-ottoman": {
+    "seats": {
+      "seat": [
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  },
+  "sofa-reading-bench": {
+    "path": "/world-assets/seat-occlusion/sofa-reading-bench.png",
+    "width": 1552,
+    "height": 718,
+    "seats": {
+      "seat-left": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 384,
+            "height": 109
+          },
+          "bounds": {
+            "x": 0,
+            "y": -1.622510789382357,
+            "width": 64,
+            "height": 18.166666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 390,
+            "y": 2,
+            "width": 192,
+            "height": 355
+          },
+          "bounds": {
+            "x": 0,
+            "y": -9.789177456049023,
+            "width": 32,
+            "height": 59.166666666666664
+          }
+        },
+        {
+          "frame": {
+            "x": 1166,
+            "y": 2,
+            "width": 384,
+            "height": 114
+          },
+          "bounds": {
+            "x": 0,
+            "y": -1.6225107893823552,
+            "width": 64,
+            "height": 19
+          }
+        },
+        {
+          "frame": {
+            "x": 2,
+            "y": 361,
+            "width": 192,
+            "height": 103
+          },
+          "bounds": {
+            "x": 0,
+            "y": 32.210822543950975,
+            "width": 32,
+            "height": 17.166666666666668
+          }
+        }
+      ],
+      "seat-right": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 384,
+            "height": 109
+          },
+          "bounds": {
+            "x": 0,
+            "y": -1.622510789382357,
+            "width": 64,
+            "height": 18.166666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 778,
+            "y": 2,
+            "width": 192,
+            "height": 103
+          },
+          "bounds": {
+            "x": 0,
+            "y": 32.210822543950975,
+            "width": 32,
+            "height": 17.166666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 1166,
+            "y": 2,
+            "width": 384,
+            "height": 114
+          },
+          "bounds": {
+            "x": 0,
+            "y": -1.6225107893823552,
+            "width": 64,
+            "height": 19
+          }
+        },
+        {
+          "frame": {
+            "x": 390,
+            "y": 361,
+            "width": 192,
+            "height": 355
+          },
+          "bounds": {
+            "x": 0,
+            "y": -9.789177456049023,
+            "width": 32,
+            "height": 59.166666666666664
+          }
+        }
+      ]
+    }
+  },
+  "chair-windsor": {
+    "path": "/world-assets/seat-occlusion/chair-windsor.png",
+    "width": 588,
+    "height": 114,
+    "seats": {
+      "seat-1": [
+        null,
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 12,
+            "height": 47
+          },
+          "bounds": {
+            "x": 28,
+            "y": 3.544155877284311,
+            "width": 2,
+            "height": 7.833333333333333
+          }
+        },
+        {
+          "frame": {
+            "x": 198,
+            "y": 2,
+            "width": 192,
+            "height": 110
+          },
+          "bounds": {
+            "x": 0,
+            "y": -2.95584412271569,
+            "width": 32,
+            "height": 18.333333333333332
+          }
+        },
+        {
+          "frame": {
+            "x": 394,
+            "y": 2,
+            "width": 12,
+            "height": 59
+          },
+          "bounds": {
+            "x": 2,
+            "y": 3.544155877284311,
+            "width": 2,
+            "height": 9.833333333333334
+          }
+        }
+      ]
+    }
+  },
+  "chair-cantilever": {
+    "path": "/world-assets/seat-occlusion/chair-cantilever.png",
+    "width": 570,
+    "height": 113,
+    "seats": {
+      "seat-1": [
+        null,
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 14,
+            "height": 21
+          },
+          "bounds": {
+            "x": 27.833333333333332,
+            "y": -0.28917745604902123,
+            "width": 2.3333333333333335,
+            "height": 3.5
+          }
+        },
+        {
+          "frame": {
+            "x": 192,
+            "y": 2,
+            "width": 186,
+            "height": 109
+          },
+          "bounds": {
+            "x": 0.5,
+            "y": -0.4558441227156891,
+            "width": 31,
+            "height": 18.166666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 382,
+            "y": 2,
+            "width": 14,
+            "height": 21
+          },
+          "bounds": {
+            "x": 1.8333333333333335,
+            "y": -0.28917745604902123,
+            "width": 2.3333333333333335,
+            "height": 3.5
+          }
+        }
+      ]
+    }
+  },
+  "chair-director": {
+    "path": "/world-assets/seat-occlusion/chair-director.png",
+    "width": 1144,
+    "height": 121,
+    "seats": {
+      "seat-1": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 282,
+            "height": 104
+          },
+          "bounds": {
+            "x": 0.5,
+            "y": -3.455844122715689,
+            "width": 47,
+            "height": 17.333333333333332
+          }
+        },
+        {
+          "frame": {
+            "x": 288,
+            "y": 2,
+            "width": 186,
+            "height": 100
+          },
+          "bounds": {
+            "x": 0.5,
+            "y": 15.377489210617643,
+            "width": 31,
+            "height": 16.666666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 574,
+            "y": 2,
+            "width": 282,
+            "height": 117
+          },
+          "bounds": {
+            "x": 0.5,
+            "y": -3.455844122715689,
+            "width": 47,
+            "height": 19.5
+          }
+        },
+        {
+          "frame": {
+            "x": 860,
+            "y": 2,
+            "width": 186,
+            "height": 100
+          },
+          "bounds": {
+            "x": 0.5,
+            "y": 15.377489210617643,
+            "width": 31,
+            "height": 16.666666666666668
+          }
+        }
+      ]
+    }
+  },
+  "chair-rocker": {
+    "path": "/world-assets/seat-occlusion/chair-rocker.png",
+    "width": 1168,
+    "height": 165,
+    "seats": {
+      "seat-1": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 282,
+            "height": 152
+          },
+          "bounds": {
+            "x": 0.5,
+            "y": 4.544155877284311,
+            "width": 47,
+            "height": 25.333333333333332
+          }
+        },
+        {
+          "frame": {
+            "x": 294,
+            "y": 2,
+            "width": 282,
+            "height": 96
+          },
+          "bounds": {
+            "x": 0.5,
+            "y": 15.877489210617647,
+            "width": 47,
+            "height": 16
+          }
+        },
+        {
+          "frame": {
+            "x": 586,
+            "y": 2,
+            "width": 288,
+            "height": 161
+          },
+          "bounds": {
+            "x": 0,
+            "y": 4.544155877284311,
+            "width": 48,
+            "height": 26.833333333333332
+          }
+        },
+        {
+          "frame": {
+            "x": 878,
+            "y": 2,
+            "width": 282,
+            "height": 96
+          },
+          "bounds": {
+            "x": 0.5,
+            "y": 15.877489210617647,
+            "width": 47,
+            "height": 16
+          }
+        }
+      ]
+    }
+  },
+  "chair-papasan": {
+    "path": "/world-assets/seat-occlusion/chair-papasan.png",
+    "width": 256,
+    "height": 149,
+    "seats": {
+      "seat-1": [
+        null,
+        null,
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 252,
+            "height": 145
+          },
+          "bounds": {
+            "x": 3,
+            "y": 7.210822543950977,
+            "width": 42,
+            "height": 24.166666666666668
+          }
+        },
+        null
+      ]
+    }
+  },
+  "chair-wingback": {
+    "path": "/world-assets/seat-occlusion/chair-wingback.png",
+    "width": 1144,
+    "height": 228,
+    "seats": {
+      "seat-1": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 282,
+            "height": 152
+          },
+          "bounds": {
+            "x": 0.5,
+            "y": 4.544155877284311,
+            "width": 47,
+            "height": 25.333333333333332
+          }
+        },
+        {
+          "frame": {
+            "x": 288,
+            "y": 2,
+            "width": 257,
+            "height": 192
+          },
+          "bounds": {
+            "x": 0.5,
+            "y": -0.12251078938235338,
+            "width": 42.833333333333336,
+            "height": 32
+          }
+        },
+        {
+          "frame": {
+            "x": 574,
+            "y": 2,
+            "width": 282,
+            "height": 224
+          },
+          "bounds": {
+            "x": 0.5,
+            "y": -3.789177456049023,
+            "width": 47,
+            "height": 37.333333333333336
+          }
+        },
+        {
+          "frame": {
+            "x": 860,
+            "y": 2,
+            "width": 280,
+            "height": 166
+          },
+          "bounds": {
+            "x": 0.8333333333333333,
+            "y": 4.210822543950975,
+            "width": 46.666666666666664,
+            "height": 27.666666666666668
+          }
+        }
+      ]
+    }
+  },
+  "chair-shell": {
+    "path": "/world-assets/seat-occlusion/chair-shell.png",
+    "width": 188,
+    "height": 102,
+    "seats": {
+      "seat-1": [
+        null,
+        null,
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 184,
+            "height": 98
+          },
+          "bounds": {
+            "x": 0.6666666666666666,
+            "y": -0.9558441227156891,
+            "width": 30.666666666666668,
+            "height": 16.333333333333332
+          }
+        },
+        null
+      ]
+    }
+  },
+  "chair-folding": {
+    "path": "/world-assets/seat-occlusion/chair-folding.png",
+    "width": 190,
+    "height": 76,
+    "seats": {
+      "seat-1": [
+        null,
+        null,
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 186,
+            "height": 72
+          },
+          "bounds": {
+            "x": 0.5,
+            "y": 5.877489210617645,
+            "width": 31,
+            "height": 12
+          }
+        },
+        null
+      ]
+    }
+  },
+  "chair-saddle": {
+    "seats": {
+      "seat-1": [
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  },
+  "chair-drum": {
+    "seats": {
+      "seat-1": [
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  },
+  "chair-zaisu": {
+    "path": "/world-assets/seat-occlusion/chair-zaisu.png",
+    "width": 190,
+    "height": 127,
+    "seats": {
+      "seat-1": [
+        null,
+        null,
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 186,
+            "height": 123
+          },
+          "bounds": {
+            "x": 0.5,
+            "y": 15.377489210617643,
+            "width": 31,
+            "height": 20.5
+          }
+        },
+        null
+      ]
+    }
+  },
+  "chair-rattan": {
+    "path": "/world-assets/seat-occlusion/chair-rattan.png",
+    "width": 1168,
+    "height": 165,
+    "seats": {
+      "seat-1": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 282,
+            "height": 152
+          },
+          "bounds": {
+            "x": 0.5,
+            "y": 4.544155877284311,
+            "width": 47,
+            "height": 25.333333333333332
+          }
+        },
+        {
+          "frame": {
+            "x": 294,
+            "y": 2,
+            "width": 282,
+            "height": 74
+          },
+          "bounds": {
+            "x": 0.5,
+            "y": 19.54415587728431,
+            "width": 47,
+            "height": 12.333333333333334
+          }
+        },
+        {
+          "frame": {
+            "x": 586,
+            "y": 2,
+            "width": 288,
+            "height": 161
+          },
+          "bounds": {
+            "x": 0,
+            "y": 4.544155877284311,
+            "width": 48,
+            "height": 26.833333333333332
+          }
+        },
+        {
+          "frame": {
+            "x": 878,
+            "y": 2,
+            "width": 282,
+            "height": 74
+          },
+          "bounds": {
+            "x": 0.5,
+            "y": 19.54415587728431,
+            "width": 47,
+            "height": 12.333333333333334
+          }
+        }
+      ]
+    }
+  },
+  "sofa-chesterfield": {
+    "path": "/world-assets/seat-occlusion/sofa-chesterfield.png",
+    "width": 2440,
+    "height": 1132,
+    "seats": {
+      "seat-1": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 606,
+            "height": 175
+          },
+          "bounds": {
+            "x": -2.5,
+            "y": 4.210822543950979,
+            "width": 101,
+            "height": 29.166666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 612,
+            "y": 2,
+            "width": 288,
+            "height": 562
+          },
+          "bounds": {
+            "x": 0.500000000000019,
+            "y": -10.789177456049023,
+            "width": 48,
+            "height": 93.66666666666667
+          }
+        },
+        {
+          "frame": {
+            "x": 2,
+            "y": 568,
+            "width": 606,
+            "height": 177
+          },
+          "bounds": {
+            "x": -2.5,
+            "y": 4.210822543950979,
+            "width": 101,
+            "height": 29.5
+          }
+        },
+        {
+          "frame": {
+            "x": 612,
+            "y": 568,
+            "width": 282,
+            "height": 162
+          },
+          "bounds": {
+            "x": 0.5000000000000189,
+            "y": 55.87748921061764,
+            "width": 47,
+            "height": 27
+          }
+        }
+      ],
+      "seat-2": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 606,
+            "height": 175
+          },
+          "bounds": {
+            "x": -2.5,
+            "y": 4.210822543950979,
+            "width": 101,
+            "height": 29.166666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 1222,
+            "y": 2,
+            "width": 282,
+            "height": 375
+          },
+          "bounds": {
+            "x": 0.500000000000019,
+            "y": 20.377489210617647,
+            "width": 47,
+            "height": 62.5
+          }
+        },
+        {
+          "frame": {
+            "x": 2,
+            "y": 568,
+            "width": 606,
+            "height": 177
+          },
+          "bounds": {
+            "x": -2.5,
+            "y": 4.210822543950979,
+            "width": 101,
+            "height": 29.5
+          }
+        },
+        {
+          "frame": {
+            "x": 1222,
+            "y": 568,
+            "width": 282,
+            "height": 370
+          },
+          "bounds": {
+            "x": 0.5000000000000189,
+            "y": 21.210822543950975,
+            "width": 47,
+            "height": 61.666666666666664
+          }
+        }
+      ],
+      "seat-3": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 606,
+            "height": 175
+          },
+          "bounds": {
+            "x": -2.5,
+            "y": 4.210822543950979,
+            "width": 101,
+            "height": 29.166666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 1832,
+            "y": 2,
+            "width": 282,
+            "height": 160
+          },
+          "bounds": {
+            "x": 0.500000000000019,
+            "y": 56.21082254395098,
+            "width": 47,
+            "height": 26.666666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 2,
+            "y": 568,
+            "width": 606,
+            "height": 177
+          },
+          "bounds": {
+            "x": -2.5,
+            "y": 4.210822543950979,
+            "width": 101,
+            "height": 29.5
+          }
+        },
+        {
+          "frame": {
+            "x": 1832,
+            "y": 568,
+            "width": 288,
+            "height": 562
+          },
+          "bounds": {
+            "x": -0.49999999999998107,
+            "y": -10.789177456049023,
+            "width": 48,
+            "height": 93.66666666666667
+          }
+        }
+      ]
+    }
+  },
+  "sofa-futon": {
+    "path": "/world-assets/seat-occlusion/sofa-futon.png",
+    "width": 1722,
+    "height": 553,
+    "seats": {
+      "seat-1": [
+        null,
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 42,
+            "height": 549
+          },
+          "bounds": {
+            "x": 41.50000000000002,
+            "y": -10.789177456049023,
+            "width": 7,
+            "height": 91.5
+          }
+        },
+        {
+          "frame": {
+            "x": 576,
+            "y": 2,
+            "width": 570,
+            "height": 109
+          },
+          "bounds": {
+            "x": 0.5,
+            "y": 15.54415587728431,
+            "width": 95,
+            "height": 18.166666666666668
+          }
+        },
+        null
+      ],
+      "seat-2": [
+        null,
+        null,
+        {
+          "frame": {
+            "x": 576,
+            "y": 2,
+            "width": 570,
+            "height": 109
+          },
+          "bounds": {
+            "x": 0.5,
+            "y": 15.54415587728431,
+            "width": 95,
+            "height": 18.166666666666668
+          }
+        },
+        null
+      ],
+      "seat-3": [
+        null,
+        null,
+        {
+          "frame": {
+            "x": 576,
+            "y": 2,
+            "width": 570,
+            "height": 109
+          },
+          "bounds": {
+            "x": 0.5,
+            "y": 15.54415587728431,
+            "width": 95,
+            "height": 18.166666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 1150,
+            "y": 2,
+            "width": 42,
+            "height": 549
+          },
+          "bounds": {
+            "x": -0.49999999999998107,
+            "y": -10.789177456049023,
+            "width": 7,
+            "height": 91.5
+          }
+        }
+      ]
+    }
+  },
+  "sofa-daybed": {
+    "path": "/world-assets/seat-occlusion/sofa-daybed.png",
+    "width": 1220,
+    "height": 179,
+    "seats": {
+      "seat-1": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 606,
+            "height": 175
+          },
+          "bounds": {
+            "x": -2.5,
+            "y": 4.210822543950979,
+            "width": 101,
+            "height": 29.166666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 612,
+            "y": 2,
+            "width": 282,
+            "height": 77
+          },
+          "bounds": {
+            "x": 0.500000000000019,
+            "y": 70.04415587728431,
+            "width": 47,
+            "height": 12.833333333333334
+          }
+        },
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 606,
+            "height": 175
+          },
+          "bounds": {
+            "x": -2.5,
+            "y": 4.210822543950979,
+            "width": 101,
+            "height": 29.166666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 612,
+            "y": 2,
+            "width": 282,
+            "height": 77
+          },
+          "bounds": {
+            "x": 0.500000000000019,
+            "y": 70.04415587728431,
+            "width": 47,
+            "height": 12.833333333333334
+          }
+        }
+      ],
+      "seat-2": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 606,
+            "height": 175
+          },
+          "bounds": {
+            "x": -2.5,
+            "y": 4.210822543950979,
+            "width": 101,
+            "height": 29.166666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 612,
+            "y": 2,
+            "width": 282,
+            "height": 77
+          },
+          "bounds": {
+            "x": 0.500000000000019,
+            "y": 70.04415587728431,
+            "width": 47,
+            "height": 12.833333333333334
+          }
+        },
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 606,
+            "height": 175
+          },
+          "bounds": {
+            "x": -2.5,
+            "y": 4.210822543950979,
+            "width": 101,
+            "height": 29.166666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 612,
+            "y": 2,
+            "width": 282,
+            "height": 77
+          },
+          "bounds": {
+            "x": 0.500000000000019,
+            "y": 70.04415587728431,
+            "width": 47,
+            "height": 12.833333333333334
+          }
+        }
+      ],
+      "seat-3": [
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 606,
+            "height": 175
+          },
+          "bounds": {
+            "x": -2.5,
+            "y": 4.210822543950979,
+            "width": 101,
+            "height": 29.166666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 612,
+            "y": 2,
+            "width": 282,
+            "height": 77
+          },
+          "bounds": {
+            "x": 0.500000000000019,
+            "y": 70.04415587728431,
+            "width": 47,
+            "height": 12.833333333333334
+          }
+        },
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 606,
+            "height": 175
+          },
+          "bounds": {
+            "x": -2.5,
+            "y": 4.210822543950979,
+            "width": 101,
+            "height": 29.166666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 612,
+            "y": 2,
+            "width": 282,
+            "height": 77
+          },
+          "bounds": {
+            "x": 0.500000000000019,
+            "y": 70.04415587728431,
+            "width": 47,
+            "height": 12.833333333333334
+          }
+        }
+      ]
+    }
+  },
+  "sofa-bench-storage": {
+    "seats": {
+      "seat-1": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "seat-2": [
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  },
+  "sofa-banquette": {
+    "path": "/world-assets/seat-occlusion/sofa-banquette.png",
+    "width": 2296,
+    "height": 1206,
+    "seats": {
+      "seat-1": [
+        null,
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 45,
+            "height": 599
+          },
+          "bounds": {
+            "x": 41.00000000000002,
+            "y": -19.289177456049025,
+            "width": 7.5,
+            "height": 99.83333333333333
+          }
+        },
+        {
+          "frame": {
+            "x": 1724,
+            "y": 2,
+            "width": 570,
+            "height": 159
+          },
+          "bounds": {
+            "x": 0.5,
+            "y": 7.044155877284309,
+            "width": 95,
+            "height": 26.5
+          }
+        },
+        {
+          "frame": {
+            "x": 2,
+            "y": 605,
+            "width": 8,
+            "height": 60
+          },
+          "bounds": {
+            "x": 5.666666666666686,
+            "y": 63.54415587728431,
+            "width": 1.3333333333333333,
+            "height": 10
+          }
+        }
+      ],
+      "seat-2": [
+        null,
+        {
+          "frame": {
+            "x": 576,
+            "y": 2,
+            "width": 8,
+            "height": 276
+          },
+          "bounds": {
+            "x": 41.00000000000002,
+            "y": 26.54415587728431,
+            "width": 1.3333333333333333,
+            "height": 46
+          }
+        },
+        {
+          "frame": {
+            "x": 1724,
+            "y": 2,
+            "width": 570,
+            "height": 159
+          },
+          "bounds": {
+            "x": 0.5,
+            "y": 7.044155877284309,
+            "width": 95,
+            "height": 26.5
+          }
+        },
+        {
+          "frame": {
+            "x": 576,
+            "y": 605,
+            "width": 8,
+            "height": 276
+          },
+          "bounds": {
+            "x": 5.666666666666686,
+            "y": 27.54415587728431,
+            "width": 1.3333333333333333,
+            "height": 46
+          }
+        }
+      ],
+      "seat-3": [
+        null,
+        {
+          "frame": {
+            "x": 1150,
+            "y": 2,
+            "width": 8,
+            "height": 60
+          },
+          "bounds": {
+            "x": 41.00000000000002,
+            "y": 62.54415587728431,
+            "width": 1.3333333333333333,
+            "height": 10
+          }
+        },
+        {
+          "frame": {
+            "x": 1724,
+            "y": 2,
+            "width": 570,
+            "height": 159
+          },
+          "bounds": {
+            "x": 0.5,
+            "y": 7.044155877284309,
+            "width": 95,
+            "height": 26.5
+          }
+        },
+        {
+          "frame": {
+            "x": 1150,
+            "y": 605,
+            "width": 45,
+            "height": 599
+          },
+          "bounds": {
+            "x": -0.49999999999998107,
+            "y": -19.289177456049025,
+            "width": 7.5,
+            "height": 99.83333333333333
+          }
+        }
+      ]
+    }
+  },
+  "sofa-slat-bench": {
+    "seats": {
+      "seat-1": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "seat-2": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "seat-3": [
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  },
+  "sofa-chaise": {
+    "path": "/world-assets/seat-occlusion/sofa-chaise.png",
+    "width": 312,
+    "height": 172,
+    "seats": {
+      "seat-1": [
+        null,
+        null,
+        {
+          "frame": {
+            "x": 2,
+            "y": 2,
+            "width": 152,
+            "height": 109
+          },
+          "bounds": {
+            "x": 38.5,
+            "y": 15.54415587728431,
+            "width": 25.333333333333332,
+            "height": 18.166666666666668
+          }
+        },
+        {
+          "frame": {
+            "x": 158,
+            "y": 2,
+            "width": 42,
+            "height": 168
+          },
+          "bounds": {
+            "x": -0.5,
+            "y": 21.210822543950975,
+            "width": 7,
+            "height": 28
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,9 +1,9 @@
 function createCharacterBody(geometry, appearance) {
   const { ellipsoid, loft } = geometry;
   const top = appearance.upperBody;
-  const bareTorso = ["velvet", "starlight", "sunset"].includes(top);
+  const bareTorso = ["velvet", "starlight", "sunset", "lace", "harness"].includes(top);
   const bareArms = bareTorso || top === "biker";
-  const bareLegs = ["frog", "velvet", "starlight", "sunset"].includes(appearance.lowerBody);
+  const bareLegs = ["frog", "velvet", "starlight", "sunset", "jellyfish", "phoenix", "lace", "harness"].includes(appearance.lowerBody);
   const torsoMaterial = bareTorso ? "skin" : "jacket";
   const armMaterial = bareArms ? "skin" : "jacket";
   const legMaterial = bareLegs ? "skin" : "trousers";

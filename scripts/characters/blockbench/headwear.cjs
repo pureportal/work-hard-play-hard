@@ -1,4 +1,5 @@
 function createCharacterHeadwear(api, geometry, appearance) {
+  if (extendedHeadwear[appearance.headwear]) return extendedHeadwear[appearance.headwear](api, geometry);
   const { ellipsoid, loft, patch, mesh } = geometry;
   if (appearance.headwear === "cap") {
     const cap = new api.THREE.SphereGeometry(1, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2);

@@ -13,7 +13,7 @@ const samples = [
 ].filter(sample => !selected || selected.includes(sample.id));
 const manifest = JSON.parse(await readFile("scripts/characters/blockbench/manifest.json", "utf8"));
 const covered = new Set(samples.flatMap(sample => getCharacterLayerPaths(sample.appearance)));
-if (!selected) assert.deepEqual([...covered].sort(), manifest.layers.map(layer => layer.path.replace("apps/client/public", "")).sort());
+if (!selected) assert.deepEqual([...covered].map(path => path.replace("/characters/seated/chair/", "/characters/blockbench/")).sort(), manifest.layers.map(layer => layer.path.replace("apps/client/public", "")).sort());
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ headless: true, executablePath: puppeteer.executablePath() });
 const errors = [];

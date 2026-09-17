@@ -48,7 +48,7 @@ describe("character preview recovery", () => {
     const onReady = vi.fn();
     render(<CharacterPreview appearance={DEFAULT_CHARACTER_APPEARANCE} crop="hair" direction="up" onReady={onReady} />);
     await waitFor(() => expect(onReady).toHaveBeenLastCalledWith(true));
-    expect(renderCharacter).toHaveBeenLastCalledWith(DEFAULT_CHARACTER_APPEARANCE, { x: 28, y: 376, width: 64, height: 68 });
+    expect(renderCharacter).toHaveBeenLastCalledWith(DEFAULT_CHARACTER_APPEARANCE, { x: 26, y: 368, width: 68, height: 80 });
   });
 
   it("retains the full atlas for animated previews", async () => {

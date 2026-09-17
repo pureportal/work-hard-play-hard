@@ -11,7 +11,7 @@ import {
 } from "../../../packages/shared/src/character.ts";
 
 const workspace = fileURLToPath(new URL("../../../", import.meta.url));
-const source = await Promise.all(["geometry.cjs", "head.cjs", "hair.cjs", "body.cjs", "clothing.cjs", "wardrobe.cjs", "statement-tops.cjs", "statement-bottoms.cjs", "statement-shoes.cjs", "headwear.cjs", "customization.cjs", "model.cjs", "animations.cjs", "render.cjs"].map(async name =>
+const source = await Promise.all(["geometry.cjs", "face-styles.cjs", "head.cjs", "hair-styles.cjs", "hair.cjs", "body.cjs", "clothing.cjs", "wardrobe.cjs", "statement-tops.cjs", "statement-bottoms.cjs", "runway-tops.cjs", "runway-bottoms.cjs", "runway-shoes.cjs", "statement-shoes.cjs", "headwear-styles.cjs", "headwear.cjs", "style-materials.cjs", "customization.cjs", "model.cjs", "animations.cjs", "render.cjs"].map(async name =>
   (await readFile(new URL(name, import.meta.url), "utf8")).replace(/^module\.exports = .*;\r?\n?/gm, "")));
 const settings = {
   frameSize: CHARACTER_CANVAS_SIZE, atlasSize: CHARACTER_ATLAS_SIZE, atlasHeight: CHARACTER_ATLAS_HEIGHT,
@@ -28,8 +28,10 @@ for (const outfit of CHARACTER_OUTFITS) {
 for (const hairstyle of CHARACTER_HAIRSTYLES) for (const headwear of CHARACTER_HEADWEAR) designs.push({ layer: "hair", name: `${hairstyle}${headwear === "none" ? "" : `-${headwear}`}`, appearance: { ...DEFAULT_CHARACTER_APPEARANCE, hairstyle, headwear } });
 const selected = process.argv.slice(2);
 assert(selected.every(name => designs.some(design => `${design.layer}/${design.name}` === name)), "Choose a component from the character inventory");
+const pending = designs.filter(design => !selected.length || selected.includes(`${design.layer}/${design.name}`));
 const browser = await chromium.launch({ headless: true, executablePath: puppeteer.executablePath() });
-try {
+
+async function renderBatch(batch) {
   const page = await browser.newPage();
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
@@ -47,13 +49,20 @@ try {
     const api = { THREE, Mesh, MeshFace, Group, Texture, document, newProject, Formats, Canvas, Codecs,
       Animation, Animator, Timeline, get Project() { return Project; } };
     const results = [];
-    for (const design of ${JSON.stringify(designs.filter(design => !selected.length || selected.includes(design.layer + "/" + design.name)))}) {
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false, preserveDrawingBuffer: true });
+    try {
+    for (const design of ${JSON.stringify(batch)}) {
       const model = createCharacter(api, createCharacterGeometry, createCharacterHead, design.appearance);
       const animations = createCharacterAnimations(api, model);
       const modelPath = "scripts/characters/blockbench/models/" + design.layer + "-" + design.name + ".bbmodel";
       const compiled = Codecs.project.compile();
       await window.writeCharacterFile(modelPath, typeof compiled === "string" ? compiled : JSON.stringify(compiled));
-      const rendered = await renderCharacterLayer(api, model, animations, ${JSON.stringify(settings)}, design.layer);
+      let rendered;
+      try {
+        rendered = await renderCharacterLayer(api, model, animations, ${JSON.stringify(settings)}, design.layer, renderer);
+      } catch (error) {
+        throw new Error(design.layer + "/" + design.name + ": " + error.message);
+      }
       const path = "apps/client/public/characters/blockbench/" + design.layer + "/" + design.name + ".png";
       await window.writeCharacterFile(path, rendered.png, "base64");
       results.push({ ...design, path, model: modelPath, frames: rendered.frames });
@@ -61,19 +70,31 @@ try {
       await Project.close();
       console.log("Rendered character " + design.layer + "/" + design.name);
     }
+    } finally {
+      renderer.dispose();
+      renderer.forceContextLoss();
+    }
     return { blockbenchVersion: Blockbench.version, settings: ${JSON.stringify(settings)}, layers: results };
   })()`);
   assert.deepEqual(errors, []);
+  await page.close();
+  return report;
+}
+
+try {
+  const workers = Math.min(3, pending.length);
+  const reports = await Promise.all(Array.from({ length: workers }, (_, worker) => renderBatch(pending.filter((_, index) => index % workers === worker))));
+  assert(reports.every(report => report.blockbenchVersion === reports[0].blockbenchVersion), "Blockbench versions must match");
+  const rendered = reports.flatMap(report => report.layers);
+  const report = { blockbenchVersion: reports[0].blockbenchVersion, settings, layers: rendered };
   const manifestPath = resolve(workspace, "scripts/characters/blockbench/manifest.json");
-  if (selected.length) {
-    const previous = JSON.parse(await readFile(manifestPath, "utf8"));
-    report.layers = designs.map(design => {
-      const matches = layer => layer.layer === design.layer && layer.name === design.name;
-      const layer = report.layers.find(matches) ?? previous.layers.find(matches);
-      assert(layer, "Generate the complete character inventory before individual components");
-      return { ...layer, appearance: design.appearance };
-    });
-  }
+  const previous = selected.length ? JSON.parse(await readFile(manifestPath, "utf8")).layers : [];
+  report.layers = designs.map(design => {
+    const matches = layer => layer.layer === design.layer && layer.name === design.name;
+    const layer = rendered.find(matches) ?? previous.find(matches);
+    assert(layer, "Generate the complete character inventory before individual components");
+    return { ...layer, appearance: design.appearance };
+  });
   await writeFile(manifestPath, JSON.stringify(report, null, 2) + "\n");
   console.log(JSON.stringify({ layers: report.layers.length, frames: report.layers.reduce((sum, layer) => sum + layer.frames, 0) }));
 } finally {

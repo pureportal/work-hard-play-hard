@@ -17,7 +17,7 @@ describe("initial character appearance", () => {
     random.mockReturnValue(0.999999);
     const second = randomCharacterAppearance();
     expect(first).toEqual({ face: "calm", hairstyle: "bob", upperBody: "street", lowerBody: "street", shoes: "street", headwear: "none" });
-    expect(second).toEqual({ face: "shy", hairstyle: "longbraid", upperBody: "sunset", lowerBody: "sunset", shoes: "sunset", headwear: "goggles" });
+    expect(second).toEqual({ face: "playful", hairstyle: "wetlook", upperBody: "harness", lowerBody: "harness", shoes: "harness", headwear: "masquerade" });
     expect(first).not.toBe(second);
   });
 

@@ -17,6 +17,12 @@ const outfitMaterials = {
   velvet: ["#9a365b", "#e27b94", "#522139", "#7a2e50", "#c75e80", "#922e53"],
   starlight: ["#929acb", "#e4e7ff", "#555d95", "#747fae", "#d0dcf4", "#b3bad9"],
   sunset: ["#ed946e", "#fff0bf", "#bd5d59", "#709cab", "#b5d6da", "#d59463"],
+  jellyfish: ["#ac82bb", "#e6bbe0", "#66547e", "#9b85bd", "#decff2", "#b295cd"],
+  phoenix: ["#bd554a", "#f6c46d", "#713c49", "#b65057", "#f4b865", "#bb6544"],
+  disco: ["#567caa", "#bce5ec", "#35436f", "#765d9c", "#d2b3e2", "#9fb2cf"],
+  lace: ["#833e5f", "#d89aad", "#462b40", "#64334e", "#bb7d98", "#723d56"],
+  satin: ["#526f85", "#a6c4cb", "#304155", "#373a52", "#8c96ad", "#4a3543"],
+  harness: ["#494355", "#bbb3c7", "#292633", "#3a3447", "#ada3bb", "#6c606f"],
 };
 
 function characterMaterials(appearance) {
@@ -24,6 +30,7 @@ function characterMaterials(appearance) {
   const bottom = outfitMaterials[appearance.lowerBody];
   const shoes = outfitMaterials[appearance.shoes];
   const hair = {
+    ...extendedHairMaterials,
     bob: ["#785567", "#493442", "#af7b8f", "#e5acb8"],
     spiky: ["#35455f", "#252a40", "#627b94", "#a1b9c9"],
     ponytail: ["#8b7aa9", "#51466c", "#b7a1cb", "#e4cce8"],
@@ -39,11 +46,16 @@ function characterMaterials(appearance) {
     curls: ["#654540", "#382b37", "#a77b65", "#e1b691"],
     longbraid: ["#c2b4c9", "#8e7b99", "#e7dce9", "#fff1df"],
   }[appearance.hairstyle];
+  const hat = headwearMaterials[appearance.headwear];
   return {
     jacket: top[0], jacketLight: top[1], jacketDark: top[2], trousers: bottom[3], trouserLight: bottom[4], shoe: shoes[5],
     shoeTrim: shoes[1], shoeDark: shoes[2],
     hair: hair[0], hairDark: hair[1], hairLight: hair[2], hairShine: hair[3],
     leather: "#614349", ribbon: "#ab526b",
+    ...(hat && { hat: hat[0], hatDark: hat[1], hatLight: hat[2] }),
+    freckle: "#ab705e", facialHair: "#54404a", eyeShadow: "#a17494", electric: "#df6d97",
+    ...(appearance.face === "mime" && { skin: "#eee6e0", skinLight: "#fffaf2", blush: "#d58489", lip: "#a14866" }),
+    ...(["gloss", "catliner", "smoky"].includes(appearance.face) && { lip: "#a14664" }),
     teal: appearance.face === "shy" ? "#c49bcf" : appearance.face === "fierce" ? "#d9a05b" : "#7bc9b7",
     tealDark: appearance.face === "shy" ? "#725181" : appearance.face === "fierce" ? "#80502e" : "#386e7f",
   };

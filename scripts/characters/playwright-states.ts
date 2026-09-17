@@ -7,6 +7,7 @@ import { CHARACTER_CANVAS_SIZE, CHARACTER_SEAT_ANCHOR, CHARACTER_DIRECTIONS, DEF
 import { installAssetFixture } from "../world-assets/playwright-fixture.js";
 import { installWorldProbe, worldReady } from "./playwright-animation.js";
 import { sharp } from "./raster.mjs";
+import { getCharacterSeatLayout } from "../../apps/client/src/character-seat.js";
 
 const output = process.env.CHARACTER_SEAT_SCREENSHOTS ?? fileURLToPath(new URL("../../artifacts/characters/state-review/after/states/", import.meta.url));
 await mkdir(output, { recursive: true });
@@ -66,6 +67,8 @@ try {
           return Math.hypot(player.x - x, player.y - y) < 0.1;
         }, interaction.center);
         assert.equal(fixture.getPlayer("user-maya")?.seat?.objectId, object.id);
+        await page.waitForFunction(pose => globalThis.findAvatar("You")?.label === `character-pose:${pose}`,
+          getCharacterSeatLayout(object, interaction.id).pose);
         const samples = await page.evaluate(async () => {
           const samples = [];
           const start = performance.now();

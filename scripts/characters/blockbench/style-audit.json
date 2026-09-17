@@ -1,0 +1,50 @@
+{
+  "face": {
+    "before": ["calm", "bright", "fierce", "dreamy", "smile", "shy"],
+    "feminine": ["doe", "catliner", "rosy", "gloss", "smoky"],
+    "masculine": ["square", "stubble", "moustache", "goatee", "smolder"],
+    "neutral": ["calm", "bright", "fierce", "dreamy", "smile", "shy", "freckles", "grin", "starry", "lightning", "mime", "playful"],
+    "crazy": ["starry", "lightning", "mime"],
+    "sexy": ["smoky", "smolder", "playful"]
+  },
+  "hairstyle": {
+    "before": ["bob", "spiky", "ponytail", "twintails", "wavy", "braid", "pixie", "curtains", "hime", "tousled", "buns", "swept", "curls", "longbraid"],
+    "feminine": ["bob", "ponytail", "twintails", "wavy", "braid", "hime", "buns", "longbraid", "afropuff", "sidepony", "waterfall", "hollywood"],
+    "masculine": ["spiky", "curtains", "tousled", "swept", "buzz", "fade", "quiff", "pompadour", "mohawk", "locs", "topknot", "slickback"],
+    "neutral": ["pixie", "curls", "flame", "nebula", "tentacles", "wetlook"],
+    "crazy": ["flame", "nebula", "tentacles"],
+    "sexy": ["hollywood", "slickback", "wetlook"]
+  },
+  "upperBody": {
+    "before": ["street", "ranger", "arcane", "sailor", "cardigan", "kimono", "traveler", "festival", "cyber", "pirate", "astronaut", "dragon", "jester", "frog", "biker", "velvet", "starlight", "sunset"],
+    "feminine": ["sailor", "kimono", "velvet", "starlight", "sunset", "jellyfish", "lace"],
+    "masculine": ["ranger", "traveler", "pirate", "biker", "disco", "satin", "harness"],
+    "neutral": ["street", "arcane", "cardigan", "festival", "cyber", "astronaut", "dragon", "jester", "frog", "phoenix"],
+    "crazy": ["jellyfish", "phoenix", "disco"],
+    "sexy": ["lace", "satin", "harness"]
+  },
+  "lowerBody": {
+    "before": ["street", "ranger", "arcane", "sailor", "cardigan", "kimono", "traveler", "festival", "cyber", "pirate", "astronaut", "dragon", "jester", "frog", "biker", "velvet", "starlight", "sunset"],
+    "feminine": ["kimono", "velvet", "starlight", "sunset", "jellyfish", "phoenix", "lace"],
+    "masculine": ["ranger", "arcane", "traveler", "pirate", "dragon", "biker", "satin"],
+    "neutral": ["street", "sailor", "cardigan", "festival", "cyber", "astronaut", "jester", "frog", "disco", "harness"],
+    "crazy": ["jellyfish", "phoenix", "disco"],
+    "sexy": ["lace", "satin", "harness"]
+  },
+  "shoes": {
+    "before": ["street", "ranger", "arcane", "sailor", "cardigan", "kimono", "traveler", "festival", "cyber", "pirate", "astronaut", "dragon", "jester", "frog", "biker", "velvet", "starlight", "sunset"],
+    "feminine": ["kimono", "velvet", "starlight", "sunset", "lace"],
+    "masculine": ["ranger", "traveler", "pirate", "biker", "satin"],
+    "neutral": ["street", "arcane", "sailor", "cardigan", "festival", "cyber", "astronaut", "dragon", "jester", "frog", "jellyfish", "phoenix", "disco", "harness"],
+    "crazy": ["jellyfish", "phoenix", "disco"],
+    "sexy": ["lace", "satin", "harness"]
+  },
+  "headwear": {
+    "before": ["cap", "witch", "beret", "ribbon", "catears", "blossom", "goggles"],
+    "feminine": ["ribbon", "blossom", "tiara", "sunhat", "roseband", "pearlcomb", "fascinator"],
+    "masculine": ["cap", "beanie", "fedora", "tricorn", "flatcap", "bandana", "leathercap"],
+    "neutral": ["witch", "beret", "catears", "goggles", "halo", "ufo", "antlers", "octopus", "masquerade"],
+    "crazy": ["ufo", "antlers", "octopus"],
+    "sexy": ["fascinator", "leathercap", "masquerade"]
+  }
+}

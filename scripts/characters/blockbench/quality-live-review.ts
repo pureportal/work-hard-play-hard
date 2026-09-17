@@ -13,7 +13,7 @@ const root = "C:/Development/work-hard-play-hard/artifacts/asset-quality-2026-09
 const output = `${root}/after/live-characters`;
 const samples = JSON.parse(await readFile(`${root}/before/characters/coverage.json`, "utf8")).samples as { id: string; appearance: CharacterAppearance; layers: string[] }[];
 const manifest = JSON.parse(await readFile(new URL("manifest.json", import.meta.url), "utf8"));
-assert.deepEqual([...new Set(samples.flatMap(sample => getCharacterLayerPaths(sample.appearance)))].sort(), manifest.layers.map((layer: { path: string }) => layer.path.replace("apps/client/public", "")).sort());
+assert.deepEqual([...new Set(samples.flatMap(sample => getCharacterLayerPaths(sample.appearance)))].map(path => path.replace("/characters/seated/chair/", "/characters/blockbench/")).sort(), manifest.layers.map((layer: { path: string }) => layer.path.replace("apps/client/public", "")).sort());
 await mkdir(`${output}/crops`, { recursive: true });
 const browser = await chromium.launch({ headless: true, executablePath: puppeteer.executablePath() });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
