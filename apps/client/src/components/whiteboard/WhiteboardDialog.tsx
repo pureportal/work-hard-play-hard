@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { Columns3, FileText, ImagePlus, LayoutDashboard, Presentation, Redo2, Smile, StickyNote, Undo2, X } from "lucide-react";
+import { Columns3, FileText, ImagePlus, LayoutDashboard, Redo2, Smile, StickyNote, Undo2 } from "lucide-react";
 import { WHITEBOARD_CARD_LIMIT, WHITEBOARD_DOCUMENT_BYTES, WHITEBOARD_TEXT_LIMIT, type WhiteboardCard, type WhiteboardStatus, type WhiteboardView, type WorkObjectState } from "@workhard/shared";
 import { useModalFocus } from "../../hooks/useModalFocus";
 import { IconButton } from "../IconButton";
+import { SurfaceHeader } from "../SurfaceHeader";
 import type { WorkObjectDialogProps } from "../WorkObjectDialog";
 import { WhiteboardBoard } from "./WhiteboardBoard";
 import { WhiteboardCanvas } from "./WhiteboardCanvas";
@@ -112,7 +113,7 @@ export function WhiteboardDialog({ title, state, unavailable, onUpdate, onUpload
 
   return <div className={modal ? "modal-backdrop" : "work-object-layer"}>
     <section ref={dialogRef} className="work-object-dialog whiteboard-dialog" role="dialog" aria-modal={modal || undefined} aria-labelledby="work-object-title" tabIndex={-1} aria-busy={saving || uploading} onKeyDown={shortcuts}>
-      <header><Presentation size={23} aria-hidden="true" /><h2 id="work-object-title">{title}</h2><IconButton label="Close board" icon={X} onClick={close} disabled={saving || uploading} /></header>
+      <SurfaceHeader className="work-object-header" title={title} titleId="work-object-title" closeLabel="Close board" closeDisabled={saving || uploading} onClose={close} />
       <div className="whiteboard-toolbar">
         <div className="whiteboard-views" role="group" aria-label="Whiteboard view">
           {views.map(({ id, label, icon: Icon }) => <button key={id} aria-pressed={view === id} disabled={uploading} onClick={() => { setView(id); setSelectedId(undefined); setImageOpen(false); setStickersOpen(false); }}>

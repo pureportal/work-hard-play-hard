@@ -1,9 +1,8 @@
-import { X } from "lucide-react";
 import { useState } from "react";
 import type { CharacterAppearance, Member } from "@workhard/shared";
 import { useModalFocus } from "../hooks/useModalFocus";
 import { CharacterEditor } from "./CharacterEditor";
-import { IconButton } from "./IconButton";
+import { SurfaceHeader } from "./SurfaceHeader";
 import "../character.css";
 
 interface AvatarDialogProps {
@@ -28,10 +27,7 @@ export function AvatarDialog({ currentUser, onClose, onSaveCharacter }: AvatarDi
     <div className="modal-backdrop">
       <section ref={dialogRef} className="avatar-dialog character-dialog" role="dialog" aria-modal="true"
         aria-labelledby="avatar-dialog-title" aria-busy={saving} tabIndex={-1}>
-        <header>
-          <h2 id="avatar-dialog-title">Avatar</h2>
-          <IconButton label="Close" icon={X} disabled={saving} onClick={onClose} />
-        </header>
+        <SurfaceHeader className="avatar-dialog-header" title="Avatar" titleId="avatar-dialog-title" closeLabel="Close" closeDisabled={saving} onClose={onClose} />
         <CharacterEditor appearance={currentUser.character} onSave={saveCharacter} onClose={onClose} />
       </section>
     </div>

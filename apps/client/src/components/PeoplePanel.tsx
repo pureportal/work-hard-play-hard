@@ -3,6 +3,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import type { AssignableMemberPermission, Invitation, Member, MemberRole } from "@workhard/shared";
 import { Avatar } from "./Avatar";
 import { IconButton } from "./IconButton";
+import { SurfaceHeader } from "./SurfaceHeader";
 
 const availabilityLabels: Record<Member["availability"], string> = {
   available: "Available",
@@ -106,16 +107,8 @@ export function PeoplePanel({
 
   return (
     <aside className="side-panel people-panel" aria-label="People">
-      <div className="panel-header">
-        <div>
-          <h2>People</h2>
-          <span>{online.length} online</span>
-        </div>
-        <div className="panel-header-actions">
-          {canManageMembers && <IconButton label="Invite member" icon={UserRoundPlus} onClick={() => setInviting(!inviting)} />}
-          <IconButton label="Close people" icon={X} onClick={onClose} />
-        </div>
-      </div>
+      <SurfaceHeader className="panel-header" title="People" onClose={onClose}
+        actions={canManageMembers && <IconButton label="Invite member" icon={UserRoundPlus} aria-expanded={inviting} onClick={() => setInviting(!inviting)} />} />
 
       <div className="panel-scroll people-panel-content">
         {inviting && (

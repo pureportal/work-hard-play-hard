@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ClipboardList, Pencil, Trash2, X } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import {
   CHECKLIST_ITEM_LIMIT,
   CHECKLIST_TEXT_LIMIT,
@@ -8,6 +8,7 @@ import {
 } from "@workhard/shared";
 import { useModalFocus } from "../hooks/useModalFocus";
 import { IconButton } from "./IconButton";
+import { SurfaceHeader } from "./SurfaceHeader";
 import "../work-objects.css";
 import { WhiteboardDialog } from "./whiteboard/WhiteboardDialog";
 
@@ -80,11 +81,7 @@ function ChecklistDialog({ title, state, unavailable, onUpdate, onClose, modal =
   return (
     <div className={modal ? "modal-backdrop" : "work-object-layer"}>
       <section ref={dialogRef} className="work-object-dialog" role="dialog" aria-modal={modal || undefined} aria-labelledby="work-object-title" tabIndex={-1} aria-busy={saving}>
-        <header>
-          <ClipboardList size={23} aria-hidden="true" />
-          <h2 id="work-object-title">{title}</h2>
-          <IconButton label="Close board" icon={X} onClick={close} disabled={saving} />
-        </header>
+        <SurfaceHeader className="work-object-header" title={title} titleId="work-object-title" closeLabel="Close board" closeDisabled={saving} onClose={close} />
         <div className="work-object-content">
           {state.items.length > 0 && (
             <div className="checklist-progress">

@@ -18,6 +18,7 @@
   gap: 12px;
   padding: 16px 20px;
   border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
 }
 
 .work-object-dialog h2 {
@@ -54,6 +55,9 @@
 .work-object-dialog > footer {
   padding: 14px 20px;
   border-top: 1px solid var(--line);
+  flex-shrink: 0;
+  max-height: 50%;
+  overflow-y: auto;
 }
 
 .work-object-form, .work-object-buttons {
@@ -199,4 +203,9 @@
   .work-object-form > input {
     flex-basis: 100%;
   }
+}
+
+@media (max-width: 700px), (pointer: coarse) {
+  .work-object-dialog button, .checklist-items label { min-height: 44px; }
+  .work-object-dialog .icon-button { flex-basis: 44px; width: 44px; }
 }

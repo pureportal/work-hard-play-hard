@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ExternalLink, GitMerge, GitPullRequest, RefreshCw, Send, X } from "lucide-react";
-import { GITHUB_TRAY_ASSET_ID, getAssetDefinition, type GitHubMailroom as Mailroom, type GitHubMailroomView, type GitHubStatus, type WorldObject } from "@workhard/shared";
+import { ExternalLink, GitMerge, GitPullRequest, RefreshCw, Send } from "lucide-react";
+import type { GitHubMailroom as Mailroom, GitHubMailroomView, GitHubStatus, WorldObject } from "@workhard/shared";
 import { ApiError, fetchGitHubMailroom } from "../api";
-import { AssetShape } from "../components/AssetShape";
+import { SurfaceHeader } from "../components/SurfaceHeader";
 import { useModalFocus } from "../hooks/useModalFocus";
 import { GitHubConnection } from "./GitHubConnection";
 import { GitHubRepositoryPicker } from "./GitHubRepositoryPicker";
@@ -106,11 +106,8 @@ export function GitHubMailroom({ object, repository, onRepositoryChange, unavail
   const visible = connected && !unavailable && result?.key === resultKey ? result.data : undefined;
   return <div className={modal ? "modal-backdrop" : "github-mailroom-floating"}>
     <div className="github-mailroom" ref={dialogRef} role="dialog" aria-modal={modal || undefined} aria-label="PR tray" tabIndex={-1}>
-      <header className="github-mailroom-header">
-        <div className="github-tray-art"><AssetShape asset={getAssetDefinition(GITHUB_TRAY_ASSET_ID)!} variantId={object.variantId} /></div>
-        <h2>PR tray</h2>
-        <button className="icon-button" aria-label="Close PR tray" onClick={onClose}><X size={20} /></button>
-      </header>
+      <SurfaceHeader className="github-mailroom-header" title="PR tray" closeLabel="Close PR tray" onClose={onClose} />
+      <div className="github-mailroom-content">
       <GitHubConnection key={connectionVersion} compact onStatus={acceptStatus} />
       {unavailable && <p role="alert" className="github-error">{unavailable}</p>}
       {connected && !unavailable && <>
@@ -148,6 +145,7 @@ export function GitHubMailroom({ object, repository, onRepositoryChange, unavail
           </div>}
         </>}
       </>}
+      </div>
     </div>
   </div>;
 }

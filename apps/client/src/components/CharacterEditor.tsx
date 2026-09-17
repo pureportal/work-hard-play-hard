@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Shuffle } from "lucide-react";
+import { Shuffle } from "lucide-react";
 import { useState } from "react";
 import {
   CHARACTER_FACES, CHARACTER_HAIRSTYLES,
@@ -68,14 +68,12 @@ export function CharacterEditor({ appearance, onSave, onClose }: CharacterEditor
         <div className="character-stage">
           <CharacterPreview appearance={draft} label="Character preview" motion={motion} direction={direction} onReady={setReady} />
           <div className="character-playback">
-            <div className="character-segmented" role="group" aria-label="Animation">
-              {(["idle", "walk", "sit", "listen", "sit-listen"] as const).map((value) => <button key={value} type="button" aria-pressed={motion === value} onClick={() => setMotion(value)}>{{ idle: "Idle", walk: "Walk", sit: "Sit", listen: "Listen", "sit-listen": "Sit & listen" }[value]}</button>)}
-            </div>
-            <div className="character-directions" role="group" aria-label="Facing direction">
-              {([["down", "Front", ArrowDown], ["left", "Left", ArrowLeft], ["up", "Back", ArrowUp], ["right", "Right", ArrowRight]] as const).map(([value, label, Icon]) => (
-                <button key={value} type="button" aria-label={label} aria-pressed={direction === value} onClick={() => setDirection(value)}><Icon size={16} /></button>
-              ))}
-            </div>
+            <select aria-label="Animation" value={motion} onChange={(event) => setMotion(event.target.value as CharacterMotion)}>
+              {(["idle", "walk", "sit", "listen", "sit-listen"] as const).map((value) => <option key={value} value={value}>{{ idle: "Idle", walk: "Walk", sit: "Sit", listen: "Listen", "sit-listen": "Sit & listen" }[value]}</option>)}
+            </select>
+            <select aria-label="Facing direction" value={direction} onChange={(event) => setDirection(event.target.value as CharacterDirection)}>
+              {([["down", "Front"], ["left", "Left"], ["up", "Back"], ["right", "Right"]] as const).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
             <button type="button" className="character-shuffle secondary-button" disabled={saving} onClick={randomize}>
               <Shuffle size={15} />Randomize
             </button>

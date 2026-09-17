@@ -1,4 +1,3 @@
-import { X } from "lucide-react";
 import type {
   GlobalKidnappingSettings,
   CorporateIdentity,
@@ -9,7 +8,7 @@ import type {
   PlayerKidnappingSettings,
   RegistrationSettings,
 } from "@workhard/shared";
-import { IconButton } from "./IconButton";
+import { SurfaceHeader } from "./SurfaceHeader";
 import { RegistrationSettingsEditor } from "./RegistrationSettingsEditor";
 import { CorporateIdentityEditor } from "./CorporateIdentityEditor";
 import { SpotifySettings } from "../spotify/SpotifySettings";
@@ -57,10 +56,7 @@ export function KidnappingSettingsPanel({
 }: KidnappingSettingsPanelProps) {
   return (
     <aside className="side-panel settings-panel" aria-label="Settings">
-      <div className="panel-header">
-        <h2>Settings</h2>
-        <IconButton label="Close settings" icon={X} onClick={onClose} />
-      </div>
+      <SurfaceHeader className="panel-header" title="Settings" onClose={onClose} />
       <div className="panel-scroll settings-panel-scroll">
         <SpotifySettings />
         <GitHubConnection />

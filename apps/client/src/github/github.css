@@ -9,13 +9,11 @@
 .github-connection-compact > button { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; font-size: 12px; }
 .github-connection-compact .github-error { flex-basis: 100%; }
 .github-error { color: var(--danger); font-size: 13px; }
-.github-mailroom { width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 40px); overflow-y: auto; scrollbar-gutter: stable; overscroll-behavior: contain; padding: 20px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel-strong); color: var(--ink); box-shadow: 0 18px 60px #0003; }
+.github-mailroom { display: flex; flex-direction: column; width: min(560px, 100%); min-height: 0; max-height: 100%; overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); color: var(--ink); box-shadow: var(--shadow); }
+.github-mailroom-content { min-height: 0; padding: 4px 20px 20px; overflow-y: auto; scrollbar-gutter: stable; overscroll-behavior: contain; }
 .github-mailroom-floating { position: fixed; right: 24px; top: 80px; z-index: 80; }
-.github-mailroom-floating .github-mailroom { max-height: calc(100dvh - 104px); }
-.github-mailroom-header { display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 1; margin: -8px 0; padding: 8px 0; background: var(--panel-strong); }
-.github-mailroom-header h2 { font-size: 20px; margin: 0; flex: 1; }
-.github-tray-art { width: 64px; height: 48px; display: flex; }
-.github-tray-art .asset-shape { width: 64px; height: 48px; }
+.github-mailroom-floating .github-mailroom { width: min(560px, calc(100vw - 48px)); max-height: calc(100dvh - 104px); }
+.github-mailroom-header { padding: 16px 20px; }
 .github-mailroom .github-connection { margin: 12px 0; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .github-repository-picker { display: grid; gap: 8px; margin: 16px 0; }
 .github-repository-label { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
@@ -54,8 +52,13 @@
   .github-mailroom-tabs button, .github-pull-requests a { transition: none; }
 }
 @media (max-width: 600px) {
-  .github-mailroom { padding: 16px; }
+  .github-mailroom-header { padding: 12px 16px; }
+  .github-mailroom-content { padding: 4px 16px 16px; }
   .github-mailroom-floating { right: 12px; top: 68px; }
-  .github-mailroom-floating .github-mailroom { max-height: calc(100dvh - 80px); }
-  .github-mailroom-tabs button { min-height: 40px; padding: 8px 6px; }
+  .github-mailroom-floating .github-mailroom { width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 80px); }
+  .github-mailroom-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .github-mailroom-tabs button { min-height: 44px; padding: 8px 6px; }
+  .github-mailroom :is(button, select, a) { min-height: 44px; }
+  .github-mailroom .icon-button { min-width: 44px; }
+  .github-repository-picker select { font-size: 16px; }
 }

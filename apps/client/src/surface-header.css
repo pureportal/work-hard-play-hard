@@ -1,0 +1,69 @@
+.surface-header {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  color: var(--ink);
+  background: linear-gradient(120deg, color-mix(in srgb, var(--accent) 6%, var(--panel)), var(--panel) 75%);
+  border-bottom: 1px solid var(--line);
+}
+
+.surface-header-title {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+.surface-header h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.25;
+  letter-spacing: -.035em;
+  overflow-wrap: anywhere;
+}
+
+.surface-header-title > span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.surface-header-actions {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.surface-header .icon-button {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+}
+
+.surface-header .surface-header-close {
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.surface-header .icon-button:hover {
+  color: var(--accent-text);
+  background: var(--accent-soft);
+}
+
+@media (max-width: 700px) {
+  .surface-header {
+    gap: 8px;
+  }
+
+  .surface-header .icon-button {
+    width: 44px;
+    height: 44px;
+  }
+}

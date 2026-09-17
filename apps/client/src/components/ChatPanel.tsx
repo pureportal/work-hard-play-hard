@@ -1,11 +1,11 @@
-import { ArrowDown, Hash, ImagePlus, LoaderCircle, MessageCircle, Send, UserRound, Video, X } from "lucide-react";
+import { ArrowDown, Hash, ImagePlus, LoaderCircle, Send, UserRound, Video } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent, type KeyboardEvent } from "react";
 import type { ChatMessage, Conversation, Member } from "@workhard/shared";
 import { resolveServerUrl } from "../server-url";
 import { useHorizontalWheelScroll } from "../hooks/useHorizontalWheelScroll";
 import { Avatar } from "./Avatar";
 import { LinkedText } from "./LinkedText";
-import { IconButton } from "./IconButton";
+import { SurfaceHeader } from "./SurfaceHeader";
 
 interface ChatPanelProps {
   conversations: Conversation[];
@@ -206,13 +206,7 @@ export function ChatPanel({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className="panel-header">
-        <div>
-          <h2>Messages</h2>
-          <span>{selectedName}</span>
-        </div>
-        <IconButton label="Close messages" icon={X} onClick={onClose} />
-      </div>
+      <SurfaceHeader className="panel-header" title="Messages" description={selectedName} onClose={onClose} />
 
       <div ref={scrollConversationTabs} className="conversation-tabs" role="tablist" aria-label="Conversations">
         {conversations.map((conversation, index) => {
@@ -249,9 +243,7 @@ export function ChatPanel({
           }}
         >
           {visibleMessages.length === 0 && (
-            <div className="empty-symbol" aria-label="No messages">
-              <MessageCircle size={24} />
-            </div>
+            <p className="panel-empty">No messages yet.</p>
           )}
           {visibleMessages.map((message, index) => {
             const member = members.find((item) => item.id === message.userId);

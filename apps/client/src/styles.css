@@ -98,6 +98,9 @@ textarea::placeholder {
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+a:focus-visible,
 [tabindex]:focus-visible {
   outline: 3px solid var(--brand-primary);
   outline-offset: 2px;
@@ -1196,42 +1199,13 @@ button:disabled {
   height: 100dvh;
   overflow: hidden;
   background: var(--panel);
-  border-left: 1px solid #ddd7d0;
+  border-left: 1px solid var(--line);
   box-shadow: -12px 0 40px rgba(34, 29, 45, 0.09);
 }
 
 .panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex: 0 0 auto;
   min-height: 78px;
-  padding: max(18px, env(safe-area-inset-top)) 18px 15px 21px;
-  background: linear-gradient(180deg, #fffefd, var(--panel));
-  border-bottom: 1px solid var(--line);
-}
-
-.panel-header > div:first-child {
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-}
-
-.panel-header h2 {
-  margin: 0;
-  font-size: 19px;
-  line-height: 1.15;
-  letter-spacing: -0.025em;
-}
-
-.panel-header span {
-  color: var(--muted);
-  font-size: 11px;
-}
-
-.panel-header-actions {
-  display: flex;
-  gap: 2px;
+  padding: max(16px, env(safe-area-inset-top)) 16px 16px 20px;
 }
 
 .panel-scroll {
@@ -1276,7 +1250,11 @@ button:disabled {
 }
 
 .panel-empty {
-  margin: 28px 20px;
+  display: grid;
+  place-items: center;
+  flex: 1;
+  margin: 0;
+  padding: 32px 16px;
   color: var(--muted);
   font-size: 14px;
   text-align: center;
@@ -1422,6 +1400,7 @@ button:disabled {
 }
 
 .person-row:hover .person-actions,
+.person-row:focus-within .person-actions,
 .person-row-wrap.expanded .person-actions {
   display: flex;
 }
@@ -1504,9 +1483,19 @@ button:disabled {
 .settings-panel-scroll {
   display: grid;
   align-content: start;
-  gap: 28px;
-  padding: 18px;
+  gap: 16px;
+  padding: 16px;
 }
+
+.settings-panel-scroll > .settings-section {
+  padding: 18px;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.settings-panel-scroll .settings-save { justify-self: end; }
+.settings-panel-scroll .settings-section > p { margin: 0; line-height: 1.5; }
 
 .settings-section {
   display: grid;
@@ -1875,13 +1864,6 @@ button:disabled {
   position: relative;
 }
 
-.empty-symbol {
-  display: grid;
-  place-items: center;
-  flex: 1;
-  color: #c3bec6;
-}
-
 .chat-message {
   display: flex;
   align-items: flex-start;
@@ -2052,9 +2034,20 @@ button:disabled {
   animation: spin 800ms linear infinite;
 }
 
-.build-panel .panel-header {
-  min-height: 70px;
-  padding: max(16px, env(safe-area-inset-top)) 18px 14px 20px;
+.build-panel .build-access-button {
+  min-height: 40px;
+  min-width: 0;
+  padding: 6px 9px;
+  white-space: normal;
+}
+
+.build-panel .surface-header-title {
+  flex-shrink: 0;
+  min-width: min-content;
+}
+
+.build-panel .surface-header h2 {
+  overflow-wrap: normal;
 }
 
 .build-panel-scroll {
@@ -3850,10 +3843,6 @@ button:disabled {
   box-shadow: -12px 0 40px rgba(4, 4, 8, 0.32);
 }
 
-:root[data-theme="dark"] .panel-header {
-  background: linear-gradient(180deg, #292730, var(--panel));
-}
-
 :root[data-theme="dark"] .build-tools button,
 :root[data-theme="dark"] .asset-category-tabs button,
 :root[data-theme="dark"] .asset-grid > button,
@@ -4208,7 +4197,6 @@ button:disabled {
     height: 40px;
   }
 
-  .panel-header .icon-button,
   .call-pill button,
   .knock-actions button {
     width: 40px;
@@ -4226,94 +4214,6 @@ button:disabled {
 
   .modal-backdrop {
     padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
-  }
-
-  .meeting-overlay {
-    height: 100%;
-  }
-
-  .meeting-overlay.meeting-overlay-small {
-    right: 10px;
-    bottom: max(80px, calc(env(safe-area-inset-bottom) + 68px));
-    width: min(340px, calc(100vw - 74px));
-    height: min(330px, calc(100dvh - 166px));
-  }
-
-  .meeting-overlay-header {
-    min-height: 60px;
-    padding: 9px 10px 9px 14px;
-  }
-
-  .meeting-overlay-header > div:first-child {
-    min-width: 0;
-  }
-
-  .meeting-overlay-header h2 {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .meeting-overlay-header .meeting-mobile-tabs {
-    display: flex;
-    gap: 4px;
-    padding: 3px;
-    background: #ffffff0b;
-    border-radius: 9px;
-  }
-
-  .meeting-mobile-tabs button {
-    display: grid;
-    place-items: center;
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    color: #aaa7b3;
-    background: transparent;
-    border: 0;
-    border-radius: 7px;
-  }
-
-  .meeting-mobile-tabs button[aria-selected="true"] {
-    color: white;
-    background: #ffffff17;
-  }
-
-  .meeting-lock {
-    display: none;
-  }
-
-  .meeting-main {
-    grid-template-columns: 1fr;
-  }
-
-  .meeting-main.show-video .meeting-chat {
-    display: none;
-  }
-
-  .meeting-main.show-chat .video-grid {
-    display: none;
-  }
-
-  .meeting-main.show-chat .meeting-chat {
-    display: grid;
-    min-height: 0;
-  }
-
-  .video-grid,
-  .video-grid.single-participant {
-    grid-template-columns: 1fr;
-    min-height: 0;
-    padding: 10px;
-    overflow-y: auto;
-  }
-
-  .meeting-message-list {
-    min-height: 0;
-  }
-
-  .meeting-chat form {
-    margin-bottom: max(10px, env(safe-area-inset-bottom));
   }
 
   .conversation-tabs button {
@@ -4373,6 +4273,10 @@ button:disabled {
   .meeting-chat form input {
     font-size: 16px;
   }
+
+  .settings-panel-scroll { padding: 12px; }
+  .settings-panel-scroll > .settings-section { padding: 14px; }
+  .settings-panel-scroll :is(button, input:not([type="checkbox"]), select) { min-height: 44px; }
 
   .settings-section .permission-toggle,
   .kidnapping-member-list .permission-toggle {
@@ -4555,6 +4459,11 @@ button:disabled {
 }
 
 @media (pointer: coarse) {
+  .call-pill button,
+  .knock-actions button { width: 44px; height: 44px; }
+  .proximity-call button { min-width: 44px; min-height: 44px; }
+  .meeting-invitation button { min-height: 44px; }
+
   .world-zoom-controls .icon-button,
   .placement-controls .icon-button {
     width: 44px;

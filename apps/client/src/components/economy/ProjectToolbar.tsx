@@ -27,8 +27,9 @@ export function ProjectToolbar({ economy, organisation, userId, fundId, project,
         event.preventDefault(); onSubmit(title.trim() || "Building project");
       }}>
         {needsVote && <label>Project name<input value={title} maxLength={80} onChange={(event) => setTitle(event.target.value)} /></label>}
-        <div className="economy-actions"><button className="primary-button" disabled={pending || !affordable || stale}>{pending ? "Saving…" : needsVote ? "Propose project" : "Buy & place"}</button>
-          <button className="secondary-button" type="button" disabled={pending} onClick={onDiscard}>Discard</button></div>
+        <div className="economy-actions">
+          <button className="secondary-button" type="button" disabled={pending} onClick={onDiscard}>Discard</button>
+          <button className="primary-button" disabled={pending || !affordable || stale}>{pending ? "Saving…" : needsVote ? "Propose project" : "Buy & place"}</button></div>
         {!affordable && <p role="status">{needsVote ? "Add money to the project reserve or reduce the cost." : "Reduce the cost to fit your allowance."}</p>}
       </form>}
     </>}

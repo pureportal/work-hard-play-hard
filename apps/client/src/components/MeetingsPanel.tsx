@@ -1,7 +1,7 @@
-import { Calendar, Clock3, MapPin, Video, X } from "lucide-react";
+import { Calendar, Clock3, MapPin, Video } from "lucide-react";
 import type { Meeting, Member, Room } from "@workhard/shared";
 import { Avatar } from "./Avatar";
-import { IconButton } from "./IconButton";
+import { SurfaceHeader } from "./SurfaceHeader";
 
 interface MeetingsPanelProps {
   meetings: Meeting[];
@@ -17,14 +17,9 @@ export function MeetingsPanel({ meetings, rooms, members, openingMeetingId, onJo
     .sort((left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime());
   return (
     <aside className="side-panel meetings-panel" aria-label="Meetings">
-      <div className="panel-header">
-        <div>
-          <h2>Meetings</h2>
-        </div>
-        <IconButton label="Close meetings" icon={X} onClick={onClose} />
-      </div>
+      <SurfaceHeader className="panel-header" title="Meetings" onClose={onClose} />
       <div className="panel-scroll meeting-list">
-        {activeMeetings.length === 0 && <div className="empty-symbol" aria-label="No meetings"><Calendar size={24} /></div>}
+        {activeMeetings.length === 0 && <p className="panel-empty">No meetings.</p>}
         {activeMeetings.map((meeting) => {
           const meetingLocation = meeting.location;
           const location = rooms.find((item) => item.id === meetingLocation.roomId)?.name;

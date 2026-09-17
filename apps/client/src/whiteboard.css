@@ -1,12 +1,13 @@
 .work-object-dialog.whiteboard-dialog {
+  container-type: inline-size;
   width: min(1240px, 100%);
   height: min(840px, 100%);
 }
 
 .whiteboard-dialog > header { flex-shrink: 0; }
-.whiteboard-dialog > header > svg { color: var(--accent); }
 .whiteboard-toolbar {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
@@ -224,7 +225,7 @@
   .whiteboard-views button, .whiteboard-tools button, .whiteboard-color, .whiteboard-editor-actions button { min-height: 44px; }
 }
 
-@media (max-width: 760px) {
+@container (max-width: 760px) {
   .whiteboard-toolbar { gap: 8px; padding: 8px 12px; }
   .whiteboard-views { flex: 1; }
   .whiteboard-views button { flex: 1; padding: 8px 9px; }
@@ -240,7 +241,7 @@
   .whiteboard-progress progress { width: 40px; }
   .whiteboard-image-picker { padding: 10px 12px; }
 }
-@media (max-width: 380px) {
+@container (max-width: 380px) {
   .whiteboard-views button { padding: 8px; gap: 5px; }
   .whiteboard-views button svg { display: none; }
   .whiteboard-progress { display: none; }
@@ -252,4 +253,5 @@
   .whiteboard-dialog > footer { padding: 6px 12px; }
   .whiteboard-tools { width: auto; margin-left: auto; }
   .whiteboard-card-editor fieldset { gap: 10px; }
+  .whiteboard-dialog:has(.whiteboard-workspace.has-editor) .whiteboard-toolbar { display: none; }
 }

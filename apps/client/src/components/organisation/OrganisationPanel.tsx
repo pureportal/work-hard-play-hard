@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { X } from "lucide-react";
 import { canManageUnit as mayManageUnit, canMoveOrganisationMember as mayMoveMember, isUnitWithin, type Member, type OrganisationEdit, type OrganisationState } from "@workhard/shared";
-import { IconButton } from "../IconButton";
+import { SurfaceHeader } from "../SurfaceHeader";
 import { ConfirmationDialog } from "../ConfirmationDialog";
 import { OrganisationTree, type OrganisationSelection } from "./OrganisationTree";
 import "../../organisation.css";
@@ -58,8 +57,10 @@ export function OrganisationPanel({ equalTeam = false, organisation, members, cu
       }}><h3>{creating.parentId ? "New subteam" : "New unit"}</h3><fieldset disabled={pending}>
         <label>Name<input name="name" required maxLength={60} autoFocus /></label>
         <label>Type<select name="kind" defaultValue={creating.parentId ? "team" : "department"}><option value="department">Department</option><option value="team">Team</option></select></label>
-        <button className="primary-button">Create unit</button>
-        <button className="secondary-button" type="button" onClick={() => setCreating(undefined)}>Cancel</button>
+        <div className="organisation-edit-actions">
+          <button className="secondary-button" type="button" onClick={() => setCreating(undefined)}>Cancel</button>
+          <button className="primary-button">Create unit</button>
+        </div>
       </fieldset></form>}
       {person && <section className="organisation-edit" aria-label={`Edit ${person.name}`}>
         {!personIsCeo && (equalTeam || isCeo || Boolean(personAssignment && canMoveOrganisationMember(organisation, currentUserId, person.id, personAssignment.unitId))) && <>
@@ -83,7 +84,7 @@ export function OrganisationPanel({ equalTeam = false, organisation, members, cu
         onEdit({ type: "ceo.promote", userId: promoting.id });
         setPromoting(undefined);
       }} />}
-    <div className="panel-header"><h2>Organisation</h2><IconButton label="Close organisation" icon={X} onClick={onClose} /></div>
+    <SurfaceHeader className="panel-header" title="Organisation" onClose={onClose} />
     <div className="panel-scroll organisation-content">
       {(equalTeam || isCeo) && <button className="secondary-button" disabled={pending} onClick={() => { setCreating({ parentId: null }); setSelection(undefined); }}>Add unit</button>}
       {creating?.parentId === null && editor}

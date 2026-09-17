@@ -1,11 +1,11 @@
-import { Archive, Coins, Gift, Move, RotateCw, ShoppingBag, X } from "lucide-react";
+import { Archive, Coins, Gift, Move, RotateCw, ShoppingBag } from "lucide-react";
 import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { ASSET_CATALOG, MAX_LAYOUT_OBJECTS_PER_FLOOR, getDefaultAssetVariantId, roomBuildAllows } from "@workhard/shared";
 import type { AssetRotation, Floor, FloorLayout, GameSettings, LayoutItemReference, LayoutTool, OrganisationState, PlayerEconomy } from "@workhard/shared";
 import { getAssetOrientationLabel, rotateAssetClockwise } from "../asset-orientation";
 import { AssetShape } from "./AssetShape";
 import { AssetVariantPicker } from "./AssetVariantPicker";
-import { IconButton } from "./IconButton";
+import { SurfaceHeader } from "./SurfaceHeader";
 import { PlayerAssetShop } from "./PlayerAssetShop";
 import { AssetDispositionDialog } from "./economy/AssetDispositionDialog";
 import { PersonalPlacedAssets } from "./PersonalPlacedAssets";
@@ -139,16 +139,11 @@ export function PlayerBuildPanel({
 
   return (
     <aside className="side-panel build-panel player-build-panel" aria-label="Build">
-      <div className="panel-header">
-        <h2>Build</h2>
-        <button className="secondary-button" onClick={onOpenRooms}>Room settings</button>
-        <div className="build-panel-actions">
-          <div className="coin-balance" aria-label={`${economy.coinBalance.toLocaleString()} coins`}>
-            <Coins size={17} /><strong>{economy.coinBalance.toLocaleString()}</strong>
-          </div>
-          <IconButton label="Close build tools" icon={X} onClick={onClose} />
-        </div>
-      </div>
+      <SurfaceHeader className="panel-header" title="Build" closeLabel="Close build tools" onClose={onClose}
+        description={<span className="coin-balance" aria-label={`${economy.coinBalance.toLocaleString()} coins`}>
+          <Coins size={15} aria-hidden="true" /><strong>{economy.coinBalance.toLocaleString()}</strong>
+        </span>}
+        actions={<button className="secondary-button build-access-button" onClick={onOpenRooms}>Room settings</button>} />
       {accountControls}
       <div className="asset-view-tabs" role="tablist" aria-label="Assets">
         {tabs.map((tab) => <button key={tab} id={`${panelId}-${tab}-tab`} role="tab"

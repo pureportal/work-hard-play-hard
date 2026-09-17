@@ -22,7 +22,6 @@ import {
   Trash2,
   TreePine,
   Utensils,
-  X,
 } from "lucide-react";
 import { useId, useRef, useState, type ReactNode } from "react";
 import { ASSET_CATALOG, ASSET_RARITIES, getDefaultAssetVariantId } from "@workhard/shared";
@@ -32,6 +31,7 @@ import { getAssetOrientationLabel, rotateAssetClockwise } from "../asset-orienta
 import { useHorizontalWheelScroll } from "../hooks/useHorizontalWheelScroll";
 import { useSelectedTabVisibility } from "../hooks/useSelectedTabVisibility";
 import { IconButton } from "./IconButton";
+import { SurfaceHeader } from "./SurfaceHeader";
 import { AssetShape } from "./AssetShape";
 import { AssetVariantPicker } from "./AssetVariantPicker";
 import { AssetRarityFilter } from "./AssetRarityFilter";
@@ -128,17 +128,13 @@ export function BuildPanel({
 
   return (
     <aside className="side-panel build-panel build-layout-panel" aria-label="Build">
-      <div className="panel-header">
-        <h2>Build</h2>
-        <div className="build-panel-actions">
+      <SurfaceHeader className="panel-header" title="Build" closeLabel="Close build tools" onClose={onClose}
+        actions={<>
           <button className="secondary-button build-access-button" onClick={onOpenRooms}>Room settings</button>
           {onInspectAccess && <IconButton label="Room access" icon={KeyRound} onClick={onInspectAccess} />}
-          <IconButton label="Close build tools" icon={X} onClick={onClose} />
-        </div>
-      </div>
+        </>} />
 
       {accountControls}
-      {projectControls}
       <div className="build-tools layout-tools" role="toolbar" aria-label="Layout tools" inert={disabled}>
         {tools.map(({ id, label, icon: Icon }) => (
           <button
@@ -152,6 +148,21 @@ export function BuildPanel({
           </button>
         ))}
       </div>
+
+      {selectedItem && selectedItemName && (
+        <section className="build-selection" aria-label={`Selected ${selectedItemName}`} inert={disabled}>
+          <strong>{selectedItemName}</strong>
+          <div>
+            <button className={itemMatches(selectedItem, movingItem) ? "active" : ""} onClick={onMoveSelected}>
+              <Move size={16} aria-hidden="true" />Move
+            </button>
+            {selectedItem.type !== "opening" && (
+              <button onClick={onRotateSelected}><RotateCw size={16} aria-hidden="true" />Rotate</button>
+            )}
+            <button className="danger" onClick={onRemoveSelected}><Trash2 size={16} aria-hidden="true" />Remove</button>
+          </div>
+        </section>
+      )}
 
       <div className="build-workspace" inert={disabled}>
         <section className="build-section asset-library" aria-labelledby={`${panelId}-assets`}>
@@ -193,20 +204,6 @@ export function BuildPanel({
             })}
           </div>
           <div className="build-asset-scroll build-section-scroll" key={`${categoryId}-${rarity}`} id={`${panelId}-asset-list`} role="tabpanel" aria-labelledby={`${panelId}-category-${categoryId}`} tabIndex={0}>
-            {selectedItem && selectedItemName && (
-              <section className="build-selection" aria-label={`Selected ${selectedItemName}`}>
-                <strong>{selectedItemName}</strong>
-                <div>
-                  <button className={itemMatches(selectedItem, movingItem) ? "active" : ""} onClick={onMoveSelected}>
-                    <Move size={16} />Move
-                  </button>
-                  {selectedItem.type !== "opening" && (
-                    <button onClick={onRotateSelected}><RotateCw size={16} />Rotate</button>
-                  )}
-                  <button className="danger" onClick={onRemoveSelected}><Trash2 size={16} />Remove</button>
-                </div>
-              </section>
-            )}
             <div className="asset-grid">
               {categoryAssets.length === 0 && <span className="asset-filter-empty">No assets match.</span>}
               {categoryAssets.map((asset) => (
@@ -246,6 +243,7 @@ export function BuildPanel({
         </section>
 
       </div>
+      {projectControls}
     </aside>
   );
 }

@@ -1,8 +1,8 @@
-import { ArrowLeft, Check, LockKeyhole, Users, X } from "lucide-react";
+import { Check, LockKeyhole, Users } from "lucide-react";
 import { useId } from "react";
 import type { Floor, FloorLayout, Member, PlayerRoomAccessibility, RoomEntryStatus } from "@workhard/shared";
 import { roomEntryAppearance } from "../room-accessibility";
-import { IconButton } from "./IconButton";
+import { SurfaceHeader } from "./SurfaceHeader";
 import "../room-accessibility.css";
 
 interface RoomAccessibilityPanelProps {
@@ -22,11 +22,7 @@ export function RoomAccessibilityPanel({ members, floors, layouts, selectedUserI
   const results = connected && accessibility?.userId === selectedUserId ? accessibility.floors : undefined;
   return (
     <aside className="side-panel build-panel" aria-label="Room access">
-      <div className="panel-header">
-        <IconButton label="Back to build" icon={ArrowLeft} onClick={onBack} />
-        <h2>Room access</h2>
-        <IconButton label="Close room access" icon={X} onClick={onClose} />
-      </div>
+      <SurfaceHeader className="panel-header" title="Room access" onBack={onBack} onClose={onClose} />
       <div className="panel-scroll build-panel-scroll room-access-panel">
         <div className="room-access-player">
           <label htmlFor={playerInputId}>Player</label>

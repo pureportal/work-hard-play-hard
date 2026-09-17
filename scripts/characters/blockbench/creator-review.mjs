@@ -136,7 +136,7 @@ try {
     await openCreator();
   }
   for (const direction of ["Front", "Left", "Right", "Back"]) {
-    await page.getByRole("button", { name: direction, exact: true }).click();
+    await page.getByRole("combobox", { name: "Facing direction", exact: true }).selectOption({ label: direction });
     for (const category of ["Face", "Hair", "Tops", "Bottoms", "Shoes", "Headwear"]) {
       await page.getByRole("tab", { name: category, exact: true }).click();
       const count = category === "Hair" ? CHARACTER_HAIRSTYLES.length : category === "Face" ? CHARACTER_FACES.length : category === "Headwear" ? CHARACTER_HEADWEAR.length : CHARACTER_OUTFITS.length;
@@ -158,8 +158,8 @@ try {
       await page.getByRole("button", { name: "Pearl braid", exact: true }).click();
       await ready();
       await optionsReady(CHARACTER_HAIRSTYLES.length);
-      await page.getByRole("button", { name: "Back", exact: true }).click();
-      await page.getByRole("button", { name: "Sit & listen", exact: true }).click();
+      await page.getByRole("combobox", { name: "Facing direction", exact: true }).selectOption("up");
+      await page.getByRole("combobox", { name: "Animation", exact: true }).selectOption("sit-listen");
       await ready();
       const fits = await page.locator(".character-stage canvas").evaluate(canvas => {
         const bounds = canvas.getBoundingClientRect();

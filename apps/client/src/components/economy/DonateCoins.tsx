@@ -21,9 +21,9 @@ export function DonateCoins({ balance, fundName, pending, error, onDonate }: {
     <fieldset disabled={pending}>
       <label>Donation<input type="number" name="amount" min={1} max={balance} step={1} required value={amount} readOnly={reviewing}
         onChange={(event) => { setAmount(event.target.value); setDonated(false); }} /></label>
-      {!reviewing && <div className="donation-presets">{[25, 50, 100].filter((value) => value < balance).map((value) =>
+      <div className="donation-presets">{[25, 50, 100].filter((value) => value < balance).map((value) =>
         <button key={value} type="button" className="secondary-button" onClick={() => { setAmount(String(value)); setDonated(false); }}>{value}</button>)}
-        <button type="button" className="secondary-button" disabled={balance === 0} onClick={() => { setAmount(String(balance)); setDonated(false); }}>Max</button></div>}
+        <button type="button" className="secondary-button" disabled={balance === 0} onClick={() => { setAmount(String(balance)); setDonated(false); }}>Max</button></div>
       {reviewing && valid && <ConfirmationDialog
         title={`Donate ${coins.toLocaleString()} coins to ${fundName}?`}
         description="These coins become shared money and cannot be taken back."
