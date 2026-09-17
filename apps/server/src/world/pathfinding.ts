@@ -1,5 +1,6 @@
 import { ASSET_RASTER_SIZE, type FloorLayout, type Position } from "@workhard/shared";
 import { canOccupy, type WorldBounds } from "./collision.js";
+import { MAX_MOVEMENT_STEP } from "./movement-speed.js";
 
 const GRID_SIZE = ASSET_RASTER_SIZE;
 const MAX_VISITED = 50_000;
@@ -138,6 +139,10 @@ export function findPath(
         roomAccessIds,
         blockedRoomIds,
       ) && Math.hypot(currentPosition.x - destination.x, currentPosition.y - destination.y) > 0.01) {
+        const approach = path.at(-2) ?? start;
+        if (canTraverseFinalApproach(layout, bounds, userId, approach, destination, roomAccessIds, blockedRoomIds)) {
+          path.pop();
+        }
         path.push(destination);
       }
       return path;
@@ -175,6 +180,37 @@ export function findPath(
   }
 
   return closest ? reconstructPath(closest, cameFrom) : [];
+}
+
+function canTraverseFinalApproach(
+  layout: FloorLayout,
+  bounds: WorldBounds,
+  userId: string,
+  start: Position,
+  destination: Position,
+  roomAccessIds: ReadonlySet<string>,
+  blockedRoomIds: ReadonlySet<string>,
+): boolean {
+  const dx = destination.x - start.x;
+  const dy = destination.y - start.y;
+  const steps = Math.ceil(Math.hypot(dx, dy) / MAX_MOVEMENT_STEP);
+  let previous = start;
+  for (let step = 1; step <= steps; step += 1) {
+    const next = { x: start.x + dx * step / steps, y: start.y + dy * step / steps };
+    if (!canOccupy(
+      layout, bounds, userId,
+      previous.x, previous.y, next.x, previous.y,
+      13, roomAccessIds, blockedRoomIds,
+    ) || !canOccupy(
+      layout, bounds, userId,
+      next.x, previous.y, next.x, next.y,
+      13, roomAccessIds, blockedRoomIds,
+    )) {
+      return false;
+    }
+    previous = next;
+  }
+  return true;
 }
 
 function reconstructPath(destination: Cell, cameFrom: Map<string, Cell>): Position[] {

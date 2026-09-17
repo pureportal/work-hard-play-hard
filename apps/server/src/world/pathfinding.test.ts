@@ -82,6 +82,23 @@ describe("world navigation", () => {
     expect(findPath(layout, bounds, "user", { x: 32, y: 32 }, { x: 36, y: 36 })).toEqual([{ x: 36, y: 36 }]);
   });
 
+  it("approaches an off-grid destination without stepping past it", () => {
+    const destination = { x: 35, y: 91 };
+    const path = findPath({ ...layout, walls: [] }, bounds, "user", { x: 35, y: 32 }, destination);
+
+    expect(path.at(-1)).toEqual(destination);
+    expect(path.every((point, index) => point.y >= (path[index - 1]?.y ?? 32) && point.y <= destination.y)).toBe(true);
+    expect(path.at(-2)!.y).toBeLessThan(destination.y);
+  });
+
+  it("keeps the final waypoint when skipping it would cut through a wall corner", () => {
+    const cornerLayout = { ...layout, walls: [{ id: "wall", start: { x: 70, y: 0 }, end: { x: 70, y: 96 } }] };
+    const destination = { x: 55.5, y: 106 };
+    const path = findPath(cornerLayout, bounds, "user", { x: 48, y: 80 }, destination);
+
+    expect(path).toEqual([{ x: 48, y: 96 }, { x: 48, y: 112 }, destination]);
+  });
+
   it("allows navigation throughout the outdoor margin", () => {
     const outdoorBounds = getOutdoorBounds({ width: bounds.width, height: bounds.height });
     const path = findPath(layout, outdoorBounds, "user", { x: 32, y: 128 }, { x: -64, y: 128 });

@@ -6,10 +6,55 @@ import { WorldRuntime } from "./world-runtime.js";
 
 const runtimes: WorldRuntime[] = [];
 const start = { x: 128, y: 128 };
+const directions = [
+  { direction: "down", dx: 0, dy: 1 },
+  { direction: "up", dx: 0, dy: -1 },
+  { direction: "right", dx: 1, dy: 0 },
+  { direction: "left", dx: -1, dy: 0 },
+] as const;
 
 afterEach(() => runtimes.splice(0).forEach((runtime) => runtime.stop()));
 
 describe("WorldRuntime movement", () => {
+  it.each(directions)("keeps facing $direction during auto-move and after stopping", ({ direction, dx, dy }) => {
+    for (const distance of [3, 11, 59, 64, 69]) {
+      const { runtime, peerId } = createOpenRuntime();
+      const destination = { x: start.x + dx * distance, y: start.y + dy * distance };
+      walkTo(runtime, peerId, destination);
+
+      for (let tick = 0; tick < 20; tick += 1) {
+        runtime.runTickForTest(10);
+        expect(currentPlayer(runtime).facing).toBe(direction);
+      }
+
+      expect(currentPlayer(runtime)).toMatchObject({ ...destination, facing: direction });
+      runtime.runTickForTest();
+      expect(currentPlayer(runtime)).toMatchObject({ ...destination, facing: direction });
+    }
+  });
+
+  it.each(directions)("preserves $direction facing when movement is interrupted", ({ direction, dx, dy }) => {
+    for (const kind of ["direction", "destination"]) {
+      const { runtime, peerId } = createOpenRuntime();
+      if (kind === "direction") {
+        runtime.handleCommand(peerId, { type: "movement.input", sequence: 1, dx, dy });
+      } else {
+        walkTo(runtime, peerId, { x: start.x + dx * 100, y: start.y + dy * 100 });
+      }
+      runtime.runTickForTest();
+      const previous = currentPlayer(runtime);
+      expect(previous.facing).toBe(direction);
+
+      runtime.handleCommand(peerId, kind === "direction"
+        ? { type: "movement.input", sequence: 2, dx: 0, dy: 0 }
+        : { type: "movement.stop", requestId: "stop" });
+      runtime.runTickForTest();
+      runtime.runTickForTest();
+
+      expect(currentPlayer(runtime)).toMatchObject(previous);
+    }
+  });
+
   it.each(["direction", "destination"])("preserves %s movement when another connection opens and closes", (kind) => {
     const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     runtime.restorePlayers(runtime.serializePlayers().map((player) => player.userId === "user-maya"
