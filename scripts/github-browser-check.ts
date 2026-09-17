@@ -100,6 +100,16 @@ try {
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: "Server settings", exact: true }).click();
   await page.getByRole("tab", { name: "GitHub", exact: true }).click();
+  await page.getByLabel("Replace client secret", { exact: true }).waitFor();
+  assert.equal(await page.getByRole("link", { name: "Open GitHub Apps", exact: true }).getAttribute("href"), "https://github.com/settings/apps");
+  assert.equal(await page.getByLabel("Redirect URI", { exact: true }).inputValue(), `${origin}/v1/github/callback`);
+  await page.getByLabel("Redirect URI", { exact: true }).fill("https://registered.example/v1/github/callback");
+  await page.getByRole("button", { name: "Use recommended URI", exact: true }).click();
+  assert.equal(await page.getByLabel("Redirect URI", { exact: true }).inputValue(), `${origin}/v1/github/callback`);
+  await browserContext.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.getByRole("button", { name: "Copy URI", exact: true }).click();
+  await page.getByRole("button", { name: "Copied", exact: true }).waitFor();
+  assert.equal(await page.evaluate(() => navigator.clipboard.readText()), `${origin}/v1/github/callback`);
   await page.getByLabel("Client ID", { exact: true }).fill("Iv1.frontend");
   await page.getByLabel("Client secret", { exact: true }).fill("frontend-secret");
   await page.getByLabel("App slug", { exact: true }).fill("frontend-mailroom");
@@ -110,17 +120,34 @@ try {
   assert.equal(settings.clientId, "Iv1.frontend");
   assert.equal(settings.appSlug, "frontend-mailroom");
   assert(!JSON.stringify(settings).includes("frontend-secret"));
-  for (const [width, height, name] of [[1440, 960, "light"], [390, 844, "mobile"]] as const) {
+  await page.getByText("Setup steps", { exact: true }).click();
+  for (const [width, height, name] of [[1440, 960, "light"], [390, 844, "mobile"], [320, 568, "small"]] as const) {
     await page.setViewportSize({ width, height });
     assert(await page.getByRole("dialog", { name: "Server settings" }).evaluate((element) => {
       const box = element.getBoundingClientRect();
       return box.left >= 0 && box.top >= 0 && box.right <= innerWidth && box.bottom <= innerHeight && element.scrollWidth <= element.clientWidth;
     }), "GitHub settings extend outside the viewport");
+    assert(await page.locator(".dialog-tab-content").evaluate((element) => element.scrollWidth <= element.clientWidth), "GitHub setup overflows horizontally");
+    await page.getByText("Setup steps", { exact: true }).scrollIntoViewIfNeeded();
+    await page.screenshot({ path: resolve(artifacts, `server-github-setup-${name}.png`) });
     await page.getByRole("button", { name: "Save GitHub", exact: true }).scrollIntoViewIfNeeded();
     await page.screenshot({ path: resolve(artifacts, `server-github-${name}.png`) });
   }
   await page.setViewportSize({ width: 1440, height: 960 });
   await page.getByRole("tab", { name: "Spotify", exact: true }).click();
+  await page.getByLabel("Redirect URI", { exact: true }).waitFor();
+  await page.waitForFunction(() => document.querySelector<HTMLInputElement>('input[type="url"]')?.value.endsWith("/v1/spotify/callback"));
+  assert.equal(await page.getByLabel("Redirect URI", { exact: true }).inputValue(), `${origin}/v1/spotify/callback`);
+  assert(await page.getByRole("button", { name: "Save Spotify", exact: true }).isDisabled());
+  assert.equal(await page.getByRole("link", { name: "Open Spotify developer dashboard", exact: true }).getAttribute("href"), "https://developer.spotify.com/dashboard");
+  for (const [width, height, name] of [[1440, 960, "light"], [390, 844, "mobile"], [320, 568, "small"]] as const) {
+    await page.setViewportSize({ width, height });
+    assert(await page.getByRole("dialog", { name: "Server settings" }).evaluate((element) => element.scrollWidth <= element.clientWidth), "Spotify settings overflow horizontally");
+    assert(await page.locator(".dialog-tab-content").evaluate((element) => element.scrollWidth <= element.clientWidth), "Spotify setup overflows horizontally");
+    await page.getByRole("button", { name: "Save Spotify", exact: true }).scrollIntoViewIfNeeded();
+    await page.screenshot({ path: resolve(artifacts, `server-spotify-${name}.png`) });
+  }
+  await page.setViewportSize({ width: 1440, height: 960 });
   await page.getByRole("tab", { name: "GitHub", exact: true }).click();
   await page.getByLabel("Replace client secret", { exact: true }).waitFor();
   assert.equal(await page.getByLabel("Client ID", { exact: true }).inputValue(), "Iv1.frontend");

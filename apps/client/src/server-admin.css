@@ -12,6 +12,16 @@
 .admin-settings-form { max-width: 580px; }
 .admin-settings-form p { font-size: 13px; color: var(--muted); line-height: 1.5; }
 .admin-settings-form button { justify-self: start; }
+.admin-integration-setup { display: grid; gap: 14px; margin-bottom: 22px; font-size: 13px; line-height: 1.5; }
+.admin-integration-setup a { color: var(--accent); justify-self: start; text-underline-offset: 3px; }
+.admin-integration-setup summary { cursor: pointer; }
+.admin-integration-setup ol { display: grid; gap: 8px; margin: 12px 0 0; padding-left: 20px; color: var(--muted); }
+.admin-settings-field, .admin-redirect-field { display: grid; gap: 7px; min-width: 0; }
+.admin-settings-field p, .admin-redirect-field p { margin: 0; overflow-wrap: anywhere; }
+.admin-redirect-input { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.admin-redirect-input input { flex: 1; }
+.admin-redirect-input button { flex-shrink: 0; }
+.admin-redirect-recommendation { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; }
 .admin-member-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
 .admin-member-toolbar .panel-search { flex: 1; display: flex; margin: 0; }
 .server-admin-content .admin-member-toolbar .panel-search input { border: 0; background: transparent; padding: 0; min-height: 26px; box-shadow: none; }
