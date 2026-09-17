@@ -3,93 +3,109 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#171923" media="(prefers-color-scheme: dark)" />
-    <meta name="theme-color" content="#f6f4f0" media="(prefers-color-scheme: light)" />
-    <meta name="description" content="Build your space, meet your team, and play together in Northstar's virtual office." />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23171923'/%3E%3Cpath d='M8 24V8h4l8 9V8h4v16h-4l-8-9v9z' fill='%23f7f8ff'/%3E%3C/svg%3E" />
-    <title>Northstar</title>
+    <meta name="theme-color" content="#faf7ef" />
+    <meta name="description" content="A little more work. A little more play. Build your space, meet your team, and make yourself at home in Northstar." />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='20' fill='%23e76345'/%3E%3Cpath d='m20 6 3.5 10.5L34 20l-10.5 3.5L20 34l-3.5-10.5L6 20l10.5-3.5z' fill='%23fff9ec'/%3E%3C/svg%3E" />
+    <link rel="preload" href="/src/fonts/bricolage-grotesque-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <title>Northstar — Work, with a little more play.</title>
   </head>
   <body>
+    <svg class="icon-library" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+      <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" /></symbol>
+      <symbol id="icon-diagonal" viewBox="0 0 24 24"><path d="M6 18 18 6M6 6h12v12" /></symbol>
+      <symbol id="icon-star" viewBox="0 0 40 40"><path d="m20 0 5.4 14.6L40 20l-14.6 5.4L20 40l-5.4-14.6L0 20l14.6-5.4Z" fill="currentColor" stroke="none" /></symbol>
+      <symbol id="icon-expand" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-7 7M10 20H4v-6m0 6 7-7" /></symbol>
+      <symbol id="icon-pause" viewBox="0 0 24 24"><path d="M9 5v14M15 5v14" /></symbol>
+      <symbol id="icon-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7Z" /></symbol>
+      <symbol id="icon-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8" /></symbol>
+      <symbol id="icon-chat" viewBox="0 0 24 24"><path d="M21 11a8 8 0 0 1-8 8H7l-5 3 2-6a8 8 0 1 1 17-5Z" /><path d="M8 10h8M8 14h5" /></symbol>
+      <symbol id="icon-build" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5" /></symbol>
+    </svg>
     <a class="skip-link" href="#main">Skip to content</a>
-    <header class="site-header">
-      <a class="brand" href="/" aria-label="Northstar home">
-        <span aria-hidden="true">N</span>
-        Northstar
-      </a>
-      <a class="header-action" data-client-link href="/app/">Open office</a>
+    <header class="site-header wrap">
+      <a class="brand" href="/" aria-label="Northstar home"><svg class="brand-mark" aria-hidden="true"><use href="#icon-star" /></svg>Northstar<span class="brand-period">.</span></a>
+      <nav class="main-nav" aria-label="Main navigation"><a href="#space">The space</a><a href="#characters">Your character</a><a href="#play">The fun part</a></nav>
+      <div class="header-actions">
+        <button class="motion-toggle icon-button" aria-label="Pause animations" hidden><svg aria-hidden="true"><use href="#icon-pause" /></svg></button>
+        <a class="button button-small button-dark" data-client-link href="/app/">Open office <svg aria-hidden="true"><use href="#icon-diagonal" /></svg></a>
+      </div>
     </header>
-    <main id="main">
-      <section class="hero" aria-labelledby="hero-title">
+    <main id="main" tabindex="-1">
+      <section class="hero wrap" aria-labelledby="hero-title">
         <div class="hero-copy">
-          <h1 id="hero-title">A shared place for <span>remote work.</span></h1>
-          <p>Build, meet, and play together.</p>
-          <div class="hero-actions">
-            <a class="primary-action" data-client-link href="/app/">Open office <span aria-hidden="true">↗</span></a>
-            <a class="secondary-action" data-download-link href="https://github.com/pureportal/work-hard-play-hard/releases/latest">Download client <span aria-hidden="true">↓</span></a>
-          </div>
-          <p class="download-requirement">Private server required.</p>
+          <p class="eyebrow"><span class="tiny-star" aria-hidden="true">✳</span> A virtual office. A shared world.</p>
+          <h1 id="hero-title">Work, with a<br />little more<br /><span class="play-word">play<svg viewBox="0 0 250 24" aria-hidden="true"><path d="M4 15C65 2 178 1 243 9M35 21c65-9 119-10 174-6" /></svg></span><span class="hero-period">.</span></h1>
+          <p class="hero-description">Build a space for your team to work,<br />hang out, and play together.</p>
+          <div class="hero-actions"><a class="button button-coral primary-action" data-client-link href="/app/">Open office <svg aria-hidden="true"><use href="#icon-diagonal" /></svg></a><a class="text-link" href="#space">Take a look <span aria-hidden="true">↓</span></a></div>
         </div>
-        <a class="office-preview screenshot-link" href="/screenshots/office-full.webp" data-screenshot="The office" aria-label="Enlarge office screenshot">
-          <img src="/src/media/office-1280.webp" srcset="/src/media/office-640.webp 640w, /src/media/office-1280.webp 1280w" sizes="(max-width: 800px) calc(100vw - 32px), (max-width: 1240px) 54vw, 648px" width="1280" height="995" fetchpriority="high" alt="Players in a furnished office with a lounge, two desks, and a kitchenette." />
-          <span class="enlarge-mark" aria-hidden="true">⤢</span>
-        </a>
+        <div class="hero-scene" data-parallax>
+          <img class="hero-illustration" src="/src/media/office-illustration-1536.webp" srcset="/src/media/office-illustration-768.webp 768w, /src/media/office-illustration-1536.webp 1536w" sizes="(max-width: 760px) 150vw, 1050px" width="1536" height="1024" fetchpriority="high" alt="An illustrated office island with a blue sofa, mint desk, books and leafy plants." />
+          <span class="scene-orbit" aria-hidden="true"></span>
+          <svg class="scene-star scene-star-one" aria-hidden="true"><use href="#icon-star" /></svg><svg class="scene-star scene-star-two" aria-hidden="true"><use href="#icon-star" /></svg>
+          <div class="hero-player hero-player-one" aria-hidden="true"><span class="reaction">♡</span><img src="/src/media/character-frog.webp" width="72" height="120" alt="" /></div>
+          <div class="hero-player hero-player-two" aria-hidden="true"><img src="/src/media/character-sunset.webp" width="72" height="120" alt="" /></div>
+          <a class="hero-peek screenshot-link" href="/screenshots/office-full.webp" data-screenshot="Inside the office" aria-label="Enlarge office screenshot"><img src="/src/media/office-640.webp" width="640" height="498" alt="The real Northstar office, with a lounge, studio, kitchen and three players." /><span>Meanwhile, in the office <svg aria-hidden="true"><use href="#icon-expand" /></svg></span></a>
+        </div>
+        <div class="hero-bottom"><a href="#space" class="scroll-link" aria-label="Explore the space"><svg aria-hidden="true"><use href="#icon-arrow" /></svg></a></div>
       </section>
-      <section class="features" id="features" aria-labelledby="features-title">
-        <h2 id="features-title">Inside Northstar</h2>
-        <div class="feature-grid">
-          <article class="feature feature-build">
-            <div class="feature-copy">
-              <h3>Build your space</h3>
-              <p>Shape rooms, choose floors, and furnish every corner.</p>
+      <section class="space-section" id="space" aria-labelledby="space-title">
+        <div class="wrap">
+          <div class="section-heading reveal"><div><p class="eyebrow">The space</p><h2 id="space-title">Remote, but<br /><span class="serif-word">closer.</span></h2></div><p>A desk for the deep work. A sofa for the catch-ups. A whole world to make your own.</p><svg class="heading-star" aria-hidden="true"><use href="#icon-star" /></svg></div>
+          <div class="space-tour reveal" data-tabs>
+            <div class="tour-toolbar">
+              <div class="tab-list" role="tablist" aria-label="Explore the office">
+                <button id="tab-hangout" role="tab" aria-selected="true" aria-controls="panel-hangout"><svg aria-hidden="true"><use href="#icon-home" /></svg>Hang out</button>
+                <button id="tab-work" role="tab" aria-selected="false" aria-controls="panel-work" tabindex="-1"><svg aria-hidden="true"><use href="#icon-chat" /></svg>Work together</button>
+                <button id="tab-build" role="tab" aria-selected="false" aria-controls="panel-build" tabindex="-1"><svg aria-hidden="true"><use href="#icon-build" /></svg>Make it yours</button>
+              </div>
+              <span class="tour-window-dots" aria-hidden="true"><i></i><i></i><i></i></span>
             </div>
-            <a class="feature-image screenshot-link" href="/screenshots/build-full.webp" data-screenshot="Building your space" aria-label="Enlarge building screenshot">
-              <img src="/src/media/build-1280.webp" srcset="/src/media/build-640.webp 640w, /src/media/build-1280.webp 1280w" sizes="(max-width: 800px) calc(100vw - 32px), (max-width: 1240px) 56vw, 684px" width="1280" height="880" loading="lazy" decoding="async" alt="The room layout beside the building tools and furniture catalog." />
-              <span class="enlarge-mark" aria-hidden="true">⤢</span>
-            </a>
-          </article>
-          <article class="feature feature-character">
-            <div class="feature-copy">
-              <h3>Create your character</h3>
-              <p>Mix outfits, hairstyles, and accessories.</p>
+            <div id="panel-hangout" class="tour-panel" role="tabpanel" aria-labelledby="tab-hangout" tabindex="0">
+              <a class="tour-image office-preview screenshot-link" href="/screenshots/office-full.webp" data-screenshot="Inside the office" aria-label="Enlarge the shared space screenshot"><img src="/src/media/office-1280.webp" srcset="/src/media/office-640.webp 640w, /src/media/office-1280.webp 1280w" sizes="(max-width: 760px) 94vw, 900px" width="1280" height="995" loading="lazy" decoding="async" alt="A furnished office with space to work, meet and spend time together." /><span class="enlarge-mark" aria-hidden="true"><svg><use href="#icon-expand" /></svg></span></a>
+              <p class="tour-caption">Good company is just a few steps away.<span>01 / 03</span></p>
             </div>
-            <a class="character-lineup screenshot-link" href="/screenshots/avatar-full.webp" data-screenshot="The character editor" data-screenshot-alt="The avatar editor with an outfit preview and a selection of tops." aria-label="Enlarge character editor screenshot">
-              <img src="/src/media/character-frog.webp" width="72" height="120" loading="lazy" decoding="async" alt="Character in a frog hoodie." />
-              <img src="/src/media/character-sunset.webp" width="72" height="120" loading="lazy" decoding="async" alt="Character in the Sunset outfit." />
-              <img src="/src/media/character-starlight.webp" width="72" height="120" loading="lazy" decoding="async" alt="Character in the Starlight outfit." />
-              <span class="enlarge-mark" aria-hidden="true">⤢</span>
-            </a>
-          </article>
-          <article class="feature feature-work">
-            <div class="feature-copy">
-              <h3>Work together</h3>
-              <p>Talk, share your screen, and plan with whiteboards and checklists.</p>
+            <div id="panel-work" class="tour-panel" role="tabpanel" aria-labelledby="tab-work" tabindex="0" hidden>
+              <a class="tour-image screenshot-link" href="/screenshots/whiteboard-full.webp" data-screenshot="The shared whiteboard" aria-label="Enlarge whiteboard screenshot"><img src="/src/media/whiteboard-1280.webp" srcset="/src/media/whiteboard-640.webp 640w, /src/media/whiteboard-1280.webp 1280w" sizes="(max-width: 760px) 94vw, 1050px" width="1280" height="867" loading="lazy" decoding="async" alt="A real shared whiteboard with notes in To do, In progress, and Done columns." /><span class="enlarge-mark" aria-hidden="true"><svg><use href="#icon-expand" /></svg></span></a>
+              <p class="tour-caption">Talk, share your screen, and sketch out what's next.<span>02 / 03</span></p>
             </div>
-            <a class="feature-image screenshot-link" href="/screenshots/whiteboard-full.webp" data-screenshot="The shared whiteboard" aria-label="Enlarge whiteboard screenshot">
-              <img src="/src/media/whiteboard-1280.webp" srcset="/src/media/whiteboard-640.webp 640w, /src/media/whiteboard-1280.webp 1280w" sizes="(max-width: 800px) calc(100vw - 32px), (max-width: 1240px) 56vw, 684px" width="1280" height="867" loading="lazy" decoding="async" alt="A whiteboard with sticky notes arranged in To do, In progress, and Done columns." />
-              <span class="enlarge-mark" aria-hidden="true">⤢</span>
-            </a>
-          </article>
-          <article class="feature feature-play">
-            <div class="feature-copy">
-              <h3>Make time to play</h3>
-              <p>Take a break with Chess, Falling Blocks, or Tic-Tac-Toe.</p>
+            <div id="panel-build" class="tour-panel" role="tabpanel" aria-labelledby="tab-build" tabindex="0" hidden>
+              <a class="tour-image screenshot-link" href="/screenshots/build-full.webp" data-screenshot="Building your space" aria-label="Enlarge building screenshot"><img src="/src/media/build-1280.webp" srcset="/src/media/build-640.webp 640w, /src/media/build-1280.webp 1280w" sizes="(max-width: 760px) 94vw, 1050px" width="1280" height="880" loading="lazy" decoding="async" alt="Northstar's building tools and furniture catalog beside a furnished house." /><span class="enlarge-mark" aria-hidden="true"><svg><use href="#icon-expand" /></svg></span></a>
+              <p class="tour-caption">Your rooms. Your furniture. Your kind of place.<span>03 / 03</span></p>
             </div>
-            <a class="feature-image screenshot-link" href="/screenshots/chess-full.webp" data-screenshot="A game of chess" aria-label="Enlarge chess screenshot">
-              <img src="/src/media/chess-1280.webp" srcset="/src/media/chess-640.webp 640w, /src/media/chess-1280.webp 1280w" sizes="(max-width: 800px) calc(100vw - 32px), (max-width: 1240px) 42vw, 492px" width="1280" height="1029" loading="lazy" decoding="async" alt="A chess match in progress, with the board and move history." />
-              <span class="enlarge-mark" aria-hidden="true">⤢</span>
-            </a>
-          </article>
+          </div>
         </div>
+      </section>
+      <section class="characters-section wrap" id="characters" aria-labelledby="characters-title">
+        <div class="character-copy reveal"><p class="eyebrow">Your character</p><h2 id="characters-title">Come as<br /><span class="serif-word">you.</span></h2><p>Mix the hair, the outfit, the little details.<br />Yes, the frog hoodie is an option.</p><a class="text-link screenshot-link" href="/screenshots/avatar-full.webp" data-screenshot="The character editor" data-screenshot-alt="The Northstar character editor with an outfit preview and clothing choices." aria-label="See the character editor">See the character editor <svg aria-hidden="true"><use href="#icon-diagonal" /></svg></a></div>
+        <div class="character-studio reveal" data-outfit="sunset">
+          <div class="character-stage">
+            <span class="stage-orbit stage-orbit-one" aria-hidden="true"></span><span class="stage-orbit stage-orbit-two" aria-hidden="true"></span><svg class="character-spark" aria-hidden="true"><use href="#icon-star" /></svg><span class="character-doodle" aria-hidden="true">✳</span>
+            <div class="character-figure" data-character="frog"><img src="/src/media/character-frog.webp" width="72" height="120" loading="lazy" alt="Character wearing the green Frog outfit." /><span class="character-shadow" aria-hidden="true"></span></div>
+            <div class="character-figure is-selected" data-character="sunset"><img src="/src/media/character-sunset.webp" width="72" height="120" loading="lazy" alt="Character wearing the coral Sunset outfit." /><span class="character-shadow" aria-hidden="true"></span></div>
+            <div class="character-figure" data-character="starlight"><img src="/src/media/character-starlight.webp" width="72" height="120" loading="lazy" alt="Character wearing the purple Starlight outfit." /><span class="character-shadow" aria-hidden="true"></span></div>
+          </div>
+          <div class="outfit-options" role="group" aria-label="Preview an outfit"><button data-outfit="frog" aria-pressed="false"><span class="outfit-swatch swatch-frog" aria-hidden="true"></span>Frog</button><button data-outfit="sunset" aria-pressed="true"><span class="outfit-swatch swatch-sunset" aria-hidden="true"></span>Sunset</button><button data-outfit="starlight" aria-pressed="false"><span class="outfit-swatch swatch-starlight" aria-hidden="true"></span>Starlight</button></div>
+        </div>
+      </section>
+      <section class="play-section" id="play" aria-labelledby="play-title">
+        <div class="wrap">
+          <div class="play-heading reveal"><div><p class="eyebrow">The fun part</p><h2 id="play-title">Serious about<br /><span class="serif-word">not always</span> being serious.</h2></div><div class="arcade-prop" aria-hidden="true"><svg><use href="#icon-star" /></svg><img src="/src/media/prop-arcade.webp" width="292" height="420" loading="lazy" alt="" /></div></div>
+          <div class="game-grid">
+            <a class="game-card game-chess screenshot-link reveal" href="/screenshots/chess-full.webp" data-screenshot="A game of Chess" aria-label="Preview Chess"><div class="game-art"><img src="/src/media/chess-640.webp" srcset="/src/media/chess-640.webp 640w, /src/media/chess-1280.webp 1280w" sizes="(max-width: 760px) 88vw, 400px" width="640" height="515" loading="lazy" decoding="async" alt="A real Northstar Chess game with the opening move e4." /><span class="game-view" aria-hidden="true"><svg><use href="#icon-expand" /></svg></span></div><div class="game-copy"><span class="game-number" aria-hidden="true">01</span><h3>Chess</h3><svg aria-hidden="true"><use href="#icon-diagonal" /></svg></div></a>
+            <a class="game-card game-blocks screenshot-link reveal" href="/screenshots/falling-blocks-full.webp" data-screenshot="Falling Blocks" aria-label="Preview Falling Blocks"><div class="game-art"><img src="/src/media/falling-blocks-640.webp" width="640" height="540" loading="lazy" decoding="async" alt="Falling Blocks in Northstar, with colorful pieces on the game board." /><span class="game-view" aria-hidden="true"><svg><use href="#icon-expand" /></svg></span></div><div class="game-copy"><span class="game-number" aria-hidden="true">02</span><h3>Falling Blocks</h3><svg aria-hidden="true"><use href="#icon-diagonal" /></svg></div></a>
+            <a class="game-card game-tictactoe screenshot-link reveal" href="/screenshots/tic-tac-toe-full.webp" data-screenshot="Tic-Tac-Toe" aria-label="Preview Tic-Tac-Toe"><div class="game-art"><img src="/src/media/tic-tac-toe-640.webp" width="640" height="523" loading="lazy" decoding="async" alt="A Northstar Tic-Tac-Toe match with X and O on the board." /><span class="game-view" aria-hidden="true"><svg><use href="#icon-expand" /></svg></span></div><div class="game-copy"><span class="game-number" aria-hidden="true">03</span><h3>Tic-Tac-Toe</h3><svg aria-hidden="true"><use href="#icon-diagonal" /></svg></div></a>
+          </div>
+        </div>
+      </section>
+      <section class="invitation wrap" aria-labelledby="invitation-title">
+        <img class="invitation-plant" src="/src/media/prop-plant.webp" width="148" height="240" loading="lazy" alt="" aria-hidden="true" /><svg class="invitation-star" aria-hidden="true"><use href="#icon-star" /></svg>
+        <div class="reveal"><p class="eyebrow">See you in there</p><h2 id="invitation-title">Your people.<br />Your <span class="serif-word">place.</span></h2><a class="button button-coral" data-client-link href="/app/">Open office <svg aria-hidden="true"><use href="#icon-diagonal" /></svg></a></div>
+        <img class="invitation-coffee" src="/src/media/prop-coffee.webp" width="100" height="117" loading="lazy" alt="" aria-hidden="true" />
+        <div class="download-row"><a class="text-link" data-download-link href="https://github.com/pureportal/work-hard-play-hard/releases/latest">Download client <span aria-hidden="true">↓</span></a><span class="download-requirement">Private server required.</span></div>
       </section>
     </main>
-    <dialog class="screenshot-dialog" aria-labelledby="screenshot-title">
-      <header>
-        <h2 id="screenshot-title"></h2>
-        <form method="dialog"><button class="close-action" autofocus>Close <span aria-hidden="true">×</span></button></form>
-      </header>
-      <img class="screenshot-full" alt="" />
-      <p class="screenshot-error" role="alert" hidden>Image could not load. <a>Open image</a></p>
-    </dialog>
+    <footer class="site-footer wrap"><a class="brand" href="/" aria-label="Northstar home"><svg class="brand-mark" aria-hidden="true"><use href="#icon-star" /></svg>Northstar<span class="brand-period">.</span></a><a class="text-link" href="#main">Back to top <span aria-hidden="true">↑</span></a></footer>
+    <dialog class="screenshot-dialog" aria-labelledby="screenshot-title"><header><h2 id="screenshot-title"></h2><form method="dialog"><button class="close-action" autofocus>Close <span aria-hidden="true">×</span></button></form></header><img class="screenshot-full" alt="" /><p class="screenshot-error" role="alert" hidden>Image could not load. <a>Open image</a></p></dialog>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

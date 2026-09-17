@@ -126,5 +126,77 @@
     "width": 72,
     "height": 120,
     "bytes": 662
+  },
+  "office-illustration-768.webp": {
+    "source": "office-illustration.png",
+    "sourceHash": "5154b3acea5f476f8f09a3789a2dcd6f1042098afcb1d01d328e99d0ddf059bf",
+    "sha256": "db424c668943f40c3d3a85e669ac1ec5c01f2a34ec2bed2c0c109eb6e8ae486a",
+    "width": 768,
+    "height": 512,
+    "bytes": 26224
+  },
+  "office-illustration-1536.webp": {
+    "source": "office-illustration.png",
+    "sourceHash": "5154b3acea5f476f8f09a3789a2dcd6f1042098afcb1d01d328e99d0ddf059bf",
+    "sha256": "2a8d4dd132348e3bb6f9d973ea4baed34501153548a4746c302d3d3b94be911a",
+    "width": 1536,
+    "height": 1024,
+    "bytes": 67562
+  },
+  "falling-blocks-full.webp": {
+    "source": "falling-blocks.png",
+    "sourceHash": "7f9e56706379f2bb6f76b65a2e6f5fb93abb566d1d754c100c1a10ae1ae332e0",
+    "sha256": "a15d66123a5ee8c2da7e3c19653c841d99313bae078bf85a8b890a64449f1ccd",
+    "width": 1600,
+    "height": 1351,
+    "bytes": 29128
+  },
+  "falling-blocks-640.webp": {
+    "source": "falling-blocks.png",
+    "sourceHash": "7f9e56706379f2bb6f76b65a2e6f5fb93abb566d1d754c100c1a10ae1ae332e0",
+    "sha256": "e2527af79daf3a2e5606806795bd330891aa66a7d823179d78956eea2b3f6294",
+    "width": 640,
+    "height": 540,
+    "bytes": 9266
+  },
+  "tic-tac-toe-full.webp": {
+    "source": "tic-tac-toe.png",
+    "sourceHash": "e7e07168f26c259822c5a23ea90f717a1e2c354422c624cd2e1e587d6f5b3879",
+    "sha256": "b30d793642705d7282ec8333fc7dc2236316eb6d072682707f259485741f7dba",
+    "width": 1600,
+    "height": 1308,
+    "bytes": 26466
+  },
+  "tic-tac-toe-640.webp": {
+    "source": "tic-tac-toe.png",
+    "sourceHash": "e7e07168f26c259822c5a23ea90f717a1e2c354422c624cd2e1e587d6f5b3879",
+    "sha256": "be83a332628bc67b676d6c63a641cabfcd3d56151fee70663fcd584513bdca13",
+    "width": 640,
+    "height": 523,
+    "bytes": 8620
+  },
+  "prop-arcade.webp": {
+    "source": "../../client/public/world-assets/equipment-arcade/violet.png",
+    "sourceHash": "5206f39a57e923d4d77c9ae81473809b2513d8e488bb53d09d66fe4582f13c7d",
+    "sha256": "4e22e1d3559c4664373cb3a3975f5347cc07bcc711bf83b48eb9896cb22d8ad7",
+    "width": 292,
+    "height": 420,
+    "bytes": 33992
+  },
+  "prop-plant.webp": {
+    "source": "../../client/public/world-assets/plant-monstera/sage.png",
+    "sourceHash": "7962de07e10a132d16e32dd5d1a918ecb65df3ed6d6ae5b1077802100f95e47d",
+    "sha256": "58f64347bf0c5c9da5461cf71e034a9cb9d54a33f60884821eab397d15b686ec",
+    "width": 148,
+    "height": 240,
+    "bytes": 25780
+  },
+  "prop-coffee.webp": {
+    "source": "../../client/public/world-assets/decor-coffee/coral.png",
+    "sourceHash": "32d02f7d22f1abcc6e8aa1e638dab2b282cbb05d4d690c6908a582936fb9f9fb",
+    "sha256": "27c2d34deec4408d7a3d013ec4a7f048989ea7850b00c3170f4fc9fc18ded8f7",
+    "width": 100,
+    "height": 117,
+    "bytes": 1556
   }
 }

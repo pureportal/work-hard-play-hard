@@ -42,6 +42,32 @@ for (const outfit of ["frog", "sunset", "starlight"]) {
   await convert(`character-${outfit}.webp`, sharp(original).webp({ lossless: true, effort: 6 }), source, original);
 }
 
+const illustration = await readFile(new URL("office-illustration.png", originals));
+for (const width of [768, 1536]) {
+  await convert(`office-illustration-${width}.webp`, sharp(illustration).resize({ width }).webp({ quality: 85, effort: 6 }), "office-illustration.png", illustration);
+}
+
+for (const game of ["falling-blocks", "tic-tac-toe"]) {
+  const source = `${game}.png`;
+  const original = await readFile(new URL(source, originals));
+  await convert(`${game}-full.webp`, sharp(original).resize({ width: 1600, withoutEnlargement: true }).webp({ quality: 86, effort: 6 }), source, original);
+  await convert(`${game}-640.webp`, sharp(original).resize({ width: 640 }).webp({ quality: 86, effort: 6 }), source, original);
+}
+
+for (const [name, path, direction] of [
+  ["arcade", "equipment-arcade/violet.png", 1],
+  ["plant", "plant-monstera/sage.png", 0],
+  ["coffee", "decor-coffee/coral.png", 0],
+]) {
+  const source = `../../client/public/world-assets/${path}`;
+  const original = await readFile(new URL(source, originals));
+  const pipeline = sharp(original);
+  const metadata = await pipeline.metadata();
+  const frameWidth = metadata.width / 4;
+  const frame = await pipeline.extract({ left: frameWidth * direction, top: 0, width: frameWidth, height: metadata.height }).toBuffer();
+  await convert(`prop-${name}.webp`, sharp(frame).trim().resize({ height: name === "arcade" ? 420 : 240, withoutEnlargement: true }).webp({ lossless: true, effort: 6 }), source, original);
+}
+
 const manifestPath = new URL("media-manifest.json", originals);
 if (check) assert.deepEqual(JSON.parse(await readFile(manifestPath, "utf8")), manifest);
 else await writeFile(manifestPath, JSON.stringify(manifest, null, 2) + "\n");

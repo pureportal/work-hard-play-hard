@@ -1,4 +1,8 @@
 import "./styles.css";
+import "./sections.css";
+import "./motion.css";
+import "./interactions";
+import "./motion";
 
 const clientUrl = resolveClientUrl(import.meta.env.VITE_CLIENT_URL?.trim() || "/app/");
 
