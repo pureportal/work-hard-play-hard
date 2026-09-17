@@ -1,0 +1,130 @@
+{
+  "office-full.webp": {
+    "source": "office.png",
+    "sourceHash": "b9e033abbdf2860367ac06ebad4e56d4bf0377485d821c36ff339e0725cfd4e1",
+    "sha256": "4b8864ab2a5e90372b99670debd209f23efb080c44a169e92a247db0c06e830a",
+    "width": 1600,
+    "height": 1100,
+    "bytes": 67786
+  },
+  "office-640.webp": {
+    "source": "office.png",
+    "sourceHash": "b9e033abbdf2860367ac06ebad4e56d4bf0377485d821c36ff339e0725cfd4e1",
+    "sha256": "b6826858921db24b08c8242a7e24bf904e9fbdaddd7c445e80a8a9279a44b683",
+    "width": 640,
+    "height": 498,
+    "bytes": 38832
+  },
+  "office-1280.webp": {
+    "source": "office.png",
+    "sourceHash": "b9e033abbdf2860367ac06ebad4e56d4bf0377485d821c36ff339e0725cfd4e1",
+    "sha256": "8d1e3c55cc4794dc19ebdd0725c6c08fea632abaf84ef616b72c78b72fda9143",
+    "width": 1280,
+    "height": 995,
+    "bytes": 85342
+  },
+  "build-full.webp": {
+    "source": "build.png",
+    "sourceHash": "b6192abf5774c76408e62ace63e2ccb5ae739d416549f60bace8e4cb4612de3c",
+    "sha256": "090f17d0c5345d14c6a5c0567a9104345ab5090d31fbe4b6e9341fd38957013c",
+    "width": 1600,
+    "height": 1100,
+    "bytes": 101974
+  },
+  "build-640.webp": {
+    "source": "build.png",
+    "sourceHash": "b6192abf5774c76408e62ace63e2ccb5ae739d416549f60bace8e4cb4612de3c",
+    "sha256": "a9663b26ac00662f42991ed0b1c4e3c20d84a7cda15fbb874474ed71e092942b",
+    "width": 640,
+    "height": 440,
+    "bytes": 25402
+  },
+  "build-1280.webp": {
+    "source": "build.png",
+    "sourceHash": "b6192abf5774c76408e62ace63e2ccb5ae739d416549f60bace8e4cb4612de3c",
+    "sha256": "7b2fc4b57f3b39ef0ba7d97195d81cf61ec0333b0edb8f9986554d257bb41c20",
+    "width": 1280,
+    "height": 880,
+    "bytes": 73320
+  },
+  "avatar-full.webp": {
+    "source": "avatar.png",
+    "sourceHash": "392eb01d0c1c845e810aa56182cdcd9c6416f7b0168d1d8014a822b6657b8fe6",
+    "sha256": "9de414e3dd90992a29b2ac00f3a34735969dd1beeb6a9f74d2933e923704a0ee",
+    "width": 1600,
+    "height": 1100,
+    "bytes": 51104
+  },
+  "whiteboard-full.webp": {
+    "source": "whiteboard.png",
+    "sourceHash": "b6ab3f280f625d30f8ca6645f2112cffd35cc6d6d28a341aea55a8edb9c5cbc2",
+    "sha256": "1ea0ce08f59239036bdad0282e9d81e988abdcc9d2a47d4b7b21e953768d1f1d",
+    "width": 1600,
+    "height": 1111,
+    "bytes": 26018
+  },
+  "whiteboard-640.webp": {
+    "source": "whiteboard.png",
+    "sourceHash": "b6ab3f280f625d30f8ca6645f2112cffd35cc6d6d28a341aea55a8edb9c5cbc2",
+    "sha256": "7135cff8f99389fd90b62d4b3a82e97987e1fc923cbd334b3e88491bdded095b",
+    "width": 640,
+    "height": 434,
+    "bytes": 5986
+  },
+  "whiteboard-1280.webp": {
+    "source": "whiteboard.png",
+    "sourceHash": "b6ab3f280f625d30f8ca6645f2112cffd35cc6d6d28a341aea55a8edb9c5cbc2",
+    "sha256": "8ff74f60be3c693eb90543d43b81080eca6c29e3b99bf600023ba6f35b3c61d8",
+    "width": 1280,
+    "height": 867,
+    "bytes": 17236
+  },
+  "chess-full.webp": {
+    "source": "chess.png",
+    "sourceHash": "e40249b4f308bc0e88a6ae815c201ef9b489af8d9396da51b6cc7b53f7525c3c",
+    "sha256": "97485c1a6228d13a00ca9303ec872ba68c4576bcd38df0e9566c9d67131c9d90",
+    "width": 1600,
+    "height": 1111,
+    "bytes": 39698
+  },
+  "chess-640.webp": {
+    "source": "chess.png",
+    "sourceHash": "e40249b4f308bc0e88a6ae815c201ef9b489af8d9396da51b6cc7b53f7525c3c",
+    "sha256": "dff48e2627680dc453692761b241337fdec93450b23fccf4be7a008cc66d17a1",
+    "width": 640,
+    "height": 515,
+    "bytes": 17080
+  },
+  "chess-1280.webp": {
+    "source": "chess.png",
+    "sourceHash": "e40249b4f308bc0e88a6ae815c201ef9b489af8d9396da51b6cc7b53f7525c3c",
+    "sha256": "ed019f270a61e80b609f6d0e41d0bffbe5c6087d9bf684e102d8f53dc868926a",
+    "width": 1280,
+    "height": 1029,
+    "bytes": 36264
+  },
+  "character-frog.webp": {
+    "source": "character-frog.png",
+    "sourceHash": "0f58b8b1789137c9aca7bf90525c3c5453a21b9e4c3f587ed468abcc11bce164",
+    "sha256": "1fe78f0f93737781fa9a24eaa4ed05cd6dfc569e4cc427373cccfcd506e673e4",
+    "width": 72,
+    "height": 120,
+    "bytes": 736
+  },
+  "character-sunset.webp": {
+    "source": "character-sunset.png",
+    "sourceHash": "05b7507aa11a75b238cfff1a1824f4033813517af24ca2d5f27ff3e6cda8cf33",
+    "sha256": "d4362c5c36ea21ed5cd6b29a8764239c9445251dc858150f4890eb4f31aebca7",
+    "width": 72,
+    "height": 120,
+    "bytes": 694
+  },
+  "character-starlight.webp": {
+    "source": "character-starlight.png",
+    "sourceHash": "4b02402e688d0ba5fc906b0ea5824b5b889970e1a1cf9d32f8da63d964a64070",
+    "sha256": "98a3c2391e34647a737be371cfcf9faccf83fd18ec710a9caab6baad1583ab3f",
+    "width": 72,
+    "height": 120,
+    "bytes": 662
+  }
+}

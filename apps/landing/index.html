@@ -3,12 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#171923" />
-    <meta name="description" content="Northstar virtual office" />
+    <meta name="theme-color" content="#171923" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f6f4f0" media="(prefers-color-scheme: light)" />
+    <meta name="description" content="Build your space, meet your team, and play together in Northstar's virtual office." />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23171923'/%3E%3Cpath d='M8 24V8h4l8 9V8h4v16h-4l-8-9v9z' fill='%23f7f8ff'/%3E%3C/svg%3E" />
     <title>Northstar</title>
   </head>
   <body>
+    <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header">
       <a class="brand" href="/" aria-label="Northstar home">
         <span aria-hidden="true">N</span>
@@ -16,25 +18,77 @@
       </a>
       <a class="header-action" data-client-link href="/app/">Open office</a>
     </header>
-    <main>
-      <section class="hero">
+    <main id="main">
+      <section class="hero" aria-labelledby="hero-title">
         <div class="hero-copy">
-          <p>Virtual office</p>
-          <h1>A shared place for remote work.</h1>
-          <a class="primary-action" data-client-link href="/app/">Open office</a>
+          <h1 id="hero-title">A shared place for <span>remote work.</span></h1>
+          <p>Build, meet, and play together.</p>
+          <div class="hero-actions">
+            <a class="primary-action" data-client-link href="/app/">Open office <span aria-hidden="true">↗</span></a>
+            <a class="secondary-action" href="#features">Explore features <span aria-hidden="true">↓</span></a>
+          </div>
         </div>
-        <div class="office-preview" role="img" aria-label="Northstar office floor with team members">
-          <div class="room room-one"></div>
-          <div class="room room-two"></div>
-          <div class="room room-three"></div>
-          <span class="person person-one"></span>
-          <span class="person person-two"></span>
-          <span class="person person-three"></span>
-          <span class="person person-four"></span>
-          <span class="person person-five"></span>
+        <a class="office-preview screenshot-link" href="/screenshots/office-full.webp" data-screenshot="The office" aria-label="Enlarge office screenshot">
+          <img src="/src/media/office-1280.webp" srcset="/src/media/office-640.webp 640w, /src/media/office-1280.webp 1280w" sizes="(max-width: 800px) calc(100vw - 32px), (max-width: 1240px) 54vw, 648px" width="1280" height="995" fetchpriority="high" alt="Players in a furnished office with a lounge, two desks, and a kitchenette." />
+          <span class="enlarge-mark" aria-hidden="true">⤢</span>
+        </a>
+      </section>
+      <section class="features" id="features" aria-labelledby="features-title">
+        <h2 id="features-title">Inside Northstar</h2>
+        <div class="feature-grid">
+          <article class="feature feature-build">
+            <div class="feature-copy">
+              <h3>Build your space</h3>
+              <p>Shape rooms, choose floors, and furnish every corner.</p>
+            </div>
+            <a class="feature-image screenshot-link" href="/screenshots/build-full.webp" data-screenshot="Building your space" aria-label="Enlarge building screenshot">
+              <img src="/src/media/build-1280.webp" srcset="/src/media/build-640.webp 640w, /src/media/build-1280.webp 1280w" sizes="(max-width: 800px) calc(100vw - 32px), (max-width: 1240px) 56vw, 684px" width="1280" height="880" loading="lazy" decoding="async" alt="The room layout beside the building tools and furniture catalog." />
+              <span class="enlarge-mark" aria-hidden="true">⤢</span>
+            </a>
+          </article>
+          <article class="feature feature-character">
+            <div class="feature-copy">
+              <h3>Create your character</h3>
+              <p>Mix outfits, hairstyles, and accessories.</p>
+            </div>
+            <a class="character-lineup screenshot-link" href="/screenshots/avatar-full.webp" data-screenshot="The character editor" data-screenshot-alt="The avatar editor with an outfit preview and a selection of tops." aria-label="Enlarge character editor screenshot">
+              <img src="/src/media/character-frog.webp" width="72" height="120" loading="lazy" decoding="async" alt="Character in a frog hoodie." />
+              <img src="/src/media/character-sunset.webp" width="72" height="120" loading="lazy" decoding="async" alt="Character in the Sunset outfit." />
+              <img src="/src/media/character-starlight.webp" width="72" height="120" loading="lazy" decoding="async" alt="Character in the Starlight outfit." />
+              <span class="enlarge-mark" aria-hidden="true">⤢</span>
+            </a>
+          </article>
+          <article class="feature feature-work">
+            <div class="feature-copy">
+              <h3>Work together</h3>
+              <p>Talk, share your screen, and plan with whiteboards and checklists.</p>
+            </div>
+            <a class="feature-image screenshot-link" href="/screenshots/whiteboard-full.webp" data-screenshot="The shared whiteboard" aria-label="Enlarge whiteboard screenshot">
+              <img src="/src/media/whiteboard-1280.webp" srcset="/src/media/whiteboard-640.webp 640w, /src/media/whiteboard-1280.webp 1280w" sizes="(max-width: 800px) calc(100vw - 32px), (max-width: 1240px) 56vw, 684px" width="1280" height="867" loading="lazy" decoding="async" alt="A whiteboard with sticky notes arranged in To do, In progress, and Done columns." />
+              <span class="enlarge-mark" aria-hidden="true">⤢</span>
+            </a>
+          </article>
+          <article class="feature feature-play">
+            <div class="feature-copy">
+              <h3>Make time to play</h3>
+              <p>Take a break with Chess, Falling Blocks, or Tic-Tac-Toe.</p>
+            </div>
+            <a class="feature-image screenshot-link" href="/screenshots/chess-full.webp" data-screenshot="A game of chess" aria-label="Enlarge chess screenshot">
+              <img src="/src/media/chess-1280.webp" srcset="/src/media/chess-640.webp 640w, /src/media/chess-1280.webp 1280w" sizes="(max-width: 800px) calc(100vw - 32px), (max-width: 1240px) 42vw, 492px" width="1280" height="1029" loading="lazy" decoding="async" alt="A chess match in progress, with the board and move history." />
+              <span class="enlarge-mark" aria-hidden="true">⤢</span>
+            </a>
+          </article>
         </div>
       </section>
     </main>
+    <dialog class="screenshot-dialog" aria-labelledby="screenshot-title">
+      <header>
+        <h2 id="screenshot-title"></h2>
+        <form method="dialog"><button class="close-action" autofocus>Close <span aria-hidden="true">×</span></button></form>
+      </header>
+      <img class="screenshot-full" alt="" />
+      <p class="screenshot-error" role="alert" hidden>Image could not load. <a>Open image</a></p>
+    </dialog>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
