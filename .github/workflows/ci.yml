@@ -93,6 +93,16 @@ jobs:
       - name: Validate workspace
         run: pnpm check
 
+      - name: Verify client loading recovery
+        run: pnpm --filter @workhard/server exec tsx ../../scripts/client-loading-browser-check.ts
+
+      - name: Verify native client server connections
+        env:
+          NORTHSTAR_CLIENT_DIST: apps/client/dist-native
+        run: |
+          pnpm --filter @workhard/client build:native
+          pnpm test:native-client
+
       - name: Format-check Tauri
         run: cargo fmt --check --manifest-path apps/client/src-tauri/Cargo.toml
 
@@ -124,6 +134,9 @@ jobs:
 
       - name: Verify client and API health
         run: curl --fail --silent --show-error --output /dev/null http://127.0.0.1:8080/v1/health/ready
+
+      - name: Verify client cache headers and missing assets
+        run: node scripts/client-delivery-check.mjs http://127.0.0.1:8080
 
       - name: Show deployment logs
         if: failure()

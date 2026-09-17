@@ -1,7 +1,7 @@
 import { createOrganisation } from "@workhard/shared";
 import { ASSET_ROTATIONS, DEFAULT_CHARACTER_APPEARANCE, getDefaultAssetVariantId, getPlacedAssetBounds, getPlacedAssetInteractions, requireAssetDefinition } from "@workhard/shared";
 import type { Container, Sprite } from "pixi.js";
-import { Graphics } from "pixi.js";
+import { Application, Graphics } from "pixi.js";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { getOutdoorBounds, type Floor, type FloorLayout, type Member, type WorldPlayer } from "@workhard/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -11,6 +11,7 @@ import { getWorldAssetArtwork, getWorldAssetSurfaceHeight } from "../world-asset
 import { getPlacedWorldAssetBounds } from "../world-asset-placement";
 import { getOptimizedImagePath } from "../optimized-images";
 import * as characterRenderer from "../character-renderer";
+import * as clientUpdate from "../client-update";
 import { MusicIndicator } from "../spotify/music-indicator";
 import { CharacterSprite } from "../character-sprite";
 import { CHARACTER_ATLAS_SIZE, CHARACTER_ATLAS_HEIGHT } from "@workhard/shared";
@@ -82,6 +83,27 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+});
+
+describe("WorldCanvas lifecycle", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("offers recovery and safely unmounts when renderer initialization fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const canvasRead = vi.fn(() => { throw new Error("Renderer is not initialized"); });
+    vi.spyOn(Application.prototype, "init").mockImplementationOnce(function (this: Application) {
+      Object.defineProperty(this, "canvas", { get: canvasRead });
+      return Promise.reject(new Error("Renderer could not start"));
+    });
+    const destroy = vi.spyOn(Application.prototype, "destroy");
+    const view = render(<WorldCanvas {...createProps()} />);
+    await screen.findByRole("alert");
+    expect(screen.getByRole("button", { name: "Reload" })).toBeTruthy();
+    view.unmount();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(canvasRead).not.toHaveBeenCalled();
+    expect(destroy).not.toHaveBeenCalled();
+  });
 });
 
 describe("WorldCanvas modal input", () => {
@@ -684,6 +706,7 @@ describe("WorldCanvas artwork", () => {
 
   beforeEach(() => {
     images = [];
+    vi.spyOn(clientUpdate, "reloadUpdatedClient").mockResolvedValue(false);
     vi.stubGlobal("Image", vi.fn(function () {
       const image = document.createElement("img");
       image.decode = vi.fn().mockResolvedValue(undefined);
@@ -726,6 +749,7 @@ describe("WorldCanvas artwork", () => {
     expect(screen.getByText("Artwork could not load.")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Reload" })).toBeTruthy();
     expect(errorLog).toHaveBeenCalled();
+    expect(clientUpdate.reloadUpdatedClient).toHaveBeenCalled();
   });
 
   it("offers recovery when a character atlas fails to load", async () => {
@@ -734,6 +758,14 @@ describe("WorldCanvas artwork", () => {
     render(<WorldCanvas {...createProps()} />);
     expect((await screen.findByRole("alert")).textContent).toContain("Artwork could not load.");
     expect(screen.getByRole("button", { name: "Reload" })).toBeTruthy();
+  });
+
+  it("checks for a client update when a character style is missing from the image catalogue", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.spyOn(characterRenderer, "renderCharacter").mockRejectedValueOnce(new Error("Missing optimized image: /characters/blockbench/upper/satin.png"));
+    render(<WorldCanvas {...createProps()} />);
+    await screen.findByRole("alert");
+    expect(clientUpdate.reloadUpdatedClient).toHaveBeenCalledOnce();
   });
 
   it("ignores failed artwork for an appearance that has been replaced", async () => {

@@ -2,7 +2,9 @@ import type { CharacterSeatedPose, OrganisationState } from "@workhard/shared";
 import { ArrowUp, Check, LocateFixed, Minus, Plus, RotateCw, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Application, Container, Graphics, Text } from "pixi.js";
+import "pixi.js/unsafe-eval";
 import { CharacterSprite } from "../character-sprite";
+import { reloadUpdatedClient } from "../client-update";
 import { MusicIndicator } from "../spotify/music-indicator";
 import type { SpotifyActivity } from "@workhard/shared";
 import { CharacterSeatOcclusion, getCharacterSeatLayout } from "../character-seat";
@@ -261,6 +263,7 @@ export function WorldCanvas(props: WorldCanvasProps) {
     onArtworkError: (error) => {
       console.error("World artwork could not load.", error);
       setArtworkFailed(true);
+      void reloadUpdatedClient();
     },
   });
   const directionCallbackRef = useRef(props.onDirectionalInput);
@@ -279,6 +282,7 @@ export function WorldCanvas(props: WorldCanvasProps) {
     onArtworkError: (error) => {
       console.error("World artwork could not load.", error);
       setArtworkFailed(true);
+      void reloadUpdatedClient();
     },
   };
   directionCallbackRef.current = props.onDirectionalInput;
@@ -346,6 +350,7 @@ export function WorldCanvas(props: WorldCanvasProps) {
       }).catch((error: unknown) => {
         if (createdLifecycle.active) {
           console.error("Office renderer could not start.", error);
+          setArtworkFailed(true);
         }
       });
     } else {
@@ -372,10 +377,10 @@ export function WorldCanvas(props: WorldCanvasProps) {
         void lifecycle.initialization.then(() => {
           lifecycle.renderer?.destroy();
           rendererRef.current = undefined;
-          if (lifecycle.app.canvas.parentElement === host) {
-            host.removeChild(lifecycle.app.canvas);
-          }
           if (lifecycle.initialized) {
+            if (lifecycle.app.canvas.parentElement === host) {
+              host.removeChild(lifecycle.app.canvas);
+            }
             lifecycle.app.destroy(true, { children: true });
           }
           if (lifecycleRef.current === lifecycle) {
