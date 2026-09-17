@@ -155,6 +155,8 @@ try {
 
   await page.click('button[aria-label="Build"]');
   await page.waitForSelector(".build-panel", { visible: true });
+  await clickButtonWithText(page, "Shared");
+  await page.waitForSelector(".build-layout-panel", { visible: true });
   await assertViewport(page, [".nav-rail", ".top-bar", ".build-panel"]);
   await assertContained(page, ".build-panel", [".panel-header", ".build-tools", ".build-workspace"]);
   assert(!(await page.$(".control-dock")), "Gameplay controls remained visible in Build Mode.");
@@ -163,13 +165,14 @@ try {
   const initialCategory = await page.$('.asset-category-tabs button[aria-selected="true"]');
   assert(initialCategory, "An asset category must be selected.");
   for (const category of await page.$$(".asset-category-tabs button")) {
-    await category.scrollIntoView();
+    await category.evaluate((button) => button.scrollIntoView({ block: "center", inline: "center" }));
     await category.click();
-    assert(await category.evaluate((button) => button.getAttribute("aria-selected") === "true"), "Asset category could not be selected.");
+    await page.waitForFunction((button) => button.getAttribute("aria-selected") === "true", {}, category);
     await assertFullyContained(page, ".asset-category-tabs", ['button[aria-selected="true"]']);
   }
-  await initialCategory.scrollIntoView();
+  await initialCategory.evaluate((button) => button.scrollIntoView({ block: "center", inline: "center" }));
   await initialCategory.click();
+  await page.waitForFunction((button) => button.getAttribute("aria-selected") === "true", {}, initialCategory);
   assert(await page.$eval(".asset-category-tabs", (element) => element.textContent?.includes("Outdoor") ?? false), "Outdoor assets are missing.");
   await page.screenshot({ path: resolve(artifactDirectory, "iteration-compact-build.png") });
   const categoryTargetHeight = await page.$$eval(".asset-category-tabs button", (buttons) => Math.min(...buttons.map((button) => button.getBoundingClientRect().height)));
@@ -415,6 +418,8 @@ try {
     await page.click('button[aria-label="Build"]');
   }
   await page.waitForSelector(".build-panel", { visible: true });
+  await clickButtonWithText(page, "Shared");
+  await page.waitForSelector(".build-layout-panel", { visible: true });
   const demotedMember = {
     ...bootstrap.members.find((member) => member.id === bootstrap.currentUserId)!,
     role: "member" as const,
@@ -437,6 +442,10 @@ try {
 
   assert(browserIssues.length === 0, browserIssues.join("\n"));
   process.stdout.write("Static production UI checks passed at 1440x900, 320x568, and 844x390.\n");
+} catch (error) {
+  const [page] = await browser.pages();
+  await page?.screenshot({ path: resolve(artifactDirectory, "static-ui-failure.png") });
+  throw error;
 } finally {
   await browser.close();
 }
@@ -444,7 +453,9 @@ try {
 async function verifyDesktopBuildSidebar(page: Page): Promise<void> {
   await page.click('button[aria-label="Close people"]');
   await page.click('button[aria-label="Build"]');
-  await page.waitForSelector(".build-panel", { visible: true });
+  await page.waitForSelector(".player-build-panel", { visible: true });
+  await clickButtonWithText(page, "Shared");
+  await page.waitForSelector(".build-layout-panel", { visible: true });
 
   const metrics = await page.evaluate(() => {
     const panel = document.querySelector<HTMLElement>(".build-panel")!;
