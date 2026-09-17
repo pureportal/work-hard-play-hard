@@ -1,8 +1,8 @@
-import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
-import { join } from "node:path";
 import type { SupportedImageMimeType } from "../images/image-input.js";
+import type { ApplicationDatabase } from "../persistence/application-database.js";
 
 export const CHAT_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+const CHAT_IMAGE_CACHE_MAX_BYTES = 64 * 1024 * 1024;
 
 export type ChatImageMimeType = SupportedImageMimeType;
 
@@ -14,27 +14,62 @@ const extensions: Record<ChatImageMimeType, string> = {
 };
 
 export class ChatImageStore {
-  constructor(private readonly directory: string) {}
+  private readonly cache = new Map<string, Buffer>();
+  private readonly pendingReads = new Map<string, Promise<Buffer | undefined>>();
+  private cachedBytes = 0;
 
-  async save(id: string, mimeType: ChatImageMimeType, source: Buffer): Promise<void> {
-    await mkdir(this.directory, { recursive: true });
-    await writeFile(this.filePath(id, mimeType), source, { flag: "wx" });
+  constructor(
+    private readonly database: ApplicationDatabase,
+    private readonly maxCacheBytes = CHAT_IMAGE_CACHE_MAX_BYTES,
+  ) {}
+
+  async save(id: string, source: Buffer): Promise<void> {
+    await this.database.saveChatImage(id, source);
+    this.cacheImage(id, Buffer.from(source));
   }
 
-  read(id: string, mimeType: ChatImageMimeType): Promise<Buffer> {
-    return readFile(this.filePath(id, mimeType));
-  }
+  async read(id: string): Promise<Buffer | undefined> {
+    const cached = this.cache.get(id);
+    if (cached) {
+      this.cache.delete(id);
+      this.cache.set(id, cached);
+      return cached;
+    }
+    const pending = this.pendingReads.get(id);
+    if (pending) return pending;
 
-  async remove(id: string, mimeType: ChatImageMimeType): Promise<void> {
-    await unlink(this.filePath(id, mimeType)).catch((error: NodeJS.ErrnoException) => {
-      if (error.code !== "ENOENT") {
-        throw error;
-      }
+    const read = this.database.readChatImage(id).then((source) => {
+      if (source && this.pendingReads.get(id) === read) this.cacheImage(id, source);
+      return source;
+    }).finally(() => {
+      if (this.pendingReads.get(id) === read) this.pendingReads.delete(id);
     });
+    this.pendingReads.set(id, read);
+    return read;
   }
 
-  private filePath(id: string, mimeType: ChatImageMimeType): string {
-    return join(this.directory, `${id}.${extensions[mimeType]}`);
+  async remove(id: string): Promise<void> {
+    await this.database.removeChatImage(id);
+    this.evict(id);
+    this.pendingReads.delete(id);
+  }
+
+  private cacheImage(id: string, source: Buffer): void {
+    this.evict(id);
+    if (source.length > this.maxCacheBytes) return;
+    for (const cachedId of this.cache.keys()) {
+      if (this.cachedBytes + source.length <= this.maxCacheBytes) break;
+      this.evict(cachedId);
+    }
+    this.cache.set(id, source);
+    this.cachedBytes += source.length;
+  }
+
+  private evict(id: string): void {
+    const cached = this.cache.get(id);
+    if (!cached) return;
+    this.cachedBytes -= cached.length;
+    this.cache.delete(id);
   }
 }
 

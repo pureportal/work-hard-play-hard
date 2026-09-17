@@ -53,8 +53,6 @@ services:
       GITHUB_APP_SLUG: ${GITHUB_APP_SLUG:-}
       GITHUB_REDIRECT_URI: ${GITHUB_REDIRECT_URI:-}
       GITHUB_TOKEN_KEY: ${GITHUB_TOKEN_KEY:-}
-    volumes:
-      - northstar-images:/workspace/.data
     restart: unless-stopped
     stop_grace_period: 20s
     healthcheck:
@@ -108,5 +106,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  northstar-images:
   northstar-postgres:

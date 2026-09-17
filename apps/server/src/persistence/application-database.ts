@@ -42,6 +42,9 @@ export interface WorkspacePersistenceState {
 }
 
 export interface ApplicationDatabase {
+  saveChatImage(id: string, image: Buffer): Promise<void>;
+  readChatImage(id: string): Promise<Buffer | undefined>;
+  removeChatImage(id: string): Promise<void>;
   loadGitHubConnections(): Promise<GitHubConnectionRecord[]>;
   saveGitHubConnection(record: GitHubConnectionRecord): Promise<void>;
   removeGitHubConnection(userId: string): Promise<void>;

@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { fileURLToPath } from "node:url";
 import cors from "@fastify/cors";
 import websocket from "@fastify/websocket";
 import type { AuthUser, ClientCommand, MemberRole, ServerEvent } from "@workhard/shared";
@@ -20,7 +19,6 @@ import {
   CHAT_IMAGE_MAX_BYTES,
   ChatImageStore,
   normalizeChatImageName,
-  type ChatImageMimeType,
 } from "./chat/chat-images.js";
 import { detectImageMimeType, SUPPORTED_IMAGE_MIME_TYPES } from "./images/image-input.js";
 import type { ApplicationDatabase } from "./persistence/application-database.js";
@@ -68,7 +66,6 @@ interface ApplicationOptions extends EmailLinkOptions, RegistrationOptions {
   spotifyConfig?: SpotifyConfig | null;
   spotifyFetch?: typeof fetch;
   database?: ApplicationDatabase;
-  chatImagePath?: string;
   clientUrl?: string;
   clientOrigins?: string[];
   exposeInvitationLinks?: boolean;
@@ -86,10 +83,6 @@ export interface ApplicationContext {
   runtime: WorldRuntime;
 }
 
-const defaultChatImagePath = fileURLToPath(
-  new URL("../../../.data/chat-images", import.meta.url),
-);
-
 export async function createApplication(options: ApplicationOptions = {}): Promise<ApplicationContext> {
   const githubConfig = options.githubConfig === null ? undefined : options.githubConfig ?? readGitHubConfig();
   const spotifyConfig = options.spotifyConfig === null ? undefined : options.spotifyConfig ?? readSpotifyConfig();
@@ -103,7 +96,12 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
   });
   const { auth, brandingLogo, runtime, store } = initialized;
   const github = await GitHubService.create(database, githubConfig, options.githubFetch);
-  const chatImages = new ChatImageStore(options.chatImagePath ?? defaultChatImagePath);
+  const githubSettings = store.getGitHubAppSettings();
+  if (githubSettings?.connectionsResetPending) {
+    await github.configure(githubConfig);
+    store.updateGitHubAppSettings({ ...githubSettings, connectionsResetPending: false });
+  }
+  const chatImages = new ChatImageStore(database);
   const authRateLimiter = new AuthRateLimiter();
   const exposeMagicLinks = options.exposeMagicLinks === true && process.env.NODE_ENV !== "production";
   const exposeInvitationLinks = options.exposeInvitationLinks === true && process.env.NODE_ENV !== "production";
@@ -548,13 +546,13 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
       size: body.length,
       url: `/v1/chat/images/${imageId}`,
     };
-    await chatImages.save(imageId, detectedMimeType, body);
+    await chatImages.save(imageId, body);
     try {
       const message = store.addMessage(conversationId, user.id, "", [attachment]);
       runtime.publishChatMessage(message);
       return reply.code(201).send(message);
     } catch (error) {
-      await chatImages.remove(imageId, detectedMimeType);
+      await chatImages.remove(imageId);
       throw error;
     }
   });
@@ -572,17 +570,16 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     if (!attachment) {
       return reply.code(404).send({ code: "IMAGE_NOT_FOUND", message: "Image not found." });
     }
-    try {
-      const source = await chatImages.read(imageId, attachment.mimeType as ChatImageMimeType);
-      return reply
-        .header("content-type", attachment.mimeType)
-        .header("content-disposition", `inline; filename*=UTF-8''${encodeURIComponent(attachment.name)}`)
-        .header("x-content-type-options", "nosniff")
-        .header("cache-control", "private, max-age=86400")
-        .send(source);
-    } catch {
+    const source = await chatImages.read(imageId);
+    if (!source) {
       return reply.code(404).send({ code: "IMAGE_NOT_FOUND", message: "Image not found." });
     }
+    return reply
+      .header("content-type", attachment.mimeType)
+      .header("content-disposition", `inline; filename*=UTF-8''${encodeURIComponent(attachment.name)}`)
+      .header("x-content-type-options", "nosniff")
+      .header("cache-control", "private, max-age=86400")
+      .send(source);
   });
 
   app.post("/v1/teams/:teamId/invitations", async (request, reply) => {

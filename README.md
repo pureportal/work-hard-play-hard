@@ -79,7 +79,7 @@ docker compose restart
 docker compose down
 ```
 
-`docker compose down` leaves stored data intact. PostgreSQL data is in the `northstar-postgres` volume, while chat image uploads are in `northstar-images`; back up both. Do not run `docker compose down --volumes` unless you intend to delete the installation's data.
+`docker compose down` leaves stored data intact. Back up the `northstar-postgres` volume, which includes chat images. Do not run `docker compose down --volumes` unless you intend to delete the installation's data.
 
 The server applies pending database migrations before accepting traffic. For a deployment exposed beyond the local machine, terminate HTTPS at a reverse proxy and send traffic to the client service on port `8080`; its Nginx configuration forwards both the REST API and realtime WebSocket connection to the server. Keep PostgreSQL and the server port off the public network.
 
@@ -202,7 +202,7 @@ The required variables are `ANDROID_HOME`, `ANDROID_BUILD_TOOLS_VERSION`, `ANDRO
 | `scripts` | Release validation, static UI checks, browser checks, Android signing, and workspace capture tools. |
 | `docs` | Building-system notes and the product/technical specification. |
 
-The server owns movement, collision, room access, layout changes, calls, reactions, and game state. Clients exchange commands and snapshots over `/v1/realtime`; accounts, workspace state, conversations, layouts, economy, character appearances, and branding are stored in PostgreSQL. Chat image files are stored under `.data/chat-images` or the corresponding Docker volume.
+The server owns movement, collision, room access, layout changes, calls, reactions, and game state. Clients exchange commands and snapshots over `/v1/realtime`; accounts, workspace state, conversations, layouts, economy, character appearances, and branding are stored in PostgreSQL. Chat images are stored as PostgreSQL binary data with a 64 MiB server memory cache.
 
 See [Building system](docs/building-system.md) for the layout and room-detection model.
 

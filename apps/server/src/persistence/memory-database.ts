@@ -14,6 +14,22 @@ import type {
 } from "./application-database.js";
 
 export class MemoryDatabase implements ApplicationDatabase {
+  private readonly chatImages = new Map<string, Buffer>();
+
+  async saveChatImage(id: string, image: Buffer): Promise<void> {
+    if (this.chatImages.has(id)) throw new Error("CHAT_IMAGE_EXISTS");
+    this.chatImages.set(id, Buffer.from(image));
+  }
+
+  async readChatImage(id: string): Promise<Buffer | undefined> {
+    const image = this.chatImages.get(id);
+    return image ? Buffer.from(image) : undefined;
+  }
+
+  async removeChatImage(id: string): Promise<void> {
+    this.chatImages.delete(id);
+  }
+
   private readonly githubConnections = new Map<string, GitHubConnectionRecord>();
 
   async loadGitHubConnections(): Promise<GitHubConnectionRecord[]> {
@@ -132,6 +148,7 @@ export class MemoryDatabase implements ApplicationDatabase {
   }
 
   async clear(): Promise<void> {
+    this.chatImages.clear();
     this.githubConnections.clear();
     this.whiteboardImages.clear();
     this.whiteboardReferences.clear();

@@ -29,14 +29,11 @@ ENV PORT=3001
 
 WORKDIR /workspace/apps/server
 
-RUN mkdir -p /workspace/.data && chown node:node /workspace/.data
-
 COPY --from=build --chown=node:node /opt/server ./
 
 USER node
 
 EXPOSE 3001
-VOLUME ["/workspace/.data"]
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 CMD ["wget", "--quiet", "--output-document=/dev/null", "http://127.0.0.1:3001/v1/health/ready"]
 

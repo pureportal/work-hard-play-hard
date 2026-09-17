@@ -19,9 +19,23 @@ import { createDatabaseConfig, type PostgreSqlEnvironment } from "./database-con
 import { PostgreSqlWorkspaceRepository } from "./postgresql-workspace-repository.js";
 import { PostgreSqlWhiteboardImages } from "./postgresql-whiteboard-images.js";
 import { WhiteboardImageEntity } from "./entities/whiteboard-image-entity.js";
+import { ChatImageEntity } from "./entities/chat-image-entity.js";
 import type { WhiteboardImageWrite } from "../work/whiteboard-image-record.js";
 
 export class PostgreSqlDatabase implements ApplicationDatabase {
+  async saveChatImage(id: string, image: Buffer): Promise<void> {
+    await this.orm.em.fork().insert(ChatImageEntity, { id, image });
+  }
+
+  async readChatImage(id: string): Promise<Buffer | undefined> {
+    const record = await this.orm.em.fork().findOne(ChatImageEntity, { id });
+    return record?.image;
+  }
+
+  async removeChatImage(id: string): Promise<void> {
+    await this.orm.em.fork().nativeDelete(ChatImageEntity, { id });
+  }
+
   async loadGitHubConnections(): Promise<GitHubConnectionRecord[]> {
     const records = await this.orm.em.fork().findAll(GitHubConnectionEntity);
     return records.map(({ userId, encryptedTokens, login }) => ({ userId, encryptedTokens, login }));
@@ -121,6 +135,7 @@ export class PostgreSqlDatabase implements ApplicationDatabase {
 
   async clear(): Promise<void> {
     await this.orm.em.fork().transactional(async (entityManager) => {
+      await entityManager.nativeDelete(ChatImageEntity, {});
       await entityManager.nativeDelete(GitHubConnectionEntity, {});
       await entityManager.nativeDelete(WhiteboardImageEntity, {});
       await entityManager.nativeDelete(SpotifyConnectionEntity, {});
