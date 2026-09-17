@@ -14,7 +14,7 @@ const COOKIE = "whph_github_state";
 export async function registerGitHubRoutes(app: FastifyInstance, options: {
   service: GitHubService;
   clientUrl: string;
-  secureCookie: boolean;
+  secureCookie: () => boolean;
   authenticate: (request: FastifyRequest) => { userId: string; sessionToken: string } | undefined;
   canOpenTray: (userId: string, objectId: string) => boolean;
 }): Promise<void> {
@@ -39,7 +39,7 @@ export async function registerGitHubRoutes(app: FastifyInstance, options: {
       request.log.error({ code: "GITHUB_FAILED" }, "GitHub request failed");
       return reply.code(500).send({ code: "GITHUB_FAILED", message: "GitHub request failed. Try again." });
     });
-    const cookie = (value: string, age: number) => `${COOKIE}=${value}; Path=/v1/github/callback; HttpOnly; SameSite=Lax; Max-Age=${age}${options.secureCookie ? "; Secure" : ""}`;
+    const cookie = (value: string, age: number) => `${COOKIE}=${value}; Path=/v1/github/callback; HttpOnly; SameSite=Lax; Max-Age=${age}${options.secureCookie() ? "; Secure" : ""}`;
 
     routes.get("/v1/github", async (request) => options.service.status(options.authenticate(request)!.userId));
     routes.post("/v1/github/connect", { logLevel: "silent" }, async (request, reply) => {

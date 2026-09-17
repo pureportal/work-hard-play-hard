@@ -1,10 +1,9 @@
-import { canManageUnit as mayManageUnit, canMoveOrganisationMember as mayMoveMember, isUnitWithin, type Member, type OrganisationEdit, type OrganisationState } from "@workhard/shared";
+import { isUnitWithin, type Member, type OrganisationEdit, type OrganisationState } from "@workhard/shared";
 import { useId, type DragEvent, type ReactNode } from "react";
 
 export type OrganisationSelection = { type: "unit" | "person"; id: string };
 
 interface OrganisationTreeProps {
-  equalTeam?: boolean;
   organisation: OrganisationState;
   members: Member[];
   currentUserId: string;
@@ -17,28 +16,25 @@ interface OrganisationTreeProps {
 
 const dragType = "application/x-organisation";
 
-export function OrganisationTree({ equalTeam = false, organisation, members, currentUserId, pending, selection, editor, onSelect, onEdit }: OrganisationTreeProps) {
+export function OrganisationTree({ organisation, members, currentUserId, pending, selection, editor, onSelect, onEdit }: OrganisationTreeProps) {
   const treeId = useId();
-  const canManageUnit = (...args: Parameters<typeof mayManageUnit>) => equalTeam || mayManageUnit(...args);
-  const canMoveOrganisationMember = (...args: Parameters<typeof mayMoveMember>) => equalTeam || mayMoveMember(...args);
-  const isCeo = organisation.ceoIds.includes(currentUserId);
+  const canPropose = members.some((member) => member.id === currentUserId);
   const drop = (event: DragEvent, parentId: string | null) => {
     event.preventDefault();
     event.stopPropagation();
-    if (pending) return;
+    if (pending || !canPropose) return;
     const raw = event.dataTransfer.getData(dragType);
     if (!raw) return;
     let dragged: OrganisationSelection;
     try { dragged = JSON.parse(raw) as OrganisationSelection; } catch { return; }
     if (dragged.type === "person") {
-      if (!canMoveOrganisationMember(organisation, currentUserId, dragged.id, parentId)) return;
+      if (!members.some((member) => member.id === dragged.id) || organisation.ceoIds.includes(dragged.id)) return;
       const assignment = organisation.assignments.find((person) => person.userId === dragged.id);
-      const actor = organisation.assignments.find((person) => person.userId === currentUserId);
-      const rank = !isCeo && actor?.unitId === parentId ? "member" : assignment?.rank ?? "member";
+      const rank = assignment?.rank ?? "member";
       onEdit({ type: "member.move", userId: dragged.id, unitId: parentId, rank });
     } else if (dragged.type === "unit") {
       const unit = organisation.units.find((candidate) => candidate.id === dragged.id);
-      if (!unit || !canManageUnit(organisation, currentUserId, unit.parentId) || !canManageUnit(organisation, currentUserId, parentId)
+      if (!unit
         || (parentId && isUnitWithin(organisation, parentId, unit.id))) return;
       onEdit({ type: "unit.move", unitId: unit.id, parentId });
     }
@@ -46,9 +42,8 @@ export function OrganisationTree({ equalTeam = false, organisation, members, cur
   const person = (member: Member) => {
     const assignment = organisation.assignments.find((item) => item.userId === member.id);
     const ceo = organisation.ceoIds.includes(member.id);
-    const manageable = !ceo && (equalTeam || isCeo || Boolean(assignment && canMoveOrganisationMember(organisation, currentUserId, member.id, assignment.unitId)));
-    const selectable = manageable || (isCeo && ceo && member.id !== currentUserId
-      && !organisation.removalVotes.some((vote) => vote.subjectId === member.id && vote.status === "open"));
+    const manageable = !ceo && canPropose;
+    const selectable = canPropose;
     const selected = selection?.type === "person" && selection.id === member.id;
     const content = <><span>{member.name}</span>{assignment?.rank === "lead" && <small>Lead</small>}</>;
     return <li key={member.id} className="organisation-person" data-person-id={member.id}>
@@ -62,11 +57,11 @@ export function OrganisationTree({ equalTeam = false, organisation, members, cur
   };
   const branch = (parentId: string | null) => <ul className="organisation-branches">
     {organisation.units.filter((unit) => unit.parentId === parentId).map((unit) => {
-      const manageable = canManageUnit(organisation, currentUserId, unit.id);
+      const manageable = canPropose;
       const selected = selection?.type === "unit" && selection.id === unit.id;
       return <li key={unit.id} data-unit-id={unit.id} className="organisation-unit"
       onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); }} onDrop={(event) => drop(event, unit.id)}>
-      {manageable ? <button type="button" className="organisation-unit-title" draggable={!pending && canManageUnit(organisation, currentUserId, unit.parentId)}
+      {manageable ? <button type="button" className="organisation-unit-title" draggable={!pending && canPropose}
         aria-expanded={selected} aria-controls={selected ? `${treeId}-${unit.id}` : undefined}
         onDragStart={(event) => { event.stopPropagation(); event.dataTransfer.setData(dragType, JSON.stringify({ type: "unit", id: unit.id })); }} onClick={() => onSelect({ type: "unit", id: unit.id })}>
         {unit.name}

@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createOrganisation, MAX_LAYOUT_OBJECTS_PER_FLOOR, MAX_OWNED_ASSETS, type FloorLayout, type Room } from "@workhard/shared";
+import { createOrganisation, getDailyRewardStatus, MAX_LAYOUT_OBJECTS_PER_FLOOR, MAX_OWNED_ASSETS, type FloorLayout, type Room } from "@workhard/shared";
 import { createTestEconomy, createTestGameSettings } from "../test-fixtures";
 import { PlayerBuildPanel } from "./PlayerBuildPanel";
 
@@ -63,11 +63,11 @@ describe("PlayerBuildPanel", () => {
     expect(onRemoveSelected).toHaveBeenCalledOnce();
   });
 
-  it("keeps editing unavailable when viewing a different floor", () => {
+  it("allows storing owned items while movement requires visiting the floor", () => {
     const layout = floorLayout(assignedRoom());
     layout.objects = [{ id: "chair", floorId: "floor", assetId: "chair-office", x: 32, y: 32, rotation: 0, variantId: "white", ownerUserId: "player" }];
     renderPanel({ layout, playerFloorId: "upstairs", selectedItem: { type: "asset", id: "chair" } });
-    expect((screen.getByRole("button", { name: "Store" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "Store" }) as HTMLButtonElement).disabled).toBe(false);
     expect((screen.getByRole("button", { name: "Move" }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByText("Visit this floor to edit or place items.")).toBeTruthy();
   });
@@ -99,10 +99,12 @@ describe("PlayerBuildPanel", () => {
 
   it("shows the wallet and claims the daily bonus", () => {
     const onClaimDaily = vi.fn();
-    renderPanel({ onClaimDaily });
+    const economy = createTestEconomy();
+    economy.dailyReward = getDailyRewardStatus({ streak: 0 }, new Date("2026-09-01T12:00:00.000Z"));
+    renderPanel({ onClaimDaily, economy });
 
     expect(screen.getByLabelText("250 coins")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Claim 50" }));
+    fireEvent.click(screen.getByRole("button", { name: "Claim 10" }));
 
     expect(onClaimDaily).toHaveBeenCalledOnce();
   });
@@ -195,6 +197,20 @@ describe("PlayerBuildPanel", () => {
     renderPanel({ economy, layout });
 
     expect((screen.getByRole("button", { name: "Floor full" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("requires room access even when the player owns an area", () => {
+    const economy = createTestEconomy();
+    economy.inventory = [{ id: "owned-chair", assetId: "chair-office", purchasePrice: 90, acquiredAt: "2026-09-01" }];
+    const room = assignedRoom();
+    room.access = { mode: "none", assignedPersonIds: [], knockable: false };
+    room.personalAreas = [{ id: "desk", name: "Desk", ownerUserId: "player", bounds: { x: 0, y: 0, width: 64, height: 64 } }];
+    const onPlace = vi.fn();
+    renderPanel({ economy, onPlace, layout: floorLayout(room) });
+    const place = screen.getByRole("button", { name: "Place" }) as HTMLButtonElement;
+    expect(place.disabled).toBe(true);
+    fireEvent.click(place);
+    expect(onPlace).not.toHaveBeenCalled();
   });
 });
 

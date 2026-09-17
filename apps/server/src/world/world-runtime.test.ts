@@ -1,3 +1,4 @@
+import { applyRoomSettings } from "../testing/approved-action.js";
 import { applyBuildingProject } from "../testing/building-project.js";
 import { createTestData } from "../testing/workspace-data.js";
 import { getOutdoorBounds, getOutdoorWindowLights, type ClientCommand, type ServerEvent } from "@workhard/shared";
@@ -742,7 +743,7 @@ describe("WorldRuntime navigation boundaries", () => {
     store.recordGameRound("round-reconnect", "game-falling-blocks", [
       { userId: "user-leo", score: 7200, lines: 12, level: 2, order: 0, won: false },
     ]);
-    store.updateMemberAccess("user-jonas", "admin", []);
+    store.updateMemberAccess("user-jonas", "admin");
 
     const reconnectEvents: ServerEvent[] = [];
     connect(runtime, "user-jonas", reconnectEvents);
@@ -818,8 +819,7 @@ describe("WorldRuntime layout safety", () => {
     const peer = connect(runtime, "user-maya", events);
     const baseRevision = store.getLayout("floor-studio")!.revision;
 
-    send(runtime, peer, {
-      type: "room.update_settings",
+    applyRoomSettings(runtime, store, peer, {
       requestId: "rename-room",
       baseRevision,
       roomId: "room-focus",
@@ -829,8 +829,7 @@ describe("WorldRuntime layout safety", () => {
         access: { mode: "open", assignedPersonIds: [], knockable: false },
       },
     });
-    send(runtime, peer, {
-      type: "room.update_settings",
+    applyRoomSettings(runtime, store, peer, {
       requestId: "stale-room-update",
       baseRevision,
       roomId: "room-focus",
@@ -846,11 +845,7 @@ describe("WorldRuntime layout safety", () => {
       type: "layout.updated",
       requestId: "rename-room",
     }));
-    expect(events.at(-1)).toEqual({
-      type: "layout.conflict",
-      requestId: "stale-room-update",
-      revision: baseRevision + 1,
-    });
+    expect(events.at(-1)).toMatchObject({ type: "command.error", requestId: "stale-room-update", code: "PROJECT_STALE" });
     runtime.stop();
   });
 
@@ -871,8 +866,7 @@ describe("WorldRuntime layout safety", () => {
     expect(store.getRoom("room-focus")).toMatchObject({ privateEligible: true, access: { mode: "assigned" } });
     expect(store.getLayout("floor-studio")?.revision).toBe(revision);
 
-    send(runtime, mayaPeer, {
-      type: "room.update_settings",
+    applyRoomSettings(runtime, store, mayaPeer, {
       requestId: "open-room-access",
       baseRevision: revision,
       roomId: "room-focus",
@@ -897,8 +891,7 @@ describe("WorldRuntime layout safety", () => {
     });
     expect(store.getLayout("floor-studio")?.revision).toBe(revision + 2);
 
-    send(runtime, mayaPeer, {
-      type: "room.update_settings",
+    applyRoomSettings(runtime, store, mayaPeer, {
       requestId: "make-private-without-door",
       baseRevision: store.getLayout("floor-studio")!.revision,
       roomId: "room-focus",
@@ -1004,13 +997,13 @@ describe("WorldRuntime layout safety", () => {
     runtime.stop();
   });
 
-  it("requires public funding even after build permission is granted", () => {
+  it("requires public funding for members and server administrators", () => {
     const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const events: ServerEvent[] = [];
     const peer = connect(runtime, "user-jonas", events);
-    for (const permissions of [[], ["build"]] as const) {
-      store.updateMemberAccess("user-jonas", "member", permissions);
+    for (const role of ["member", "admin"] as const) {
+      store.updateMemberAccess("user-jonas", role);
       runtime.handleCommand(peer, { type: "project.edit", requestId: "preview", fundId: "workspace", baseRevision: store.getLayout("floor-studio")!.revision,
         edit: { tool: "wall", start: { x: -256, y: -256 }, end: { x: -128, y: -256 } } });
       const preview = events.filter((event) => event.type === "project.preview").at(-1)!;
@@ -1042,8 +1035,7 @@ describe("WorldRuntime workspace access", () => {
     expect(runtime.serializePlayers().find((player) => player.userId === "user-jonas")?.roomId).toBe("room-quiet");
     jonasEvents.length = 0;
 
-    send(runtime, mayaPeer, {
-      type: "room.update_settings",
+    applyRoomSettings(runtime, store, mayaPeer, {
       requestId: "remove-jonas",
       baseRevision: store.getLayout("floor-rooftop")!.revision,
       roomId: "room-quiet",
@@ -1074,7 +1066,7 @@ describe("WorldRuntime workspace access", () => {
     mayaEvents.length = 0;
     leoEvents.length = 0;
 
-    const { invitation } = store.issueInvitation("new-person@example.com", "member", []);
+    const { invitation } = store.issueInvitation("new-person@example.com", "member");
     runtime.publishWorkspaceAccess();
 
     for (const events of [mayaEvents, leoEvents]) {
@@ -1119,8 +1111,7 @@ describe("WorldRuntime private-room access", () => {
     for (let tick = 0; tick < 20; tick += 1) {
       runtime.runTickForTest();
     }
-    send(runtime, mayaPeer, {
-      type: "room.update_settings",
+    applyRoomSettings(runtime, store, mayaPeer, {
       requestId: "lock-daily",
       baseRevision: store.getLayout("floor-studio")!.revision,
       roomId: "room-daily",
@@ -1305,8 +1296,7 @@ describe("WorldRuntime private-room access", () => {
       throw new Error("Knock was not delivered");
     }
 
-    send(runtime, mayaPeer, {
-      type: "room.update_settings",
+    applyRoomSettings(runtime, store, mayaPeer, {
       requestId: "disable-focus-knocks",
       baseRevision: store.getLayout("floor-studio")!.revision,
       roomId: "room-focus",

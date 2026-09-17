@@ -418,7 +418,7 @@ describe("WorldRuntime kidnapping consent", () => {
     expect(context.leoEvents).toContainEqual(expect.objectContaining({
       type: "command.error",
       requestId: "admin-only",
-      code: "KIDNAPPING_SETTINGS_FORBIDDEN",
+      code: "PROJECT_APPROVAL_REQUIRED",
     }));
 
     send(context.runtime, context.mayaPeer, {
@@ -426,7 +426,8 @@ describe("WorldRuntime kidnapping consent", () => {
       requestId: "enable",
       settings: { enabled: true, targetPolicy: { mode: "allow_all", userIds: [] } },
     });
-    expect(context.store.getGlobalKidnappingSettings().enabled).toBe(true);
+    expect(context.mayaEvents.at(-1)).toMatchObject({ type: "command.error", code: "PROJECT_APPROVAL_REQUIRED" });
+    expect(context.store.getGlobalKidnappingSettings().enabled).toBe(false);
     context.runtime.stop();
   });
 

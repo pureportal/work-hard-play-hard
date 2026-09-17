@@ -10,15 +10,16 @@ import { listGitHubRepositories, readGitHubMailroom } from "./github-mailroom.js
 import type { GitHubConnectionRecord } from "./github-record.js";
 
 export class GitHubService {
-  readonly authorization = new GitHubAuthorization();
+  authorization = new GitHubAuthorization();
   private readonly records = new Map<string, GitHubConnectionRecord>();
   private readonly queues = new Map<string, Promise<unknown>>();
   private readonly revisions = new Map<string, number>();
   private readonly retryAt = new Map<string, number>();
-  private readonly client: GitHubClient | undefined;
+  private client: GitHubClient | undefined;
+  private configuring = false;
   private stopped = false;
 
-  private constructor(private readonly database: ApplicationDatabase, private readonly config: GitHubConfig | undefined, fetcher?: typeof fetch) {
+  private constructor(private readonly database: ApplicationDatabase, private config: GitHubConfig | undefined, private readonly fetcher?: typeof fetch) {
     this.client = config ? new GitHubClient(config, fetcher) : undefined;
   }
 
@@ -28,15 +29,37 @@ export class GitHubService {
     return service;
   }
 
+  async configure(config: GitHubConfig | undefined): Promise<void> {
+    this.configuring = true;
+    this.authorization = new GitHubAuthorization();
+    for (const userId of new Set([...this.revisions.keys(), ...this.queues.keys(), ...this.records.keys()])) {
+      this.revisions.set(userId, (this.revisions.get(userId) ?? 0) + 1);
+    }
+    try {
+      await Promise.all(this.queues.values());
+      const records = await this.database.loadGitHubConnections();
+      this.records.clear();
+      this.retryAt.clear();
+      for (const record of records) await this.database.removeGitHubConnection(record.userId);
+      this.config = config;
+      this.client = config ? new GitHubClient(config, this.fetcher) : undefined;
+    } catch (error) {
+      this.config = undefined;
+      this.client = undefined;
+      throw error;
+    } finally { this.configuring = false; }
+  }
+
   status(userId: string): GitHubStatus {
     const record = this.records.get(userId);
-    return { configured: Boolean(this.config), connected: Boolean(record?.encryptedTokens),
+    const configured = Boolean(this.config) && !this.configuring && !this.stopped;
+    return { configured, connected: configured && Boolean(record?.encryptedTokens),
       needsReconnect: Boolean(record && !record.encryptedTokens), login: record?.login ?? null,
-      installationUrl: this.config ? `https://github.com/apps/${this.config.appSlug}/installations/new` : null };
+      installationUrl: configured ? `https://github.com/apps/${this.config!.appSlug}/installations/new` : null };
   }
 
   beginConnection(userId: string, sessionToken: string): { url: string; state: string } {
-    if (!this.config) throw new GitHubError("GITHUB_NOT_CONFIGURED", "GitHub has not been set up for this workspace.", 503);
+    if (!this.config || this.configuring || this.stopped) throw new GitHubError("GITHUB_NOT_CONFIGURED", "GitHub has not been set up for this workspace.", 503);
     this.revisions.set(userId, (this.revisions.get(userId) ?? 0) + 1);
     return this.authorization.begin(userId, sessionToken, this.config);
   }
@@ -44,8 +67,9 @@ export class GitHubService {
   async completeConnection(userId: string, code: string, verifier: string, sessionIsActive: () => boolean): Promise<void> {
     const revision = this.revisions.get(userId);
     await this.enqueue(userId, async () => {
-      if (!this.client || !this.config) throw new GitHubError("GITHUB_NOT_CONFIGURED", "GitHub has not been set up for this workspace.", 503);
+      if (!this.client || !this.config || this.configuring) throw new GitHubError("GITHUB_NOT_CONFIGURED", "GitHub has not been set up for this workspace.", 503);
       const tokens = await this.client.exchange(code, verifier);
+      this.assertCurrent(userId, revision, sessionIsActive);
       const profile = z.object({ login: z.string().min(1).max(100) }).parse(await this.client.request(tokens.accessToken, "/user"));
       this.assertCurrent(userId, revision, sessionIsActive);
       const record = { userId, login: profile.login, encryptedTokens: this.encrypt(userId, tokens) };
@@ -126,7 +150,7 @@ export class GitHubService {
   }
 
   private assertCurrent(userId: string, revision: number | undefined, sessionIsActive = () => true): void {
-    if (this.stopped || this.revisions.get(userId) !== revision || !sessionIsActive()) {
+    if (this.stopped || this.configuring || this.revisions.get(userId) !== revision || !sessionIsActive()) {
       throw new GitHubError("GITHUB_CANCELLED", "GitHub connection changed. Open the tray again.", 409);
     }
   }

@@ -46,7 +46,7 @@ export function createWorkplacePeople(): { members: Member[]; organisation: Orga
   return {
     members,
     organisation: {
-      revision: 1, ceoIds: ["person-rowan"], removalVotes: [],
+      revision: 1, ceoIds: ["person-rowan"],
       units: [...departments.map(([id, name]) => ({ id: `unit-${id}`, name, kind: "department" as const, parentId: null })),
         ...teams.map(([id, name, parent]) => ({ id: `unit-${id}`, name, kind: "team" as const, parentId: `unit-${parent}` }))],
       assignments: people.flatMap(([username, , , , unit, rank]) => unit ? [{ userId: `person-${username}`, unitId: `unit-${unit}`, rank }] : []),

@@ -20,11 +20,13 @@ const realtime = vi.hoisted(() => ({
 
 const apiMocks = vi.hoisted(() => ({
   updateRegistrationSettings: vi.fn(),
+  fetchRegistrationSettings: vi.fn(),
 }));
 
 vi.mock("./api", async (importOriginal) => ({
   ...await importOriginal<typeof import("./api")>(),
   updateRegistrationSettings: apiMocks.updateRegistrationSettings,
+  fetchRegistrationSettings: apiMocks.fetchRegistrationSettings,
 }));
 
 vi.mock("./hooks/useRealtime", () => ({
@@ -64,7 +66,7 @@ const workspace: BootstrapData = {
     email: "maya@example.com",
     title: "Product Lead",
     role: "owner",
-    permissions: ["manage_members", "build"],
+    permissions: ["manage_members"],
     color: "#ff7a66",
     availability: "available",
     online: true,
@@ -115,6 +117,7 @@ beforeEach(() => {
   realtime.send.mockReset();
   realtime.send.mockReturnValue(true);
   apiMocks.updateRegistrationSettings.mockReset();
+  apiMocks.fetchRegistrationSettings.mockResolvedValue(workspace.registrationSettings);
   apiMocks.updateRegistrationSettings.mockImplementation(async (settings) => settings);
 });
 
@@ -148,23 +151,20 @@ describe("Workspace kidnapping", () => {
     expect(screen.queryByRole("button", { name: "Kidnap Leo Martins" })).toBeNull();
   });
 
-  it("updates global and personal policies from Settings", async () => {
+  it("proposes global rules from Approvals and saves personal consent in Settings", async () => {
     renderWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "Settings" }));
 
-    fireEvent.click(await screen.findByRole("checkbox", { name: "Enable kidnapping" }));
+    fireEvent.click(screen.getByRole("button", { name: "Approvals" }));
+    fireEvent.click(await screen.findByRole("tab", { name: "Game rules" }, { timeout: 5000 }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Who can be carried" }), { target: { value: "allow_list" } });
+    fireEvent.click(screen.getByRole("button", { name: "Propose rules" }));
     expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({
-      type: "kidnapping.global_settings_update",
-      settings: expect.objectContaining({ enabled: false }),
+      type: "public_economy.propose", action: { kind: "kidnapping.settings", settings: { enabled: true, targetPolicy: { mode: "allow_list", userIds: [] } } },
     }));
-
-    fireEvent.change(screen.getByRole("combobox", { name: "Who can be carried" }), {
-      target: { value: "allow_list" },
-    });
-    expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({
-      type: "kidnapping.global_settings_update",
-      settings: expect.objectContaining({ targetPolicy: { mode: "allow_list", userIds: [] } }),
-    }));
+    fireEvent.click(screen.getByRole("button", { name: "Close approvals" }));
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    await screen.findByRole("combobox", { name: "Who can carry you" });
 
     fireEvent.change(screen.getByRole("combobox", { name: "Who can carry you" }), {
       target: { value: "block_list" },
@@ -197,6 +197,8 @@ describe("Workspace kidnapping", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Settings" }));
 
+    fireEvent.click(await screen.findByRole("button", { name: "Server settings" }));
+    fireEvent.click(await screen.findByRole("tab", { name: "Registration" }));
     fireEvent.click(await screen.findByRole("checkbox", { name: "Allow registrations" }));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 

@@ -1,5 +1,5 @@
 import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Member } from "@workhard/shared";
 import { PeoplePanel } from "./PeoplePanel";
@@ -11,7 +11,7 @@ const owner: Member = {
   email: "owner@example.com",
   title: "",
   role: "owner",
-  permissions: ["manage_members", "build"],
+  permissions: ["manage_members"],
   color: "#123456",
   availability: "available",
   online: true,
@@ -30,39 +30,12 @@ const member: Member = {
   online: true,
 };
 
-describe("PeoplePanel access management", () => {
-  it("assigns build permission to members and invitations", async () => {
-    const onAccessChange = vi.fn().mockResolvedValue(undefined);
-    const onInvite = vi.fn().mockResolvedValue(true);
-    render(
-      <PeoplePanel
-        members={[owner, member]}
-        invitations={[]}
-        invitationLinks={{}}
-        currentUser={owner}
-        canManageMembers
-        onClose={vi.fn()}
-        onWave={vi.fn()}
-        onMessage={vi.fn()}
-        onCall={vi.fn()}
-        onLocate={vi.fn()}
-        onInvite={onInvite}
-        onRevokeInvite={vi.fn()}
-        onCopyInvite={vi.fn()}
-        onAccessChange={onAccessChange}
-      />,
-    );
-
+describe("PeoplePanel", () => {
+  it("keeps server access controls out of the people list", () => {
+    render(<PeoplePanel members={[owner, member]} currentUser={owner} onClose={vi.fn()} onWave={vi.fn()} onMessage={vi.fn()} onCall={vi.fn()} onLocate={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Alex Member" }));
-    fireEvent.click(screen.getByRole("checkbox", { name: "Build office" }));
-    await waitFor(() => expect(onAccessChange).toHaveBeenCalledWith("member", "member", ["build"]));
-
-    fireEvent.click(screen.getByRole("button", { name: "Alex Member" }));
-    fireEvent.click(screen.getByRole("button", { name: "Invite member" }));
-    fireEvent.change(screen.getByRole("textbox", { name: "Email" }), { target: { value: "builder@example.com" } });
-    fireEvent.click(screen.getByRole("checkbox", { name: "Build office" }));
-    fireEvent.click(screen.getByRole("button", { name: "Invite" }));
-
-    await waitFor(() => expect(onInvite).toHaveBeenCalledWith("builder@example.com", "member", ["build"]));
+    expect(screen.queryByRole("combobox", { name: "Role" })).toBeNull();
+    expect(screen.queryByRole("checkbox", { name: "Build office" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Call Alex Member" })).toBeTruthy();
   });
 });

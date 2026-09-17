@@ -71,7 +71,7 @@ const workspace: BootstrapData = {
     email: "maya@example.com",
     title: "Product Lead",
     role: "owner",
-    permissions: ["manage_members", "build"],
+    permissions: ["manage_members"],
     color: "#ff7a66",
     availability: "available",
     online: true,
@@ -165,6 +165,23 @@ afterEach(() => {
 });
 
 describe("meeting area entry", () => {
+  it("offers an idle room meeting on entry after its settings change", () => {
+    const data = structuredClone(workspace);
+    data.meetings = [];
+    render(<Workspace initialData={data} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
+    expect(screen.queryByRole("button", { name: "Open Small" })).toBeNull();
+    const roomMeeting = { id: "room-call", title: "Review", status: "idle" as const, participantIds: [], location: meeting.location };
+    const layout = structuredClone(data.layouts[0]!);
+    layout.revision += 1;
+    layout.rooms[0]!.meetingRoom = true;
+    act(() => {
+      realtime.handler!({ type: "layout.updated", layout });
+      realtime.handler!({ type: "workspace.access_updated", access: { meetings: [roomMeeting], conversations: data.conversations, messages: [], invitations: [] } });
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Open Small" }));
+    expect(realtime.send).toHaveBeenLastCalledWith(expect.objectContaining({ type: "meeting.join", meetingId: roomMeeting.id }));
+  });
+
   it("opens and plays each overlapping Falling Blocks cabinet by its saved object ID", async () => {
     const data = structuredClone(workspace);
     data.layouts[0]!.objects = [

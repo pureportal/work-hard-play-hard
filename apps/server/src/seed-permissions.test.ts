@@ -1,14 +1,12 @@
 import {
   ASSET_CATALOG,
   canManageUnit,
-  canMoveOrganisationMember,
   getAssetDefinition,
   getAssetPlacementError,
   getAssetVariants,
   getOutdoorBounds,
   getPlayerAssetRoomError,
-  hasMemberPermission,
-  roomAccessAllows,
+    roomAccessAllows,
   roomBuildAllows,
   type ServerEvent,
   type WorldObject,
@@ -37,20 +35,17 @@ describe("seeded organisation and permissions", () => {
       validateRoomPermission(permission, data.organisation, memberIds);
     }
     expect(data.organisation.ceoIds).toEqual([data.members[0]!.id, "user-noah", "user-sam"]);
-    expect(data.organisation.removalVotes).toEqual([]);
     expect(data.members.filter((member) => !data.organisation.ceoIds.includes(member.id)
       && !data.organisation.assignments.some((assignment) => assignment.userId === member.id)).map((member) => member.id))
       .toEqual(["user-theo", "user-owen"]);
-    expect(hasMemberPermission(data.members.find((member) => member.id === "user-maya")!, "build")).toBe(true);
+    expect(data.members.find((member) => member.id === "user-maya")!.permissions).toEqual(["manage_members"]);
     for (const userId of ["user-jonas", "user-priya", "user-noah", "user-sam"]) {
-      expect(hasMemberPermission(data.members.find((member) => member.id === userId)!, "build")).toBe(false);
+      expect(data.members.find((member) => member.id === userId)!.permissions).toEqual([]);
     }
     expect(canManageUnit(data.organisation, "user-amara", "unit-web")).toBe(true);
     expect(canManageUnit(data.organisation, "user-amara", "unit-design")).toBe(false);
     expect(canManageUnit(data.organisation, "user-priya", "unit-research")).toBe(true);
     expect(canManageUnit(data.organisation, "user-priya", "unit-product")).toBe(false);
-    expect(canMoveOrganisationMember(data.organisation, "user-elena", "user-jonas", "unit-platform")).toBe(true);
-    expect(canMoveOrganisationMember(data.organisation, "user-elena", "user-theo", "unit-web")).toBe(false);
   });
 
   it.each([
@@ -101,6 +96,7 @@ describe("seeded organisation and permissions", () => {
 
   it("places Jonas's purchased desk and enforces room grants for both demo build modes", () => {
     const store = new WorkspaceStore(createTestData());
+    store.getRoom("room-product")!.ownerUserId = "user-jonas";
     const ownedAssetId = store.purchaseAsset("user-jonas", "desk-straight", "seed-test:desk").transaction.ownedAssetId!;
     const runtime = new WorldRuntime(store);
     const events: ServerEvent[] = [];
@@ -124,6 +120,12 @@ describe("seeded organisation and permissions", () => {
       const preview = events.filter((event) => event.type === "project.preview").at(-1)!;
       runtime.handleCommand(maya, { type: "project.submit", requestId: "chair-submit", draftId: preview.project.id, title: "Chair" });
       const proposal = store.getPublicEconomy().proposals.at(-1)!;
+      for (const userId of proposal.electorate.filter((id) => !proposal.ballots.some((ballot) => ballot.userId === id)).slice(0, proposal.required - proposal.ballots.length)) {
+        const voter = runtime.connect(userId, "floor-studio", () => undefined);
+        runtime.handleCommand(voter, { type: "public_economy.vote", requestId: crypto.randomUUID(), proposalId: proposal.id, approve: true });
+        runtime.disconnect(voter);
+      }
+
       runtime.handleCommand(maya, { type: "public_economy.execute", requestId: "chair-apply", proposalId: proposal.id });
       expect(store.getLayout("floor-studio")!.objects).toContainEqual(expect.objectContaining({ assetId: "chair-office", x: 560, y: 768 }));
       for (const peer of [jonas, maya]) {
@@ -141,22 +143,15 @@ describe("seeded organisation and permissions", () => {
         access: { mode: "none", assignedPersonIds: [], knockable: false }, build: room.build! });
       expect(roomBuildAllows(store.getRoom(room.id)!, "user-jonas", store.getGameSettings(), store.getOrganisation())).toBe(false);
       runtime.handleCommand(jonas, { type: "player_asset.remove", requestId: "recover-denied", baseRevision: revision(), objectId: placed.id });
-      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "ASSET_ROOM_FORBIDDEN" });
+      expect(store.getOwnedAsset("user-jonas", ownedAssetId).placement).toBeUndefined();
     } finally {
       runtime.stop();
     }
   });
 
-  it("lets the seeded CEOs start a removal vote without seeding ballots or a result", () => {
+  it("requires proposals for seeded CEO removals", () => {
     const store = new WorkspaceStore(createTestData());
-    store.editOrganisation("user-maya", store.getOrganisation().revision, { type: "ceo.propose_removal", userId: "user-sam" });
-    const vote = store.getOrganisation().removalVotes[0]!;
-    expect(vote).toMatchObject({ status: "open", ballots: [], electorate: ["user-maya", "user-noah"] });
-    store.editOrganisation("user-maya", store.getOrganisation().revision, { type: "ceo.vote", voteId: vote.id, approve: true });
-    expect(store.getOrganisation().removalVotes[0]!.status).toBe("open");
-    store.editOrganisation("user-noah", store.getOrganisation().revision, { type: "ceo.vote", voteId: vote.id, approve: true });
-    expect(store.getOrganisation().ceoIds).toEqual(["user-maya", "user-noah"]);
-    expect(store.getOrganisation().assignments.some((assignment) => assignment.userId === "user-sam")).toBe(false);
-    expect(createTestData().organisation.removalVotes).toEqual([]);
+    expect(() => store.editOrganisation("user-maya", store.getOrganisation().revision, { type: "ceo.remove", userId: "user-sam" })).toThrow("PROJECT_APPROVAL_REQUIRED");
+    expect(store.getOrganisation().ceoIds).toContain("user-sam");
   });
 });

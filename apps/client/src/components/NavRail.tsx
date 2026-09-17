@@ -6,6 +6,7 @@ import {
   Settings,
   Users,
   Video,
+  ClipboardCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { CorporateIdentity, Member } from "@workhard/shared";
@@ -13,7 +14,7 @@ import { Avatar } from "./Avatar";
 import { IconButton } from "./IconButton";
 import { BrandMark } from "./BrandMark";
 
-export type WorkspacePanel = "people" | "chat" | "meetings" | "build" | "settings" | "organisation" | "rooms" | null;
+export type WorkspacePanel = "people" | "chat" | "meetings" | "build" | "settings" | "organisation" | "rooms" | "approvals" | "admin" | null;
 
 interface NavRailProps {
   activePanel: WorkspacePanel;
@@ -21,6 +22,7 @@ interface NavRailProps {
   canUseBuild: boolean;
   currentUser: Member;
   unreadMessages: number;
+  pendingApprovals?: number;
   onChange: (panel: WorkspacePanel) => void;
   onAvatarClick: () => void;
   onSignOut: () => Promise<void>;
@@ -32,10 +34,11 @@ const items: { panel: Exclude<WorkspacePanel, null>; label: string; icon: Lucide
   { panel: "chat", label: "Messages", icon: MessageCircle },
   { panel: "meetings", label: "Meetings", icon: Video },
   { panel: "build", label: "Build", icon: PencilRuler },
+  { panel: "approvals", label: "Approvals", icon: ClipboardCheck },
   { panel: "settings", label: "Settings", icon: Settings },
 ];
 
-export function NavRail({ activePanel, corporateIdentity, canUseBuild, currentUser, unreadMessages, onChange, onAvatarClick, onSignOut }: NavRailProps) {
+export function NavRail({ activePanel, corporateIdentity, canUseBuild, currentUser, unreadMessages, pendingApprovals = 0, onChange, onAvatarClick, onSignOut }: NavRailProps) {
   return (
     <nav className="nav-rail" aria-label="Workspace">
       <span className="nav-item brand-nav-item">
@@ -49,7 +52,7 @@ export function NavRail({ activePanel, corporateIdentity, canUseBuild, currentUs
           if (panel === "build" && !canUseBuild) {
             return null;
           }
-          const unread = panel === "chat" ? unreadMessages : 0;
+          const unread = panel === "chat" ? unreadMessages : panel === "approvals" ? pendingApprovals : 0;
           return (
             <span className="nav-item" key={panel}>
               <IconButton

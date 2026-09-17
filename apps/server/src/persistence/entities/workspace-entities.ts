@@ -1,8 +1,8 @@
 import type { OrganisationState, CoinTransactionKind } from "@workhard/shared";
 import type { PublicEconomyState } from "../../economy/public-economy-store.js";
+import type { GitHubAppSettingsRecord } from "../../github/github-record.js";
 import { EntitySchema } from "@mikro-orm/core";
 import type {
-  AssignableMemberPermission,
   Availability,
   ChatAttachment,
   CharacterAppearance,
@@ -23,6 +23,7 @@ import type {
   WorldPlayer,
   RegistrationSettings,
   CorporateIdentitySettings,
+  SpotifyAppSettings,
 } from "@workhard/shared";
 
 export class MemberEntity {
@@ -86,7 +87,6 @@ export class InvitationEntity {
   teamId!: string;
   email!: string;
   role!: Exclude<MemberRole, "owner">;
-  permissions!: AssignableMemberPermission[];
   status!: "pending" | "accepted" | "revoked";
   expiresAt!: Date;
   sortOrder!: number;
@@ -96,9 +96,9 @@ export class MeetingEntity {
   id!: string;
   title!: string;
   location!: Meeting["location"];
-  startsAt!: Date;
-  durationMinutes!: number;
-  status!: "scheduled" | "live" | "ended";
+  startsAt!: Date | null;
+  durationMinutes!: number | null;
+  status!: Meeting["status"];
   sortOrder!: number;
 }
 
@@ -193,6 +193,8 @@ export class WorkspaceSettingsEntity {
   playerKidnappingSettings!: Array<{ userId: string; settings: PlayerKidnappingSettings }>;
   registrationSettings!: RegistrationSettings;
   corporateIdentity!: CorporateIdentitySettings;
+  spotifyAppSettings!: SpotifyAppSettings | null;
+  githubAppSettings!: GitHubAppSettingsRecord | null;
   updatedAt!: Date;
 }
 
@@ -327,7 +329,6 @@ export const invitationSchema = new EntitySchema({
     teamId: { type: String, fieldName: "team_id", index: true },
     email: { type: String, index: true },
     role: { type: String },
-    permissions: { type: "json" },
     status: { type: String },
     expiresAt: { type: Date, fieldName: "expires_at", index: true },
     sortOrder: { type: Number, fieldName: "sort_order" },
@@ -346,15 +347,15 @@ export const meetingSchema = new EntitySchema({
     id: { type: String, primary: true },
     title: { type: String },
     location: { type: "json" },
-    startsAt: { type: Date, fieldName: "starts_at", index: true },
-    durationMinutes: { type: Number, fieldName: "duration_minutes" },
+    startsAt: { type: Date, fieldName: "starts_at", index: true, nullable: true },
+    durationMinutes: { type: Number, fieldName: "duration_minutes", nullable: true },
     status: { type: String },
     sortOrder: { type: Number, fieldName: "sort_order" },
   },
   checks: [
     { name: "meetings_duration_minutes_check", expression: "duration_minutes > 0" },
     { name: "meetings_room_location_check", expression: "coalesce(location->>'type', '') = 'room' and nullif(location->>'roomId', '') is not null" },
-    { name: "meetings_status_check", expression: "status in ('scheduled', 'live', 'ended')" },
+    { name: "meetings_status_check", expression: "status in ('idle', 'scheduled', 'live', 'ended')" },
     { name: "meetings_sort_order_check", expression: "sort_order >= 0" },
   ],
 });
@@ -550,6 +551,8 @@ export const workspaceSettingsSchema = new EntitySchema({
     playerKidnappingSettings: { type: "json", fieldName: "player_kidnapping_settings" },
     registrationSettings: { type: "json", fieldName: "registration_settings" },
     corporateIdentity: { type: "json", fieldName: "corporate_identity" },
+    spotifyAppSettings: { type: "json", fieldName: "spotify_app_settings", nullable: true },
+    githubAppSettings: { type: "json", fieldName: "github_app_settings", nullable: true },
     updatedAt: { type: Date, fieldName: "updated_at" },
   },
 });

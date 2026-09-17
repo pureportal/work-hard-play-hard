@@ -98,8 +98,11 @@ export function reconcileRooms(
       windowIds: geometry.windowIds,
       privateEligible: geometry.privateEligible,
       access,
+      ...(identity?.meetingRoom ? { meetingRoom: true } : {}),
       ...(identity?.build ? { build: structuredClone(identity.build) } : {}),
       ...(identity?.organisationUnitId ? { organisationUnitId: identity.organisationUnitId } : {}),
+      ...(identity?.ownerUserId ? { ownerUserId: identity.ownerUserId } : {}),
+      ...(identity?.personalAreas ? { personalAreas: structuredClone(identity.personalAreas) } : {}),
     };
   });
 }

@@ -7,7 +7,7 @@ import { clientCommandSchema } from "../protocol.js";
 
 function fixture() {
   const store = new WorkspaceStore(createTestData());
-  const change = (edit: OrganisationEdit) => store.editOrganisation("user-maya", store.getOrganisation().revision, edit);
+  const change = (edit: OrganisationEdit) => store.editOrganisation("user-maya", store.getOrganisation().revision, edit, true);
   change({ type: "unit.create", name: "Engineering", kind: "department", parentId: null });
   const unitId = store.getOrganisation().units.at(-1)!.id;
   change({ type: "unit.create", name: "Web", kind: "team", parentId: unitId });
@@ -83,7 +83,7 @@ describe("independent room permissions", () => {
 });
 
 describe("permission command enforcement", () => {
-  it("allows a lead to edit their room and rejects other rooms, ownership changes and global defaults", () => {
+  it("requires approval for room and global changes even for a lead", () => {
     const { store, room, unitId } = fixture();
     const runtime = new WorldRuntime(store);
     const events: ServerEvent[] = [];
@@ -92,15 +92,16 @@ describe("permission command enforcement", () => {
     try {
       send({ type: "room.update_settings", requestId: "save", baseRevision: store.getLayout(room.floorId)!.revision, roomId: room.id,
         settings: { name: "Team room", color: room.color, access: room.access, build: { mode: "none", assignedPersonIds: [] }, organisationUnitId: unitId } });
-      expect(store.getRoom(room.id)?.name).toBe("Team room");
+      expect(store.getRoom(room.id)?.name).toBe(room.name);
+      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "PROJECT_APPROVAL_REQUIRED" });
       send({ type: "room.update_settings", requestId: "steal", baseRevision: store.getLayout(room.floorId)!.revision, roomId: room.id,
         settings: { name: room.name, color: room.color, access: room.access } });
-      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "ORGANISATION_FORBIDDEN" });
+      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "PROJECT_APPROVAL_REQUIRED" });
       send({ type: "room.update_settings", requestId: "other", baseRevision: store.getLayout(room.floorId)!.revision, roomId: "room-focus",
         settings: { name: "Taken", color: room.color, access: room.access } });
-      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "EDIT_FORBIDDEN" });
+      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "PROJECT_APPROVAL_REQUIRED" });
       send({ type: "game.settings_update", requestId: "defaults", settings: store.getGameSettings() });
-      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "GAME_SETTINGS_FORBIDDEN" });
+      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "PROJECT_APPROVAL_REQUIRED" });
     } finally { runtime.stop(); }
   });
 
@@ -115,9 +116,15 @@ describe("permission command enforcement", () => {
     const status = () => events.findLast((event) => event.type === "room.accessibility")?.accessibility.floors.flatMap((floor) => floor.rooms).find((candidate) => candidate.roomId === room.id)?.status;
     try {
       expect(status()).toBe("accessible");
-      runtime.handleCommand(peer, { type: "organisation.edit", requestId: "move", baseRevision: store.getOrganisation().revision, edit: { type: "member.move", userId: "user-priya", unitId: null, rank: "member" } });
+      runtime.handleCommand(peer, { type: "public_economy.propose", requestId: "move", title: "Move member", action: { kind: "organisation", baseRevision: store.getOrganisation().revision, edit: { type: "member.move", userId: "user-priya", unitId: null, rank: "member" } } });
+      const proposal = store.getPublicEconomy().proposals[0]!;
+      for (const userId of proposal.electorate.filter((id) => id !== "user-maya").slice(0, proposal.required - 1)) {
+        const voter = runtime.connect(userId, room.floorId, () => undefined);
+        runtime.handleCommand(voter, { type: "public_economy.vote", requestId: crypto.randomUUID(), proposalId: proposal.id, approve: true });
+      }
+      runtime.handleCommand(peer, { type: "public_economy.execute", requestId: "apply", proposalId: proposal.id });
       expect(status()).toBe("restricted");
-      store.updateMemberAccess("user-priya", "admin", []);
+      store.updateMemberAccess("user-priya", "admin");
       expect(store.getOrganisation().assignments.some((assignment) => assignment.userId === "user-priya")).toBe(false);
       expect(store.getOrganisation().units.some((unit) => unit.id === childId)).toBe(true);
     } finally { runtime.stop(); }

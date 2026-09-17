@@ -19,7 +19,12 @@ const context = await createTestApplication({ database, fixture: true, spotifyCo
   githubConfig: { clientId: "Iv1.browser", clientSecret: "fixture-secret", appSlug: "fixture-mailroom", redirectUri: `${origin}/v1/github/callback`, encryptionKey: Buffer.alloc(32, 19) },
   githubFetch: async (input, options) => {
     const path = new URL(String(input)).pathname;
-    if (path === "/login/oauth/access_token") return Response.json({ access_token: "ghu_browser", refresh_token: "ghr_browser", expires_in: 28800, refresh_token_expires_in: 15897600, token_type: "bearer", scope: "" });
+    if (path === "/login/oauth/access_token") {
+      const body = options!.body as URLSearchParams;
+      assert.equal(body.get("client_id"), "Iv1.frontend");
+      assert.equal(body.get("client_secret"), "frontend-secret");
+      return Response.json({ access_token: "ghu_browser", refresh_token: "ghr_browser", expires_in: 28800, refresh_token_expires_in: 15897600, token_type: "bearer", scope: "" });
+    }
     if (path === "/user") return Response.json({ login: "maya" });
     if (unavailable) return Response.json({}, { status: 404 });
     if (path === "/user/repos") return Response.json([{ full_name: "studio/office", private: true }]);
@@ -77,7 +82,7 @@ try {
     }
     assert.equal(url.origin, origin);
     if (url.pathname.startsWith("/v1/")) {
-      const response = await context.app.inject({ method: request.method() as "GET" | "POST" | "DELETE", url: url.pathname + url.search,
+      const response = await context.app.inject({ method: request.method() as "GET" | "POST" | "PUT" | "DELETE", url: url.pathname + url.search,
         headers: await request.allHeaders(), ...(request.postData() ? { payload: request.postData()! } : {}) });
       const headers = Object.fromEntries(Object.entries(response.headers).map(([key, value]) => [key, Array.isArray(value) ? value.join("\n") : String(value)]));
       await route.fulfill({ status: response.statusCode, headers, body: response.rawPayload });
@@ -92,6 +97,35 @@ try {
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(origin);
   await page.locator(".world-canvas canvas").waitFor();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByRole("button", { name: "Server settings", exact: true }).click();
+  await page.getByRole("tab", { name: "GitHub", exact: true }).click();
+  await page.getByLabel("Client ID", { exact: true }).fill("Iv1.frontend");
+  await page.getByLabel("Client secret", { exact: true }).fill("frontend-secret");
+  await page.getByLabel("App slug", { exact: true }).fill("frontend-mailroom");
+  await page.getByRole("button", { name: "Save GitHub", exact: true }).click();
+  await page.waitForFunction(() => (Array.from(document.querySelectorAll("button")).find((button) => button.textContent === "Save GitHub"))?.disabled);
+  assert.equal(await page.getByLabel("Replace client secret", { exact: true }).inputValue(), "");
+  const settings = (await database.loadWorkspaceState())!.store.githubAppSettings!;
+  assert.equal(settings.clientId, "Iv1.frontend");
+  assert.equal(settings.appSlug, "frontend-mailroom");
+  assert(!JSON.stringify(settings).includes("frontend-secret"));
+  for (const [width, height, name] of [[1440, 960, "light"], [390, 844, "mobile"]] as const) {
+    await page.setViewportSize({ width, height });
+    assert(await page.getByRole("dialog", { name: "Server settings" }).evaluate((element) => {
+      const box = element.getBoundingClientRect();
+      return box.left >= 0 && box.top >= 0 && box.right <= innerWidth && box.bottom <= innerHeight && element.scrollWidth <= element.clientWidth;
+    }), "GitHub settings extend outside the viewport");
+    await page.getByRole("button", { name: "Save GitHub", exact: true }).scrollIntoViewIfNeeded();
+    await page.screenshot({ path: resolve(artifacts, `server-github-${name}.png`) });
+  }
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.getByRole("tab", { name: "Spotify", exact: true }).click();
+  await page.getByRole("tab", { name: "GitHub", exact: true }).click();
+  await page.getByLabel("Replace client secret", { exact: true }).waitFor();
+  assert.equal(await page.getByLabel("Client ID", { exact: true }).inputValue(), "Iv1.frontend");
+  assert.equal(await page.getByLabel("Replace client secret", { exact: true }).inputValue(), "");
+  await page.getByRole("button", { name: "Close server settings", exact: true }).click();
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: "Connect GitHub", exact: true }).click();
   await page.getByRole("button", { name: "Disconnect GitHub", exact: true }).waitFor();
@@ -155,7 +189,7 @@ try {
   await page.getByRole("button", { name: "Connect GitHub", exact: true }).waitFor();
   assert.deepEqual(await database.loadGitHubConnections(), []);
   assert.deepEqual(errors, []);
-  process.stdout.write("GitHub browser checks passed: simulated OAuth through the real server, world tray, filters, pagination recovery, desktop/mobile/dark layout, merge effect, reduced motion, access removal and disconnect.\n");
+  process.stdout.write("GitHub browser checks passed: frontend app configuration, simulated OAuth through the real server, world tray, filters, pagination recovery, desktop/mobile/dark layout, merge effect, reduced motion, access removal and disconnect.\n");
 } catch (error) {
   process.stderr.write(`${JSON.stringify(errors)}\n`);
   for (const [index, page] of browser.contexts().flatMap((item) => item.pages()).entries()) await page.screenshot({ path: resolve(artifacts, `failure-${index}.png`) });

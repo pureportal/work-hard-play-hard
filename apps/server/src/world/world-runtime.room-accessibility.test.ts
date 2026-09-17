@@ -1,3 +1,4 @@
+import { applyRoomSettings } from "../testing/approved-action.js";
 import { createTestData } from "../testing/workspace-data.js";
 import { describe, expect, it } from "vitest";
 import { detectLayoutRooms, type ServerEvent, type WorldPlayer } from "@workhard/shared";
@@ -32,7 +33,7 @@ describe("builder room accessibility", () => {
     runtime.handleCommand(host, { type: "room.knock_respond", requestId: "admit", knockId: knock!.knock.id, accept: true });
     refresh(runtime);
     expect(status(events, roomId)).toBe("accessible");
-    runtime.handleCommand(peer, { type: "room.update_settings", requestId: "revoke", roomId, baseRevision: store.getLayout("floor-studio")!.revision,
+    applyRoomSettings(runtime, store, peer, { requestId: "revoke", roomId, baseRevision: store.getLayout("floor-studio")!.revision,
       settings: { name: "Private", color: "#abcdef", access: { mode: "assigned", assignedPersonIds: ["user-leo"], knockable: true } } });
     refresh(runtime);
     expect(status(events, roomId)).toBe("restricted");
@@ -56,22 +57,22 @@ describe("builder room accessibility", () => {
     runtime.stop();
   });
 
-  it("requires build permission, validates the target, and stops updates after revocation or closing", () => {
+  it("requires a gameplay CEO role, validates the target, and stops updates after revocation or closing", () => {
     const { store, runtime, events, roomId } = fixture();
-    store.updateMemberAccess("user-leo", "member", []);
+    store.getOrganisation().ceoIds = store.getOrganisation().ceoIds.filter((id) => id !== "user-leo");
     const peer = runtime.connect("user-leo", "floor-studio", (event) => events.push(event));
     inspect(runtime, peer, "user-maya");
     expect(events.at(-1)).toMatchObject({ type: "command.error", code: "EDIT_FORBIDDEN" });
-    store.updateMemberAccess("user-leo", "member", ["build"]);
+    store.getOrganisation().ceoIds.push("user-leo");
     inspect(runtime, peer, "missing");
     expect(events.at(-1)).toMatchObject({ type: "command.error", code: "USER_NOT_FOUND" });
     inspect(runtime, peer, "user-maya");
     expect(events.at(-1)?.type).toBe("room.accessibility");
-    store.updateMemberAccess("user-leo", "member", []);
+    store.getOrganisation().ceoIds = store.getOrganisation().ceoIds.filter((id) => id !== "user-leo");
     events.length = 0;
     refresh(runtime);
     expect(events.filter((event) => event.type === "room.accessibility")).toEqual([]);
-    store.updateMemberAccess("user-leo", "member", ["build"]);
+    store.getOrganisation().ceoIds.push("user-leo");
     inspect(runtime, peer, "user-maya");
     runtime.handleCommand(peer, { type: "room.inspect_access", requestId: "close", userId: null });
     events.length = 0;

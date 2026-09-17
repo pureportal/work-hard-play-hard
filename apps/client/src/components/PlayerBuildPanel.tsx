@@ -1,6 +1,6 @@
 import { Archive, Coins, Gift, Move, RotateCw, ShoppingBag } from "lucide-react";
 import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
-import { ASSET_CATALOG, MAX_LAYOUT_OBJECTS_PER_FLOOR, getDefaultAssetVariantId, roomBuildAllows } from "@workhard/shared";
+import { ASSET_CATALOG, MAX_LAYOUT_OBJECTS_PER_FLOOR, getDefaultAssetVariantId, roomAccessAllows, roomBuildAllows } from "@workhard/shared";
 import type { AssetRotation, Floor, FloorLayout, GameSettings, LayoutItemReference, LayoutTool, OrganisationState, PlayerEconomy } from "@workhard/shared";
 import { getAssetOrientationLabel, rotateAssetClockwise } from "../asset-orientation";
 import { AssetShape } from "./AssetShape";
@@ -17,6 +17,7 @@ type EconomyRequest =
 
 interface PlayerBuildPanelProps {
   accountControls?: ReactNode;
+  projectControls?: ReactNode;
   onSell?: (ownedAssetId: string) => void;
   onDonate?: (ownedAssetId: string) => void;
   currentUserId: string;
@@ -33,6 +34,7 @@ interface PlayerBuildPanelProps {
   assetVariantId: string;
   assetRotation: AssetRotation;
   placingOwnedAssetId?: string | undefined;
+  draftAssetIds?: string[] | undefined;
   selectedItem?: LayoutItemReference | undefined;
   movingItem?: LayoutItemReference | undefined;
   pendingEconomyRequest?: EconomyRequest | undefined;
@@ -52,6 +54,7 @@ interface PlayerBuildPanelProps {
 
 export function PlayerBuildPanel({
   accountControls,
+  projectControls,
   onSell,
   onDonate,
   currentUserId,
@@ -68,6 +71,7 @@ export function PlayerBuildPanel({
   assetVariantId,
   assetRotation,
   placingOwnedAssetId,
+  draftAssetIds = [],
   selectedItem,
   movingItem,
   pendingEconomyRequest,
@@ -95,7 +99,8 @@ export function PlayerBuildPanel({
     : undefined;
   const selectedAsset = selectedObject ? ASSET_CATALOG.assets.find((asset) => asset.id === selectedObject.assetId) : undefined;
   const editingAsset = ASSET_CATALOG.assets.find((asset) => asset.id === assetId);
-  const canPlaceOnFloor = layout.rooms.some((room) => roomBuildAllows(room, currentUserId, gameSettings, organisation));
+  const canPlaceOnFloor = layout.rooms.some((room) => roomBuildAllows(room, currentUserId, gameSettings, organisation)
+    || roomAccessAllows(room, currentUserId, gameSettings, organisation) && room.personalAreas?.some((area) => area.ownerUserId === currentUserId));
   const inventoryGroups = useMemo(() => ASSET_CATALOG.assets.flatMap((asset) => {
     const instances = economy.inventory.filter((ownedAsset) => ownedAsset.assetId === asset.id);
     return instances.length > 0 ? [{ asset, instances }] : [];
@@ -112,7 +117,7 @@ export function PlayerBuildPanel({
             <Move size={16} aria-hidden="true" />Move
           </button>
           <button className="inventory-action" disabled={!viewingPlayerFloor} onClick={onRotateSelected}><RotateCw size={16} aria-hidden="true" />Rotate</button>
-          <button className="inventory-action inventory-action-store" disabled={!viewingPlayerFloor} onClick={onRemoveSelected}><Archive size={16} aria-hidden="true" />Store</button>
+          <button className="inventory-action inventory-action-store" onClick={onRemoveSelected}><Archive size={16} aria-hidden="true" />Store</button>
         </div>
       </section>
     )}
@@ -178,12 +183,13 @@ export function PlayerBuildPanel({
           ) : (
             <div className="inventory-grid">
               {inventoryGroups.map(({ asset, instances }) => {
-                const available = instances.filter((instance) => !instance.placement);
+                const available = instances.filter((instance) => !instance.placement && !draftAssetIds.includes(instance.id));
+                const drafted = instances.filter((instance) => !instance.placement && draftAssetIds.includes(instance.id)).length;
                 const placing = instances.some((instance) => instance.id === placingOwnedAssetId);
                 return (
                   <article className={placing ? "inventory-asset active" : "inventory-asset"} key={asset.id}>
                     <AssetShape asset={asset} rotation={asset.id === assetId ? assetRotation : 0} variantId={asset.id === assetId ? assetVariantId : getDefaultAssetVariantId(asset)} />
-                    <div><strong>{asset.name}</strong><span>{available.length} available · {instances.length - available.length} placed</span></div>
+                    <div><strong>{asset.name}</strong><span>{available.length} available · {instances.length - available.length - drafted} placed{drafted ? ` · ${drafted} in draft` : ""}</span></div>
                     <button
                       disabled={pendingPublicAction || Boolean(pendingEconomyRequest) || available.length === 0 || !viewingPlayerFloor || !canPlaceOnFloor || floorFull}
                       onClick={() => onPlace(available[0]!.id, asset.id)}
@@ -221,7 +227,7 @@ export function PlayerBuildPanel({
           </section>
         )}
       </div>
-      {dailyBonus}
+      {projectControls ?? dailyBonus}
       {disposition && disposingAsset && <AssetDispositionDialog asset={disposingAsset} action={disposition.action} pending={pendingPublicAction}
         error={publicActionError}
         onClose={() => setDisposition(undefined)} onConfirm={() => {

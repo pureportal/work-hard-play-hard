@@ -1,3 +1,4 @@
+import { applyRoomSettings } from "../testing/approved-action.js";
 import { createTestData } from "../testing/workspace-data.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ClientCommand, ServerEvent } from "@workhard/shared";
@@ -153,7 +154,7 @@ describe("meeting sessions and access", () => {
   });
 
   it("enforces private room access and capacity, and revokes remote participants when room access changes", () => {
-    const { store, connect } = setup();
+    const { store, runtime, connect } = setup();
     const room = store.getRoom("room-daily")!;
     room.access = { mode: "assigned", assignedPersonIds: ["user-maya"], knockable: true };
     room.capacity = 2;
@@ -174,7 +175,7 @@ describe("meeting sessions and access", () => {
     if (fullInvite?.type !== "meeting.invited") throw new Error("Missing invitation");
     theo.send({ type: "meeting.join", requestId: "full", meetingId: host.meetingId, invitationId: fullInvite.invitation.id });
     expect(theo.events.at(-1)).toMatchObject({ type: "command.error", code: "ROOM_FULL" });
-    maya.send({ type: "room.update_settings", requestId: "revoke", roomId: room.id, baseRevision: store.getLayout(room.floorId)!.revision,
+    applyRoomSettings(runtime, store, maya.id, { requestId: "revoke", roomId: room.id, baseRevision: store.getLayout(room.floorId)!.revision,
       settings: { name: room.name, color: room.color, access: room.access } });
     expect(leo.events).toContainEqual({ type: "meeting.left", meetingId: guest.meetingId, sessionId: guest.sessionId });
     expect(store.getMeeting(host.meetingId)?.participantIds).not.toContain("user-leo");

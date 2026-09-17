@@ -36,7 +36,7 @@ export function CorporateIdentityEditor({
     try {
       await action();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Corporate identity could not be updated.");
+      setError(reason instanceof Error ? reason.message : "Appearance could not be saved. Try again.");
     } finally {
       setOperation(undefined);
     }
@@ -62,7 +62,6 @@ export function CorporateIdentityEditor({
 
   return (
     <section className="settings-section corporate-identity-settings">
-      <h3>Corporate identity</h3>
       <div className="corporate-logo-editor">
         <span className="corporate-logo-preview">
           <BrandMark identity={identity} size={30} />
@@ -137,7 +136,7 @@ export function CorporateIdentityEditor({
         disabled={busy || draft.applicationName.trim().length === 0}
         onClick={() => void perform("save", () => onSave(draft))}
       >
-        {operation === "save" ? "Saving…" : "Save identity"}
+        {operation === "save" ? "Saving…" : "Save appearance"}
       </button>
     </section>
   );

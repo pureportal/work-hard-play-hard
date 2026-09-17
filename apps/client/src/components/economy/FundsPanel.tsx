@@ -8,13 +8,17 @@ import type { BuildView } from "./BuildEconomyNavigation";
 import { DonateCoins } from "./DonateCoins";
 import { FundSettings } from "./FundSettings";
 import { SpendingProposals } from "./SpendingProposals";
+import { GameRulesEditor } from "./GameRulesEditor";
+import type { GlobalKidnappingSettings, Room } from "@workhard/shared";
 import "../../public-economy.css";
 
-type FundsView = "votes" | "donate" | "inventory" | "activity" | "settings";
+type FundsView = "votes" | "donate" | "inventory" | "activity" | "settings" | "rules";
 
-export function FundsPanel({ economy, organisation, members, userId, personalBalance, pending, error, initialFundId = "workspace", onCommand, onReview, onPlace, onViewChange, onClose }: {
+export function FundsPanel({ economy, organisation, members, userId, personalBalance, pending, error, initialFundId = "workspace", globalSettings, onOpenRooms, onCommand, onReview, onPlace, onViewChange, onClose, rooms }: {
   economy: PublicEconomy; organisation: OrganisationState; members: Member[]; userId: string; personalBalance: number; pending: boolean; initialFundId?: string;
   error?: string | undefined;
+  globalSettings: GlobalKidnappingSettings; onOpenRooms: () => void;
+  rooms: Room[];
   onCommand: (command: ClientCommand) => void; onReview: (project: BuildProject) => void;
   onPlace: (publicAssetId: string, assetId: string, fundId: string) => void; onViewChange: (view: BuildView) => void; onClose: () => void;
 }) {
@@ -22,31 +26,32 @@ export function FundsPanel({ economy, organisation, members, userId, personalBal
   const [view, setView] = useState<FundsView>("votes");
   const fund = economy.funds.find((entry) => entry.id === fundId)!;
   const fundName = fund.unitId ? organisation.units.find((unit) => unit.id === fund.unitId)!.name : "Workspace";
-  const allowance = fund.allowances.find((entry) => entry.userId === userId);
   const canPropose = publicFundMemberIds(fund, organisation, members.map((member) => member.id)).includes(userId) || canManageUnit(organisation, userId, fund.unitId);
   const propose = (title: string, action: Exclude<PublicAction, { kind: "project" }>) => {
     onCommand({ type: "public_economy.propose", requestId: crypto.randomUUID(), title, action });
     setView("votes");
   };
-  const proposals = economy.proposals.filter((proposal) => proposal.fundId === fundId).reverse();
+  const proposals = [...economy.proposals].reverse();
   const waiting = proposals.filter((proposal) => ["open", "approved"].includes(proposal.status) && Date.parse(proposal.expiresAt) > Date.now()).length;
   const inventory = economy.inventory.filter((asset) => asset.fundId === fundId);
-  const transactions = economy.transactions.filter((entry) => entry.fundId === fundId).reverse().slice(0, 50);
+  const transactions = economy.transactions.filter((entry) => entry.fundId === fundId).reverse();
   const transactionNames = { donation: "Donation", purchase: "Building purchase", refund: "Refund", transfer: "Transfer", asset_donation: "Item donated", asset_sale: "Item sold" };
-  return <WorkspaceDialog title="Funds & votes" className="funds-dialog" error={error} onBack={() => onViewChange("shared")} onClose={onClose}>
+  return <WorkspaceDialog title="Approvals" className="funds-dialog" error={error} onBack={() => onViewChange("shared")} onClose={onClose}>
     <DialogTabs label="Funds views" value={view} onChange={setView} tabs={[
-      { id: "votes", label: "Votes", count: waiting }, { id: "donate", label: "Donate" }, { id: "inventory", label: "Shared items" },
-      { id: "activity", label: "Activity" }, ...(canPropose ? [{ id: "settings" as const, label: "Settings" }] : []),
+      { id: "votes", label: "Proposals", count: waiting }, { id: "donate", label: "Donate" }, { id: "inventory", label: "Shared items" },
+      { id: "activity", label: "Activity" }, ...(canPropose ? [{ id: "settings" as const, label: "Funds" }] : []), { id: "rules", label: "Game rules" },
     ]}>
-      <div className="fund-overview">
-        <div className="fund-picker"><label>Fund<select value={fundId} onChange={(event) => { setFundId(event.target.value); setView("votes"); }}>{economy.funds.map((entry) => <option key={entry.id} value={entry.id}>
+      {view !== "votes" && view !== "rules" && <div className="fund-overview">
+        <div className="fund-picker"><label>Fund<select value={fundId} onChange={(event) => setFundId(event.target.value)}>{economy.funds.map((entry) => <option key={entry.id} value={entry.id}>
           {entry.unitId ? organisation.units.find((unit) => unit.id === entry.unitId)?.name : "Workspace"}
         </option>)}</select></label><span className="personal-wallet"><Coins size={17} />Your wallet <strong>{personalBalance.toLocaleString()}</strong></span></div>
         <dl className="fund-balances"><div><dt>Shared balance</dt><dd><Coins size={20} />{fund.balance.toLocaleString()}</dd></div>
           <div><dt>For projects</dt><dd>{availablePublicMoney(economy, fundId).toLocaleString()}</dd></div>
-          <div><dt>Your allowance</dt><dd>{(allowance?.remaining ?? 0).toLocaleString()}<small>this week</small></dd></div></dl>
-      </div>
-      {view === "votes" && <SpendingProposals proposals={proposals} economy={economy} organisation={organisation} members={members} userId={userId} pending={pending} onCommand={onCommand} onReview={onReview} />}
+          <div><dt>Reserved</dt><dd>{(fund.balance - availablePublicMoney(economy, fundId)).toLocaleString()}</dd></div></dl>
+      </div>}
+      {view === "rules" && <GameRulesEditor settings={globalSettings} members={members} pending={pending} onOpenRooms={onOpenRooms}
+        onPropose={(settings) => propose("Change carrying rules", { kind: "kidnapping.settings", settings })} />}
+      {view === "votes" && <SpendingProposals proposals={proposals} economy={economy} organisation={organisation} members={members} rooms={rooms} userId={userId} pending={pending} onCommand={onCommand} onReview={onReview} />}
       {view === "donate" && <DonateCoins key={fundId} balance={personalBalance} fundName={fundName} pending={pending}
         error={error}
         onDonate={(amount) => onCommand({ type: "economy.donate", requestId: crypto.randomUUID(), fundId, amount })} />}

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import {
   PROJECT_EXPIRY_MS, WORKSPACE_FUND_ID, availablePublicMoney, canManageUnit, createPublicEconomy,
-  publicFundMemberIds, type ConstructionReceipt, type FloorLayout, type OrganisationState, type PublicAction,
+  publicFundMemberIds, projectRequiredMoney, type ConstructionReceipt, type FloorLayout, type OrganisationState, type PublicAction,
   type PublicEconomy, type PublicFund, type PublicTransaction, type SpendingProposal,
 } from "@workhard/shared";
 
@@ -47,33 +47,6 @@ export class PublicEconomyStore {
       else if (proposal.organisationRevision !== organisation.revision || proposal.policyRevision !== this.state.revision
         || proposal.electorate.some((id) => !memberIds.includes(id))) proposal.status = "cancelled";
     }
-    const day = Math.floor(now.getTime() / 86_400_000);
-    const period = String(Math.floor((day + 3) / 7));
-    for (const fund of this.state.funds) {
-      const ids = publicFundMemberIds(fund, organisation, memberIds);
-      const renewing = fund.period !== period;
-      if (fund.period !== period) {
-        fund.period = period;
-        fund.allowances = [];
-      }
-      fund.allowances = fund.allowances.filter((allowance) => ids.includes(allowance.userId));
-      for (const userId of ids) {
-        if (!fund.allowances.some((allowance) => allowance.userId === userId)) fund.allowances.push({ userId, remaining: 0, spent: 0 });
-      }
-      if (renewing) this.fundAllowances(fund.id);
-    }
-  }
-
-  fundAllowances(fundId: string): void {
-    const fund = this.fund(fundId);
-    const count = fund.allowances.length;
-    if (!count) return;
-    const share = Math.floor(availablePublicMoney(this.state, fund.id) / (count * 2));
-    for (const allowance of fund.allowances) {
-      const limit = fund.mode === "equal" ? fund.weeklyAllowance
-        : fund.spendingLimits.find((entry) => entry.userId === allowance.userId)?.amount ?? fund.weeklyAllowance;
-      allowance.remaining += Math.min(share, Math.max(0, limit - allowance.remaining - allowance.spent));
-    }
   }
 
   invalidateLayoutProposals(layouts: readonly FloorLayout[]): boolean {
@@ -106,30 +79,17 @@ export class PublicEconomyStore {
     this.state.transactions.push({ id: randomUUID(), fundId, userId, kind, amount, sourceId, balanceAfter: balance, createdAt: now.toISOString() });
   }
 
-  canUseAllowance(userId: string, action: PublicAction): boolean {
-    if (action.kind !== "project" || action.project.quote.requiresApproval || action.project.spawn) return false;
-    const allowance = this.fund(action.project.fundId).allowances.find((entry) => entry.userId === userId);
-    return Boolean(allowance && allowance.remaining >= action.project.quote.cost);
-  }
-
-  spendAllowance(userId: string, action: Extract<PublicAction, { kind: "project" }>): void {
-    if (!this.canUseAllowance(userId, action)) throw new Error("PROJECT_APPROVAL_REQUIRED");
-    const allowance = this.fund(action.project.fundId).allowances.find((entry) => entry.userId === userId)!;
-    allowance.remaining -= action.project.quote.cost;
-    allowance.spent += action.project.quote.cost;
-  }
-
   propose(userId: string, title: string, action: PublicAction, fundId: string, organisation: OrganisationState, memberIds: string[], now = new Date()): SpendingProposal {
     this.refresh(organisation, memberIds, now);
     const fund = this.fund(fundId);
     const members = publicFundMemberIds(fund, organisation, memberIds);
     if (!memberIds.includes(userId) || (!members.includes(userId) && !canManageUnit(organisation, userId, fund.unitId))) throw new Error("PUBLIC_FUND_FORBIDDEN");
-    const electorate = fund.mode === "equal" ? members : memberIds.filter((id) => canManageUnit(organisation, id, fund.unitId));
+    const electorate = members;
     if (!electorate.length) throw new Error("PROPOSAL_NO_APPROVERS");
     if (this.state.proposals.filter((entry) => entry.proposedBy === userId && ["open", "approved"].includes(entry.status)).length >= 20) throw new Error("PROPOSAL_LIMIT");
-    const reserved = action.kind === "project" ? action.project.quote.cost : action.kind === "fund.transfer" ? action.amount : 0;
+    const reserved = action.kind === "project" ? projectRequiredMoney(action.project) : action.kind === "fund.transfer" ? action.amount : 0;
     if (reserved > availablePublicMoney(this.state, fundId)) throw new Error("PUBLIC_FUNDS_INSUFFICIENT");
-    const required = fund.mode === "equal" ? Math.floor(electorate.length / 2) + 1 : 1;
+    const required = Math.floor(electorate.length / 2) + 1;
     const ballots = electorate.includes(userId) ? [{ userId, approve: true }] : [];
     const proposal: SpendingProposal = {
       id: randomUUID(), title, proposedBy: userId, fundId, action: structuredClone(action), electorate, required, ballots,
@@ -170,8 +130,8 @@ export class PublicEconomyStore {
     for (const id of quote.inventoryIds) {
       if (!this.state.inventory.some((asset) => asset.id === id && asset.fundId === project.fundId)) throw new Error("PUBLIC_ASSET_UNAVAILABLE");
     }
-    this.record(project.fundId, userId, "purchase", -quote.cost, project.id);
     for (const refund of quote.refunds) this.record(refund.fundId, userId, "refund", refund.amount, project.id);
+    this.record(project.fundId, userId, "purchase", -quote.cost, project.id);
     this.state.receipts = this.state.receipts.filter((receipt) => receipt.floorId !== project.floorId || !quote.removedKeys.includes(receipt.key));
     this.state.receipts.push(...structuredClone(quote.purchases));
     this.state.inventory = this.state.inventory.filter((asset) => !quote.inventoryIds.includes(asset.id));
@@ -182,31 +142,24 @@ export class PublicEconomyStore {
     else this.state.inventory.push(structuredClone(asset));
   }
 
+  storePlacedAsset(objectId: string, assetId: string, floorId: string, fundId: string): void {
+    const receipt = this.state.receipts.find((entry) => entry.floorId === floorId && entry.key === `asset:${objectId}`);
+    this.state.inventory.push({ id: randomUUID(), assetId, fundId: receipt?.fundId ?? fundId, paid: receipt?.paid ?? 0 });
+    this.state.receipts = this.state.receipts.filter((entry) => entry !== receipt);
+  }
+
   applyFundAction(userId: string, action: PublicAction, sourceId: string): void {
     if (action.kind === "fund.create") {
       if (this.state.funds.some((fund) => fund.unitId === action.unitId)) throw new Error("PUBLIC_FUND_EXISTS");
-      this.state.funds.push({ id: action.unitId, unitId: action.unitId, balance: 0, mode: action.mode,
-        weeklyAllowance: action.weeklyAllowance, spendingLimits: [], period: "", allowances: [] });
+      this.state.funds.push({ id: action.unitId, unitId: action.unitId, balance: 0, mode: action.mode });
     } else if (action.kind === "fund.transfer") {
       if (action.fromFundId === action.toFundId) throw new Error("PUBLIC_FUND_SCOPE");
       this.fund(action.toFundId);
       this.record(action.fromFundId, userId, "transfer", -action.amount, sourceId);
       this.record(action.toFundId, userId, "transfer", action.amount, sourceId);
-      this.fundAllowances(action.toFundId);
-    } else if (action.kind === "fund.policy" || action.kind === "governance") {
-      const fund = this.fund(action.kind === "governance" ? WORKSPACE_FUND_ID : action.fundId);
-      fund.mode = action.mode;
-      if (action.kind === "fund.policy") {
-        fund.weeklyAllowance = action.weeklyAllowance;
-        fund.spendingLimits = structuredClone(action.spendingLimits);
-      }
-      for (const allowance of fund.allowances) {
-        const limit = fund.mode === "equal" ? fund.weeklyAllowance : fund.spendingLimits.find((entry) => entry.userId === allowance.userId)?.amount ?? fund.weeklyAllowance;
-        allowance.remaining = Math.min(allowance.remaining, Math.max(0, limit - allowance.spent));
-      }
+    } else if (action.kind === "governance") {
+      this.fund(WORKSPACE_FUND_ID).mode = action.mode;
       this.state.revision += 1;
-      this.fundAllowances(fund.id);
-
     } else if (action.kind === "asset.sell") {
       const asset = this.state.inventory.find((entry) => entry.id === action.publicAssetId);
       if (!asset) throw new Error("PUBLIC_ASSET_UNAVAILABLE");
@@ -224,10 +177,7 @@ export function validatePublicEconomy(state: PublicEconomyState): void {
   const ids = new Set(state.funds.map((fund) => fund.id));
   if (!ids.has(WORKSPACE_FUND_ID) || ids.size !== state.funds.length) throw new Error("PUBLIC_ECONOMY_INVALID");
   for (const fund of state.funds) {
-    if (!validMoney(fund.balance) || !validMoney(fund.weeklyAllowance) || !["equal", "hierarchical"].includes(fund.mode)
-      || fund.allowances.some((allowance) => !validMoney(allowance.remaining) || !validMoney(allowance.spent))
-      || fund.spendingLimits.some((limit) => !validMoney(limit.amount))
-      || new Set(fund.allowances.map((allowance) => allowance.userId)).size !== fund.allowances.length
+    if (!validMoney(fund.balance) || !["equal", "hierarchical"].includes(fund.mode)
       || availablePublicMoney(state, fund.id) < 0) throw new Error("PUBLIC_ECONOMY_INVALID");
     let balance = 0;
     for (const transaction of state.transactions.filter((entry) => entry.fundId === fund.id)) {

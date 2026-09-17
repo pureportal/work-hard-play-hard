@@ -49,7 +49,7 @@ const members: Omit<Member, "character">[] = [
     email: "maya@northstar.studio",
     title: "Product Lead",
     role: "owner",
-    permissions: ["manage_members", "build"],
+    permissions: ["manage_members"],
     color: "#ff7a66",
     availability: "available",
     online: true,
@@ -64,7 +64,7 @@ const members: Omit<Member, "character">[] = [
     email: "leo@northstar.studio",
     title: "Design Engineer",
     role: "admin",
-    permissions: ["manage_members", "build"],
+    permissions: ["manage_members"],
     color: "#5b8def",
     availability: "available",
     online: true,
@@ -79,7 +79,7 @@ const members: Omit<Member, "character">[] = [
     email: "amara@northstar.studio",
     title: "Engineering Lead",
     role: "admin",
-    permissions: ["manage_members", "build"],
+    permissions: ["manage_members"],
     color: "#25b99a",
     availability: "busy",
     online: true,
@@ -260,9 +260,9 @@ function createMessages(now: Date): ChatMessage[] {
 
 function createInvitations(now: Date): Invitation[] {
   return [
-    { id: "invite-ana", teamId: team.id, email: "ana@example.com", role: "member", permissions: [], status: "pending", expiresAt: shiftedIso(now, 7 * 24 * 60) },
-    { id: "invite-guest", teamId: team.id, email: "guest@example.com", role: "guest", permissions: [], status: "pending", expiresAt: shiftedIso(now, 3 * 24 * 60) },
-    { id: "invite-revoked", teamId: team.id, email: "former@example.com", role: "member", permissions: [], status: "revoked", expiresAt: shiftedIso(now, 2 * 24 * 60) },
+    { id: "invite-ana", teamId: team.id, email: "ana@example.com", role: "member", status: "pending", expiresAt: shiftedIso(now, 7 * 24 * 60) },
+    { id: "invite-guest", teamId: team.id, email: "guest@example.com", role: "guest", status: "pending", expiresAt: shiftedIso(now, 3 * 24 * 60) },
+    { id: "invite-revoked", teamId: team.id, email: "former@example.com", role: "member", status: "revoked", expiresAt: shiftedIso(now, 2 * 24 * 60) },
   ];
 }
 

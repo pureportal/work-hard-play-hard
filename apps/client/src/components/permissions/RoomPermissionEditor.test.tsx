@@ -13,6 +13,20 @@ const room: Room = { id: "room", floorId: "floor", name: "Studio", color: "#ffff
   access: { mode: "open", assignedPersonIds: [], knockable: false }, organisationUnitId: "team" };
 
 describe("room access and build editor", () => {
+  it("proposes enabling a meeting room and shows the consequence when disabling it", () => {
+    const onSave = vi.fn();
+    const props = { room, members, organisation, settings: DEFAULT_GAME_SETTINGS, editable: true, canAssignUnit: true, pending: false, onSave };
+    const { rerender } = render(<RoomPermissionEditor {...props} />);
+    fireEvent.click(screen.getByRole("checkbox", { name: "Meeting room" }));
+    fireEvent.click(screen.getByRole("button", { name: "Propose changes" }));
+    expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({ meetingRoom: true }));
+    rerender(<RoomPermissionEditor {...props} room={{ ...room, meetingRoom: true }} />);
+    fireEvent.click(screen.getByRole("checkbox", { name: "Meeting room" }));
+    expect(screen.getByText("Turning this off ends the room call.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Propose changes" }));
+    expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({ meetingRoom: false }));
+  });
+
   it("previews and saves entry separately from lead-only building", () => {
     const onSave = vi.fn();
     render(<RoomPermissionEditor room={room} members={members} organisation={organisation} settings={DEFAULT_GAME_SETTINGS} editable canAssignUnit pending={false} onSave={onSave} />);

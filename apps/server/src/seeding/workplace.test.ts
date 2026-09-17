@@ -55,7 +55,7 @@ describe("workplace seeds", () => {
     expect(store.getOrganisation().units).toHaveLength(9);
     expect(store.getOrganisation().assignments).toHaveLength(15);
     expect(store.getGameSettings().roomBuild.mode).toBe("none");
-    expect(simulation.store.economy.accounts.flatMap((account) => account.inventory)).toHaveLength(6);
+    expect(simulation.store.economy.accounts.flatMap((account) => account.inventory)).toHaveLength(38);
     expect(simulation.store.economy.accounts.flatMap((account) => account.inventory).filter((asset) => asset.placement)).toHaveLength(3);
     expect(simulation.store.scores).toHaveLength(6);
     const runtime = new WorldRuntime(store);

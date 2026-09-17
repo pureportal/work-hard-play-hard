@@ -137,7 +137,7 @@ export class PostgreSqlWorkspaceRepository {
           teamId: invitation.teamId,
           email: invitation.email,
           role: invitation.role,
-          permissions: invitation.permissions,
+
           status: invitation.status,
           expiresAt: invitation.expiresAt.toISOString(),
         })),
@@ -217,6 +217,8 @@ export class PostgreSqlWorkspaceRepository {
         },
         registrationSettings: settings.registrationSettings,
         corporateIdentity: settings.corporateIdentity,
+        spotifyAppSettings: settings.spotifyAppSettings,
+        githubAppSettings: settings.githubAppSettings,
       },
     };
   }
@@ -284,7 +286,7 @@ export class PostgreSqlWorkspaceRepository {
         teamId: invitation.teamId,
         email: invitation.email,
         role: invitation.role,
-        permissions: invitation.permissions,
+
         status: invitation.status,
         expiresAt: new Date(invitation.expiresAt),
         sortOrder,
@@ -294,8 +296,8 @@ export class PostgreSqlWorkspaceRepository {
         id: meeting.id,
         title: meeting.title,
         location: meeting.location,
-        startsAt: new Date(meeting.startsAt),
-        durationMinutes: meeting.durationMinutes,
+        startsAt: meeting.startsAt ? new Date(meeting.startsAt) : null,
+        durationMinutes: meeting.durationMinutes ?? null,
         status: meeting.status,
         sortOrder,
       })));
@@ -399,6 +401,8 @@ export class PostgreSqlWorkspaceRepository {
         playerKidnappingSettings: state.store.kidnapping.players,
         registrationSettings: state.store.registrationSettings,
         corporateIdentity: state.store.corporateIdentity,
+        spotifyAppSettings: state.store.spotifyAppSettings,
+        githubAppSettings: state.store.githubAppSettings,
         updatedAt: new Date(),
       });
       await entityManager.nativeDelete(WorkspaceSettingsEntity, { id: { $ne: WORKSPACE_SETTINGS_ID } });
@@ -455,11 +459,11 @@ function mapMeeting(entity: MeetingEntity, participantIds: string[]): Meeting {
     id: entity.id,
     title: entity.title,
     location: entity.location,
-    startsAt: entity.startsAt.toISOString(),
-    durationMinutes: entity.durationMinutes,
+    ...(entity.startsAt ? { startsAt: entity.startsAt.toISOString() } : {}),
+    ...(entity.durationMinutes !== null ? { durationMinutes: entity.durationMinutes } : {}),
     status: entity.status,
     participantIds,
-  } as Meeting;
+  };
 }
 
 async function replaceRows<Entity extends object>(

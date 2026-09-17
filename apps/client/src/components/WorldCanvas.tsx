@@ -13,9 +13,11 @@ import { WorldAssetFocus } from "../world-asset-focus";
 import { WorldAssetTextures } from "../world-asset-textures";
 import { getPlacedWorldAssetArtwork, getPlacedWorldAssetBounds, getWorldAssetPlacementPosition, getWorldAssetSurfaceOffset } from "../world-asset-placement";
 import { createWorldArchitecture } from "../world-architecture";
+import { createPersonalSpaceOverlay } from "../world-personal-spaces";
 import { getWorldAssetDepth, WorldDepth } from "../world-depth";
 import "../world-asset.css";
 import {
+  ASSET_PLACEMENT_MESSAGES,
   ASSET_RASTER_SIZE,
   BUILD_GRID_SIZE,
   CHARACTER_WORLD_SIZE,
@@ -52,6 +54,7 @@ import {
   snapToBuildGrid,
 } from "@workhard/shared";
 import type {
+  AssetPlacementBlockReason,
   AssetRotation,
   CharacterAppearance,
   Floor,
@@ -86,6 +89,7 @@ import type { InteractionHighlight } from "../hooks/useInteractionAreas";
 export type WorldFocusTarget = { requestId: string } & (
   | { userId: string }
   | { floorId: string; objectId: string }
+  | { floorId: string; bounds: Rect }
 );
 
 export interface WorldCanvasProps {
@@ -120,6 +124,7 @@ export interface WorldCanvasProps {
   onBuildItemSelect: (item?: LayoutItemReference) => void;
   onAssetRotationChange: (rotation: AssetRotation) => void;
   onPlacementCancel: () => void;
+  onPlacementBlocked: (message: string) => void;
   onGongOffscreen: (ring: DisplayGongRing) => void;
   onDirectionalInput: (sequence: number, dx: number, dy: number) => void;
 }
@@ -136,6 +141,7 @@ interface RendererCallbacks {
   onObjectSelect: WorldCanvasProps["onObjectSelect"];
   onBuildItemSelect: WorldCanvasProps["onBuildItemSelect"];
   onGongOffscreen: WorldCanvasProps["onGongOffscreen"];
+  onPlacementBlocked: WorldCanvasProps["onPlacementBlocked"];
   onPlacementPreviewStateChange: (state: PlacementPreviewState) => void;
   onCameraModeChange: (mode: CameraMode) => void;
   onArtworkError: (error: Error) => void;
@@ -144,6 +150,7 @@ interface RendererCallbacks {
 interface PlacementPreviewState {
   hasPoint: boolean;
   canPlace: boolean;
+  blockedReason?: AssetPlacementBlockReason | undefined;
 }
 
 type CameraMode = "follow" | "free";
@@ -258,6 +265,7 @@ export function WorldCanvas(props: WorldCanvasProps) {
     onObjectSelect: props.onObjectSelect,
     onBuildItemSelect: props.onBuildItemSelect,
     onGongOffscreen: props.onGongOffscreen,
+    onPlacementBlocked: props.onPlacementBlocked,
     onPlacementPreviewStateChange: setPlacementPreviewState,
     onCameraModeChange: setCameraMode,
     onArtworkError: (error) => {
@@ -277,6 +285,7 @@ export function WorldCanvas(props: WorldCanvasProps) {
     onObjectSelect: props.onObjectSelect,
     onBuildItemSelect: props.onBuildItemSelect,
     onGongOffscreen: props.onGongOffscreen,
+    onPlacementBlocked: props.onPlacementBlocked,
     onPlacementPreviewStateChange: setPlacementPreviewState,
     onCameraModeChange: setCameraMode,
     onArtworkError: (error) => {
@@ -363,6 +372,8 @@ export function WorldCanvas(props: WorldCanvasProps) {
     const resizeObserver = new ResizeObserver(() => {
       if (lifecycle.initialized && !lifecycle.destroyed) {
         lifecycle.app.resize();
+        const { focusTarget, projectPreview } = propsRef.current;
+        if (projectPreview && focusTarget && "bounds" in focusTarget) lifecycle.renderer?.focus(focusTarget);
       }
     });
     resizeObserver.observe(host);
@@ -591,6 +602,7 @@ class OfficeRenderer {
   private readonly layoutLayer = new Container();
   private readonly selectionOverlay = new Graphics();
   private readonly projectOverlay = new Graphics();
+  private readonly personalSpacesLayer = new Container();
   private readonly assetFocus = new WorldAssetFocus();
   private readonly interactionOverlay = new Graphics();
   private readonly accessibilityOverlay = new Graphics();
@@ -651,7 +663,7 @@ class OfficeRenderer {
   ) {
     this.app.stage.addChild(this.world);
     this.world.scale.set(this.zoom);
-    this.world.addChild(this.layoutLayer, this.accessibilityOverlay, this.interactionOverlay, this.depth.container, this.projectOverlay, this.selectionOverlay, this.assetFocus.overlay, this.assetPreviewLayer, this.buildPreview, this.celebrationLayer);
+    this.world.addChild(this.layoutLayer, this.accessibilityOverlay, this.interactionOverlay, this.depth.container, this.personalSpacesLayer, this.projectOverlay, this.selectionOverlay, this.assetFocus.overlay, this.assetPreviewLayer, this.buildPreview, this.celebrationLayer);
     this.app.canvas.addEventListener("pointerdown", this.handlePointerDown);
     this.app.canvas.addEventListener("pointermove", this.handlePointerMove);
     this.app.canvas.addEventListener("pointerup", this.handlePointerUp);
@@ -979,6 +991,19 @@ class OfficeRenderer {
   focus(target: WorldFocusTarget): boolean {
     if ("userId" in target) return this.focusUser(target.userId);
     if (target.floorId !== this.floor?.id || !this.layout) return false;
+    if ("bounds" in target) {
+      const { bounds } = target;
+      this.assetFocus.clear();
+      this.freeCameraX = bounds.x + bounds.width / 2;
+      this.freeCameraY = bounds.y + bounds.height / 2;
+      this.zoom = clampCameraZoom(Math.min(this.zoom,
+        this.app.screen.width / (bounds.width + BUILD_GRID_SIZE * 4),
+        this.app.screen.height / (bounds.height + BUILD_GRID_SIZE * 4)));
+      this.updateCameraMode("free");
+      this.applyFreeCameraTransform();
+      this.refreshBuildOverlays();
+      return true;
+    }
     const object = this.layout.objects.find((candidate) => candidate.id === target.objectId);
     const view = this.objectViews.get(target.objectId);
     if (!object || !view) return false;
@@ -1035,7 +1060,11 @@ class OfficeRenderer {
       return false;
     }
     const candidate = this.createAssetCandidate(point);
-    if (!candidate || !this.drawAssetPreview(candidate)) {
+    if (!candidate) return false;
+    if (!this.drawAssetPreview(candidate)) {
+      if (this.placementPreviewState.blockedReason) {
+        this.callbacks.current.onPlacementBlocked(ASSET_PLACEMENT_MESSAGES[this.placementPreviewState.blockedReason]);
+      }
       return false;
     }
     this.callbacks.current.onEdit(this.movingBuildItem?.type === "asset"
@@ -1075,6 +1104,8 @@ class OfficeRenderer {
       return;
     }
     this.assetFocus.clear();
+    for (const child of this.personalSpacesLayer.removeChildren()) child.destroy({ children: true });
+    if (this.editing) this.personalSpacesLayer.addChild(createPersonalSpaceOverlay(this.layout, this.memberMap, this.currentUserId));
     this.gongViews.clear();
     for (const view of this.objectViews.values()) view.destroy({ children: true });
     this.objectViews.clear();
@@ -1576,6 +1607,9 @@ class OfficeRenderer {
       this.hoverPoint = point;
       this.hoverPointIsTouch = event.pointerType === "touch";
       this.drawPlacementPreview(point);
+      if (event.pointerType !== "mouse" && this.placementPreviewState.blockedReason) {
+        this.callbacks.current.onPlacementBlocked(ASSET_PLACEMENT_MESSAGES[this.placementPreviewState.blockedReason]);
+      }
       if (this.movingBuildItem) {
         if (this.movingBuildItem.type === "asset" && event.pointerType !== "mouse") {
           this.touchPlacement = true;
@@ -2015,8 +2049,8 @@ class OfficeRenderer {
       return false;
     }
     const cells = getPlacedAssetCells(candidate);
-    const blocked = Boolean(getAssetPlacementError(this.placementLayout ?? this.layout, getOutdoorBounds(this.floor), candidate))
-      || Boolean(this.playerAssetPlacement && getPlayerAssetRoomError(
+    const blockedReason = getAssetPlacementError(this.placementLayout ?? this.layout, getOutdoorBounds(this.floor), candidate)
+      ?? (this.playerAssetPlacement && getPlayerAssetRoomError(
         this.placementLayout ?? this.layout,
         candidate,
         this.playerAssetPlacement.userId,
@@ -2024,12 +2058,13 @@ class OfficeRenderer {
         this.playerAssetPlacement.organisation,
         this.playerAssetPlacement.officeBuilder,
       ))
-      || this.placementOverlapsPlayers(cells.filter((cell) => cell.solid).map((cell) => ({
+      ?? (this.placementOverlapsPlayers(cells.filter((cell) => cell.solid).map((cell) => ({
         x: cell.worldX,
         y: cell.worldY,
         width: ASSET_RASTER_SIZE,
         height: ASSET_RASTER_SIZE,
-      })), candidate.id === "preview" ? undefined : candidate.id);
+      })), candidate.id === "preview" ? undefined : candidate.id) ? "PLAYER_IN_THE_WAY" : undefined);
+    const blocked = Boolean(blockedReason);
     this.buildPreview.clear();
     const definition = requireAssetDefinition(candidate.assetId);
     const bounds = getPlacedAssetBounds(candidate);
@@ -2064,7 +2099,7 @@ class OfficeRenderer {
       }
     }
     drawAssetDirectionIndicators(this.buildPreview, getAssetDirectionIndicators(candidate, this.layout, this.zoom), indicatorColor);
-    this.updatePlacementPreviewState(true, !blocked);
+    this.updatePlacementPreviewState(true, !blocked, blockedReason);
     return !blocked;
   }
 
@@ -2074,11 +2109,12 @@ class OfficeRenderer {
     return this.buildPreview.clear();
   }
 
-  private updatePlacementPreviewState(hasPoint: boolean, canPlace: boolean): void {
-    if (this.placementPreviewState.hasPoint === hasPoint && this.placementPreviewState.canPlace === canPlace) {
+  private updatePlacementPreviewState(hasPoint: boolean, canPlace: boolean, blockedReason?: AssetPlacementBlockReason): void {
+    if (this.placementPreviewState.hasPoint === hasPoint && this.placementPreviewState.canPlace === canPlace
+      && this.placementPreviewState.blockedReason === blockedReason) {
       return;
     }
-    this.placementPreviewState = { hasPoint, canPlace };
+    this.placementPreviewState = { hasPoint, canPlace, blockedReason };
     this.callbacks.current.onPlacementPreviewStateChange(this.placementPreviewState);
   }
 
@@ -2200,16 +2236,7 @@ class OfficeRenderer {
       return;
     }
     if (this.movingBuildItem.type === "asset") {
-      const candidate = this.createAssetCandidate(point);
-      if (candidate && this.drawAssetPreview(candidate)) {
-        this.callbacks.current.onEdit({
-          tool: "asset.move",
-          objectId: candidate.id,
-          position: { x: candidate.x, y: candidate.y },
-          variantId: candidate.variantId,
-          rotation: candidate.rotation,
-        });
-      }
+      this.commitPlacement();
       return;
     }
     if (this.movingBuildItem.type === "wall") {

@@ -5,9 +5,9 @@ import { WorkspaceStore } from "./store.js";
 describe("WorkspaceStore layout integrity", () => {
   it("does not revive superseded invitations when an overlapping delivery fails", () => {
     const store = new WorkspaceStore(createTestData());
-    const original = store.issueInvitation("new@example.com", "admin", []);
-    const first = store.issueInvitation("new@example.com", "member", []);
-    const second = store.issueInvitation("new@example.com", "guest", []);
+    const original = store.issueInvitation("new@example.com", "admin");
+    const first = store.issueInvitation("new@example.com", "member");
+    const second = store.issueInvitation("new@example.com", "guest");
     store.rollbackInvitationIssue(first.invitation.id, first.supersededInvitationIds);
     expect(store.getInvitation(first.invitation.id)).toBeUndefined();
     expect(store.getInvitation(original.invitation.id)?.status).toBe("revoked");

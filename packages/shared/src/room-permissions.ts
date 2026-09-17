@@ -28,10 +28,10 @@ export function roomAccessAllows(room: Room, userId: string, settings: GameSetti
 
 export function roomBuildAllows(room: Room, userId: string, settings: GameSettings, organisation: OrganisationState): boolean {
   return roomAccessAllows(room, userId, settings, organisation)
-    && permissionAllows(!room.build || room.build.mode === "default" ? settings.roomBuild : room.build, userId, organisation);
+    && (room.ownerUserId === userId || permissionAllows(!room.build || room.build.mode === "default" ? settings.roomBuild : room.build, userId, organisation));
 }
 
-export function canEditRoomPermissions(room: Room, userId: string, permissions: readonly string[], organisation: OrganisationState): boolean {
-  return permissions.includes("build") || organisation.ceoIds.includes(userId)
+export function canEditRoomPermissions(room: Room, userId: string, organisation: OrganisationState): boolean {
+  return organisation.ceoIds.includes(userId)
     || Boolean(room.organisationUnitId && canManageUnit(organisation, userId, room.organisationUnitId));
 }

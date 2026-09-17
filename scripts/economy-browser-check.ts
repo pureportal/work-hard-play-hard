@@ -90,7 +90,7 @@ try {
   assert.equal(store.getPlayerEconomy("user-maya").coinBalance, 190);
   assert.equal(store.getPublicEconomy().inventory.length, 1);
   checks.push("Private purchase and asset donation preserve wallet and public ownership.");
-  await maya.getByRole("button", { name: "Funds & votes", exact: true }).click();
+  await maya.getByRole("navigation", { name: "Workspace", exact: true }).getByRole("button", { name: "Approvals", exact: true }).click();
   await maya.getByRole("tab", { name: "Donate", exact: true }).click();
   await maya.getByRole("spinbutton", { name: "Donation", exact: true }).fill("150");
   await maya.getByRole("button", { name: "Review donation", exact: true }).click();
@@ -99,7 +99,7 @@ try {
   await maya.getByText("Donation sent.", { exact: true }).waitFor();
   assert.equal(store.getPublicEconomy().funds[0]!.balance, 150);
   assert.equal(store.getPlayerEconomy("user-maya").coinBalance, 40);
-  checks.push("Donation funds equal allowances and a shared project reserve.");
+  checks.push("Donation funds the shared balance and project reserve.");
   await maya.getByRole("button", { name: "Back to build", exact: true }).click();
   await maya.getByRole("button", { name: "Wall", exact: true }).click();
   const start = await worldPoint(maya, 384, 416);
@@ -117,12 +117,12 @@ try {
   assert.equal(action.kind, "project");
   if (action.kind !== "project") throw new Error("Missing project quote");
   let expectedBalance = 150 - action.project.quote.cost;
-  await jonas.getByRole("button", { name: "Funds & votes", exact: true }).click();
+  await jonas.getByRole("navigation", { name: "Workspace", exact: true }).getByRole("button", { name: "Approvals", exact: true }).click();
   await jonas.getByRole("button", { name: "View layout", exact: true }).click();
   await jonas.locator(".world-project-state").filter({ hasText: "Proposal · not placed" }).waitFor();
   assert.equal(store.getLayout("floor-studio")!.walls.length, 0);
   await jonas.screenshot({ path: `${output}/proposal-preview.png` });
-  await jonas.getByRole("button", { name: "Back to votes", exact: true }).click();
+  await jonas.getByRole("button", { name: "Back to approvals", exact: true }).click();
   await jonas.getByRole("button", { name: "Approve", exact: true }).click();
   await maya.getByRole("button", { name: "Apply proposal", exact: true }).click();
   await maya.getByText("Past proposals (1)", { exact: true }).click();
@@ -158,10 +158,10 @@ try {
   assert.equal(store.getPublicEconomy().funds[0]!.balance, expectedBalance);
   assert.equal(store.getPlayerEconomy("user-maya").coinBalance, 40);
   checks.push("Demolition stays a red removal preview until approved and refunds one third into shared funds only.");
-  await maya.getByRole("button", { name: "Close funds & votes", exact: true }).click();
+  await maya.getByRole("button", { name: "Close approvals", exact: true }).click();
   await maya.getByRole("button", { name: "Use dark mode", exact: true }).click();
-  await maya.getByRole("button", { name: "Build", exact: true }).click();
-  await maya.getByRole("dialog", { name: "Funds & votes", exact: true }).waitFor();
+  await maya.getByRole("navigation", { name: "Workspace", exact: true }).getByRole("button", { name: "Approvals", exact: true }).click();
+  await maya.getByRole("dialog", { name: "Approvals", exact: true }).waitFor();
   await maya.screenshot({ path: `${output}/funds-dark.png` });
   await maya.setViewportSize({ width: 390, height: 844 });
   assert(await maya.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
@@ -178,7 +178,7 @@ try {
   organisation.assignments = ["user-jonas", "user-priya"].map((userId) => ({ userId, unitId: "studio", rank: "member" }));
   organisation.revision += 1;
   store.publicEconomy.fund("workspace").mode = "hierarchical";
-  store.publicEconomy.applyFundAction("user-maya", { kind: "fund.create", unitId: "design", mode: "equal", weeklyAllowance: 50 }, "design-fixture");
+  store.publicEconomy.applyFundAction("user-maya", { kind: "fund.create", unitId: "design", mode: "equal" }, "design-fixture");
   store.getLayout("floor-studio")!.rooms.push({ id: "design-room", floorId: "floor-studio", name: "Design room", color: "#ffffff", capacity: 4,
     bounds: { x: 96, y: 96, width: 64, height: 64 }, footprint: [{ x: 96, y: 96, width: 64, height: 64 }], boundary: [], doorIds: [], windowIds: [],
     privateEligible: false, organisationUnitId: "studio", access: { mode: "open", assignedPersonIds: [], knockable: false }, build: { mode: "open", assignedPersonIds: [] } });
@@ -190,15 +190,15 @@ try {
   await jonas.screenshot({ path: `${output}/room-settings.png` });
   await jonas.getByRole("textbox", { name: "Name", exact: true }).fill("Design studio");
   await jonas.getByRole("button", { name: "Propose changes", exact: true }).click();
-  await jonas.getByRole("dialog", { name: "Funds & votes", exact: true }).waitFor();
-  assert.equal(await jonas.getByRole("combobox", { name: "Fund", exact: true }).inputValue(), "design");
+  await jonas.getByRole("dialog", { name: "Approvals", exact: true }).waitFor();
+  const roomProposal = store.getPublicEconomy().proposals.at(-1)!;
+  assert.equal(roomProposal.fundId, "design");
   const priya = await connect("user-priya");
-  await priya.getByRole("button", { name: "Funds & votes", exact: true }).click();
-  await priya.getByRole("combobox", { name: "Fund", exact: true }).selectOption("design");
+  await priya.getByRole("navigation", { name: "Workspace", exact: true }).getByRole("button", { name: "Approvals", exact: true }).click();
   await priya.getByRole("button", { name: "Approve", exact: true }).click();
   await priya.getByRole("button", { name: "Apply proposal", exact: true }).click();
-  await priya.getByText("Past proposals (1)", { exact: true }).click();
-  await priya.getByText("Applied", { exact: true }).waitFor();
+  await priya.getByText("Past proposals (3)", { exact: true }).click();
+  await priya.getByRole("article", { name: roomProposal.title }).getByText("Applied", { exact: true }).waitFor();
   assert.equal(store.getRoom("design-room")!.name, "Design studio");
   assert.deepEqual(store.getPublicEconomy().proposals.at(-1)!.electorate, ["user-jonas", "user-priya"]);
   checks.push("Ordinary members of an equal department propose and approve subteam room changes inside a hierarchical company.");

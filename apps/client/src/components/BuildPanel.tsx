@@ -40,6 +40,7 @@ import "../build-panel.css";
 interface BuildPanelProps {
   accountControls?: ReactNode;
   projectControls?: ReactNode;
+  reviewing?: boolean;
   disabled?: boolean;
   layout: FloorLayout;
   tool: LayoutTool | null;
@@ -90,6 +91,7 @@ const buildableCategories = ASSET_CATALOG.categories.filter((category) => catego
 export function BuildPanel({
   accountControls,
   projectControls,
+  reviewing = false,
   disabled = false,
   layout,
   tool,
@@ -126,6 +128,13 @@ export function BuildPanel({
 
   useSelectedTabVisibility(categoryTabsRef, categoryId);
 
+  if (reviewing) return (
+    <aside className="side-panel build-panel build-layout-panel" aria-label="Build" data-reviewing>
+      <SurfaceHeader className="panel-header" title="Proposal" closeLabel="Close proposal preview" onClose={onClose} />
+      {projectControls}
+    </aside>
+  );
+
   return (
     <aside className="side-panel build-panel build-layout-panel" aria-label="Build">
       <SurfaceHeader className="panel-header" title="Build" closeLabel="Close build tools" onClose={onClose}
@@ -159,7 +168,10 @@ export function BuildPanel({
             {selectedItem.type !== "opening" && (
               <button onClick={onRotateSelected}><RotateCw size={16} aria-hidden="true" />Rotate</button>
             )}
-            <button className="danger" onClick={onRemoveSelected}><Trash2 size={16} aria-hidden="true" />Remove</button>
+            <button className={selectedObject?.ownerUserId ? "" : "danger"} onClick={onRemoveSelected}>
+              {selectedObject?.ownerUserId ? <Archive size={16} aria-hidden="true" /> : <Trash2 size={16} aria-hidden="true" />}
+              {selectedObject?.ownerUserId ? "Store" : "Remove"}
+            </button>
           </div>
         </section>
       )}

@@ -19,6 +19,8 @@ async function setup(expired = false) {
 describe("GitHub credentials and failures", () => {
   it("validates complete configuration, callback URLs and keys", () => {
     expect(readGitHubConfig({})).toBeUndefined();
+    expect(readGitHubConfig({ GITHUB_TOKEN_KEY: githubTestConfig.encryptionKey.toString("base64") })).toBeUndefined();
+    expect(() => readGitHubConfig({ GITHUB_TOKEN_KEY: "invalid" })).toThrow();
     expect(() => readGitHubConfig({ GITHUB_CLIENT_ID: "test" })).toThrow();
     const env = { GITHUB_CLIENT_ID: "test", GITHUB_CLIENT_SECRET: "secret", GITHUB_APP_SLUG: "tray", GITHUB_TOKEN_KEY: Buffer.alloc(32, 1).toString("base64"), GITHUB_REDIRECT_URI: "https://office.example/v1/github/callback" };
     expect(readGitHubConfig(env)?.clientId).toBe("test");
@@ -109,6 +111,37 @@ describe("GitHub credentials and failures", () => {
     vi.spyOn(database, "saveGitHubConnection").mockRejectedValueOnce(new Error("storage failed"));
     await expect(service.completeConnection("user-maya", "code", "verifier", () => true)).rejects.toThrow("storage failed");
     expect((await database.loadGitHubConnections())[0]!.encryptedTokens).not.toBeNull();
+  });
+
+  it("cancels in-flight reads and authorization when the app configuration changes", async () => {
+    const { service, fetcher, database } = await setup();
+    const { state } = service.beginConnection("user-leo", "session");
+    let resolveRead!: (response: Response) => void;
+    fetcher.mockImplementationOnce(() => new Promise((resolve) => { resolveRead = resolve; }));
+    const request = service.repositories("user-maya", 1);
+    const rejected = expect(request).rejects.toMatchObject({ code: "GITHUB_CANCELLED" });
+    await vi.waitFor(() => expect(resolveRead).toBeTypeOf("function"));
+    const updating = service.configure({ ...githubTestConfig, clientId: "Iv1.other" });
+    expect(service.status("user-maya")).toMatchObject({ configured: false, connected: false });
+    expect(() => service.beginConnection("user-maya", "session")).toThrow();
+    expect(() => service.authorization.consume(state, state, "user-leo", "session")).toThrow();
+    resolveRead(Response.json([{ full_name: "team/private", private: true }]));
+    await rejected;
+    await updating;
+    expect(await database.loadGitHubConnections()).toEqual([]);
+    expect(service.status("user-maya")).toMatchObject({ configured: true, connected: false });
+    let resolveToken!: (response: Response) => void;
+    fetcher.mockImplementationOnce(() => new Promise((resolve) => { resolveToken = resolve; }));
+    service.beginConnection("user-maya", "session");
+    const connection = service.completeConnection("user-maya", "code", "verifier", () => true);
+    const connectionRejected = expect(connection).rejects.toMatchObject({ code: "GITHUB_CANCELLED" });
+    await vi.waitFor(() => expect(resolveToken).toBeTypeOf("function"));
+    const disabling = service.configure(undefined);
+    resolveToken(Response.json(tokenBody()));
+    await connectionRejected;
+    await disabling;
+    expect(await database.loadGitHubConnections()).toEqual([]);
+    expect(service.status("user-maya")).toMatchObject({ configured: false, connected: false });
   });
 
   it("aborts stalled requests and never follows redirects with credentials", async () => {

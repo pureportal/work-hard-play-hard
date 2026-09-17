@@ -211,7 +211,7 @@ function workspace(availability: Availability = "available"): BootstrapData {
       email: "maya@example.com",
       title: "Product Lead",
       role: "owner",
-      permissions: ["manage_members", "build"],
+      permissions: ["manage_members"],
       color: "#ff7a66",
       availability,
       online: true,

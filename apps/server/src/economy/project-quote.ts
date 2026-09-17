@@ -1,6 +1,6 @@
 import {
   BUILD_GRID_SIZE, BUILD_PRICES, WORKSPACE_FUND_ID, assetResaleValue, getAssetDefinition,
-  getPlacedAssetBounds, getOpeningRect, getWallLength, getWallRect, isPermanentAsset, isUnitWithin, normalizeWall, roomBuildAllows,
+  getPlacedAssetBounds, getOpeningRect, getWallLength, getWallRect, isInPersonalSpace, isPermanentAsset, isUnitWithin, normalizeWall, roomBuildAllows, roomAccessAllows,
   type ConstructionReceipt, type FloorLayout, type GameSettings, type OrganisationState,
   type ProjectQuote, type PublicAsset, type PublicFund, type Rect,
 } from "@workhard/shared";
@@ -28,6 +28,12 @@ function constructionItems(layout: FloorLayout): Map<string, number> {
   return items;
 }
 
+function openingPlacements(layout: FloorLayout) {
+  return layout.openings.map((opening) => ({ id: opening.id, type: opening.type,
+    bounds: getOpeningRect(layout.walls.find((wall) => wall.id === opening.wallId)!, opening),
+  })).sort((left, right) => left.id.localeCompare(right.id));
+}
+
 export function quoteProject(previous: FloorLayout, next: FloorLayout, fundId: string, receipts: ConstructionReceipt[], inventory: PublicAsset[] = [], donatedObjects: Map<string, string> = new Map()): ProjectQuote {
   const before = constructionItems(previous);
   const after = constructionItems(next);
@@ -52,34 +58,48 @@ export function quoteProject(previous: FloorLayout, next: FloorLayout, fundId: s
     const receipt = paid.get(key);
     if (receipt) refunds.set(receipt.fundId, (refunds.get(receipt.fundId) ?? 0) + assetResaleValue(receipt.paid));
   }
-  const structural = JSON.stringify(previous.walls) !== JSON.stringify(next.walls)
-    || JSON.stringify(previous.openings) !== JSON.stringify(next.openings)
-    || JSON.stringify(previous.objects.filter((object) => isPermanentAsset(object.assetId))) !== JSON.stringify(next.objects.filter((object) => isPermanentAsset(object.assetId)));
+  const structural = [...before.keys()].some((key) => key.startsWith("wall:") && !after.has(key))
+    || [...after.keys()].some((key) => key.startsWith("wall:") && !before.has(key))
+    || JSON.stringify(openingPlacements(previous)) !== JSON.stringify(openingPlacements(next))
+    || previous.objects.some((object) => isPermanentAsset(object.assetId) && JSON.stringify(object) !== JSON.stringify(next.objects.find((candidate) => candidate.id === object.id)))
+    || next.objects.some((object) => isPermanentAsset(object.assetId) && !previous.objects.some((candidate) => candidate.id === object.id));
   const changedPublicProperty = previous.objects.some((object) => !object.ownerUserId
     && JSON.stringify(object) !== JSON.stringify(next.objects.find((candidate) => candidate.id === object.id)));
-  return { cost, refund: [...refunds.values()].reduce((sum, value) => sum + value, 0),
+  const assetChanges: ProjectQuote["assetChanges"] = [];
+  for (const object of next.objects) {
+    const original = previous.objects.find((item) => item.id === object.id);
+    if (JSON.stringify(original) !== JSON.stringify(object)) assetChanges.push({ object: structuredClone(object), change: original ? "move" : "place" });
+  }
+  for (const object of previous.objects) {
+    if (!next.objects.some((item) => item.id === object.id)) assetChanges.push({ object: structuredClone(object), change: "remove" });
+  }
+  return { assetChanges, cost, refund: [...refunds.values()].reduce((sum, value) => sum + value, 0),
     refunds: [...refunds].map(([id, amount]) => ({ fundId: id, amount })), structural,
-    destructive: removedKeys.length > 0, requiresApproval: structural || removedKeys.length > 0 || changedPublicProperty,
+    destructive: removedKeys.length > 0 || changedPublicProperty, requiresApproval: true,
     purchases, removedKeys, inventoryIds };
 }
 
-export function assertProjectScope(previous: FloorLayout, next: FloorLayout, fund: PublicFund, userId: string, settings: GameSettings, organisation: OrganisationState): boolean {
+export function assertProjectScope(previous: FloorLayout, next: FloorLayout, fund: PublicFund, userId: string, settings: GameSettings, organisation: OrganisationState): void {
   for (const room of previous.rooms) {
     const access = room.access.mode === "default" ? settings.roomAccess : room.access;
-    if (access.mode === "open") continue;
+    if (access.mode === "open" && !room.ownerUserId && !room.personalAreas?.length) continue;
     const retained = next.rooms.find((candidate) => candidate.id === room.id);
     if (!retained || JSON.stringify(retained.footprint) !== JSON.stringify(room.footprint)
       || (room.privateEligible && !retained.privateEligible)
       || JSON.stringify(retained.access) !== JSON.stringify(room.access)) throw new Error("ROOM_PRIVACY_PROTECTED");
   }
   const affected: Rect[] = [];
-  let outsideOwnArea = false;
   for (const [source, target] of [[previous, next], [next, previous]] as const) {
     for (const object of source.objects) {
       const other = target.objects.find((candidate) => candidate.id === object.id);
       if (JSON.stringify(object) === JSON.stringify(other)) continue;
-      if (object.ownerUserId) throw new Error("PRIVATE_ASSET_PROTECTED");
-      if (fund.unitId && (object.publicFundId ?? WORKSPACE_FUND_ID) !== fund.id) throw new Error("PUBLIC_FUND_SCOPE");
+      if (object.ownerUserId && object.ownerUserId !== userId) throw new Error("PRIVATE_ASSET_PROTECTED");
+      if (object.ownerUserId === userId && isInPersonalSpace(previous, object, userId)) {
+        const bounds = getPlacedAssetBounds(object);
+        if (previous.rooms.some((room) => room.footprint.some((rect) => intersects(rect, bounds)) && !roomAccessAllows(room, userId, settings, organisation))) throw new Error("ASSET_ROOM_FORBIDDEN");
+        continue;
+      }
+      if (fund.unitId && !object.ownerUserId && (object.publicFundId ?? WORKSPACE_FUND_ID) !== fund.id) throw new Error("PUBLIC_FUND_SCOPE");
       affected.push(getPlacedAssetBounds(object));
     }
     const targetItems = constructionItems(target);
@@ -103,13 +123,10 @@ export function assertProjectScope(previous: FloorLayout, next: FloorLayout, fun
   }
   for (const bounds of affected) {
     const rooms = previous.rooms.filter((room) => room.footprint.some((rect) => intersects(rect, bounds)));
-    const assignment = organisation.assignments.find((entry) => entry.userId === userId);
-    if (rooms.some((room) => room.organisationUnitId && (!assignment || !isUnitWithin(organisation, assignment.unitId, room.organisationUnitId)))) outsideOwnArea = true;
     if (rooms.some((room) => !roomBuildAllows(room, userId, settings, organisation))) throw new Error("ASSET_ROOM_FORBIDDEN");
     if (fund.unitId && (!rooms.length || rooms.some((room) => !room.organisationUnitId
       || !isUnitWithin(organisation, room.organisationUnitId, fund.unitId!)))) throw new Error("PUBLIC_FUND_SCOPE");
   }
-  return outsideOwnArea;
 }
 
 function intersects(left: Rect, right: Rect): boolean {

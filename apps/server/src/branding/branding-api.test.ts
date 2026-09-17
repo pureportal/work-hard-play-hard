@@ -10,7 +10,7 @@ afterEach(async () => {
 });
 
 describe("corporate identity API", () => {
-  it("persists owner-managed identity and exposes it before authentication", async () => {
+  it("persists administrator-managed identity and exposes it before authentication", async () => {
     const database = new MemoryDatabase();
     const context = await createTestApplication({ database, fixture: true });
     applications.push(context);
@@ -42,7 +42,7 @@ describe("corporate identity API", () => {
       headers: { cookie: adminCookie },
     });
 
-    expect(forbidden.statusCode).toBe(403);
+    expect(forbidden.statusCode).toBe(200);
     expect(updated.statusCode).toBe(200);
     expect(updated.json()).toEqual({
       ...settings,

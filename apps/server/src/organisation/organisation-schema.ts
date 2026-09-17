@@ -15,6 +15,17 @@ export const gameSettingsSchema = z.object({
   roomBuild: roomPermissionSchema.extend({ mode: z.enum(["open", "assigned", "none"]) }),
 }).strict();
 
+export const roomSettingsSchema = z.object({
+  name: z.string().trim().min(1).max(60), color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  meetingRoom: z.boolean().optional(),
+  access: roomPermissionSchema.extend({ knockable: z.boolean() }), build: roomPermissionSchema.optional(),
+  organisationUnitId: id.optional(), ownerUserId: id.optional(),
+  personalAreas: z.array(z.object({ id, name, ownerUserId: id, bounds: z.object({
+    x: z.number().int(), y: z.number().int(),
+    width: z.number().int().positive().max(32000), height: z.number().int().positive().max(32000),
+  }).strict() }).strict()).max(100).optional(),
+}).strict();
+
 export const organisationEditSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("unit.create"), name, kind, parentId: id.nullable() }).strict(),
   z.object({ type: z.literal("unit.update"), unitId: id, name, kind }).strict(),
@@ -22,8 +33,7 @@ export const organisationEditSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("unit.delete"), unitId: id }).strict(),
   z.object({ type: z.literal("member.move"), userId: id, unitId: id.nullable(), rank: z.enum(["lead", "member"]) }).strict(),
   z.object({ type: z.literal("ceo.promote"), userId: id }).strict(),
-  z.object({ type: z.literal("ceo.propose_removal"), userId: id }).strict(),
-  z.object({ type: z.literal("ceo.vote"), voteId: id, approve: z.boolean() }).strict(),
+  z.object({ type: z.literal("ceo.remove"), userId: id }).strict(),
 ]);
 
 export const organisationStateSchema = z.object({
@@ -31,9 +41,4 @@ export const organisationStateSchema = z.object({
   ceoIds: z.array(id),
   units: z.array(z.object({ id, name, kind, parentId: id.nullable() }).strict()).max(500),
   assignments: z.array(z.object({ userId: id, unitId: id, rank: z.enum(["lead", "member"]) }).strict()),
-  removalVotes: z.array(z.object({
-    id, subjectId: id, proposedBy: id, electorate: z.array(id),
-    ballots: z.array(z.object({ userId: id, approve: z.boolean() }).strict()),
-    status: z.enum(["open", "passed", "rejected", "cancelled"]),
-  }).strict()),
 }).strict();

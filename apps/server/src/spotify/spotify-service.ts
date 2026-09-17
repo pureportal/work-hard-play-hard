@@ -25,16 +25,17 @@ interface SpotifyServiceOptions {
 }
 
 export class SpotifyService {
-  readonly authorization = new SpotifyAuthorization();
+  authorization = new SpotifyAuthorization();
   private readonly connections = new Map<string, Connection>();
   private readonly activities = new Map<string, SpotifyActivity>();
   private readonly online = new Set<string>();
   private readonly revisions = new Map<string, number>();
   private readonly queues = new Map<string, Promise<unknown>>();
-  private readonly client: SpotifyClient | undefined;
+  private client: SpotifyClient | undefined;
   private timer: NodeJS.Timeout | undefined;
   private stopped = false;
   private pollingCount = 0;
+  private configuring = false;
 
   private constructor(private readonly options: SpotifyServiceOptions) {
     this.client = options.config ? new SpotifyClient(options.config, options.fetcher) : undefined;
@@ -59,10 +60,27 @@ export class SpotifyService {
     await Promise.allSettled(this.queues.values());
   }
 
+  async configure(config: SpotifyConfig | undefined): Promise<void> {
+    this.configuring = true;
+    this.authorization = new SpotifyAuthorization();
+    for (const userId of this.revisions.keys()) this.revisions.set(userId, this.revisions.get(userId)! + 1);
+    try {
+      await Promise.all(this.queues.values());
+      const records = await this.options.database.loadSpotifyConnections();
+      for (const userId of new Set([...this.connections.keys(), ...records.map((record) => record.userId)])) await this.disconnect(userId);
+      this.options.config = config;
+      this.client = config ? new SpotifyClient(config, this.options.fetcher) : undefined;
+    } catch (error) {
+      this.client = undefined;
+      this.options.config = undefined;
+      throw error;
+    } finally { this.configuring = false; }
+  }
+
   status(userId: string): SpotifyStatus {
     const connection = this.connections.get(userId);
     return {
-      configured: Boolean(this.client), connected: Boolean(connection?.record.encryptedTokens),
+      configured: Boolean(this.client) && !this.configuring, connected: Boolean(connection?.record.encryptedTokens) && !this.configuring,
       sharing: connection?.sharing ?? false,
       needsReconnect: Boolean(connection && !connection.record.encryptedTokens),
       error: connection?.error ?? null, jamUrl: connection?.jam?.url ?? null,
@@ -86,7 +104,7 @@ export class SpotifyService {
   }
 
   beginConnection(userId: string, sessionToken: string): { url: string; state: string } {
-    if (!this.options.config) throw new SpotifyError("SPOTIFY_NOT_CONFIGURED", "Spotify has not been set up for this workspace.", 503);
+    if (this.configuring || !this.options.config) throw new SpotifyError("SPOTIFY_NOT_CONFIGURED", "Spotify has not been set up for this workspace.", 503);
     this.revisions.set(userId, (this.revisions.get(userId) ?? 0) + 1);
     return this.authorization.begin(userId, sessionToken, this.options.config);
   }
@@ -94,7 +112,7 @@ export class SpotifyService {
   async completeConnection(userId: string, code: string, verifier: string, sessionIsActive: () => boolean): Promise<void> {
     const revision = this.revisions.get(userId);
     await this.enqueue(userId, async () => {
-      if (!this.client || !this.options.config) throw new SpotifyError("SPOTIFY_NOT_CONFIGURED", "Spotify has not been set up for this workspace.", 503);
+      if (this.configuring || !this.client || !this.options.config) throw new SpotifyError("SPOTIFY_NOT_CONFIGURED", "Spotify has not been set up for this workspace.", 503);
       const tokens = await this.client.exchange(code, verifier);
       if (this.revisions.get(userId) !== revision || this.stopped || !sessionIsActive()) throw new SpotifyError("SPOTIFY_CANCELLED", "Try connecting Spotify again.", 409);
       const record: SpotifyConnectionRecord = {
@@ -166,7 +184,7 @@ export class SpotifyService {
   }
 
   tick(): void {
-    if (this.stopped) return;
+    if (this.stopped || this.configuring) return;
     const now = Date.now();
     for (const [userId, activity] of this.activities) {
       if (activity.expiresAt <= now) {
@@ -264,7 +282,7 @@ export class SpotifyService {
 
   private requireConnection(userId: string): Connection {
     const connection = this.connections.get(userId);
-    if (!this.client || !connection?.record.encryptedTokens) throw new SpotifyError("SPOTIFY_RECONNECT", "Connect Spotify in Settings to play this song.", 409);
+    if (this.configuring || !this.client || !connection?.record.encryptedTokens) throw new SpotifyError("SPOTIFY_RECONNECT", "Connect Spotify in Settings to play this song.", 409);
     return connection;
   }
 

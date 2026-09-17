@@ -9,6 +9,79 @@ afterEach(() => {
 });
 
 describe("WorldRuntime player-owned assets", () => {
+  it("places the starter laptop on its table, moves both, and stores them across reloads", () => {
+    const store = new WorkspaceStore(workspace(room("assigned", ["user-jonas"])));
+    const inventory = store.getPlayerEconomy("user-jonas").inventory;
+    const table = inventory.find((asset) => asset.assetId === "table-cafe")!;
+    const laptop = inventory.find((asset) => asset.assetId === "decor-laptop")!;
+    const runtime = new WorldRuntime(store);
+    const events: ServerEvent[] = [];
+    const peer = runtime.connect("user-jonas", "floor-player", (event) => events.push(event));
+    try {
+      send(runtime, peer, {
+        type: "player_asset.place", requestId: "place-starter-table", baseRevision: 1,
+        ownedAssetId: table.id, position: { x: 16, y: 16 }, variantId: "oak", rotation: 0,
+      });
+      const placedTable = store.getLayout("floor-player")!.objects.find((object) => object.ownedAssetId === table.id)!;
+      send(runtime, peer, {
+        type: "player_asset.move", requestId: "move-starter-table", baseRevision: 2,
+        objectId: placedTable.id, position: { x: 48, y: 48 }, variantId: "walnut", rotation: 0,
+      });
+      expect(store.getObject(placedTable.id)).toMatchObject({ x: 48, y: 48, variantId: "walnut" });
+      send(runtime, peer, {
+        type: "player_asset.place", requestId: "place-starter-laptop", baseRevision: 3,
+        ownedAssetId: laptop.id, position: { x: 64, y: 64 }, variantId: "graphite", rotation: 0,
+      });
+      expect(events.filter((event) => event.type === "command.error")).toEqual([]);
+      const placedLaptop = store.getLayout("floor-player")!.objects.find((object) => object.ownedAssetId === laptop.id)!;
+      expect(store.getOwnedAsset("user-jonas", laptop.id).placement?.objectId).toBe(placedLaptop.id);
+      send(runtime, peer, { type: "economy.sell_asset", requestId: "sell-placed", ownedAssetId: laptop.id });
+      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "ASSET_ALREADY_PLACED" });
+      send(runtime, peer, {
+        type: "player_asset.move", requestId: "move-occupied-table", baseRevision: 4,
+        objectId: placedTable.id, position: { x: 16, y: 16 }, variantId: "walnut", rotation: 0,
+      });
+      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "ASSET_SUPPORT_OCCUPIED" });
+      events.length = 0;
+      send(runtime, peer, {
+        type: "player_asset.move", requestId: "rotate-starter-laptop", baseRevision: 4,
+        objectId: placedLaptop.id, position: { x: 64, y: 64 }, variantId: "ivory", rotation: 90,
+      });
+      expect(store.getObject(placedLaptop.id)).toMatchObject({ variantId: "ivory", rotation: 90 });
+      expect(events.filter((event) => event.type === "command.error")).toEqual([]);
+      const saved = store.exportMutableState();
+      const restored = new WorkspaceStore();
+      restored.restoreMutableState(saved);
+      expect(restored.getPlayerEconomy("user-jonas").inventory).toEqual(store.getPlayerEconomy("user-jonas").inventory);
+      const restoredRuntime = new WorldRuntime(restored);
+      const restoredEvents: ServerEvent[] = [];
+      try {
+        const restoredPeer = restoredRuntime.connect("user-jonas", "floor-player", (event) => restoredEvents.push(event));
+        send(restoredRuntime, restoredPeer, {
+          type: "player_asset.remove", requestId: "store-starter-table", baseRevision: 5, objectId: placedTable.id,
+        });
+        expect(restoredEvents.filter((event) => event.type === "command.error")).toEqual([]);
+        expect(restored.getLayout("floor-player")!.objects).toEqual([]);
+        expect(restored.getPlayerEconomy("user-jonas").inventory).toEqual(inventory);
+        send(restoredRuntime, restoredPeer, {
+          type: "player_asset.place", requestId: "replace-starter-table", baseRevision: 6,
+          ownedAssetId: table.id, position: { x: 16, y: 16 }, variantId: "white", rotation: 90,
+        });
+        send(restoredRuntime, restoredPeer, {
+          type: "player_asset.place", requestId: "replace-starter-laptop", baseRevision: 7,
+          ownedAssetId: laptop.id, position: { x: 32, y: 32 }, variantId: "coral", rotation: 0,
+        });
+        expect(restoredEvents.filter((event) => event.type === "command.error")).toEqual([]);
+        expect(restored.getPlayerEconomy("user-jonas").inventory).toHaveLength(2);
+        expect(restored.getPlayerEconomy("user-jonas").coinBalance).toBe(250);
+      } finally {
+        restoredRuntime.stop();
+      }
+    } finally {
+      runtime.stop();
+    }
+  });
+
   it("requires public ownership for permanent flooring", () => {
     const store = new WorkspaceStore(workspace(room("open", [])));
     expect(() => store.purchaseAsset("user-jonas", "floor-wood", "buy-floor")).toThrow("ASSET_UNAVAILABLE");
@@ -93,8 +166,8 @@ describe("WorldRuntime player-owned assets", () => {
     const claim = events.find((event) => event.type === "economy.updated" && event.requestId === "claim-daily");
     expect(claim).toMatchObject({
       type: "economy.updated",
-      economy: { coinBalance: 300 },
-      transaction: { kind: "daily_bonus", amount: 50, balanceAfter: 300 },
+      economy: { coinBalance: 260 },
+      transaction: { kind: "daily_bonus", amount: 10, balanceAfter: 260 },
     });
 
     send(runtime, peer, { type: "economy.purchase_asset", requestId: "buy-chair", assetId: "chair-office" });
@@ -105,18 +178,21 @@ describe("WorldRuntime player-owned assets", () => {
     );
     expect(purchases).toHaveLength(2);
     expect(purchases[0]).toMatchObject({
-      economy: { coinBalance: 230, inventory: [expect.objectContaining({ assetId: "chair-office" })] },
-      transaction: { kind: "shop_purchase", amount: -70, balanceAfter: 230, assetId: "chair-office" },
+      economy: { coinBalance: 190, inventory: expect.arrayContaining([expect.objectContaining({ assetId: "chair-office" })]) },
+      transaction: { kind: "shop_purchase", amount: -70, balanceAfter: 190, assetId: "chair-office" },
     });
     expect(purchases[1]).toMatchObject({
-      economy: { coinBalance: 230, inventory: [expect.objectContaining({ assetId: "chair-office" })] },
+      economy: { coinBalance: 190, inventory: expect.arrayContaining([expect.objectContaining({ assetId: "chair-office" })]) },
       transaction: { id: purchases[0]!.transaction?.id },
     });
+    expect(purchases[0]!.economy.inventory).toHaveLength(3);
+    expect(purchases[1]!.economy.inventory).toEqual(purchases[0]!.economy.inventory);
     runtime.stop();
   });
 
   it("denies moving or removing another player's placed asset", () => {
     const store = new WorkspaceStore(workspace(room("assigned", ["user-jonas", "user-priya"])));
+    store.getRoom("room-player")!.ownerUserId = "user-priya";
     const ownedAssetId = store.purchaseAsset("user-priya", "plant-floor", "buy-priya-plant").transaction.ownedAssetId!;
     const runtime = new WorldRuntime(store);
     const ownerEvents: ServerEvent[] = [];
@@ -159,7 +235,7 @@ describe("WorldRuntime player-owned assets", () => {
     runtime.stop();
   });
 
-  it("requires the global setting for public rooms and restricts that setting to admins", () => {
+  it("requires approval for global settings and personal items in public rooms", () => {
     const store = new WorkspaceStore(workspace(room("open", [])));
     store.updateGameSettings({ roomAccess: { mode: "open", assignedPersonIds: [] }, roomBuild: { mode: "none", assignedPersonIds: [] } });
     const ownedAssetId = store.purchaseAsset("user-jonas", "plant-floor", "buy-plant").transaction.ownedAssetId!;
@@ -185,18 +261,16 @@ describe("WorldRuntime player-owned assets", () => {
       requestId: "player-setting",
       settings: { roomAccess: { mode: "open", assignedPersonIds: [] }, roomBuild: { mode: "open", assignedPersonIds: [] } },
     });
-    expect(playerEvents.at(-1)).toMatchObject({ type: "command.error", code: "GAME_SETTINGS_FORBIDDEN" });
+    expect(playerEvents.at(-1)).toMatchObject({ type: "command.error", code: "PROJECT_APPROVAL_REQUIRED" });
 
     send(runtime, adminPeer, {
       type: "game.settings_update",
       requestId: "admin-setting",
       settings: { roomAccess: { mode: "open", assignedPersonIds: [] }, roomBuild: { mode: "open", assignedPersonIds: [] } },
     });
-    expect(store.getGameSettings()).toEqual({ roomAccess: { mode: "open", assignedPersonIds: [] }, roomBuild: { mode: "open", assignedPersonIds: [] } });
-    expect(playerEvents).toContainEqual({
-      type: "game.settings_updated",
-      settings: { roomAccess: { mode: "open", assignedPersonIds: [] }, roomBuild: { mode: "open", assignedPersonIds: [] } },
-    });
+    expect(adminEvents.at(-1)).toMatchObject({ type: "command.error", code: "PROJECT_APPROVAL_REQUIRED" });
+    expect(store.getGameSettings().roomBuild.mode).toBe("none");
+    store.updateGameSettings({ roomAccess: { mode: "open", assignedPersonIds: [] }, roomBuild: { mode: "open", assignedPersonIds: [] } });
 
     send(runtime, playerPeer, {
       type: "player_asset.place",
@@ -207,7 +281,8 @@ describe("WorldRuntime player-owned assets", () => {
       variantId: "autumn",
       rotation: 0,
     });
-    expect(store.getLayout("floor-player")!.objects).toContainEqual(expect.objectContaining({ ownedAssetId }));
+    expect(playerEvents.at(-1)).toMatchObject({ type: "command.error", code: "PROJECT_APPROVAL_REQUIRED" });
+    expect(store.getLayout("floor-player")!.objects).toEqual([]);
     runtime.stop();
   });
 
@@ -229,7 +304,7 @@ describe("WorldRuntime player-owned assets", () => {
     expect(events).toContainEqual(expect.objectContaining({
       type: "economy.updated",
       economy: expect.objectContaining({
-        dailyReward: expect.objectContaining({ claimable: true, streak: 1, amount: 60 }),
+        dailyReward: expect.objectContaining({ claimable: true, streak: 1, amount: 15 }),
       }),
     }));
     runtime.stop();
@@ -287,6 +362,7 @@ function room(mode: Room["access"]["mode"], assignedPersonIds: string[]): Room {
     windowIds: [],
     privateEligible: true,
     access: { mode, assignedPersonIds, knockable: false },
+    ...(mode === "assigned" ? { ownerUserId: assignedPersonIds[0]! } : {}),
     build: { mode: mode === "assigned" ? "assigned" : "default", assignedPersonIds },
   };
 }

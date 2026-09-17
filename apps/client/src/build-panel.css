@@ -110,17 +110,37 @@
   border-inline-start-width: 3px;
 }
 
+@media (min-width: 701px) and (max-width: 980px) {
+  .workspace-shell:has(.build-layout-panel) .world-viewport {
+    width: auto;
+    right: var(--side-panel-width);
+  }
+
+  .workspace-shell:has(.build-layout-panel) .world-zoom-controls {
+    right: 12px;
+  }
+}
+
 @media (max-width: 700px) {
   .workspace-shell:has(.build-layout-panel) {
     --build-panel-height: min(68dvh, 640px);
+  }
+
+  .workspace-shell:has(.build-layout-panel[data-reviewing]) {
+    --build-panel-height: min(42dvh, 360px);
   }
 
   .side-panel.build-layout-panel {
     height: var(--build-panel-height);
   }
 
+  .workspace-shell:has(.build-layout-panel) .world-viewport {
+    height: auto;
+    bottom: var(--build-panel-height);
+  }
+
   .workspace-shell:has(.build-layout-panel) .placement-controls {
-    bottom: calc(var(--build-panel-height) + 10px);
+    bottom: 10px;
   }
 }
 
@@ -131,6 +151,12 @@
 
   .build-layout-panel .build-workspace {
     flex: 1 0 260px;
+  }
+
+  .build-layout-panel > .project-toolbar {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
   }
 
   .side-panel.build-layout-panel .panel-header {

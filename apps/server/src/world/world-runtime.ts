@@ -1,8 +1,9 @@
 import { ProjectRuntime, type ProjectPeer } from "../economy/project-runtime.js";
-import { isPermanentAsset, publicFundForUnit, type ProjectEdit, type PublicAction } from "@workhard/shared";
+import { isPermanentAsset, isInPersonalSpace, type ProjectEdit, type PublicAction } from "@workhard/shared";
 import { roomAccessAllows } from "@workhard/shared";
 import { randomUUID } from "node:crypto";
 import {
+  ASSET_PLACEMENT_MESSAGES,
   ASSET_RASTER_SIZE,
   BUILD_GRID_SIZE,
   canUseWorkObject,
@@ -58,7 +59,6 @@ import {
   type Conversation,
   type CorporateIdentity,
   type FloorLayout,
-  type GlobalKidnappingSettings,
   type KidnappingEndReason,
   type LayoutItemReference,
   type Member,
@@ -451,8 +451,7 @@ export class WorldRuntime {
           this.endKidnappingForUser(peer.userId, "cancelled");
           break;
         case "kidnapping.global_settings_update":
-          this.updateGlobalKidnappingSettings(peer, command.settings);
-          break;
+          throw new Error("PROJECT_APPROVAL_REQUIRED");
         case "kidnapping.player_settings_update":
           this.updatePlayerKidnappingSettings(peer, command.settings);
           break;
@@ -527,8 +526,7 @@ export class WorldRuntime {
           break;
         }
         case "game.settings_update":
-          this.updateGameSettings(peer, command.settings);
-          break;
+          throw new Error("PROJECT_APPROVAL_REQUIRED");
         case "asset.interact":
           this.interactWithAsset(peer, command.requestId, command.objectId, command.interactionId);
           break;
@@ -548,7 +546,7 @@ export class WorldRuntime {
           if (command.userId === null) {
             this.roomAccessInspections.delete(peer);
           } else {
-            if (!this.store.canBuild(peer.userId)) throw new Error("EDIT_FORBIDDEN");
+            if (!this.store.canInspectRoomAccess(peer.userId)) throw new Error("EDIT_FORBIDDEN");
             if (!this.store.getMember(command.userId)) throw new Error("USER_NOT_FOUND");
             this.roomAccessInspections.set(peer, { userId: command.userId, serialized: "" });
             this.publishRoomAccessibility();
@@ -664,7 +662,7 @@ export class WorldRuntime {
         || command.type === "chess.draw_claim" || command.type === "chess.draw_respond")
         && !this.chessRuntime.isViewing(peer.userId)) this.syncGameLobbies();
       if ("requestId" in command && (command.type === "game.start" || command.type === "game.end"
-        || command.type === "organisation.edit" || command.type === "game.settings_update"
+        || command.type === "organisation.edit"
         || command.type.startsWith("chess.")
         || (command.type === "game.command" && typeof command.command === "object"))) {
         peer.send({ type: "command.ack", requestId: command.requestId });
@@ -1011,7 +1009,7 @@ export class WorldRuntime {
   private publishRoomAccessibility(): void {
     const results = new Map<string, { accessibility: PlayerRoomAccessibility; serialized: string }>();
     for (const [peer, inspection] of this.roomAccessInspections) {
-      if (!this.store.canBuild(peer.userId) || !this.store.getMember(inspection.userId)) {
+      if (!this.store.canInspectRoomAccess(peer.userId) || !this.store.getMember(inspection.userId)) {
         this.roomAccessInspections.delete(peer);
         continue;
       }
@@ -1780,15 +1778,6 @@ export class WorldRuntime {
     }
   }
 
-  private updateGlobalKidnappingSettings(peer: Peer, settings: GlobalKidnappingSettings): void {
-    if (!this.store.canManageMembers(peer.userId)) {
-      throw new Error("KIDNAPPING_SETTINGS_FORBIDDEN");
-    }
-    const updated = this.store.updateGlobalKidnappingSettings(settings);
-    this.broadcast({ type: "kidnapping.global_settings_updated", settings: updated });
-    this.reconcileKidnappingPermissions();
-  }
-
   private updatePlayerKidnappingSettings(peer: Peer, settings: PlayerKidnappingSettings): void {
     const updated = this.store.updatePlayerKidnappingSettings(peer.userId, settings);
     this.sendToUser(peer.userId, { type: "kidnapping.player_settings_updated", settings: updated });
@@ -1889,17 +1878,20 @@ export class WorldRuntime {
       this.eraseLayoutItem(peer.floorId, next, snapToAssetRaster(edit.position.x), snapToAssetRaster(edit.position.y));
     } else if (edit.tool === "door" || edit.tool === "window") {
       this.addWallOpening(next, edit.tool, edit.position);
-    } else if (edit.tool === "asset" || edit.tool === "public_asset") {
+    } else if (edit.tool === "asset" || edit.tool === "public_asset" || edit.tool === "personal_asset") {
       if (next.objects.length >= MAX_LAYOUT_OBJECTS_PER_FLOOR) throw new Error("LAYOUT_CAPACITY_REACHED");
       if (edit.tool === "asset") {
         const definition = requireAssetDefinition(edit.assetId);
         if (!definition.buildable || !definition.shop) throw new Error("ASSET_UNAVAILABLE");
       }
       const donated = edit.tool === "public_asset" ? this.store.publicEconomy.inventory.find((asset) => asset.id === edit.publicAssetId && asset.fundId === fundId) : undefined;
+      const owned = edit.tool === "personal_asset" ? this.store.getOwnedAsset(peer.userId, edit.ownedAssetId) : undefined;
+      if (owned && (owned.placement || next.objects.some((object) => object.ownedAssetId === owned.id))) throw new Error("ASSET_ALREADY_PLACED");
+      if (owned && isPermanentAsset(owned.assetId)) throw new Error("PERMANENT_ASSET_PUBLIC");
       if (edit.tool === "public_asset" && !donated) throw new Error("PUBLIC_ASSET_UNAVAILABLE");
       const object = this.createAsset(
         peer.floorId,
-        edit.tool === "asset" ? edit.assetId : donated!.assetId,
+        edit.tool === "asset" ? edit.assetId : owned ? owned.assetId : donated!.assetId,
         edit.variantId,
         edit.rotation,
         snapToAssetRaster(edit.position.x),
@@ -1907,7 +1899,11 @@ export class WorldRuntime {
       );
       this.assertNoPlayerOverlap(peer.floorId, getPlacedAssetCellRects(object, true));
       this.assertAssetPlacement(next, floor, object);
-      object.publicFundId = fundId;
+      if (owned) {
+        object.ownerUserId = peer.userId;
+        object.ownedAssetId = owned.id;
+        this.assertPlayerAssetRoom(next, object, peer.userId);
+      } else object.publicFundId = fundId;
       next.objects.push(object);
     } else if (edit.tool === "asset.move") {
       this.moveAsset(peer.floorId, next, floor, edit.objectId, edit.position, edit.variantId, edit.rotation);
@@ -1950,6 +1946,7 @@ export class WorldRuntime {
       }
       this.store.publicEconomy.applyProject(peer.userId, project);
       const replacement = this.store.replaceLayout(next);
+      for (const userId of replacement.economyUserIds) this.publishEconomy(userId, requestId);
       for (const object of before.objects) {
         if (JSON.stringify(object) !== JSON.stringify(next.objects.find((item) => item.id === object.id))) this.releaseSeatsForObject(object.id);
       }
@@ -1966,7 +1963,6 @@ export class WorldRuntime {
       const organisation = this.store.getOrganisation();
       organisation.ceoIds = [...action.ceoIds];
       organisation.assignments = organisation.assignments.filter((assignment) => !action.ceoIds.includes(assignment.userId));
-      organisation.removalVotes = organisation.removalVotes.map((vote) => vote.status === "open" ? { ...vote, status: "cancelled" } : vote);
       organisation.revision += 1;
       this.store.publicEconomy.applyFundAction(peer.userId, action, requestId);
       this.broadcast({ type: "organisation.updated", organisation });
@@ -1977,6 +1973,10 @@ export class WorldRuntime {
       const settings = this.store.updateGameSettings(action.settings);
       this.broadcast({ type: "game.settings_updated", settings });
       this.reconcilePermissionChanges();
+    } else if (action.kind === "kidnapping.settings") {
+      const settings = this.store.updateGlobalKidnappingSettings(action.settings);
+      this.broadcast({ type: "kidnapping.global_settings_updated", settings });
+      this.reconcileKidnappingPermissions();
     } else {
       this.store.publicEconomy.applyFundAction(peer.userId, action, requestId);
     }
@@ -2025,6 +2025,7 @@ export class WorldRuntime {
     this.assertNoPlayerOverlap(peer.floorId, getPlacedAssetCellRects(object, true));
     this.assertAssetPlacement(next, floor, object);
     this.assertPlayerAssetRoom(next, object, peer.userId);
+    if (!isInPersonalSpace(next, object, peer.userId)) throw new Error("PROJECT_APPROVAL_REQUIRED");
     next.objects.push(object);
     next.revision += 1;
     const replacement = this.store.replaceLayout(next);
@@ -2058,10 +2059,12 @@ export class WorldRuntime {
     if (ownedAsset.placement?.objectId !== object.id) {
       throw new Error("ASSET_OWNERSHIP_INVALID");
     }
+    if (!isInPersonalSpace(layout, object, peer.userId)) throw new Error("PROJECT_APPROVAL_REQUIRED");
     this.assertPlayerAssetRoom(layout, object, peer.userId);
     const next = structuredClone(layout);
     this.moveAsset(peer.floorId, next, floor, objectId, position, variantId, rotation, (candidate) => {
       this.assertPlayerAssetRoom(next, candidate, peer.userId);
+      if (!isInPersonalSpace(next, candidate, peer.userId)) throw new Error("PROJECT_APPROVAL_REQUIRED");
     });
     next.revision += 1;
     const replacement = this.store.replaceLayout(next);
@@ -2087,14 +2090,26 @@ export class WorldRuntime {
     if (ownedAsset.placement?.objectId !== object.id || ownedAsset.placement.floorId !== object.floorId) {
       throw new Error("ASSET_OWNERSHIP_INVALID");
     }
-    this.assertPlayerAssetRoom(layout, object, peer.userId);
     const next = structuredClone(layout);
-    this.removeLayoutItem(peer.floorId, next, { type: "asset", id: objectId });
+    const supported = getAssetsSupportedBy(next, object);
+    const removedIds = new Set([objectId, ...supported.map((item) => item.id)]);
+    next.objects = next.objects.filter((item) => !removedIds.has(item.id));
     next.revision += 1;
-    const replacement = this.store.replaceLayout(next);
-    this.releaseSeatsForObject(objectId);
+    const checkpoint = this.store.exportMutableState();
+    let replacement: ReturnType<WorkspaceStore["replaceLayout"]>;
+    try {
+      for (const item of supported) {
+        if (!item.ownerUserId) this.store.publicEconomy.storePlacedAsset(item.id, item.assetId, item.floorId, item.publicFundId ?? "workspace");
+      }
+      replacement = this.store.replaceLayout(next);
+    } catch (error) {
+      this.store.restoreMutableState(checkpoint);
+      throw error;
+    }
+    for (const id of removedIds) this.releaseSeatsForObject(id);
     this.broadcastLayout(replacement.layout, { userId: peer.userId, requestId });
-    this.publishEconomy(peer.userId, requestId);
+    for (const userId of new Set([peer.userId, ...replacement.economyUserIds])) this.publishEconomy(userId, requestId);
+    if (supported.some((item) => !item.ownerUserId)) this.projects.publish();
   }
 
   private claimDailyReward(peer: Peer, requestId: string): void {
@@ -2105,16 +2120,6 @@ export class WorldRuntime {
   private purchaseAsset(peer: Peer, requestId: string, assetId: string): void {
     const result = this.store.purchaseAsset(peer.userId, assetId, requestId);
     this.publishEconomy(peer.userId, requestId, result.transaction);
-  }
-
-  private updateGameSettings(peer: Peer, settings: Parameters<WorkspaceStore["updateGameSettings"]>[0]): void {
-    if (this.store.publicEconomy.fund("workspace").mode === "equal") throw new Error("PROJECT_APPROVAL_REQUIRED");
-    if (!this.store.getOrganisation().ceoIds.includes(peer.userId)) {
-      throw new Error("GAME_SETTINGS_FORBIDDEN");
-    }
-    const updated = this.store.updateGameSettings(settings);
-    this.broadcast({ type: "game.settings_updated", settings: updated });
-    this.reconcilePermissionChanges();
   }
 
   private assertPlayerAssetRoom(layout: FloorLayout, object: WorldObject, userId: string): void {
@@ -2152,7 +2157,7 @@ export class WorldRuntime {
     }
     for (const [userId, meetingId] of this.activeMeetings) {
       const meeting = this.store.getMeeting(meetingId);
-      if (meeting && !nextRoomIds.has(meeting.location.roomId)) {
+      if (meeting && previousRooms.has(meeting.location.roomId) && !nextRoomIds.has(meeting.location.roomId)) {
         this.leaveActiveMeeting(userId);
       }
     }
@@ -2669,11 +2674,7 @@ export class WorldRuntime {
     settings: RoomSettings,
     approved = false,
   ): void {
-    const roomFund = publicFundForUnit(this.store.publicEconomy.view(), this.store.getOrganisation(), this.store.getRoom(roomId)?.organisationUnitId);
-    if (!approved && (this.store.publicEconomy.fund("workspace").mode === "equal" || roomFund.mode === "equal")) throw new Error("PROJECT_APPROVAL_REQUIRED");
-    if (!approved && !this.store.canManageRoom(peer.userId, roomId)) {
-      throw new Error("EDIT_FORBIDDEN");
-    }
+    if (!approved) throw new Error("PROJECT_APPROVAL_REQUIRED");
     const currentRoom = this.store.getRoom(roomId);
     const currentLayout = currentRoom ? this.store.getLayout(currentRoom.floorId) : undefined;
     if (!currentLayout) {
@@ -2683,8 +2684,6 @@ export class WorldRuntime {
       peer.send({ type: "layout.conflict", requestId, revision: currentLayout.revision });
       return;
     }
-    if (!approved && settings.organisationUnitId !== currentRoom?.organisationUnitId && !this.store.canBuild(peer.userId)
-      && !this.store.getOrganisation().ceoIds.includes(peer.userId)) throw new Error("ORGANISATION_FORBIDDEN");
     const layout = this.store.updateRoomSettings(roomId, settings);
     const room = layout.rooms.find((item) => item.id === roomId);
     this.clearRoomGrants(roomId);
@@ -2693,7 +2692,7 @@ export class WorldRuntime {
     }
     for (const [userId, meetingId] of this.activeMeetings) {
       const meeting = this.store.getMeeting(meetingId);
-      if (meeting && meeting.location.roomId === roomId && room && !this.userHasRoomAccess(userId, room)) {
+      if (meeting && meeting.location.roomId === roomId && (meeting.status === "ended" || (room && !this.userHasRoomAccess(userId, room)))) {
         this.leaveActiveMeeting(userId);
       }
     }
@@ -2710,6 +2709,7 @@ export class WorldRuntime {
     }
     this.validateRoomKnocks();
     this.broadcastLayout(layout, { userId: peer.userId, requestId });
+    this.broadcastWorkspaceAccess();
   }
 
   private reconcilePermissionChanges(): void {
@@ -3818,6 +3818,7 @@ export class WorldRuntime {
 
   private userMessage(code: string): string {
     const messages: Record<string, string> = {
+      ...ASSET_PLACEMENT_MESSAGES,
       ORGANISATION_FORBIDDEN: "You cannot make that change outside your area of responsibility.",
       ORGANISATION_CONFLICT: "The organisation changed. Review it and try again.",
       ORGANISATION_UNIT_NOT_FOUND: "That unit was removed. Choose another unit.",
@@ -3837,10 +3838,6 @@ export class WorldRuntime {
       EDIT_OUT_OF_RANGE: "Place it inside the floor.",
       SPAWN_BLOCKED: "Choose a clear spot for the start point.",
       SPAWN_RESTRICTED: "Place the start point in an open area.",
-      ASSET_OFF_RASTER: "Place it on the grid.",
-      ASSET_OUT_OF_RANGE: "Place it inside the floor.",
-      ASSET_BLOCKED: "That space is occupied.",
-      ASSET_REQUIRES_SURFACE: "Place it on a supported surface.",
       ASSET_SUPPORT_OCCUPIED: "Remove the items on top first.",
       ASSET_NOT_BUILDABLE: "That asset cannot be placed.",
       ASSET_UNAVAILABLE: "That asset is unavailable.",
@@ -3849,6 +3846,7 @@ export class WorldRuntime {
       PUBLIC_FUND_FORBIDDEN: "Choose a fund for your team.",
       PUBLIC_FUND_SCOPE: "These changes affect another area. Use the workspace fund.",
       PRIVATE_ASSET_PROTECTED: "This project changes a personal asset. Its owner must move or store it first.",
+      PERSONAL_AREA_INVALID: "Keep personal areas inside their room, without overlaps.",
       ROOM_PRIVACY_PROTECTED: "This change would expose or divide a private room. Open its access in Room settings before changing its boundary or removing its last door.",
       PERMANENT_ASSET_PUBLIC: "Buy permanent flooring with a shared fund.",
       PROJECT_STALE: "The layout changed. Discard this draft and prepare a new project.",
@@ -3865,8 +3863,6 @@ export class WorldRuntime {
       ASSET_NOT_OWNED: "You do not own that asset.",
       ASSET_ALREADY_PLACED: "That asset is already placed.",
       ASSET_OWNERSHIP_INVALID: "That asset could not be verified.",
-      ASSET_ROOM_REQUIRED: "Place it inside a room.",
-      ASSET_ROOM_FORBIDDEN: "You cannot build in this room. Choose another room or change its build settings.",
 
       INSUFFICIENT_COINS: "You do not have enough coins.",
       INVENTORY_FULL: "Your inventory is full.",
@@ -3884,7 +3880,6 @@ export class WorldRuntime {
       KIDNAPPING_SETTINGS_INVALID: "Choose valid kidnapping settings.",
       ASSET_INTERACTION_INVALID: "That seat is no longer available.",
       SEAT_OCCUPIED: "That seat is occupied.",
-      PLAYER_IN_THE_WAY: "Someone is standing there.",
       PERSON_OFFLINE: "They are offline.",
       PERSON_UNAVAILABLE: "They are unavailable.",
       INTERACTION_INVALID: "That interaction is not available.",
@@ -3909,7 +3904,7 @@ export class WorldRuntime {
       CALLER_IN_MEETING: "Leave your meeting before calling.",
       PERSON_IN_MEETING: "They are in a meeting.",
       CALL_INVALID: "That call could not be started.",
-      PROXIMITY_SESSION_INVALID: "This conversation has ended. Turn on your microphone to start again.",
+      PROXIMITY_SESSION_INVALID: "This conversation has ended. Join the call again.",
       PROXIMITY_PEER_UNAVAILABLE: "That person has left the conversation.",
       MEETING_NOT_FOUND: "That meeting is no longer available.",
       MEETING_NOT_JOINED: "This meeting session ended. Open the meeting again.",

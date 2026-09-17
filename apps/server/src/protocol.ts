@@ -5,7 +5,6 @@ import { meetingCommands } from "./meetings/meeting-protocol.js";
 import { mediaSignalSchema } from "./media/media-protocol.js";
 import { workObjectEditSchema } from "./work/work-object-state.js";
 import {
-  ASSIGNABLE_MEMBER_PERMISSIONS,
   BOT_DIFFICULTIES,
   CHESS_ACCESS_MODES,
   CHESS_PROMOTION_PIECES,
@@ -131,7 +130,10 @@ const layoutEdit = z.discriminatedUnion("tool", [
 ]);
 
 export const clientCommandSchema = z.discriminatedUnion("type", [
-  ...publicEconomyCommands(z.union([layoutEdit, z.object({ tool: z.literal("public_asset"), publicAssetId: z.string().uuid(), position, variantId: assetVariantId, rotation: assetRotation }).strict()])),
+  ...publicEconomyCommands(z.union([layoutEdit,
+    z.object({ tool: z.literal("public_asset"), publicAssetId: z.string().uuid(), position, variantId: assetVariantId, rotation: assetRotation }).strict(),
+    z.object({ tool: z.literal("personal_asset"), ownedAssetId: z.string().uuid(), position, variantId: assetVariantId, rotation: assetRotation }).strict(),
+  ])),
   z.object({ type: z.literal("organisation.edit"), requestId, baseRevision: z.number().int().nonnegative(), edit: organisationEditSchema }).strict(),
   z.object({ type: z.literal("movement.input"), sequence: z.number().int().nonnegative(), dx: z.number().min(-1).max(1), dy: z.number().min(-1).max(1) }),
   z.object({
@@ -191,6 +193,7 @@ export const clientCommandSchema = z.discriminatedUnion("type", [
     settings: z.object({
       name: z.string().trim().min(1).max(60),
       color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+      meetingRoom: z.boolean().optional(),
       access: roomAccess,
       build: roomPermissionSchema.optional(),
       organisationUnitId: z.string().min(1).max(100).optional(),
@@ -227,17 +230,12 @@ export const clientCommandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("chess.draw_respond"), requestId, matchId: chessMatchId, accept: z.boolean() }).strict(),
 ]);
 
-const memberPermissionsSchema = z.array(z.enum(ASSIGNABLE_MEMBER_PERMISSIONS))
-  .max(ASSIGNABLE_MEMBER_PERMISSIONS.length)
-  .refine((permissions) => new Set(permissions).size === permissions.length);
-
 const emailAddressSchema = z.string().trim().max(254).pipe(z.email());
 
 export const invitationBodySchema = z.object({
   email: emailAddressSchema,
   role: z.enum(["admin", "member", "guest"]).default("member"),
-  permissions: memberPermissionsSchema.default([]),
-}).strict().refine(({ role, permissions }) => role === "member" || permissions.length === 0);
+}).strict();
 
 const invitationTokenSchema = z.string().trim().regex(/^[A-Za-z0-9_-]{43}$/);
 
@@ -247,8 +245,7 @@ export const invitationAcceptBodySchema = z.object({
 
 export const memberAccessBodySchema = z.object({
   role: z.enum(["admin", "member", "guest"]),
-  permissions: memberPermissionsSchema,
-}).strict().refine(({ role, permissions }) => role === "member" || permissions.length === 0);
+}).strict();
 
 const emailDomainSchema = z.string().max(253)
   .transform(normalizeEmailDomain)

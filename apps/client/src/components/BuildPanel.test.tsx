@@ -161,7 +161,7 @@ describe("BuildPanel", () => {
     expect(screen.getByRole("button", { name: "Bookshelf" })).toBeTruthy();
   });
 
-  it("offers outdoor assets and selected-item controls", () => {
+  it.each([false, true])("offers selected-item controls and stores personal property: %s", (personal) => {
     const onMoveSelected = vi.fn();
     const onRotateSelected = vi.fn();
     const onRemoveSelected = vi.fn();
@@ -174,6 +174,7 @@ describe("BuildPanel", () => {
       y: 32,
       rotation: 0,
       variantId: "white",
+      ...(personal ? { ownerUserId: "player" } : {}),
     }];
 
     render(
@@ -201,7 +202,7 @@ describe("BuildPanel", () => {
     expect(screen.getByRole("button", { name: "Pool" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Move" }));
     fireEvent.click(screen.getByRole("button", { name: "Rotate" }));
-    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    fireEvent.click(screen.getByRole("button", { name: personal ? "Store" : "Remove" }));
 
     expect(onMoveSelected).toHaveBeenCalledOnce();
     expect(onRotateSelected).toHaveBeenCalledOnce();

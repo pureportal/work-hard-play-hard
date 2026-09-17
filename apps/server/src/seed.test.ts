@@ -28,7 +28,7 @@ describe("development seed", () => {
     expect(data.messages).toEqual([]);
     expect(data.meetings).toEqual([]);
     expect(data.scores).toEqual([]);
-    expect(data.organisation).toEqual({ revision: 0, ceoIds: [], units: [], assignments: [], removalVotes: [] });
+    expect(data.organisation).toEqual({ revision: 0, ceoIds: [], units: [], assignments: [] });
     expect(data.gameSettings).toEqual(DEFAULT_GAME_SETTINGS);
     expect(data.layouts.flatMap((layout) => layout.rooms).every((room) => (
       room.access.mode === "open"

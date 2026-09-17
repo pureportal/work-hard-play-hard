@@ -1,10 +1,11 @@
 import { getAssetDefinition } from "./assets.js";
+import type { WorldObject } from "./assets.js";
 import type { FloorLayout, LayoutEdit, RoomSettings } from "./building.js";
 import type { GameSettings } from "./economy.js";
+import type { GlobalKidnappingSettings } from "./kidnapping.js";
 import { isUnitWithin, type OrganisationEdit, type OrganisationState } from "./organisation.js";
 
 export const WORKSPACE_FUND_ID = "workspace";
-export const DEFAULT_WEEKLY_ALLOWANCE = 50;
 export const PROJECT_EXPIRY_MS = 7 * 86_400_000;
 export const BUILD_PRICES = { wall: 12, door: 40, window: 60 } as const;
 
@@ -15,10 +16,7 @@ export interface PublicFund {
   unitId: string | null;
   balance: number;
   mode: DecisionMode;
-  weeklyAllowance: number;
-  spendingLimits: { userId: string; amount: number }[];
-  period: string;
-  allowances: { userId: string; remaining: number; spent: number }[];
+
 }
 
 export interface PublicAsset {
@@ -36,6 +34,7 @@ export interface ConstructionReceipt {
 }
 
 export interface ProjectQuote {
+  assetChanges: { object: WorldObject; change: "place" | "move" | "remove" }[];
   cost: number;
   refund: number;
   refunds: { fundId: string; amount: number }[];
@@ -59,14 +58,15 @@ export interface BuildProject {
 }
 
 export type PublicAction =
+  | { kind: "record"; summary: string }
   | { kind: "project"; project: BuildProject }
-  | { kind: "fund.create"; unitId: string; mode: DecisionMode; weeklyAllowance: number }
+  | { kind: "fund.create"; unitId: string; mode: DecisionMode }
   | { kind: "fund.transfer"; fromFundId: string; toFundId: string; amount: number }
-  | { kind: "fund.policy"; fundId: string; mode: DecisionMode; weeklyAllowance: number; spendingLimits: PublicFund["spendingLimits"] }
   | { kind: "governance"; mode: DecisionMode; ceoIds: string[] }
   | { kind: "organisation"; baseRevision: number; edit: OrganisationEdit }
   | { kind: "room.settings"; roomId: string; baseRevision: number; settings: RoomSettings }
   | { kind: "game.settings"; settings: GameSettings }
+  | { kind: "kidnapping.settings"; settings: GlobalKidnappingSettings }
   | { kind: "asset.sell"; publicAssetId: string };
 
 export interface SpendingProposal {
@@ -108,8 +108,7 @@ export interface PublicEconomy {
 export function createPublicEconomy(mode: DecisionMode = "equal"): PublicEconomy {
   return {
     revision: 0,
-    funds: [{ id: WORKSPACE_FUND_ID, unitId: null, balance: 0, mode, weeklyAllowance: DEFAULT_WEEKLY_ALLOWANCE,
-      spendingLimits: [], period: "", allowances: [] }],
+    funds: [{ id: WORKSPACE_FUND_ID, unitId: null, balance: 0, mode }],
     inventory: [], proposals: [], transactions: [],
   };
 }
@@ -132,9 +131,13 @@ export function publicFundForUnit(economy: PublicEconomy, organisation: Organisa
 export function availablePublicMoney(economy: PublicEconomy, fundId: string): number {
   const fund = economy.funds.find((candidate) => candidate.id === fundId);
   if (!fund) return 0;
-  return fund.balance - fund.allowances.reduce((sum, allowance) => sum + allowance.remaining, 0)
-    - economy.proposals.filter((proposal) => proposal.fundId === fundId && ["open", "approved"].includes(proposal.status))
+  return fund.balance - economy.proposals.filter((proposal) => proposal.fundId === fundId && ["open", "approved"].includes(proposal.status))
       .reduce((sum, proposal) => sum + proposal.reserved, 0);
+}
+
+export function projectRequiredMoney(project: BuildProject): number {
+  return Math.max(0, project.quote.cost - project.quote.refunds.filter((refund) => refund.fundId === project.fundId)
+    .reduce((sum, refund) => sum + refund.amount, 0));
 }
 
 export function assetResaleValue(paid: number): number {
@@ -147,4 +150,6 @@ export function isPermanentAsset(assetId: string): boolean {
 
 export type ProjectEdit = LayoutEdit | {
   tool: "public_asset"; publicAssetId: string; position: { x: number; y: number }; variantId: string; rotation: 0 | 90 | 180 | 270;
+} | {
+  tool: "personal_asset"; ownedAssetId: string; position: { x: number; y: number }; variantId: string; rotation: 0 | 90 | 180 | 270;
 };

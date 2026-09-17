@@ -73,6 +73,8 @@
 .world-project-state span::before { content: ""; width: 10px; height: 10px; border: 2px solid #edb34f; border-radius: 2px; background: #edb34f40; }
 .world-project-state .project-removal-key::before { border-color: #ef6666; background: #ef666640; }
 @media (max-width: 700px) {
+  .funds-dialog .dialog-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .funds-dialog .dialog-tabs button { padding-inline: 6px; }
   .fund-overview { padding-bottom: 20px; }
   .fund-picker { gap: 10px; align-items: end; }
   .personal-wallet { display: grid; grid-template-columns: auto auto; gap: 4px; font-size: 11px; }
@@ -87,3 +89,22 @@
   .funds-dialog input, .funds-dialog select { font-size: 16px; }
   .donation-route { gap: 10px; }
 }
+.proposal-project-details { display: grid; gap: 14px; }
+.spending-proposal .proposal-costs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 12px; border-radius: 10px; background: var(--panel); }
+.proposal-costs dt { color: var(--muted); font-size: 11px; }
+.proposal-costs dd { margin-top: 5px; font-size: 20px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.proposal-assets { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.proposal-assets li { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.proposal-assets .asset-shape { flex: 0 0 44px; width: 44px; height: 44px; }
+.proposal-assets li > span { display: grid; gap: 4px; }
+.proposal-assets small { color: var(--muted); }
+.game-rules-editor { display: grid; gap: 28px; max-width: 600px; }
+.game-rules-editor > button { justify-self: start; }
+.game-rules-editor .permission-toggle { display: flex; align-items: center; gap: 10px; }
+.game-rules-editor input[type="checkbox"] { min-height: 18px; width: 18px; accent-color: var(--accent); }
+.proposed-personal-spaces { margin: 12px 0; }
+.proposed-personal-spaces svg { width: 100%; max-height: 210px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.proposed-space-floor { fill: var(--panel-strong); stroke: var(--line); stroke-width: 2; }
+.proposed-space-area { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 4; }
+.proposed-personal-spaces text { font-size: 32px; font-weight: 700; fill: var(--ink); }
+.proposed-personal-spaces ol { margin: 10px 0 0; padding-left: 22px; color: var(--muted); font-size: 12px; }

@@ -1,5 +1,15 @@
 # Meetings
 
+## Meeting rooms
+
+Open **Build → Room settings**, select a room, enable **Meeting room**, and propose the change. Apply it through **Funds & votes** once approved.
+
+The room appears in **Meetings**, and entering it offers **Open** or **Open Small**, even before anyone has joined. Its call has no scheduled time or duration. Leaving the last participant makes it available to start again. Renaming the room also renames its call and chat. Disabling the setting or removing the room ends its call. Existing room access, capacity, locks, and invitations apply.
+
+The setting and meeting chat persist in PostgreSQL. Migration `Migration20260917160000` adds idle meetings and permits an absent schedule. It runs with the server's normal startup migrations.
+
+Run `pnpm --filter @workhard/client exec vite build --outDir ../../artifacts/meeting-rooms/client` followed by `pnpm --filter @workhard/server exec tsx ../../scripts/meeting-rooms-browser-check.ts` for the settings, proposal, Meetings, room-entry, and disabling flows. The check uses an isolated in-memory application; its screenshots and report are in `artifacts/meeting-rooms/`.
+
 ## Open calls
 
 Enable the microphone or camera near coworkers to join their open conversation. Accepted call invitations join the same open conversations. Each participant controls their own devices. Leaving or walking out of range stops both devices; joining again requires enabling them again. Open calls follow the people and have no map location or lock. Meetings take place in rooms.

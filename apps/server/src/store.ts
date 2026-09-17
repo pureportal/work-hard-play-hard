@@ -1,7 +1,7 @@
 import { applyOrganisationEdit, validateOrganisation, validateRoomPermission } from "./organisation/organisation-store.js";
 import { gameSettingsSchema } from "./organisation/organisation-schema.js";
 import { PublicEconomyStore, validatePublicEconomy, type PublicEconomyState } from "./economy/public-economy-store.js";
-import { canEditRoomPermissions, type OrganisationEdit, type OrganisationState } from "@workhard/shared";
+import { canEditRoomPermissions, validatePersonalSpaces, type OrganisationEdit, type OrganisationState } from "@workhard/shared";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import {
   BOT_DIFFICULTIES,
@@ -32,7 +32,6 @@ import {
   randomCharacterAppearance,
 } from "@workhard/shared";
 import type {
-  AssignableMemberPermission,
   AuthUser,
   BootstrapData,
   ChatAttachment,
@@ -57,12 +56,15 @@ import type {
   PlayerGameStatistics,
   PlayerKidnappingSettings,
   RegistrationSettings,
+  SpotifyAppSettings,
   WorldObject,
   WorkspaceAccessData,
 } from "@workhard/shared";
 import { createInitialData } from "./initial-data.js";
+import type { GitHubAppSettingsRecord } from "./github/github-record.js";
 import { addFallingBlocksStatistics, validFallingBlocksCounts } from "./games/falling-blocks-statistics.js";
 import { workObjectStateSchema } from "./work/work-object-state.js";
+import { synchronizeRoomMeetings } from "./meetings/room-meetings.js";
 import {
   EconomyStore,
   type EconomyOperationResult,
@@ -87,6 +89,8 @@ export interface MutableStoreState {
   kidnapping: KidnappingPersistenceState;
   registrationSettings: RegistrationSettings;
   corporateIdentity: CorporateIdentitySettings;
+  spotifyAppSettings: SpotifyAppSettings | null;
+  githubAppSettings: GitHubAppSettingsRecord | null;
 }
 
 export interface KidnappingPersistenceState {
@@ -135,6 +139,8 @@ export class WorkspaceStore {
   private globalKidnappingSettings: GlobalKidnappingSettings;
   private readonly playerKidnappingSettings = new Map<string, PlayerKidnappingSettings>();
   private registrationSettings = structuredClone(DEFAULT_REGISTRATION_SETTINGS);
+  private spotifyAppSettings: SpotifyAppSettings | null = null;
+  private githubAppSettings: GitHubAppSettingsRecord | null = null;
   private corporateIdentity = structuredClone(DEFAULT_CORPORATE_IDENTITY);
   private chessMatches: ChessMatchRecord[] = [];
   dirty = false;
@@ -185,7 +191,7 @@ export class WorkspaceStore {
         player: this.getPlayerKidnappingSettings(currentUserId),
       },
       corporateIdentity: this.getCorporateIdentity(),
-      ...(currentMember.role === "owner" ? { registrationSettings: this.getRegistrationSettings() } : {}),
+      ...(this.canManageGlobalSettings(currentUserId) ? { registrationSettings: this.getRegistrationSettings() } : {}),
       ...access,
     });
   }
@@ -268,7 +274,13 @@ export class WorkspaceStore {
   }
 
   editOrganisation(actorId: string, baseRevision: number, edit: OrganisationEdit, approved = false): OrganisationState {
-    if (!approved && this.publicEconomy.fund("workspace").mode === "equal") throw new Error("PROJECT_APPROVAL_REQUIRED");
+    if (!approved) throw new Error("PROJECT_APPROVAL_REQUIRED");
+    this.data.organisation = this.previewOrganisationEdit(actorId, baseRevision, edit);
+    this.dirty = true;
+    return this.getOrganisation();
+  }
+
+  previewOrganisationEdit(actorId: string, baseRevision: number, edit: OrganisationEdit): OrganisationState {
     if (edit.type === "unit.delete") {
       const unitId = edit.unitId;
       if (this.publicEconomy.view().funds.some((fund) => fund.unitId === unitId)) throw new Error("ORGANISATION_UNIT_IN_USE");
@@ -277,15 +289,13 @@ export class WorkspaceStore {
       if (permissions.some((permission) => permission.unitGrants?.some((grant) => grant.unitId === unitId))
         || this.data.layouts.some((layout) => layout.rooms.some((room) => room.organisationUnitId === unitId))) throw new Error("ORGANISATION_UNIT_IN_USE");
     }
-    this.data.organisation = applyOrganisationEdit(this.data.organisation, this.data.members.map((member) => member.id), actorId, baseRevision, edit, approved);
-    this.dirty = true;
-    return this.getOrganisation();
+    return applyOrganisationEdit(this.data.organisation, this.data.members.map((member) => member.id), actorId, baseRevision, edit);
   }
 
   canManageRoom(userId: string, roomId: string): boolean {
     const room = this.getRoom(roomId);
     const member = this.getMember(userId);
-    return Boolean(room && member && canEditRoomPermissions(room, userId, member.permissions, this.data.organisation));
+    return Boolean(room && member && canEditRoomPermissions(room, userId, this.data.organisation));
   }
 
   getMembers(): Member[] {
@@ -301,11 +311,29 @@ export class WorkspaceStore {
   }
 
   canManageGlobalSettings(userId: string): boolean {
-    return this.getMember(userId)?.role === "owner";
+    return this.canManageMembers(userId);
   }
 
   getRegistrationSettings(): RegistrationSettings {
     return structuredClone(this.registrationSettings);
+  }
+
+  getSpotifyAppSettings(): SpotifyAppSettings | null {
+    return structuredClone(this.spotifyAppSettings);
+  }
+
+  updateSpotifyAppSettings(settings: SpotifyAppSettings | null): void {
+    this.spotifyAppSettings = structuredClone(settings);
+    this.dirty = true;
+  }
+
+  getGitHubAppSettings(): GitHubAppSettingsRecord | null {
+    return structuredClone(this.githubAppSettings);
+  }
+
+  updateGitHubAppSettings(settings: GitHubAppSettingsRecord | null): void {
+    this.githubAppSettings = structuredClone(settings);
+    this.dirty = true;
   }
 
   getCorporateIdentity(): CorporateIdentity {
@@ -366,28 +394,26 @@ export class WorkspaceStore {
 
   addRegisteredMember(user: AuthUser): Member {
     this.assertRegistrationAllowed(user.email, false);
-    return this.createMember(user, this.registrationSettings.defaultRole, []);
+    return this.createMember(user, this.registrationSettings.defaultRole);
   }
 
   addInitialMember(user: AuthUser): Member {
     if (!this.needsSetup()) {
       throw new Error("REGISTRATION_CLOSED");
     }
-    return this.createMember(user, "owner", []);
+    return this.createMember(user, "owner");
   }
 
   addMember(
     user: AuthUser,
     role: Exclude<MemberRole, "owner"> = "member",
-    permissions: readonly AssignableMemberPermission[] = [],
   ): Member {
-    return this.createMember(user, role, permissions);
+    return this.createMember(user, role);
   }
 
   private createMember(
     user: AuthUser,
     role: MemberRole,
-    permissions: readonly AssignableMemberPermission[],
   ): Member {
     if (this.getMember(user.id)) {
       throw new Error("USER_EXISTS");
@@ -401,7 +427,7 @@ export class WorkspaceStore {
       email: user.email,
       title: "",
       role,
-      permissions: permissionsForMemberRole(role, permissions),
+      permissions: permissionsForMemberRole(role),
       color: memberColors[this.data.members.length % memberColors.length]!,
       availability: "available",
       online: false,
@@ -425,6 +451,11 @@ export class WorkspaceStore {
       next.objects = next.objects.filter((object) => object.ownerUserId !== userId);
       let changed = next.objects.length !== layout.objects.length;
       for (const room of next.rooms) {
+        if (room.ownerUserId === userId) { delete room.ownerUserId; changed = true; }
+        if (room.personalAreas?.some((area) => area.ownerUserId === userId)) {
+          room.personalAreas = room.personalAreas.filter((area) => area.ownerUserId !== userId);
+          changed = true;
+        }
         const assignedPersonIds = room.access.assignedPersonIds.filter((personId) => personId !== userId);
         if (assignedPersonIds.length !== room.access.assignedPersonIds.length) {
           changed = true;
@@ -599,9 +630,9 @@ export class WorkspaceStore {
     return actor.role === "owner" || (member.role !== "admin" && role !== "admin");
   }
 
-  canBuild(userId: string): boolean {
+  canInspectRoomAccess(userId: string): boolean {
     const member = this.getMember(userId);
-    return Boolean(member && hasMemberPermission(member, "build"));
+    return Boolean(member && this.data.organisation.ceoIds.includes(userId));
   }
 
   updateAvailability(userId: string, availability: Member["availability"]): Member {
@@ -640,17 +671,13 @@ export class WorkspaceStore {
   updateMemberAccess(
     userId: string,
     role: Exclude<MemberRole, "owner">,
-    permissions: readonly AssignableMemberPermission[],
   ): Member {
     const member = this.requireMember(userId);
     if (member.role === "owner") {
       throw new Error("OWNER_ROLE_IMMUTABLE");
     }
-    if (role !== "member" && permissions.length > 0) {
-      throw new Error("MEMBER_PERMISSIONS_INVALID");
-    }
     member.role = role;
-    member.permissions = permissionsForMemberRole(role, permissions);
+    member.permissions = permissionsForMemberRole(role);
     this.dirty = true;
     return structuredClone(member);
   }
@@ -658,12 +685,8 @@ export class WorkspaceStore {
   issueInvitation(
     email: string,
     role: Exclude<MemberRole, "owner">,
-    permissions: readonly AssignableMemberPermission[],
   ): IssuedInvitation {
     const normalizedEmail = normalizeEmail(email);
-    if (role !== "member" && permissions.length > 0) {
-      throw new Error("MEMBER_PERMISSIONS_INVALID");
-    }
     if (this.data.members.some((member) => normalizeEmail(member.email) === normalizedEmail)) {
       throw new Error("INVITATION_MEMBER_EXISTS");
     }
@@ -680,7 +703,6 @@ export class WorkspaceStore {
       teamId: this.data.team.id,
       email: normalizedEmail,
       role,
-      permissions: role === "member" ? [...new Set(permissions)] : [],
       status: "pending",
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     };
@@ -710,7 +732,7 @@ export class WorkspaceStore {
     if (existingMember) {
       throw new Error("INVITATION_MEMBER_EXISTS");
     }
-    const member = this.addMember(user, invitation.role, invitation.permissions);
+    const member = this.addMember(user, invitation.role);
     invitation.status = "accepted";
     this.dirty = true;
     return {
@@ -807,6 +829,7 @@ export class WorkspaceStore {
       .flatMap((item) => item.objects);
     const economyUserIds = this.economy.reconcileLayout(previous, layout, otherObjects);
     this.data.layouts[index] = structuredClone(layout);
+    synchronizeRoomMeetings(previous.rooms, layout.rooms, this.data.meetings, this.data.conversations);
     this.dirty = true;
     return { layout: structuredClone(layout), economyUserIds };
   }
@@ -819,6 +842,7 @@ export class WorkspaceStore {
     }
     const memberIds = this.data.members.map((member) => member.id);
     validateRoomPermission(settings.access, this.data.organisation, memberIds);
+    validatePersonalSpaces(room, settings, memberIds);
     if (settings.build) validateRoomPermission(settings.build, this.data.organisation, memberIds);
     if (settings.organisationUnitId && !this.data.organisation.units.some((unit) => unit.id === settings.organisationUnitId)) throw new Error("ORGANISATION_UNIT_NOT_FOUND");
     if (settings.access.mode !== "open" && settings.access.mode !== "default" && !room.privateEligible) throw new Error("ROOM_NOT_PRIVATE_ELIGIBLE");
@@ -827,10 +851,15 @@ export class WorkspaceStore {
     const nextRoom = next.rooms.find((item) => item.id === roomId)!;
     nextRoom.name = settings.name.trim();
     nextRoom.color = settings.color;
+    if (settings.meetingRoom) nextRoom.meetingRoom = true;
+    else delete nextRoom.meetingRoom;
     nextRoom.access = structuredClone(settings.access);
     nextRoom.build = structuredClone(settings.build ?? { mode: "default", assignedPersonIds: [] });
     if (settings.organisationUnitId) nextRoom.organisationUnitId = settings.organisationUnitId;
     else delete nextRoom.organisationUnitId;
+    if (settings.ownerUserId) nextRoom.ownerUserId = settings.ownerUserId;
+    else delete nextRoom.ownerUserId;
+    nextRoom.personalAreas = structuredClone(settings.personalAreas ?? []);
     next.revision += 1;
     return this.replaceLayout(next).layout;
   }
@@ -848,6 +877,7 @@ export class WorkspaceStore {
   leaveMeeting(meetingId: string, userId: string): Meeting {
     const meeting = this.requireMeeting(meetingId);
     meeting.participantIds = meeting.participantIds.filter((participantId) => participantId !== userId);
+    if (!meeting.startsAt && meeting.status === "live" && meeting.participantIds.length === 0) meeting.status = "idle";
     this.dirty = true;
     return structuredClone(meeting);
   }
@@ -981,7 +1011,6 @@ export class WorkspaceStore {
     const result = this.economy.donateMoney(userId, amount, fundId, operationKey);
     if (!result.replayed) {
       this.publicEconomy.record(fundId, userId, "donation", amount, result.transaction.id);
-      this.publicEconomy.fundAllowances(fundId);
     }
     this.dirty = true;
     return result;
@@ -1115,6 +1144,8 @@ export class WorkspaceStore {
       },
       registrationSettings: this.registrationSettings,
       corporateIdentity: corporateIdentitySettings(this.corporateIdentity),
+      spotifyAppSettings: this.spotifyAppSettings,
+      githubAppSettings: this.githubAppSettings,
     });
   }
 
@@ -1135,6 +1166,7 @@ export class WorkspaceStore {
       for (const room of layout.rooms) {
         validateRoomPermission(room.access, next.organisation, memberIds);
         if (room.build) validateRoomPermission(room.build, next.organisation, memberIds);
+        validatePersonalSpaces(room, room, memberIds);
         if (room.organisationUnitId && !next.organisation.units.some((unit) => unit.id === room.organisationUnitId)) throw new Error("ORGANISATION_UNIT_NOT_FOUND");
       }
     }
@@ -1174,6 +1206,8 @@ export class WorkspaceStore {
     this.globalKidnappingSettings = next.kidnapping.global;
     this.registrationSettings = next.registrationSettings;
     this.corporateIdentity = next.corporateIdentity;
+    this.spotifyAppSettings = next.spotifyAppSettings;
+    this.githubAppSettings = next.githubAppSettings;
     this.playerKidnappingSettings.clear();
     for (const { userId, settings } of next.kidnapping.players) {
       this.playerKidnappingSettings.set(userId, settings);

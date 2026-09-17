@@ -1,10 +1,11 @@
 import { CheckCircle2, Clock3, Vote } from "lucide-react";
-import type { BuildProject, ClientCommand, Member, OrganisationState, PublicEconomy, SpendingProposal } from "@workhard/shared";
+import type { BuildProject, ClientCommand, Member, OrganisationState, PublicEconomy, Room, SpendingProposal } from "@workhard/shared";
 import { ProposalDetails } from "./ProposalDetails";
 
-export function SpendingProposals({ proposals, economy, organisation, members, userId, pending, onCommand, onReview }: {
+export function SpendingProposals({ proposals, economy, organisation, members, userId, pending, onCommand, onReview, rooms }: {
   proposals: SpendingProposal[]; economy: PublicEconomy; organisation: OrganisationState; members: Member[]; userId: string; pending: boolean;
   onCommand: (command: ClientCommand) => void; onReview: (project: BuildProject) => void;
+  rooms: Room[];
 }) {
   const active = proposals.filter((proposal) => ["open", "approved"].includes(proposal.status) && Date.parse(proposal.expiresAt) > Date.now());
   const history = proposals.filter((proposal) => !active.includes(proposal));
@@ -18,10 +19,10 @@ export function SpendingProposals({ proposals, economy, organisation, members, u
     }[proposal.status];
     return <article className={`spending-proposal proposal-${proposal.status}`} key={proposal.id} aria-label={proposal.title}>
       <header><h3>{proposal.title}</h3><span className="proposal-status">{current ? proposal.status === "approved" ? <CheckCircle2 size={15} /> : <Clock3 size={15} /> : null}{status}</span></header>
-      <ProposalDetails action={proposal.action} economy={economy} organisation={organisation} members={members} />
+      <ProposalDetails action={proposal.action} economy={economy} organisation={organisation} members={members} rooms={rooms} />
       {current && <div className="proposal-progress"><progress value={approvals} max={proposal.required} aria-label={`${approvals} of ${proposal.required} approvals`} />
         <span>{approvals} / {proposal.required} approvals</span>{ballot && <span>{ballot.approve ? "You approved" : "You rejected"}</span>}</div>}
-      <footer><span>{members.find((member) => member.id === proposal.proposedBy)?.name}</span>
+      <footer><span>{members.find((member) => member.id === proposal.proposedBy)?.name} · {proposal.fundId === "workspace" ? "Workspace" : organisation.units.find((unit) => unit.id === proposal.fundId)?.name}</span>
         {current && <time dateTime={proposal.expiresAt}>Until {new Date(proposal.expiresAt).toLocaleDateString()}</time>}</footer>
       <div className="economy-actions">
         {current && proposal.action.kind === "project" && <button className="secondary-button" onClick={() => { if (proposal.action.kind === "project") onReview(proposal.action.project); }}>View layout</button>}

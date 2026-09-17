@@ -1,4 +1,4 @@
-import { createOrganisation, createPublicEconomy, DEFAULT_GAME_SETTINGS, detectLayoutRooms, type FloorLayout } from "@workhard/shared";
+import { createOrganisation, createPublicEconomy, DEFAULT_GAME_SETTINGS, detectLayoutRooms, mergeWallSegments, type FloorLayout } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
 import { assertProjectScope, quoteProject } from "./project-quote.js";
 import { PublicEconomyStore } from "./public-economy-store.js";
@@ -21,6 +21,18 @@ function privateRoom(): FloorLayout {
 }
 
 describe("project safety", () => {
+  it("does not report unchanged construction when adjoining wall segments are merged", () => {
+    const previous = privateRoom();
+    previous.walls.splice(0, 1,
+      { id: "top-left", start: { x: 96, y: 96 }, end: { x: 192, y: 96 } },
+      { id: "top-right", start: { x: 192, y: 96 }, end: { x: 288, y: 96 } });
+    const next = { ...previous, ...mergeWallSegments(previous.walls, previous.openings) };
+    expect(next.walls.length).toBeLessThan(previous.walls.length);
+    expect(quoteProject(previous, next, "workspace", [])).toMatchObject({ structural: false, cost: 0, refund: 0 });
+    next.openings = [{ ...next.openings[0]!, offset: next.openings[0]!.offset + 32 }];
+    expect(quoteProject(previous, next, "workspace", []).structural).toBe(true);
+  });
+
   it("does not expose a private room by removing its last door", () => {
     const previous = privateRoom();
     const next = detectLayoutRooms({ ...previous, openings: [] }, floor);
@@ -71,7 +83,7 @@ describe("project safety", () => {
     const layout = privateRoom();
     const proposal = economy.propose("alice", "Wall", { kind: "project", project: {
       id: "draft", floorId: "floor", fundId: "workspace", baseRevision: 0, layout, edits: 1,
-      quote: { cost: 40, refund: 0, refunds: [], structural: true, destructive: false, requiresApproval: true, purchases: [], removedKeys: [], inventoryIds: [] },
+      quote: { assetChanges: [], cost: 40, refund: 0, refunds: [], structural: true, destructive: false, requiresApproval: true, purchases: [], removedKeys: [], inventoryIds: [] },
     } }, "workspace", createOrganisation(), ["alice", "bob"]);
     expect(economy.invalidateLayoutProposals([{ ...layout, revision: 1 }])).toBe(true);
     expect(economy.proposal(proposal.id).status).toBe("cancelled");

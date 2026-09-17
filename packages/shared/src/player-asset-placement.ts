@@ -2,7 +2,8 @@ import { ASSET_RASTER_SIZE, getPlacedAssetCells, type WorldObject } from "./asse
 import { isPointInRoom, type FloorLayout } from "./building.js";
 import type { GameSettings } from "./economy.js";
 import type { OrganisationState } from "./organisation.js";
-import { roomBuildAllows } from "./room-permissions.js";
+import { roomAccessAllows, roomBuildAllows } from "./room-permissions.js";
+import { isInPersonalSpace } from "./personal-spaces.js";
 
 export type PlayerAssetRoomError =
   | "ASSET_ROOM_REQUIRED"
@@ -26,5 +27,7 @@ export function getPlayerAssetRoomError(
     const touchesRoom = layout.rooms.some((candidate) => cells.some((cell) => isPointInRoom(cell.worldX + ASSET_RASTER_SIZE / 2, cell.worldY + ASSET_RASTER_SIZE / 2, candidate)));
     return allowOutsideRooms && !touchesRoom ? undefined : "ASSET_ROOM_REQUIRED";
   }
-  return roomBuildAllows(room, userId, settings, organisation) ? undefined : "ASSET_ROOM_FORBIDDEN";
+  return roomBuildAllows(room, userId, settings, organisation)
+    || roomAccessAllows(room, userId, settings, organisation) && isInPersonalSpace(layout, object, userId)
+    ? undefined : "ASSET_ROOM_FORBIDDEN";
 }

@@ -147,6 +147,7 @@ describe("Workspace floor navigation", () => {
   it("rotates the active placement with R even while its catalog button has focus", async () => {
     renderWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "Build" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Shared" }));
     fireEvent.click(await screen.findByRole("tab", { name: "Seating" }));
     const chairButton = screen.getByRole("button", { name: "Office chair" });
     fireEvent.click(chairButton);
@@ -298,6 +299,7 @@ describe("Workspace floor navigation", () => {
   it("moves, rotates, and removes an item selected on the build canvas", async () => {
     renderWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "Build" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Shared" }));
     fireEvent.click(screen.getByRole("button", { name: "Select build item" }));
 
     fireEvent.keyDown(window, { key: "r" });
@@ -371,7 +373,7 @@ function workspace(): BootstrapData {
       email: "maya@example.com",
       title: "Product Lead",
       role: "owner",
-      permissions: ["manage_members", "build"],
+      permissions: ["manage_members"],
       color: "#ff7a66",
       availability: "available",
       online: true,
@@ -437,5 +439,5 @@ function acknowledgeProjectEdit(): void {
   const layout = workspace().layouts[0]!;
   act(() => realtime.handler?.({ type: "project.preview", requestId: command.requestId,
     project: { id: "draft", fundId: "workspace", floorId: layout.floorId, baseRevision: layout.revision, edits: 1,
-      layout, quote: { cost: 0, refund: 0, refunds: [], structural: false, destructive: false, requiresApproval: true, purchases: [], removedKeys: [], inventoryIds: [] } } }));
+      layout, quote: { assetChanges: [], cost: 0, refund: 0, refunds: [], structural: false, destructive: false, requiresApproval: true, purchases: [], removedKeys: [], inventoryIds: [] } } }));
 }

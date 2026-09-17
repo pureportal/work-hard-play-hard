@@ -32,7 +32,7 @@ describe("RoomAccessibilityPanel", () => {
 function props() {
   const members: Member[] = ["builder", "player"].map((id) => ({
     id, name: id, initials: id[0]!, character: { ...DEFAULT_CHARACTER_APPEARANCE },
-    email: `${id}@example.test`, title: "", role: "member", permissions: id === "builder" ? ["build"] : [],
+    email: `${id}@example.test`, title: "", role: "member", permissions: [],
     color: "#123456", availability: "available", online: true,
   }));
   const floors: Floor[] = ["Studio", "Rooftop"].map((name, level) => ({ id: name, name, level, officeId: "office", width: 512, height: 512, spawn: { x: 64, y: 64 }, background: "#ffffff" }));

@@ -1,18 +1,13 @@
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_CORPORATE_IDENTITY } from "@workhard/shared";
 import { createTestApplication } from "./testing/application.js";
 import { MemoryDatabase } from "./persistence/memory-database.js";
 
 const applications: Awaited<ReturnType<typeof createTestApplication>>[] = [];
-const temporaryDirectories: string[] = [];
 const defaultRegistrationAvailability = { enabled: true, invitationRequired: true };
 
 afterEach(async () => {
   await Promise.all(applications.splice(0).map(({ app }) => app.close()));
-  await Promise.all(temporaryDirectories.splice(0).map((directory) => rm(directory, { force: true, recursive: true })));
   vi.useRealTimers();
   vi.restoreAllMocks();
 });
@@ -25,19 +20,6 @@ async function application() {
 
 async function freshApplication() {
   const context = await createTestApplication({ database: new MemoryDatabase(), exposeMagicLinks: true });
-  applications.push(context);
-  return context;
-}
-
-async function applicationWithImages() {
-  const directory = await mkdtemp(join(tmpdir(), "workhard-chat-images-"));
-  temporaryDirectories.push(directory);
-  const context = await createTestApplication({
-    database: new MemoryDatabase(),
-    exposeMagicLinks: true,
-    chatImagePath: directory,
-    fixture: true,
-  });
   applications.push(context);
   return context;
 }
@@ -101,7 +83,7 @@ describe("authentication API", () => {
       id: response.json().user.id,
       name: "alex.r",
       role: "owner",
-      permissions: ["manage_members", "build"],
+      permissions: ["manage_members"],
       online: false,
     }));
 
@@ -253,7 +235,7 @@ describe("authentication API", () => {
     });
     expect(bootstrap.json().members).toContainEqual(expect.objectContaining({
       role: "owner",
-      permissions: ["manage_members", "build"],
+      permissions: ["manage_members"],
     }));
   }, 15_000);
 
@@ -288,7 +270,7 @@ describe("authentication API", () => {
     expect(context.store.getMembers()).toHaveLength(1);
     expect(context.store.getMembers()[0]).toMatchObject({
       role: "owner",
-      permissions: ["manage_members", "build"],
+      permissions: ["manage_members"],
     });
   }, 15_000);
 
@@ -458,11 +440,11 @@ describe("registration administration", () => {
     expect(registration.statusCode).toBe(201);
     expect(context.store.getMember(registration.json().user.id)).toMatchObject({
       role: "owner",
-      permissions: ["manage_members", "build"],
+      permissions: ["manage_members"],
     });
   }, 15_000);
 
-  it("lets only the owner manage registration settings", async () => {
+  it("lets server administrators manage registration settings", async () => {
     const context = await application();
     const ownerCookie = await loginCookie(context);
     const adminCookie = await loginCookie(context, "leo");
@@ -512,7 +494,7 @@ describe("registration administration", () => {
     });
 
     expect(anonymous.statusCode).toBe(401);
-    expect(forbidden.statusCode).toBe(403);
+    expect(forbidden.statusCode).toBe(200);
     expect(updated.statusCode).toBe(200);
     expect(updated.json()).toEqual({
       enabled: true,
@@ -524,7 +506,20 @@ describe("registration administration", () => {
     expect(retrieved.headers["cache-control"]).toBe("no-store");
     expect(invalid.statusCode).toBe(400);
     expect(ownerBootstrap.json().registrationSettings).toEqual(updated.json());
-    expect(adminBootstrap.json()).not.toHaveProperty("registrationSettings");
+    expect(adminBootstrap.json().registrationSettings).toEqual(updated.json());
+  });
+
+  it("does not let administrators grant administrator roles through registration defaults", async () => {
+    const context = await application();
+    const settings = { ...context.store.getRegistrationSettings(), defaultRole: "admin" };
+    const rejected = await context.app.inject({ method: "PUT", url: "/v1/admin/registration-settings",
+      headers: { cookie: await loginCookie(context, "leo") }, payload: settings });
+    expect(rejected.statusCode).toBe(403);
+    expect(context.store.getRegistrationSettings().defaultRole).not.toBe("admin");
+    const approved = await context.app.inject({ method: "PUT", url: "/v1/admin/registration-settings",
+      headers: { cookie: await loginCookie(context) }, payload: settings });
+    expect(approved.statusCode).toBe(200);
+    expect(context.store.getRegistrationSettings().defaultRole).toBe("admin");
   });
 
   it("blocks all new accounts when registration is disabled", async () => {
@@ -637,7 +632,7 @@ describe("registration administration", () => {
     expect(openVerification.statusCode).toBe(201);
     expect(context.store.getMember(openVerification.json().user.id)).toMatchObject({
       role: "admin",
-      permissions: ["manage_members", "build"],
+      permissions: ["manage_members"],
     });
   }, 15_000);
 
@@ -777,7 +772,7 @@ describe("application API", () => {
   });
 
   it("uploads authenticated chat images and keeps direct-chat images private", async () => {
-    const context = await applicationWithImages();
+    const context = await application();
     const mayaCookie = await loginCookie(context);
     const jonasCookie = await loginCookie(context, "jonas");
     const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0]);
@@ -807,7 +802,7 @@ describe("application API", () => {
   });
 
   it("rejects an image whose declared type does not match its contents", async () => {
-    const context = await applicationWithImages();
+    const context = await application();
     const cookie = await loginCookie(context);
     const response = await context.app.inject({
       method: "POST",
@@ -875,14 +870,14 @@ describe("application API", () => {
     }));
   }, 15_000);
 
-  it("applies build permission from an invitation", async () => {
+  it("invites members without gameplay privileges", async () => {
     const context = await application();
     const ownerCookie = await loginCookie(context);
     const issued = await context.app.inject({
       method: "POST",
       url: "/v1/teams/team/invitations",
       headers: { cookie: ownerCookie },
-      payload: { email: "builder@example.com", role: "member", permissions: ["build"] },
+      payload: { email: "builder@example.com", role: "member" },
     });
     const invitationToken = new URLSearchParams(new URL(issued.json().inviteLink).hash.slice(1)).get("invite")!;
     const registration = await context.app.inject({
@@ -896,13 +891,13 @@ describe("application API", () => {
       },
     });
 
-    expect(issued.json()).toMatchObject({ role: "member", permissions: ["build"] });
+    expect(issued.json()).toMatchObject({ role: "member" });
     expect(registration.statusCode).toBe(201);
     expect(context.store.getMember(registration.json().user.id)).toMatchObject({
       role: "member",
-      permissions: ["build"],
+      permissions: [],
     });
-    expect(context.store.canBuild(registration.json().user.id)).toBe(true);
+    expect(context.store.canInspectRoomAccess(registration.json().user.id)).toBe(false);
   }, 15_000);
 
   it("lets an existing account accept through an invitation-preserving magic link", async () => {
@@ -1113,7 +1108,7 @@ describe("application API", () => {
     expect(context.store.getBootstrap("user-maya").invitations).toEqual(before);
   });
 
-  it("lets owners and admins manage member roles and build permission within their authority", async () => {
+  it("lets owners and admins manage server roles within their authority", async () => {
     const context = await application();
     const ownerCookie = await loginCookie(context);
     const adminCookie = await loginCookie(context, "leo");
@@ -1121,19 +1116,19 @@ describe("application API", () => {
       method: "PATCH",
       url: "/v1/teams/team/members/user-jonas",
       headers: { cookie: ownerCookie },
-      payload: { role: "member", permissions: ["build"] },
+      payload: { role: "member" },
     });
     const adminGrant = await context.app.inject({
       method: "PATCH",
       url: "/v1/teams/team/members/user-priya",
       headers: { cookie: adminCookie },
-      payload: { role: "member", permissions: ["build"] },
+      payload: { role: "member" },
     });
     const adminPromotion = await context.app.inject({
       method: "PATCH",
       url: "/v1/teams/team/members/user-priya",
       headers: { cookie: adminCookie },
-      payload: { role: "admin", permissions: [] },
+      payload: { role: "admin" },
     });
     const invalidGuestPermission = await context.app.inject({
       method: "PATCH",
@@ -1143,12 +1138,12 @@ describe("application API", () => {
     });
 
     expect(ownerGrant.statusCode).toBe(200);
-    expect(ownerGrant.json()).toMatchObject({ role: "member", permissions: ["build"] });
+    expect(ownerGrant.json()).toMatchObject({ role: "member", permissions: [] });
     expect(adminGrant.statusCode).toBe(200);
-    expect(adminGrant.json()).toMatchObject({ role: "member", permissions: ["build"] });
+    expect(adminGrant.json()).toMatchObject({ role: "member", permissions: [] });
     expect(adminPromotion.statusCode).toBe(403);
     expect(invalidGuestPermission.statusCode).toBe(400);
-    expect(context.store.canBuild("user-jonas")).toBe(true);
+    expect(context.store.canInspectRoomAccess("user-jonas")).toBe(false);
     expect(context.store.canManageMembers("user-jonas")).toBe(false);
   });
 
@@ -1166,20 +1161,20 @@ describe("application API", () => {
       method: "PATCH",
       url: "/v1/teams/team/members/user-jonas",
       headers: { cookie: ownerCookie },
-      payload: { role: "admin", permissions: [] },
+      payload: { role: "admin" },
     });
     const ownerDemotion = await context.app.inject({
       method: "PATCH",
       url: "/v1/teams/team/members/user-maya",
       headers: { cookie: ownerCookie },
-      payload: { role: "member", permissions: [] },
+      payload: { role: "member" },
     });
 
     expect(adminInvite.statusCode).toBe(403);
     expect(ownerPromotion.statusCode).toBe(200);
     expect(ownerPromotion.json()).toMatchObject({
       role: "admin",
-      permissions: ["manage_members", "build"],
+      permissions: ["manage_members"],
     });
     expect(ownerDemotion.statusCode).toBe(403);
     expect(context.store.getMember("user-maya")?.role).toBe("owner");
@@ -1229,7 +1224,7 @@ describe("application API", () => {
       method: "PATCH",
       url: "/v1/teams/team/members/user-leo",
       headers: { cookie },
-      payload: { role: "member", permissions: [] },
+      payload: { role: "member" },
     });
 
     expect(response.statusCode).toBe(403);

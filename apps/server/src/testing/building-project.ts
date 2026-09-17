@@ -11,8 +11,6 @@ export function applyBuildingProject(runtime: WorldRuntime, store: WorkspaceStor
   const fund = store.publicEconomy.fund("workspace");
   if (fund.balance === 0) store.publicEconomy.record("workspace", "user-maya", "donation", 100_000, "geometry-fixture");
   store.getPublicEconomy();
-  fund.weeklyAllowance = 1_000;
-  store.publicEconomy.fundAllowances("workspace");
   runtime.handleCommand(peer, { type: "project.edit", fundId: "workspace", ...command });
   const preview = events.filter((event) => event.type === "project.preview" && event.requestId === command.requestId).at(-1);
   if (preview?.type !== "project.preview") return;
@@ -21,7 +19,7 @@ export function applyBuildingProject(runtime: WorldRuntime, store: WorkspaceStor
   const submitted = events.filter((event) => event.type === "project.submitted" && event.requestId === submitId).at(-1);
   if (submitted?.type !== "project.submitted" || !submitted.proposalId) return;
   const proposal = store.publicEconomy.proposal(submitted.proposalId);
-  if (proposal.status === "open") {
+  while (proposal.status === "open") {
     const approverId = proposal.electorate.find((userId) => !proposal.ballots.some((ballot) => ballot.userId === userId))!;
     const approver = runtime.connect(approverId, "floor-studio", () => undefined);
     runtime.handleCommand(approver, { type: "public_economy.vote", requestId: randomUUID(), proposalId: proposal.id, approve: true });

@@ -39,10 +39,12 @@ import { WorkspaceStore } from "./store.js";
 import { WorldRuntime } from "./world/world-runtime.js";
 import { registerWhiteboardImageRoutes } from "./work/whiteboard-images.js";
 import { saveWorkObject } from "./work/work-object-commands.js";
-import { readSpotifyConfig, type SpotifyConfig } from "./spotify/spotify-config.js";
+import { readSpotifyConfig, readSpotifyEncryptionKey, type SpotifyConfig } from "./spotify/spotify-config.js";
+import { registerSpotifyAdminRoutes } from "./spotify/spotify-admin-routes.js";
 import { SpotifyService } from "./spotify/spotify-service.js";
 import { registerSpotifyRoutes } from "./spotify/spotify-routes.js";
-import { readGitHubConfig, type GitHubConfig } from "./github/github-config.js";
+import { readGitHubConfig, readGitHubEncryptionKey, resolveGitHubConfig, storeGitHubConfig, type GitHubConfig } from "./github/github-config.js";
+import { registerGitHubAdminRoutes } from "./github/github-admin-routes.js";
 import { GitHubService } from "./github/github-service.js";
 import { registerGitHubRoutes } from "./github/github-routes.js";
 import { GITHUB_TRAY_ASSET_ID, canUseWorkObject } from "@workhard/shared";
@@ -84,8 +86,7 @@ export interface ApplicationContext {
 }
 
 export async function createApplication(options: ApplicationOptions = {}): Promise<ApplicationContext> {
-  const githubConfig = options.githubConfig === null ? undefined : options.githubConfig ?? readGitHubConfig();
-  const spotifyConfig = options.spotifyConfig === null ? undefined : options.spotifyConfig ?? readSpotifyConfig();
+  const initialSpotifyConfig = options.spotifyConfig === null ? undefined : options.spotifyConfig ?? readSpotifyConfig();
   const clientUrl = normalizeClientUrl(options.clientUrl ?? process.env.CLIENT_URL ?? "http://127.0.0.1:5173");
   const clientOrigins = resolveClientOrigins(clientUrl, options.clientOrigins ?? parseClientOrigins(process.env.CLIENT_ORIGINS));
   const app = Fastify({ logger: options.logger ?? false });
@@ -95,6 +96,17 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     throw error;
   });
   const { auth, brandingLogo, runtime, store } = initialized;
+  const spotifyEncryptionKey = initialSpotifyConfig?.encryptionKey ?? (process.env.SPOTIFY_TOKEN_KEY ? readSpotifyEncryptionKey(process.env.SPOTIFY_TOKEN_KEY) : undefined);
+  if (store.getSpotifyAppSettings() === null && initialSpotifyConfig) {
+    store.updateSpotifyAppSettings({ clientId: initialSpotifyConfig.clientId, redirectUri: initialSpotifyConfig.redirectUri });
+  }
+  const spotifySettings = store.getSpotifyAppSettings();
+  const spotifyConfig = spotifySettings?.clientId && spotifyEncryptionKey ? { ...spotifySettings, encryptionKey: spotifyEncryptionKey } : undefined;
+  const initialGitHubConfig = options.githubConfig === null ? undefined : options.githubConfig
+    ?? (store.getGitHubAppSettings() === null ? readGitHubConfig() : undefined);
+  const githubEncryptionKey = initialGitHubConfig?.encryptionKey ?? (process.env.GITHUB_TOKEN_KEY ? readGitHubEncryptionKey(process.env.GITHUB_TOKEN_KEY) : undefined);
+  if (store.getGitHubAppSettings() === null && initialGitHubConfig) store.updateGitHubAppSettings(storeGitHubConfig(initialGitHubConfig));
+  const githubConfig = resolveGitHubConfig(store.getGitHubAppSettings(), githubEncryptionKey);
   const github = await GitHubService.create(database, githubConfig, options.githubFetch);
   const githubSettings = store.getGitHubAppSettings();
   if (githubSettings?.connectionsResetPending) {
@@ -211,7 +223,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
   });
 
   await registerGitHubRoutes(app, {
-    service: github, clientUrl, secureCookie: githubConfig?.redirectUri.startsWith("https:") ?? false,
+    service: github, clientUrl, secureCookie: () => store.getGitHubAppSettings()?.redirectUri.startsWith("https:") ?? false,
     authenticate: (request) => {
       const sessionToken = getSessionToken(request.headers.cookie);
       const user = auth.getUserFromSession(sessionToken);
@@ -361,6 +373,11 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     }
   });
 
+  registerSpotifyAdminRoutes(app, { store, spotify, encryptionKey: spotifyEncryptionKey, persist,
+    authenticate: (request) => getAuthenticatedUser(auth, request)?.id });
+  registerGitHubAdminRoutes(app, { store, github, encryptionKey: githubEncryptionKey, persist,
+    authenticate: (request) => getAuthenticatedUser(auth, request)?.id });
+
   app.get("/v1/admin/registration-settings", async (request, reply) => {
     const user = getAuthenticatedUser(auth, request);
     if (!user) {
@@ -386,6 +403,9 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
         code: "REGISTRATION_SETTINGS_INVALID",
         message: "Check the registration settings.",
       });
+    }
+    if (parsed.data.defaultRole === "admin" && store.getRegistrationSettings().defaultRole !== "admin" && store.getMember(user.id)?.role !== "owner") {
+      return reply.code(403).send({ code: "FORBIDDEN", message: "Only the server owner can make Administrator the default role." });
     }
     return store.updateRegistrationSettings(parsed.data);
   });
@@ -608,7 +628,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     if (retryAfter) return sendRateLimit(reply, retryAfter);
     let issued: ReturnType<WorkspaceStore["issueInvitation"]>;
     try {
-      issued = store.issueInvitation(parsed.data.email, parsed.data.role as Exclude<MemberRole, "owner">, parsed.data.permissions);
+      issued = store.issueInvitation(parsed.data.email, parsed.data.role as Exclude<MemberRole, "owner">);
     } catch (error) {
       return sendInvitationError(reply, error instanceof Error ? error.message : "INVITATION_INVALID");
     }
@@ -696,7 +716,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
       return reply.code(403).send({ code: "FORBIDDEN", message: "You cannot change this person's access." });
     }
     try {
-      const member = store.updateMemberAccess(params.memberId, parsed.data.role, parsed.data.permissions);
+      const member = store.updateMemberAccess(params.memberId, parsed.data.role);
       runtime.publishMemberAccess(member);
       return member;
     } catch (error) {

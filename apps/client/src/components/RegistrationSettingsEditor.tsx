@@ -8,10 +8,11 @@ import {
 
 interface RegistrationSettingsEditorProps {
   settings: RegistrationSettings;
+  canAssignAdministrators: boolean;
   onSave: (settings: RegistrationSettings) => Promise<void>;
 }
 
-export function RegistrationSettingsEditor({ settings, onSave }: RegistrationSettingsEditorProps) {
+export function RegistrationSettingsEditor({ settings, canAssignAdministrators, onSave }: RegistrationSettingsEditorProps) {
   const [draft, setDraft] = useState(() => structuredClone(settings));
   const [domain, setDomain] = useState("");
   const [error, setError] = useState<string>();
@@ -62,7 +63,6 @@ export function RegistrationSettingsEditor({ settings, onSave }: RegistrationSet
 
   return (
     <section className="settings-section registration-settings">
-      <h3>Registration</h3>
       <label className="permission-toggle">
         <input
           type="checkbox"
@@ -94,7 +94,7 @@ export function RegistrationSettingsEditor({ settings, onSave }: RegistrationSet
             defaultRole: event.target.value as RegistrationSettings["defaultRole"],
           }))}
         >
-          <option value="admin">Administrator</option>
+          {(canAssignAdministrators || settings.defaultRole === "admin") && <option value="admin" disabled={!canAssignAdministrators}>Administrator</option>}
           <option value="member">Member</option>
           <option value="guest">Guest</option>
         </select>

@@ -8,7 +8,7 @@ describe("RegistrationSettingsEditor", () => {
   it("edits every registration setting", async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(
-      <RegistrationSettingsEditor
+      <RegistrationSettingsEditor canAssignAdministrators
         settings={{
           enabled: false,
           invitationRequired: true,
@@ -39,7 +39,7 @@ describe("RegistrationSettingsEditor", () => {
 
   it("rejects invalid and duplicate domains before saving", () => {
     render(
-      <RegistrationSettingsEditor
+      <RegistrationSettingsEditor canAssignAdministrators
         settings={{
           enabled: true,
           invitationRequired: true,

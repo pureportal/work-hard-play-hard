@@ -2,7 +2,7 @@ import { createOrganisation } from "@workhard/shared";
 import { ASSET_ROTATIONS, DEFAULT_CHARACTER_APPEARANCE, getDefaultAssetVariantId, getPlacedAssetBounds, getPlacedAssetInteractions, requireAssetDefinition } from "@workhard/shared";
 import type { Container, Sprite } from "pixi.js";
 import { Application, Graphics } from "pixi.js";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { getOutdoorBounds, type Floor, type FloorLayout, type Member, type WorldPlayer } from "@workhard/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WorldCanvas, type WorldCanvasProps } from "./WorldCanvas";
@@ -166,6 +166,23 @@ describe("WorldCanvas start point", () => {
 describe("WorldCanvas asset focus", () => {
   afterEach(() => vi.restoreAllMocks());
 
+  it("frames a proposal's full bounds without moving the player", async () => {
+    const props = createProps();
+    const bounds = { x: 0, y: 0, width: 1200, height: 800 };
+    const { container } = render(<WorldCanvas {...props} focusTarget={{ floorId: "floor", bounds, requestId: "proposal" }} />);
+    await findCanvas(container);
+    const app = getApplication();
+    const start = getScreenPoint(app, bounds.x, bounds.y);
+    const end = getScreenPoint(app, bounds.x + bounds.width, bounds.y + bounds.height);
+    expect(start.x).toBeGreaterThan(0);
+    expect(start.y).toBeGreaterThan(0);
+    expect(end.x).toBeLessThan(800);
+    expect(end.y).toBeLessThan(600);
+    expect(getScreenPoint(app, 600, 400)).toEqual({ x: 400, y: 300 });
+    expect(props.onDestination).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Follow" })).toBeTruthy();
+  });
+
   it.each(["chair-office", "rug-woven"])("centers and briefly animates a focused %s, including repeated selections", async (assetId) => {
     const now = vi.spyOn(Date, "now").mockReturnValue(10_000);
     const props = createProps();
@@ -220,6 +237,97 @@ describe("WorldCanvas asset focus", () => {
     runFrames(app, 1);
     expect(view.tint).toBe(0xffffff);
     expect(app.stage.getChildByLabel("asset-focus", true)!.width).toBe(0);
+  });
+});
+
+describe.each(["mouse", "touch"] as const)("WorldCanvas %s placement explanations", (pointerType) => {
+  it.each([
+    ["occupied", "That space is occupied."],
+    ["wall", "That space is occupied."],
+    ["surface", "Place it on a surface."],
+    ["range", "Place it inside the floor."],
+    ["room", "Place it fully inside a room."],
+    ["permissions", "You cannot build in this room. Choose another room."],
+    ["player", "Someone is standing there."],
+  ])("explains the %s rule only on an attempt and still permits valid placement", async (reason, message) => {
+    const props = createProps();
+    const position = { x: 400, y: 320 };
+    if (reason === "occupied") {
+      props.layout = { ...layout, objects: [{ id: "chair", floorId: floor.id, assetId: "chair-office", x: 384, y: 304, rotation: 0, variantId: "white" }] };
+    } else if (reason === "wall") {
+      props.layout = { ...layout, walls: [{ id: "wall", start: { x: 400, y: 160 }, end: { x: 400, y: 480 } }] };
+    } else if (reason === "surface") {
+      props.editingAssetId = "decor-coffee";
+      props.editingAssetVariantId = "graphite";
+    } else if (reason === "range") {
+      position.x = getOutdoorBounds(floor).x - 32;
+    } else if (reason === "room" || reason === "permissions") {
+      props.playerAssetPlacement = {
+        userId: player.userId, officeBuilder: false, organisation: createOrganisation(),
+        settings: { roomAccess: { mode: "open", assignedPersonIds: [] }, roomBuild: { mode: "none", assignedPersonIds: [] } },
+      };
+      if (reason === "permissions") {
+        const bounds = { x: 0, y: 0, width: 800, height: 600 };
+        props.layout = { ...layout, rooms: [{
+          id: "room", floorId: floor.id, name: "Room", color: "#ffffff", capacity: 4,
+          bounds, footprint: [bounds], boundary: [], doorIds: [], windowIds: [], privateEligible: true,
+          access: { mode: "open", assignedPersonIds: [], knockable: false },
+        }] };
+      }
+    } else if (reason === "player") {
+      props.editingAssetId = "equipment-whiteboard";
+      props.editingAssetVariantId = "graphite";
+      Object.assign(position, { x: player.x, y: player.y });
+    }
+    const { container, rerender } = render(<WorldCanvas {...props} editing editingTool="asset" />);
+    const canvas = await findCanvas(container);
+    const point = getScreenPoint(getApplication(), position.x, position.y);
+    act(() => dispatchPointer(canvas, "pointermove", point.x, point.y, { pointerType }));
+    expect(props.onPlacementBlocked).not.toHaveBeenCalled();
+    act(() => {
+      dispatchPointer(canvas, "pointerdown", point.x, point.y, { pointerType });
+      dispatchPointer(canvas, "pointerup", point.x, point.y, { pointerType });
+    });
+    expect(props.onPlacementBlocked).toHaveBeenCalledExactlyOnceWith(message);
+    expect(props.onEdit).not.toHaveBeenCalled();
+    expect((screen.getByRole("button", { name: "Place" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(getApplication().stage.getChildByLabel("world-asset:preview", true)!.alpha).toBe(0.4);
+
+    rerender(<WorldCanvas {...createProps()} editing editingTool="asset" onEdit={props.onEdit} onPlacementBlocked={props.onPlacementBlocked} />);
+    const validPoint = getScreenPoint(getApplication(), 400, 320);
+    act(() => {
+      dispatchPointer(canvas, "pointerdown", validPoint.x, validPoint.y, { pointerType });
+      dispatchPointer(canvas, "pointerup", validPoint.x, validPoint.y, { pointerType });
+    });
+    if (pointerType === "touch") {
+      expect(props.onEdit).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole("button", { name: "Place" }));
+    }
+    expect(props.onEdit).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ tool: "asset", assetId: "chair-office" }));
+    expect(props.onPlacementBlocked).toHaveBeenCalledTimes(1);
+    expect(getApplication().stage.getChildByLabel("world-asset:preview", true)!.alpha).toBe(0.76);
+  });
+
+  it("explains blocked moves and lets the object move to a clear spot", async () => {
+    const props = createProps();
+    const moving = { id: "moving", floorId: floor.id, assetId: "chair-office", x: 32, y: 32, rotation: 0 as const, variantId: "white" };
+    const occupied = { ...moving, id: "occupied", x: 384, y: 304 };
+    const { container } = render(<WorldCanvas {...props} editing layout={{ ...layout, objects: [moving, occupied] }} movingBuildItem={{ type: "asset", id: moving.id }} />);
+    const canvas = await findCanvas(container);
+    for (const [x, y] of [[400, 320], [600, 480]] as const) {
+      const point = getScreenPoint(getApplication(), x, y);
+      act(() => {
+        dispatchPointer(canvas, "pointerdown", point.x, point.y, { pointerType });
+        dispatchPointer(canvas, "pointerup", point.x, point.y, { pointerType });
+      });
+      if (x === 400) {
+        expect(props.onPlacementBlocked).toHaveBeenCalledExactlyOnceWith("That space is occupied.");
+        expect(props.onEdit).not.toHaveBeenCalled();
+      }
+    }
+    if (pointerType === "touch") fireEvent.click(screen.getByRole("button", { name: "Move here" }));
+    expect(props.onEdit).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ tool: "asset.move", objectId: moving.id }));
+    expect(props.onPlacementBlocked).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -1039,6 +1147,7 @@ function createProps(): WorldCanvasProps {
     onBuildItemSelect: vi.fn(),
     onAssetRotationChange: vi.fn(),
     onPlacementCancel: vi.fn(),
+    onPlacementBlocked: vi.fn(),
     onGongOffscreen: vi.fn(),
     onDirectionalInput: vi.fn(),
   };

@@ -1,4 +1,3 @@
-import { resolve } from "node:path";
 import type { BrowserContext, WebSocketRoute } from "playwright-core";
 import type { ClientCommand, ServerEvent } from "../../packages/shared/src/index.js";
 import { createApplication } from "../../apps/server/src/app.js";
@@ -9,7 +8,6 @@ export async function createReviewFixture(seeded = true) {
   const application = await createApplication({ database: new MemoryDatabase(), seeded,
     clientUrl: "http://127.0.0.1:5173", clientOrigins: ["http://127.0.0.1:5173", "http://127.0.0.1:3001"],
     exposeInvitationLinks: true, exposeMagicLinks: true,
-    chatImagePath: resolve("../../artifacts/application-design-review/fixture-images"),
   });
   await application.app.ready();
   const events: ServerEvent[] = [];

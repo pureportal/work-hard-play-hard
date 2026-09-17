@@ -8,19 +8,13 @@ import { clientCommandSchema } from "../protocol.js";
 import { WorldRuntime } from "./world-runtime.js";
 
 describe("player start point", () => {
-  it.each([
-    { role: "member" as const, permissions: [] as ("build")[], allowed: true },
-    { role: "guest" as const, permissions: [] as ("build")[], allowed: true },
-    { role: "member" as const, permissions: ["build"] as ("build")[], allowed: true },
-    { role: "admin" as const, permissions: [] as ("build")[], allowed: true },
-  ])("applies approved start points for $role without free build privileges", ({ role, permissions, allowed }) => {
+  it.each(["member", "guest", "admin"] as const)("applies approved start points for %s without free build privileges", (role) => {
     const { store, runtime, events } = fixture();
-    store.updateMemberAccess("user-leo", role, permissions);
+    store.updateMemberAccess("user-leo", role);
     const peer = runtime.connect("user-leo", "floor-studio", (event) => events.push(event));
-    const before = structuredClone(store.getFloor("floor-studio")!.spawn);
     moveSpawn(runtime, peer, store, events);
-    expect(store.getFloor("floor-studio")!.spawn).toEqual(allowed ? { x: 320, y: 320 } : before);
-    expect(events.some((event) => event.type === "command.error" && event.code === "EDIT_FORBIDDEN")).toBe(!allowed);
+    expect(store.getFloor("floor-studio")!.spawn).toEqual({ x: 320, y: 320 });
+    expect(events.some((event) => event.type === "command.error")).toBe(false);
     runtime.stop();
   });
 
@@ -41,7 +35,7 @@ describe("player start point", () => {
     restored.restoreMutableState(saved.store);
     const reloaded = new WorldRuntime(restored);
     reloaded.restorePlayers(saved.players);
-    const member = restored.addMember({ id: "new-player", username: "new-player", email: "new@example.test" }, "member", []);
+    const member = restored.addMember({ id: "new-player", username: "new-player", email: "new@example.test" }, "member");
     expect(member.position).toEqual({ x: 320, y: 320 });
     reloaded.connect(member.id, "floor-studio", () => undefined);
     expect(reloaded.serializePlayers().find((player) => player.userId === member.id)).toMatchObject({ x: 320, y: 320 });
@@ -52,7 +46,7 @@ describe("player start point", () => {
 
   it("rejects stale project revisions without changing the start point", () => {
     const { store, runtime, events } = fixture();
-    store.updateMemberAccess("user-leo", "member", ["build"]);
+    store.updateMemberAccess("user-leo", "member");
     const peer = runtime.connect("user-leo", "floor-studio", (event) => events.push(event));
     const revision = store.getLayout("floor-studio")!.revision;
     moveSpawn(runtime, peer, store, events);

@@ -1,7 +1,8 @@
 import { BuildEconomyNavigation, type BuildView } from "./components/economy/BuildEconomyNavigation";
 import { ProjectToolbar } from "./components/economy/ProjectToolbar";
+import { projectPreviewBounds } from "./project-preview";
 import type { BuildProject } from "@workhard/shared";
-import { publicFundForUnit, roomAccessAllows } from "@workhard/shared";
+import { isInPersonalSpace, publicFundForUnit, roomAccessAllows, snapToAssetRaster, type ProjectEdit } from "@workhard/shared";
 import { useWorkspaceCommand } from "./hooks/useWorkspaceCommand";
 import {
   ArrowRight,
@@ -45,7 +46,6 @@ import {
   TIC_TAC_TOE_DEFINITION_ID,
 } from "@workhard/shared";
 import type {
-  AssignableMemberPermission,
   AssetRotation,
   Room,
   RoomKnock,
@@ -136,7 +136,8 @@ const OrganisationPanel = lazy(() => import("./components/organisation/Organisat
 const RoomPermissionsPanel = lazy(() => import("./components/permissions/RoomPermissionsPanel").then((module) => ({ default: module.RoomPermissionsPanel })));
 const RoomAccessibilityPanel = lazy(() => import("./components/RoomAccessibilityPanel").then((module) => ({ default: module.RoomAccessibilityPanel })));
 const PlayerBuildPanel = lazy(() => import("./components/PlayerBuildPanel").then((module) => ({ default: module.PlayerBuildPanel })));
-const KidnappingSettingsPanel = lazy(() => import("./components/KidnappingSettingsPanel").then((module) => ({ default: module.KidnappingSettingsPanel })));
+const SettingsPanel = lazy(() => import("./components/SettingsPanel").then((module) => ({ default: module.SettingsPanel })));
+const ServerAdminDialog = lazy(() => import("./components/admin/ServerAdminDialog").then((module) => ({ default: module.ServerAdminDialog })));
 const WorkObjectDialog = lazy(() => import("./components/WorkObjectDialog").then((module) => ({ default: module.WorkObjectDialog })));
 const GitHubMailroom = lazy(() => import("./github/GitHubMailroom").then((module) => ({ default: module.GitHubMailroom })));
 const loadFallingBlocksGame = () => import("./components/FallingBlocksGame").then((module) => ({ default: module.FallingBlocksGame }));
@@ -579,6 +580,7 @@ export function Workspace({
   onCorporateIdentityChange = () => undefined,
   onSignOut,
   onSessionExpired,
+  onServerChanged,
 }: {
   initialData: BootstrapData;
   colorTheme?: ColorTheme;
@@ -590,14 +592,15 @@ export function Workspace({
   onServerChanged?: (() => void) | undefined;
 }) {
   const [data, setData] = useState(initialData);
-  const [buildView, setBuildView] = useState<BuildView>(() => hasMemberPermission(initialData.members.find((member) => member.id === initialData.currentUserId)!, "build") ? "shared" : "personal");
+  const [buildView, setBuildView] = useState<BuildView>("personal");
   const [publicFundId, setPublicFundId] = useState("workspace");
   const [projectDraft, setProjectDraft] = useState<BuildProject>();
+  const [projectTitle, setProjectTitle] = useState("");
   const [reviewingProject, setReviewingProject] = useState<BuildProject>();
   const [placingPublicAssetId, setPlacingPublicAssetId] = useState<string>();
   const publicCommand = useWorkspaceCommand();
   const pendingProjectEdit = useRef<string | undefined>(undefined);
-  const pendingRoomProposal = useRef<string | undefined>(undefined);
+  const pendingApprovalSubmission = useRef<string | undefined>(undefined);
   const [floorId, setFloorId] = useState(initialData.members.find((member) => member.id === initialData.currentUserId)?.floorId ?? initialData.floors[0]!.id);
   const [activePanel, setActivePanel] = useState<WorkspacePanel>(() => ["spotify", "github"].some((key) => new URLSearchParams(window.location.search).has(key)) ? "settings" : window.innerWidth > 980 ? "people" : null);
   const [conversationId, setConversationId] = useState(initialData.conversations[0]!.id);
@@ -689,7 +692,7 @@ export function Workspace({
   const floor = data.floors.find((item) => item.id === floorId) ?? data.floors[0]!;
   const savedLayout = data.layouts.find((item) => item.floorId === floor.id) ?? data.layouts[0]!;
   const preview = reviewingProject ?? projectDraft;
-  const layout = activePanel === "build" && canBuild && preview?.floorId === floor.id ? preview.layout : savedLayout;
+  const layout = activePanel === "build" && preview?.floorId === floor.id ? preview.layout : savedLayout;
   const allRooms = useMemo(() => data.layouts.flatMap((item) => item.rooms), [data.layouts]);
   const floorPortals = useMemo(() => getFloorPortals(data.floors, data.layouts), [data.floors, data.layouts]);
   const playerAssetPlacement = useMemo(() => ({
@@ -923,23 +926,26 @@ export function Workspace({
       });
     } else if (event.type === "public_economy.updated") {
       setData((current) => ({ ...current, publicEconomy: event.economy }));
-      if (event.requestId && event.requestId === pendingRoomProposal.current) {
-        pendingRoomProposal.current = undefined;
-        setActivePanel("build");
-        setBuildView("funds");
+      if (event.requestId && event.requestId === pendingApprovalSubmission.current) {
+        pendingApprovalSubmission.current = undefined;
+        setActivePanel("approvals");
       }
     } else if (event.type === "project.preview") {
       if (pendingProjectEdit.current === event.requestId) {
         pendingProjectEdit.current = undefined;
+        if (event.project.id !== projectDraft?.id) setProjectTitle("");
         setProjectDraft(event.project);
         setMovingBuildItem(undefined);
+        if (placingOwnedAssetId || placingPublicAssetId) setEditingTool(null);
+        setPlacingOwnedAssetId(undefined);
+        setPlacingPublicAssetId(undefined);
       }
     } else if (event.type === "project.submitted") {
       setProjectDraft(undefined);
       setEditingTool(null);
       setPlacingPublicAssetId(undefined);
       setBuildSelection(undefined);
-      if (event.proposalId) setBuildView("funds");
+      if (event.proposalId) setActivePanel("approvals");
     } else if (event.type === "floor.updated") {
       setData((current) => ({ ...current, floors: current.floors.map((item) => item.id === event.floor.id ? event.floor : item) }));
     } else if (event.type === "room.accessibility") {
@@ -1268,7 +1274,7 @@ export function Workspace({
       }
       showToast("The layout changed. Try again.");
     } else if (event.type === "command.error") {
-      if (event.requestId === pendingRoomProposal.current) pendingRoomProposal.current = undefined;
+      if (event.requestId === pendingApprovalSubmission.current) pendingApprovalSubmission.current = undefined;
       if (event.requestId === pendingProjectEdit.current) pendingProjectEdit.current = undefined;
       if (event.requestId && pendingChessOpenRequestId.current === event.requestId) {
         pendingChessOpenRequestId.current = undefined;
@@ -1636,7 +1642,7 @@ export function Workspace({
   const carrierMember = carrierPlayer ? data.members.find((member) => member.id === carrierPlayer.userId) : undefined;
   const currentRoom = layout.rooms.find((room) => room.id === currentPlayer?.roomId);
   const enteredMeetings = currentPlayer && !currentMeeting && !openingMeeting && !meetingSwitch
-    ? visibleMeetings.filter((meeting) => meeting.status === "live" && isPlayerInMeetingArea(currentPlayer, meeting))
+    ? visibleMeetings.filter((meeting) => (meeting.status === "live" || meeting.status === "idle") && isPlayerInMeetingArea(currentPlayer, meeting))
     : [];
 
   const navigateToDestination = (destinationFloorId: string, x: number, y: number, focusUserId?: string): string | undefined => {
@@ -1764,10 +1770,9 @@ export function Workspace({
   const addInvitation = async (
     email: string,
     role: Exclude<MemberRole, "owner">,
-    permissions: AssignableMemberPermission[],
   ): Promise<boolean> => {
     try {
-      const invitation = await inviteMember(data.team.id, email, role, permissions);
+      const invitation = await inviteMember(data.team.id, email, role);
       setData((current) => ({
         ...current,
         invitations: [
@@ -1785,8 +1790,7 @@ export function Workspace({
       showToast(`Invited ${invitation.email}.`);
       return true;
     } catch (reason) {
-      showToast(reason instanceof Error ? reason.message : "Invitation could not be sent.");
-      return false;
+      throw reason instanceof Error ? reason : new Error("Invitation could not be sent. Try again.");
     }
   };
 
@@ -1800,7 +1804,7 @@ export function Workspace({
         return next;
       });
     } catch (reason) {
-      showToast(reason instanceof Error ? reason.message : "Invitation could not be revoked.");
+      throw reason instanceof Error ? reason : new Error("Invitation could not be revoked. Try again.");
     }
   };
 
@@ -1813,20 +1817,19 @@ export function Workspace({
       await navigator.clipboard.writeText(link);
       showToast("Invite link copied.");
     } catch {
-      showToast("Invite link could not be copied.");
+      throw new Error("Invite link could not be copied. Try again.");
     }
   };
 
   const updateMemberAccess = async (
     memberId: string,
     role: Exclude<MemberRole, "owner">,
-    permissions: AssignableMemberPermission[],
   ) => {
     try {
-      const member = await changeMemberAccess(data.team.id, memberId, role, permissions);
+      const member = await changeMemberAccess(data.team.id, memberId, role);
       setData((current) => ({ ...current, members: current.members.map((item) => item.id === member.id ? member : item) }));
     } catch (reason) {
-      showToast(reason instanceof Error ? reason.message : "Access could not be changed.");
+      throw reason instanceof Error ? reason : new Error("Role could not be changed. Try again.");
     }
   };
 
@@ -2163,20 +2166,31 @@ export function Workspace({
 
   const applyBuildEdit = (edit: LayoutEdit, moving = false): boolean => {
     if (reviewingProject || publicCommand.pending || pendingProjectEdit.current || buildView === "funds") return false;
-    if (!canBuild && floorId !== activeFloorIdRef.current) return false;
     if (!canBuild && pendingPlayerAssetRequest.current) {
       return false;
     }
     const editRequestId = requestId();
     let sent: boolean;
     let playerEditType: "place" | "move" | "remove" | undefined;
-    if (canBuild) {
-      const projectEdit = edit.tool === "asset" && placingPublicAssetId
+    const movingObject = edit.tool === "asset.move" ? layout.objects.find((object) => object.id === edit.objectId) : undefined;
+    const personalCandidate = edit.tool === "asset" && placingOwnedAssetId
+      ? { id: "preview", floorId, assetId: edit.assetId, variantId: edit.variantId, rotation: edit.rotation, x: snapToAssetRaster(edit.position.x), y: snapToAssetRaster(edit.position.y) }
+      : edit.tool === "asset.move" && movingObject?.ownerUserId === data.currentUserId
+        ? { ...movingObject, variantId: edit.variantId, rotation: edit.rotation, x: snapToAssetRaster(edit.position.x), y: snapToAssetRaster(edit.position.y) } : undefined;
+    const personalRemoval = edit.tool === "item.remove" && edit.item.type === "asset"
+      && savedLayout.objects.some((object) => object.id === edit.item.id && object.ownerUserId === data.currentUserId);
+    if (!personalRemoval && !canBuild && floorId !== activeFloorIdRef.current) return false;
+    const directPersonal = !projectDraft && personalCandidate && isInPersonalSpace(savedLayout, personalCandidate, data.currentUserId)
+      && (!movingObject || isInPersonalSpace(savedLayout, movingObject, data.currentUserId));
+    if (!personalRemoval && !directPersonal) {
+      const projectEdit: ProjectEdit = edit.tool === "asset" && placingOwnedAssetId
+        ? { tool: "personal_asset", ownedAssetId: placingOwnedAssetId, position: edit.position, variantId: edit.variantId, rotation: edit.rotation }
+        : edit.tool === "asset" && placingPublicAssetId
         ? { tool: "public_asset" as const, publicAssetId: placingPublicAssetId, position: edit.position, variantId: edit.variantId, rotation: edit.rotation }
         : edit;
       pendingProjectEdit.current = editRequestId;
       sent = publicCommand.run(request, { type: "project.edit", requestId: editRequestId, baseRevision: savedLayout.revision,
-        fundId: publicFundId, ...(projectDraft ? { draftId: projectDraft.id } : {}), edit: projectEdit });
+        fundId: projectDraft?.fundId ?? publicFundId, ...(projectDraft ? { draftId: projectDraft.id } : {}), edit: projectEdit });
       if (!sent) pendingProjectEdit.current = undefined;
     } else if (edit.tool === "asset" && placingOwnedAssetId) {
       playerEditType = "place";
@@ -2205,7 +2219,7 @@ export function Workspace({
       sent = request({
         type: "player_asset.remove",
         requestId: editRequestId,
-        baseRevision: layout.revision,
+        baseRevision: savedLayout.revision,
         objectId: edit.item.id,
       });
     } else {
@@ -2223,12 +2237,20 @@ export function Workspace({
   const changeBuildView = (view: BuildView) => {
     setBuildView(view);
     setReviewingProject(undefined);
+    setFocusTarget(undefined);
     setEditingTool(null);
     setBuildSelection(undefined);
     setMovingBuildItem(undefined);
     setPlacingOwnedAssetId(undefined);
     setPlacingPublicAssetId(undefined);
     setAccessInspectionUserId(null);
+  };
+
+  const closeProjectReview = () => {
+    setReviewingProject(undefined);
+    setFocusTarget(undefined);
+    if (projectDraft) setFloorId(projectDraft.floorId);
+    openPanel("approvals");
   };
 
   const focusPersonalAsset = (targetFloorId: string, objectId: string) => {
@@ -2357,6 +2379,8 @@ export function Workspace({
         corporateIdentity={data.corporateIdentity}
         canUseBuild
         currentUser={currentUser}
+        pendingApprovals={data.publicEconomy.proposals.filter((proposal) => Date.parse(proposal.expiresAt) > Date.now() && proposal.electorate.includes(data.currentUserId)
+          && (proposal.status === "approved" || proposal.status === "open" && !proposal.ballots.some((ballot) => ballot.userId === data.currentUserId))).length}
         unreadMessages={data.conversations.reduce((total, conversation) => total + conversation.unread, 0)}
         onChange={openPanel}
         onAvatarClick={() => {
@@ -2382,7 +2406,7 @@ export function Workspace({
         <WorldCanvas
           floor={floor}
           layout={layout}
-          projectPreview={activePanel === "build" && canBuild && preview?.floorId === floor.id ? {
+          projectPreview={activePanel === "build" && preview?.floorId === floor.id ? {
             savedLayout, status: reviewingProject ? "Proposal · not placed" : "Draft · not placed", removing: preview.quote.destructive,
           } : undefined}
           members={data.members}
@@ -2422,7 +2446,8 @@ export function Workspace({
             }
           }}
           onBuildItemSelect={(item) => {
-            const selectableItem = canBuild
+            const itemOwnerId = item?.type === "asset" ? layout.objects.find((object) => object.id === item.id)?.ownerUserId : undefined;
+            const selectableItem = itemOwnerId && itemOwnerId !== data.currentUserId ? undefined : canBuild
               ? item
               : item?.type === "asset"
                 && layout.objects.some((object) => object.id === item.id && object.ownerUserId === data.currentUserId)
@@ -2433,6 +2458,7 @@ export function Workspace({
           }}
           onAssetRotationChange={setEditingAssetRotation}
           onPlacementCancel={cancelBuildPlacement}
+          onPlacementBlocked={showToast}
           onGongOffscreen={announceOffscreenGong}
           onDirectionalInput={(sequence, dx, dy) => {
             if (dx !== 0 || dy !== 0) {
@@ -2829,11 +2855,15 @@ export function Workspace({
 
       {activePanel === "organisation" && <DeferredContent sidebar onClose={() => openPanel(null)}>
         <OrganisationPanel organisation={data.organisation} members={data.members} currentUserId={data.currentUserId}
+          error={workspaceCommand.error}
           pending={workspaceCommand.pending || connection !== "online"}
           equalTeam={equalTeam}
-          onEdit={(edit) => workspaceCommand.run(request, equalTeam
-            ? { type: "public_economy.propose", requestId: requestId(), title: "Change organisation", action: { kind: "organisation", baseRevision: data.organisation.revision, edit } }
-            : { type: "organisation.edit", requestId: requestId(), baseRevision: data.organisation.revision, edit })}
+          onEdit={(edit) => {
+            const id = requestId();
+            pendingApprovalSubmission.current = id;
+            if (!workspaceCommand.run(request,
+              { type: "public_economy.propose", requestId: id, title: "Change organisation", action: { kind: "organisation", baseRevision: data.organisation.revision, edit } })) pendingApprovalSubmission.current = undefined;
+          }}
           onClose={() => openPanel(null)} />
       </DeferredContent>}
       {activePanel === "rooms" && <DeferredContent onClose={() => openPanel(null)}>
@@ -2845,33 +2875,26 @@ export function Workspace({
             const id = requestId();
             const room = allRooms.find((candidate) => candidate.id === roomId)!;
             setPublicFundId(room.organisationUnitId === settings.organisationUnitId ? publicFundForUnit(data.publicEconomy, data.organisation, room.organisationUnitId).id : "workspace");
-            pendingRoomProposal.current = id;
-            if (!publicCommand.run(request, { type: "public_economy.propose", requestId: id, title: `Update ${settings.name}`, action: { kind: "room.settings", roomId, baseRevision, settings } })) pendingRoomProposal.current = undefined;
+            pendingApprovalSubmission.current = id;
+            if (!publicCommand.run(request, { type: "public_economy.propose", requestId: id, title: `Update ${settings.name}`, action: { kind: "room.settings", roomId, baseRevision, settings } })) pendingApprovalSubmission.current = undefined;
           }}
           onSaveDefaults={(settings) => {
             const id = requestId();
             setPublicFundId("workspace");
-            pendingRoomProposal.current = id;
-            if (!publicCommand.run(request, { type: "public_economy.propose", requestId: id, title: "Change room defaults", action: { kind: "game.settings", settings } })) pendingRoomProposal.current = undefined;
+            pendingApprovalSubmission.current = id;
+            if (!publicCommand.run(request, { type: "public_economy.propose", requestId: id, title: "Change room defaults", action: { kind: "game.settings", settings } })) pendingApprovalSubmission.current = undefined;
           }}
           onBack={() => openPanel("build")} onClose={() => openPanel(null)} />
       </DeferredContent>}
       {activePanel === "people" && (
         <PeoplePanel
           members={data.members}
-          invitations={data.invitations}
-          invitationLinks={invitationLinks}
           currentUser={currentUser}
-          canManageMembers={canManageMembers}
           onClose={() => setActivePanel(null)}
           onWave={(targetUserId) => request({ type: "interaction.wave", requestId: requestId(), targetUserId })}
           onMessage={messageMember}
           onCall={callMember}
           onLocate={locateMember}
-          onInvite={addInvitation}
-          onRevokeInvite={removeInvitation}
-          onCopyInvite={copyInvitationLink}
-          onAccessChange={updateMemberAccess}
         />
       )}
       {activePanel === "chat" && (
@@ -2890,25 +2913,21 @@ export function Workspace({
       {activePanel === "meetings" && (
         <MeetingsPanel meetings={visibleMeetings} rooms={allRooms} members={data.members} openingMeetingId={openingMeeting?.meetingId} onJoin={(meeting) => openMeeting(meeting, "full")} onClose={() => setActivePanel(null)} />
       )}
+      {activePanel === "admin" && canManageMembers && <DeferredContent onClose={() => openPanel(null)}>
+        <ServerAdminDialog members={data.members} currentUser={currentUser} invitations={data.invitations} invitationLinks={invitationLinks}
+          corporateIdentity={data.corporateIdentity}
+          onInvite={addInvitation} onRevokeInvite={removeInvitation} onCopyInvite={copyInvitationLink} onAccessChange={updateMemberAccess}
+          onRegistrationSettingsSave={saveRegistrationSettings} onCorporateIdentitySave={saveCorporateIdentity}
+          onCorporateLogoUpload={updateCorporateLogo} onCorporateLogoRemove={removeCorporateIdentityLogo} onClose={() => openPanel(null)} />
+      </DeferredContent>}
       {activePanel === "settings" && (
         <DeferredContent sidebar onClose={() => setActivePanel(null)}>
-          <KidnappingSettingsPanel
+          <SettingsPanel
             members={data.members}
             currentUserId={data.currentUserId}
-            globalSettings={data.kidnapping.global}
             playerSettings={data.kidnapping.player}
-            canManage={canManageMembers}
-            registrationSettings={data.registrationSettings}
-            corporateIdentity={data.corporateIdentity}
-            onRegistrationSettingsSave={saveRegistrationSettings}
-            onCorporateIdentitySave={saveCorporateIdentity}
-            onCorporateLogoUpload={updateCorporateLogo}
-            onCorporateLogoRemove={removeCorporateIdentityLogo}
-            onGlobalChange={(settings) => request({
-              type: "kidnapping.global_settings_update",
-              requestId: requestId(),
-              settings,
-            })}
+            onServerSettings={canManageMembers ? () => openPanel("admin") : undefined}
+            onServerChanged={onServerChanged}
             onPlayerChange={(settings) => request({
               type: "kidnapping.player_settings_update",
               requestId: requestId(),
@@ -2936,13 +2955,22 @@ export function Workspace({
       {activePanel === "build" && canBuild && !accessInspectionUserId && (
         <DeferredContent sidebar onClose={() => openPanel(null)}>
           <BuildPanel
+            reviewing={Boolean(reviewingProject)}
             accountControls={<BuildEconomyNavigation view={buildView} onChange={changeBuildView} />}
             projectControls={<ProjectToolbar economy={data.publicEconomy} organisation={data.organisation} userId={data.currentUserId}
+              title={projectTitle} onTitleChange={setProjectTitle}
               fundId={preview?.fundId ?? publicFundId} project={preview} pending={publicCommand.pending || connection !== "online"}
               stale={Boolean(preview && preview.baseRevision !== savedLayout.revision)}
               reviewing={Boolean(reviewingProject)} onFundChange={setPublicFundId}
               onSubmit={(title) => { if (projectDraft) publicCommand.run(request, { type: "project.submit", requestId: requestId(), draftId: projectDraft.id, title }); }}
-              onDiscard={() => { setProjectDraft(undefined); setReviewingProject(undefined); setEditingTool(null); setBuildSelection(undefined); if (reviewingProject) setBuildView("funds"); }} />}
+              onDiscard={() => {
+                setEditingTool(null);
+                setBuildSelection(undefined);
+                setMovingBuildItem(undefined);
+                if (reviewingProject) {
+                  closeProjectReview();
+                } else setProjectDraft(undefined);
+              }} />}
             disabled={Boolean(reviewingProject) || publicCommand.pending}
             layout={layout}
             tool={editingTool}
@@ -2951,7 +2979,7 @@ export function Workspace({
             assetRotation={editingAssetRotation}
             selectedItem={buildSelection}
             movingItem={movingBuildItem}
-            onInspectAccess={hasMemberPermission(currentUser, "build") ? () => {
+            onInspectAccess={data.organisation.ceoIds.includes(currentUser.id) ? () => {
               changeEditingTool(null);
               setBuildSelection(undefined);
               setAccessInspectionUserId(data.currentUserId);
@@ -2964,7 +2992,7 @@ export function Workspace({
             onRotateSelected={rotateSelectedBuildItem}
             onRemoveSelected={removeSelectedBuildItem}
             onOpenRooms={() => openPanel("rooms")}
-            onClose={() => openPanel(null)}
+            onClose={() => reviewingProject ? closeProjectReview() : openPanel(null)}
           />
         </DeferredContent>
       )}
@@ -2972,6 +3000,12 @@ export function Workspace({
         <DeferredContent sidebar onClose={() => openPanel(null)}>
           <PlayerBuildPanel
             accountControls={<BuildEconomyNavigation view={buildView} onChange={changeBuildView} />}
+            projectControls={projectDraft && <ProjectToolbar economy={data.publicEconomy} organisation={data.organisation} userId={data.currentUserId}
+              title={projectTitle} onTitleChange={setProjectTitle}
+              fundId={projectDraft.fundId} project={projectDraft} pending={publicCommand.pending || connection !== "online"}
+              stale={projectDraft.baseRevision !== savedLayout.revision} reviewing={false} onFundChange={setPublicFundId}
+              onSubmit={(title) => publicCommand.run(request, { type: "project.submit", requestId: requestId(), draftId: projectDraft.id, title })}
+              onDiscard={() => { setProjectDraft(undefined); setEditingTool(null); }} />}
             pendingPublicAction={publicCommand.pending || connection !== "online"}
             publicActionError={publicCommand.error}
             onSell={(ownedAssetId) => publicCommand.run(request, { type: "economy.sell_asset", requestId: requestId(), ownedAssetId })}
@@ -2990,6 +3024,7 @@ export function Workspace({
             assetVariantId={editingAssetVariantId}
             assetRotation={editingAssetRotation}
             placingOwnedAssetId={placingOwnedAssetId}
+            draftAssetIds={projectDraft?.layout.objects.flatMap((object) => object.ownedAssetId ? [object.ownedAssetId] : [])}
             selectedItem={buildSelection}
             movingItem={movingBuildItem}
             pendingEconomyRequest={pendingEconomyRequest}
@@ -3018,15 +3053,27 @@ export function Workspace({
         </DeferredContent>
       )}
 
-      {activePanel === "build" && buildView === "funds" && <DeferredContent onClose={() => openPanel(null)}><FundsPanel economy={data.publicEconomy} organisation={data.organisation}
+      {(activePanel === "approvals" || activePanel === "build" && buildView === "funds") && <DeferredContent onClose={() => openPanel(null)}><FundsPanel economy={data.publicEconomy} organisation={data.organisation}
+        rooms={allRooms}
+        globalSettings={data.kidnapping.global} onOpenRooms={() => openPanel("rooms")}
         initialFundId={publicFundId}
         error={publicCommand.error}
         members={data.members} userId={data.currentUserId} personalBalance={data.economy.coinBalance} pending={publicCommand.pending || connection !== "online"}
         onCommand={(command) => { if ("requestId" in command) publicCommand.run(request, command); }}
-        onReview={(project) => { setReviewingProject(project); setFloorId(project.floorId); setBuildView("shared"); setEditingTool(null); }}
-        onPlace={(publicAssetId, assetId, fundId) => { changeBuildView("shared"); setProjectDraft(undefined); setPublicFundId(fundId); setPlacingPublicAssetId(publicAssetId);
+        onReview={(project) => {
+          openPanel("build");
+          changeBuildView("shared");
+          setReviewingProject(project);
+          setFloorId(project.floorId);
+          const saved = data.layouts.find((candidate) => candidate.floorId === project.floorId)!;
+          const bounds = projectPreviewBounds(saved, project);
+          setFocusTarget(bounds ? { floorId: project.floorId, bounds, requestId: requestId() } : undefined);
+        }}
+        onPlace={(publicAssetId, assetId, fundId) => {
+          if (projectDraft && projectDraft.fundId !== fundId) { showToast("Use the draft’s fund or discard the draft before changing funds."); return; }
+          openPanel("build"); changeBuildView("shared"); setPublicFundId(fundId); setPlacingPublicAssetId(publicAssetId);
           changeEditingAsset(assetId); setEditingTool("asset"); }}
-        onViewChange={changeBuildView} onClose={() => openPanel(null)} /></DeferredContent>}
+        onViewChange={(view) => { openPanel("build"); changeBuildView(view); }} onClose={() => openPanel(null)} /></DeferredContent>}
 
       {meetingInvitations.slice(0, 1).map((invitation) => {
         const meeting = data.meetings.find((candidate) => candidate.id === invitation.meetingId);

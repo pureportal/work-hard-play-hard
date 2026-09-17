@@ -43,6 +43,7 @@ export * from "./assets.js";
 export * from "./work-objects.js";
 export * from "./whiteboard.js";
 export * from "./asset-placement.js";
+export * from "./asset-placement-messages.js";
 export * from "./flooring.js";
 export * from "./layout-placement.js";
 export * from "./geometry.js";
@@ -131,23 +132,14 @@ export function getEmailDomain(email: string): string {
   return separator < 0 ? "" : normalizeEmailDomain(email.slice(separator + 1));
 }
 
-export const MEMBER_PERMISSIONS = ["manage_members", "build"] as const;
-export const ASSIGNABLE_MEMBER_PERMISSIONS = ["build"] as const;
+export * from "./personal-spaces.js";
+export * from "./server-settings.js";
 
+export const MEMBER_PERMISSIONS = ["manage_members"] as const;
 export type MemberPermission = typeof MEMBER_PERMISSIONS[number];
-export type AssignableMemberPermission = typeof ASSIGNABLE_MEMBER_PERMISSIONS[number];
 
-export function permissionsForMemberRole(
-  role: MemberRole,
-  assigned: readonly AssignableMemberPermission[] = [],
-): MemberPermission[] {
-  if (role === "owner" || role === "admin") {
-    return [...MEMBER_PERMISSIONS];
-  }
-  if (role === "member") {
-    return ASSIGNABLE_MEMBER_PERMISSIONS.filter((permission) => assigned.includes(permission));
-  }
-  return [];
+export function permissionsForMemberRole(role: MemberRole): MemberPermission[] {
+  return role === "owner" || role === "admin" ? ["manage_members"] : [];
 }
 
 export function hasMemberPermission(member: Pick<Member, "permissions">, permission: MemberPermission): boolean {
@@ -237,7 +229,6 @@ export interface Invitation {
   teamId: string;
   email: string;
   role: Exclude<MemberRole, "owner">;
-  permissions: AssignableMemberPermission[];
   status: "pending" | "accepted" | "revoked";
   expiresAt: string;
 }
@@ -245,9 +236,9 @@ export interface Invitation {
 interface MeetingDetails {
   id: string;
   title: string;
-  startsAt: string;
-  durationMinutes: number;
-  status: "scheduled" | "live" | "ended";
+  startsAt?: string;
+  durationMinutes?: number;
+  status: "idle" | "scheduled" | "live" | "ended";
   participantIds: string[];
 }
 

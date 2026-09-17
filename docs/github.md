@@ -14,17 +14,14 @@ Chat, meeting chat and whiteboard card notes render pasted HTTP(S) links. Links 
 2. Enable expiring user access tokens. Non-expiring tokens and OAuth Apps with broad `repo` scopes are rejected.
 3. Set the callback URL to the externally reachable server URL ending in `/v1/github/callback`. HTTPS is required except for HTTP loopback IPs. Local example: `http://127.0.0.1:3001/v1/github/callback`. Use the same hostname when opening the web client so the session/state cookies reach the callback.
 4. Leave **Request user authorization (OAuth) during installation** off. Players begin authorization with Connect GitHub in the game. No webhook endpoint or subscriptions are required for this version.
-5. Set these server variables together; `.env.example` and Compose include them:
+5. Set `GITHUB_TOKEN_KEY` on the server to a base64-encoded random 32-byte encryption key, then restart the server. Generate it with `node -e "process.stdout.write(require('node:crypto').randomBytes(32).toString('base64'))"` and preserve it across restarts.
+6. Open **Server settings → GitHub** as a server administrator. Enter the Client ID, client secret, app slug (the name in `github.com/apps/<name>`) and exact registered Redirect URI, then select **Save GitHub**. Changes apply immediately and disconnect existing GitHub accounts. Leave **Replace client secret** empty to keep the saved secret; changing the Client ID requires a new secret. Clear the Client ID and save to disable GitHub.
 
-| Variable | Value |
-| --- | --- |
-| `GITHUB_CLIENT_ID` | App client ID, not numeric app ID |
-| `GITHUB_CLIENT_SECRET` | GitHub App client secret |
-| `GITHUB_APP_SLUG` | Name from `github.com/apps/<name>` |
-| `GITHUB_REDIRECT_URI` | Exact registered callback URL |
-| `GITHUB_TOKEN_KEY` | Base64-encoded random 32-byte encryption key |
+The client secret is encrypted in PostgreSQL and is never returned to the browser. The encryption key stays in the server environment. Losing or changing it requires restoring the key to read the saved secret and account credentials.
 
-Generate the encryption key with `node -e "process.stdout.write(require('node:crypto').randomBytes(32).toString('base64'))"` and store it in the server's secret configuration. Preserve the key across restarts. Changing it requires players to reconnect. Keep callback query strings out of reverse-proxy access logs; the application suppresses logging on GitHub callback and data routes.
+For initial provisioning, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_APP_SLUG` and `GITHUB_REDIRECT_URI` can be supplied together with `GITHUB_TOKEN_KEY`. They initialize settings only when none have been saved. Saved settings take precedence on subsequent starts, including when GitHub is disabled. `.env.example` and Compose include these variables.
+
+Keep callback query strings out of reverse-proxy access logs; the application suppresses logging on GitHub callback and data routes.
 
 Install the app for selected repositories, including organization approval where required. Players can use Manage repositories on GitHub from the tray; the picker reloads when they return. Organization SAML sessions and installation policies can still prevent access and need verification against the real organization.
 
@@ -49,7 +46,7 @@ Run from the repository root:
 
 ```sh
 pnpm --filter @workhard/server exec vitest run src/github src/spotify src/world/world-runtime.work-objects.test.ts
-pnpm --filter @workhard/server exec vitest run tests/github-persistence.test.ts
+pnpm --filter @workhard/server exec vitest run tests/github-persistence.test.ts tests/github-settings-persistence.test.ts
 pnpm --filter @workhard/client exec vitest run src/github src/components/LinkedText.test.tsx src/components/ChatPanel.test.tsx src/components/MeetingChat.test.tsx src/components/whiteboard
 pnpm assets:world:check
 pnpm --filter @workhard/client build
@@ -57,7 +54,7 @@ pnpm --filter @workhard/server build
 pnpm --filter @workhard/server exec tsx ../../scripts/github-browser-check.ts
 ```
 
-The browser check uses production client assets, the real application routes and runtime, an in-memory database, and simulated GitHub responses. Playwright routes requests without opening a development server. It exercises OAuth redirects/cookies, tray interaction, filters, failed-page recovery, mobile and dark layouts, scrolling, reduced motion, access loss and disconnect. Screenshots go to `artifacts/github/`. This does not verify real GitHub consent, installation permissions, organization policies or token refresh against GitHub.
+The browser check uses production client assets, the real application routes and runtime, an in-memory database, and simulated GitHub responses. Playwright routes requests without opening a development server. It exercises frontend app configuration, OAuth redirects/cookies, tray interaction, filters, failed-page recovery, mobile and dark layouts, scrolling, reduced motion, access loss and disconnect. Screenshots go to `artifacts/github/`. This does not verify real GitHub consent, installation permissions, organization policies or token refresh against GitHub.
 
 The PostgreSQL test creates its tables in a temporary schema inside a rolled-back transaction; it does not alter the live workspace. New artwork is generated in Blockbench 5.1.6, saved as three editable `.bbmodel` files and imported as twelve calibrated views:
 

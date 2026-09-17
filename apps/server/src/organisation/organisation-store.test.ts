@@ -1,4 +1,3 @@
-import { createTestData } from "../testing/workspace-data.js";
 import { describe, expect, it } from "vitest";
 import { createOrganisation, type OrganisationEdit, type OrganisationState } from "@workhard/shared";
 import { applyOrganisationEdit, validateOrganisation } from "./organisation-store.js";
@@ -19,7 +18,7 @@ function organisation(): OrganisationState {
 }
 const edit = (state: OrganisationState, actor: string, change: OrganisationEdit) => applyOrganisationEdit(state, people, actor, state.revision, change);
 
-describe("organisation authority", () => {
+describe("organisation proposals", () => {
   it("starts as an equal team without assigning CEO authority to the creator", () => {
     const store = new WorkspaceStore(createInitialData());
     store.addInitialMember({ id: "first", username: "first", email: "first@example.test" });
@@ -29,15 +28,14 @@ describe("organisation authority", () => {
     expect(store.getOrganisation().assignments).toEqual([]);
   });
 
-  it("lets only CEOs assign unassigned people", () => {
+  it("prepares member assignments without changing the saved organisation", () => {
     const state = organisation();
     const change: OrganisationEdit = { type: "member.move", userId: "unassigned", unitId: "engineering", rank: "member" };
-    expect(() => edit(state, "lead", change)).toThrow("ORGANISATION_FORBIDDEN");
-    expect(edit(state, "ceo", change).assignments).toContainEqual({ userId: "unassigned", unitId: "engineering", rank: "member" });
+    expect(edit(state, "lead", change).assignments).toContainEqual({ userId: "unassigned", unitId: "engineering", rank: "member" });
     expect(state.assignments).toHaveLength(3);
   });
 
-  it("lets a lead create and rename subteams and appoint their leads", () => {
+  it("prepares subteam creation, renaming and lead assignments", () => {
     let state = edit(organisation(), "lead", { type: "unit.create", name: "Mobile", kind: "team", parentId: "web" });
     const unit = state.units.at(-1)!;
     state = edit(state, "lead", { type: "unit.update", unitId: unit.id, name: "Apps", kind: "team" });
@@ -49,7 +47,6 @@ describe("organisation authority", () => {
   it.each<OrganisationEdit>([
     { type: "unit.create", name: "Root", kind: "department", parentId: null },
     { type: "unit.create", name: "Other", kind: "team", parentId: "product" },
-    { type: "unit.move", unitId: "engineering", parentId: "web" },
     { type: "unit.move", unitId: "web", parentId: "product" },
     { type: "unit.update", unitId: "product", name: "Taken", kind: "team" },
     { type: "member.move", userId: "other", unitId: "engineering", rank: "member" },
@@ -57,8 +54,8 @@ describe("organisation authority", () => {
     { type: "member.move", userId: "member", unitId: "engineering", rank: "lead" },
     { type: "member.move", userId: "member", unitId: null, rank: "member" },
     { type: "ceo.promote", userId: "member" },
-  ])("blocks changes beyond a lead's authority: %j", (change) => {
-    expect(() => edit(organisation(), "lead", change)).toThrow("ORGANISATION_FORBIDDEN");
+  ])("allows members to propose changes throughout the organisation: %j", (change) => {
+    expect(edit(organisation(), "member", change).revision).toBe(1);
   });
 
   it("prevents cycles, stale writes, invalid references and deleting populated units", () => {
@@ -71,48 +68,12 @@ describe("organisation authority", () => {
   });
 });
 
-describe("CEO removal votes", () => {
-  function multipleCeos() {
-    return edit(edit(organisation(), "ceo", { type: "ceo.promote", userId: "second" }), "ceo", { type: "ceo.promote", userId: "third" });
-  }
-
-  it("requires a recorded majority vote and moves a removed CEO to unassigned", () => {
-    let state = multipleCeos();
-    expect(state.ceoIds).toEqual(["ceo", "second", "third"]);
-    expect(() => edit(state, "ceo", { type: "member.move", userId: "third", unitId: "web", rank: "member" })).toThrow("CEO_VOTE_REQUIRED");
-    state = edit(state, "ceo", { type: "ceo.propose_removal", userId: "third" });
-    const voteId = state.removalVotes[0]!.id;
-    expect(state.ceoIds).toContain("third");
-    expect(() => edit(state, "third", { type: "ceo.vote", voteId, approve: true })).toThrow("ORGANISATION_FORBIDDEN");
-    state = edit(state, "ceo", { type: "ceo.vote", voteId, approve: true });
-    expect(state.ceoIds).toContain("third");
-    expect(() => edit(state, "ceo", { type: "ceo.vote", voteId, approve: true })).toThrow("CEO_ALREADY_VOTED");
-    state = edit(state, "second", { type: "ceo.vote", voteId, approve: true });
+describe("CEO removal", () => {
+  it("prepares CEO removal while preserving the last CEO", () => {
+    const state = edit(organisation(), "ceo", { type: "ceo.promote", userId: "second" });
+    const next = edit(state, "member", { type: "ceo.remove", userId: "second" });
     expect(state.ceoIds).toEqual(["ceo", "second"]);
-    expect(state.assignments.some((person) => person.userId === "third")).toBe(false);
-    expect(state.removalVotes[0]?.status).toBe("passed");
-    expect(() => edit(state, "second", { type: "ceo.vote", voteId, approve: true })).toThrow("CEO_VOTE_CLOSED");
-  });
-
-  it("rejects votes that cannot pass and keeps a fixed electorate after promotion", () => {
-    let state = edit(multipleCeos(), "ceo", { type: "ceo.propose_removal", userId: "third" });
-    const voteId = state.removalVotes[0]!.id;
-    state = edit(state, "ceo", { type: "ceo.promote", userId: "member" });
-    expect(() => edit(state, "member", { type: "ceo.vote", voteId, approve: true })).toThrow("ORGANISATION_FORBIDDEN");
-    state = edit(state, "second", { type: "ceo.vote", voteId, approve: false });
-    expect(state.removalVotes[0]?.status).toBe("rejected");
-    expect(state.ceoIds).toContain("third");
-  });
-
-  it("cancels other votes when their electorate changes and protects the final CEO", () => {
-    let state = edit(multipleCeos(), "ceo", { type: "ceo.propose_removal", userId: "third" });
-    state = edit(state, "third", { type: "ceo.propose_removal", userId: "ceo" });
-    const voteId = state.removalVotes[0]!.id;
-    state = edit(state, "ceo", { type: "ceo.vote", voteId, approve: true });
-    state = edit(state, "second", { type: "ceo.vote", voteId, approve: true });
-    expect(state.removalVotes[1]?.status).toBe("cancelled");
-    const store = new WorkspaceStore(createTestData());
-    expect(() => store.removeMember("user-maya")).toThrow("CEO_VOTE_REQUIRED");
-    expect(() => edit(organisation(), "ceo", { type: "ceo.propose_removal", userId: "ceo" })).toThrow();
+    expect(next.ceoIds).toEqual(["ceo"]);
+    expect(() => edit(next, "member", { type: "ceo.remove", userId: "ceo" })).toThrow("CEO_LAST_REQUIRED");
   });
 });

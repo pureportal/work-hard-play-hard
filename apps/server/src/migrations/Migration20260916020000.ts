@@ -12,7 +12,7 @@ export class Migration20260916020000 extends Migration {
 
 interface SavedSettings {
   id: string;
-  organisation: OrganisationState;
+  organisation: OrganisationState & { removalVotes: { subjectId: string; proposedBy: string; electorate: string[]; ballots: { userId: string; approve: boolean }[] }[] };
   game_settings: GameSettings;
   kidnapping_settings: { enabled: boolean; targetPolicy: { mode: string; userIds: string[] } };
   player_kidnapping_settings: Array<{ userId: string; settings: PlayerKidnappingSettings }>;

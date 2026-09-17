@@ -25,7 +25,7 @@ describe("CorporateIdentityEditor", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "Application name" }), { target: { value: "Acme Spaces" } });
     fireEvent.change(screen.getByLabelText("Primary color"), { target: { value: "#123abc" } });
     fireEvent.change(screen.getByRole("combobox", { name: "Login layout" }), { target: { value: "centered" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save identity" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save appearance" }));
 
     await waitFor(() => expect(onSave).toHaveBeenCalledWith({
       applicationName: "Acme Spaces",

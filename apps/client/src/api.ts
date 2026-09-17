@@ -1,5 +1,4 @@
 import type {
-  AssignableMemberPermission,
   AuthUser,
   BootstrapData,
   ChatMessage,
@@ -13,7 +12,11 @@ import type {
   RegistrationAvailability,
   RegistrationSettings,
   SpotifyStatus,
+  SpotifyAdminSettings,
+  SpotifyAppSettings,
   GitHubStatus,
+  GitHubAdminSettings,
+  GitHubAppSettingsUpdate,
   GitHubRepositories,
   GitHubMailroom,
   GitHubMailroomView,
@@ -176,8 +179,28 @@ export async function fetchSpotifyStatus(): Promise<SpotifyStatus> {
   return readResponse<SpotifyStatus>(await fetchWithTimeout("/v1/spotify", { cache: "no-store" }));
 }
 
+export async function fetchSpotifyAdminSettings(): Promise<SpotifyAdminSettings> {
+  return readResponse<SpotifyAdminSettings>(await fetchWithTimeout("/v1/admin/spotify", { cache: "no-store" }));
+}
+
+export async function updateSpotifyAdminSettings(settings: SpotifyAppSettings): Promise<SpotifyAdminSettings> {
+  return readResponse<SpotifyAdminSettings>(await fetchWithTimeout("/v1/admin/spotify", {
+    method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(settings),
+  }));
+}
+
 export async function fetchGitHubStatus(): Promise<GitHubStatus> {
   return readResponse<GitHubStatus>(await fetchWithTimeout("/v1/github", { cache: "no-store" }));
+}
+
+export async function fetchGitHubAdminSettings(): Promise<GitHubAdminSettings> {
+  return readResponse<GitHubAdminSettings>(await fetchWithTimeout("/v1/admin/github", { cache: "no-store" }));
+}
+
+export async function updateGitHubAdminSettings(settings: GitHubAppSettingsUpdate): Promise<GitHubAdminSettings> {
+  return readResponse<GitHubAdminSettings>(await fetchWithTimeout("/v1/admin/github", {
+    method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(settings),
+  }, 35_000));
 }
 
 export async function connectGitHub(): Promise<string> {
@@ -233,12 +256,11 @@ export async function inviteMember(
   teamId: string,
   email: string,
   role: Exclude<MemberRole, "owner"> = "member",
-  permissions: AssignableMemberPermission[] = [],
 ): Promise<IssuedInvitation> {
   const response = await fetchWithTimeout(`/v1/teams/${encodeURIComponent(teamId)}/invitations`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ email, role, permissions }),
+    body: JSON.stringify({ email, role }),
   }, EMAIL_DELIVERY_TIMEOUT_MS);
   return readResponse<IssuedInvitation>(response, "Invitation could not be sent.");
 }
@@ -266,17 +288,20 @@ export async function changeMemberAccess(
   teamId: string,
   memberId: string,
   role: Exclude<MemberRole, "owner">,
-  permissions: AssignableMemberPermission[],
 ): Promise<Member> {
   const response = await fetchWithTimeout(
     `/v1/teams/${encodeURIComponent(teamId)}/members/${encodeURIComponent(memberId)}`,
     {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ role, permissions }),
+      body: JSON.stringify({ role }),
     },
   );
   return readResponse<Member>(response, "Access could not be changed.");
+}
+
+export async function fetchRegistrationSettings(): Promise<RegistrationSettings> {
+  return readResponse<RegistrationSettings>(await fetchWithTimeout("/v1/admin/registration-settings"), "Registration settings could not load.");
 }
 
 export async function updateRegistrationSettings(settings: RegistrationSettings): Promise<RegistrationSettings> {

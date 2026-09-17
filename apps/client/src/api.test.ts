@@ -90,7 +90,6 @@ describe("client requests", () => {
       teamId: "team/one",
       email: "person@example.com",
       role: "member" as const,
-      permissions: [],
       status: "pending" as const,
       expiresAt: "2026-09-09T00:00:00.000Z",
     };
@@ -105,7 +104,6 @@ describe("client requests", () => {
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
       email: invitation.email,
       role: "member",
-      permissions: [],
     });
   });
 
@@ -116,7 +114,6 @@ describe("client requests", () => {
       teamId: "team-one",
       email: "person@example.com",
       role: "member" as const,
-      permissions: [],
       status: "accepted" as const,
       expiresAt: "2026-09-09T00:00:00.000Z",
     };
@@ -155,7 +152,7 @@ describe("client requests", () => {
     });
   });
 
-  it("sends role and build permission together when access changes", async () => {
+  it("sends the server role when access changes", async () => {
     const member = {
       id: "member/one",
       name: "Member",
@@ -163,7 +160,7 @@ describe("client requests", () => {
       email: "member@example.com",
       title: "",
       role: "member" as const,
-      permissions: ["build" as const],
+      permissions: [],
       color: "#123456",
       availability: "available" as const,
       online: false,
@@ -174,9 +171,9 @@ describe("client requests", () => {
     }));
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(changeMemberAccess("team/one", "member/one", "member", ["build"])).resolves.toEqual(member);
+    await expect(changeMemberAccess("team/one", "member/one", "member")).resolves.toEqual(member);
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("/v1/teams/team%2Fone/members/member%2Fone");
-    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({ role: "member", permissions: ["build"] });
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({ role: "member" });
   });
 
   it("replaces registration settings through the administrator endpoint", async () => {

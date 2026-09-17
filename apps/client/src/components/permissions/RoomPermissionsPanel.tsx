@@ -4,7 +4,8 @@ import { canEditRoomPermissions, publicFundForUnit, publicFundMemberIds, type Fl
 import { WorkspaceDialog } from "../WorkspaceDialog";
 import { DialogTabs } from "../DialogTabs";
 import { PermissionEditor } from "./PermissionEditor";
-import { PermissionPreview, RoomPermissionEditor } from "./RoomPermissionEditor";
+import { PermissionPreview } from "./PermissionPreview";
+import { RoomPermissionEditor } from "./RoomPermissionEditor";
 import "../../permissions.css";
 
 interface RoomPermissionsPanelProps {
@@ -34,9 +35,9 @@ export function RoomPermissionsPanel({ equalTeam = false, floors, layouts, curre
   const layout = layouts.find((candidate) => candidate.floorId === floorId)!;
   const room = layout.rooms.find((candidate) => candidate.id === roomId) ?? layout.rooms[0];
   const roomFund = publicFundForUnit(publicEconomy, organisation, room?.organisationUnitId);
-  const canVoteOnRoom = roomFund.mode === "equal" && publicFundMemberIds(roomFund, organisation, members.map((member) => member.id)).includes(currentUser.id);
+  const canVoteOnRoom = publicFundMemberIds(roomFund, organisation, members.map((member) => member.id)).includes(currentUser.id);
   const isCeo = organisation.ceoIds.includes(currentUser.id);
-  const canManageDefaults = equalTeam || isCeo;
+  const canManageDefaults = members.some((member) => member.id === currentUser.id);
   return <WorkspaceDialog title="Room settings" className="room-settings-dialog" error={error} onBack={onBack} onClose={onClose}>
     <DialogTabs label="Room settings views" tabs={[{ id: "rooms", label: "Rooms" }, { id: "defaults", label: "Defaults" }]} value={tab} onChange={setTab}>
       {tab === "rooms" ? <div className="room-settings-layout">
@@ -55,7 +56,7 @@ export function RoomPermissionsPanel({ equalTeam = false, floors, layouts, curre
         })}</div>
         </nav>
         <div className="room-settings-detail permission-content">{room ? <><h3>{room.name}</h3><RoomPermissionEditor key={room.id} room={room} members={members} organisation={organisation} settings={settings}
-          editable={canVoteOnRoom || canEditRoomPermissions(room, currentUser.id, currentUser.permissions, organisation)} canAssignUnit={equalTeam || isCeo || currentUser.permissions.includes("build")}
+          editable={canVoteOnRoom || canEditRoomPermissions(room, currentUser.id, organisation)} canAssignUnit={equalTeam || isCeo || canVoteOnRoom}
           pending={pending} onSave={(value) => onSaveRoom(room.id, layout.revision, value)} /></> : <div className="dialog-empty"><DoorOpen size={32} /><p>No rooms on this floor.</p></div>}</div>
       </div> : <div className="permission-content room-defaults">
         <form onSubmit={(event) => { event.preventDefault(); onSaveDefaults(defaults); }}>

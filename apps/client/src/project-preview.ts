@@ -1,6 +1,16 @@
-import { getOpeningRect, getPlacedAssetBounds, getWallSolidRects, subtractRect, type FloorLayout, type Rect } from "@workhard/shared";
+import { getOpeningRect, getPlacedAssetBounds, getWallSolidRects, subtractRect, type BuildProject, type FloorLayout, type Rect } from "@workhard/shared";
 
 export interface ProjectMark { bounds: Rect; change: "added" | "removed" }
+
+export function projectPreviewBounds(saved: FloorLayout, project: BuildProject): Rect | undefined {
+  const bounds = projectPreviewMarks(saved, project.layout).map((mark) => mark.bounds);
+  if (project.spawn) bounds.push({ ...project.spawn, width: 0, height: 0 });
+  if (!bounds.length) return undefined;
+  const x = Math.min(...bounds.map((rect) => rect.x));
+  const y = Math.min(...bounds.map((rect) => rect.y));
+  return { x, y, width: Math.max(...bounds.map((rect) => rect.x + rect.width)) - x,
+    height: Math.max(...bounds.map((rect) => rect.y + rect.height)) - y };
+}
 
 export function projectPreviewMarks(saved: FloorLayout, draft: FloorLayout): ProjectMark[] {
   const marks: ProjectMark[] = [];

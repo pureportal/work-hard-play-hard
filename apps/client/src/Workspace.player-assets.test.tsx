@@ -2,8 +2,8 @@ import { createPublicEconomy } from "@workhard/shared";
 import { createOrganisation } from "@workhard/shared";
 import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { BootstrapData, ClientCommand, ServerEvent, WorldSnapshot } from "@workhard/shared";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import type { BootstrapData, BuildProject, ClientCommand, ServerEvent, WorldSnapshot } from "@workhard/shared";
 import { Workspace } from "./App";
 import type { WorldCanvasProps } from "./components/WorldCanvas";
 import { createTestCorporateIdentity, createTestEconomy, createTestGameSettings, createTestKidnappingConfiguration } from "./test-fixtures";
@@ -21,18 +21,32 @@ vi.mock("./hooks/useRealtime", () => ({
   },
 }));
 
+vi.mock("./components/CharacterPreview", () => ({ CharacterPreview: () => null }));
+
 vi.mock("./components/WorldCanvasLoader", () => ({
   preloadWorldCanvas: vi.fn(),
-  WorldCanvas: ({ editing, editingTool, editingAssetVariantId, editingAssetRotation, onEdit, floor, focusTarget, selectedBuildItem }: WorldCanvasProps) => (
+  WorldCanvas: ({ editing, editingTool, editingAssetVariantId, editingAssetRotation, onEdit, onPlacementBlocked, floor, focusTarget, selectedBuildItem, layout, onBuildItemSelect }: WorldCanvasProps) => (
     <div data-testid="world" data-floor={floor.id} data-focus={JSON.stringify(focusTarget)} data-selected={selectedBuildItem?.id}>
+      {editing && layout.objects.map((object) => <button key={object.id} onClick={() => onBuildItemSelect({ type: "asset", id: object.id })}>Select {object.id}</button>)}
       {editing && editingTool === "asset" && (
-        <button onClick={() => onEdit({ tool: "asset", assetId: "chair-office", variantId: editingAssetVariantId, rotation: editingAssetRotation, position: { x: 32, y: 32 } })}>
-          Place on canvas
-        </button>
+        <>
+          <button onClick={() => onEdit({ tool: "asset", assetId: "chair-office", variantId: editingAssetVariantId, rotation: editingAssetRotation, position: { x: 32, y: 32 } })}>
+            Place on canvas
+          </button>
+          <button onClick={() => onPlacementBlocked("Place it fully inside a room.")}>Place outside room</button>
+        </>
       )}
     </div>
   ),
 }));
+
+beforeAll(async () => {
+  await Promise.all([
+    import("./components/PlayerBuildPanel"),
+    import("./components/BuildPanel"),
+    import("./components/economy/FundsPanel"),
+  ]);
+}, 60_000);
 
 beforeEach(() => {
   Object.defineProperty(window, "innerWidth", { configurable: true, value: 800 });
@@ -57,6 +71,76 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("Workspace player assets", () => {
+  it("shows placement explanations in the timed notification without sending a command", async () => {
+    render(<Workspace initialData={workspace()} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Build" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Place" }, { timeout: 5000 }));
+    realtime.send.mockClear();
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole("button", { name: "Place outside room" }));
+      expect(screen.getByText("Place it fully inside a room.").getAttribute("role")).toBe("status");
+      expect(realtime.send).not.toHaveBeenCalled();
+      act(() => vi.advanceTimersByTime(2_000));
+      fireEvent.click(screen.getByRole("button", { name: "Place outside room" }));
+      act(() => vi.advanceTimersByTime(2_000));
+      expect(screen.getByText("Place it fully inside a room.")).toBeTruthy();
+      act(() => vi.advanceTimersByTime(800));
+      expect(screen.queryByText("Place it fully inside a room.")).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: "Place on canvas" }));
+      expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({ type: "player_asset.place" }));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not offer administrators editing controls for other people's items", async () => {
+    const data = workspace();
+    data.members[0]!.role = "admin";
+    data.members[0]!.permissions = ["manage_members"];
+    data.layouts[0]!.objects = [{ id: "someone-elses-chair", floorId: "floor", assetId: "chair-office", x: 32, y: 32, variantId: "white", rotation: 0, ownerUserId: "another-user" }];
+    render(<Workspace initialData={data} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Build" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Shared" }, { timeout: 5000 }));
+    fireEvent.click(screen.getByRole("button", { name: "Select someone-elses-chair" }));
+    expect(screen.getByTestId("world").getAttribute("data-selected")).toBeNull();
+    expect(screen.queryByRole("region", { name: "Selected Office chair" })).toBeNull();
+  }, 15_000);
+
+  it("preserves a working draft when returning from a proposal preview", async () => {
+    const data = workspace();
+    const room = data.layouts[0]!.rooms[0]!;
+    delete room.ownerUserId;
+    room.access = { mode: "open", assignedPersonIds: [], knockable: false };
+    room.build = { mode: "open", assignedPersonIds: [] };
+    const project: BuildProject = { id: "working-draft", fundId: "workspace", floorId: "floor", baseRevision: 1, edits: 1,
+      layout: { ...data.layouts[0]!, revision: 2, objects: [{ id: "draft-chair", floorId: "floor", assetId: "chair-office", x: 32, y: 32,
+        variantId: "white", rotation: 0, ownedAssetId: "owned-chair", ownerUserId: "player" }] },
+      quote: { assetChanges: [], cost: 0, refund: 0, refunds: [], structural: false, destructive: false, requiresApproval: true, purchases: [], removedKeys: [], inventoryIds: [] } };
+    data.publicEconomy.proposals = [{ id: "proposal", title: "Team proposal", proposedBy: "teammate", fundId: "workspace", action: { kind: "project", project: { ...project, id: "another-project" } },
+      status: "open", electorate: ["player", "teammate"], required: 2, ballots: [{ userId: "teammate", approve: true }], reserved: 0,
+      createdAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 86_400_000).toISOString(), organisationRevision: 0, policyRevision: 0 }];
+    render(<Workspace initialData={data} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Build" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Place" }, { timeout: 5000 }));
+    fireEvent.click(screen.getByRole("button", { name: "Place on canvas" }));
+    const edit = realtime.send.mock.calls.map(([command]) => command).find((command) => command.type === "project.edit")!;
+    act(() => realtime.handler?.({ type: "project.preview", requestId: edit.requestId, project }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Project name" }), { target: { value: "My workspace" } });
+    fireEvent.click(within(screen.getByRole("navigation", { name: "Workspace" })).getByRole("button", { name: "Approvals" }));
+    fireEvent.click(await screen.findByRole("button", { name: "View layout" }, { timeout: 5000 }));
+    expect(JSON.parse(screen.getByTestId("world").getAttribute("data-focus")!)).toMatchObject({
+      floorId: "floor", bounds: { x: 32, y: 32 },
+    });
+    fireEvent.click(await screen.findByRole("button", { name: "Back to approvals" }, { timeout: 5000 }));
+    fireEvent.click(await screen.findByRole("button", { name: "Close approvals" }, { timeout: 5000 }));
+    fireEvent.click(screen.getByRole("button", { name: "Build" }));
+    expect(await screen.findByText("Draft · not placed", { exact: true })).toBeTruthy();
+    expect((screen.getByRole("textbox", { name: "Project name" }) as HTMLInputElement).value).toBe("My workspace");
+    fireEvent.click(screen.getByRole("button", { name: "Propose project" }));
+    expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({ type: "project.submit", draftId: "working-draft", title: "My workspace" }));
+  }, 15_000);
+
   it.each([
     { action: "Sell Office chair for 30 coins", title: "Sell Office chair?", confirm: "Sell item", command: "economy.sell_asset" },
     { action: "Donate", title: "Donate Office chair?", confirm: "Donate item", command: "economy.donate_asset" },
@@ -263,7 +347,7 @@ function workspace(): BootstrapData {
       tiles: [],
       objects: [],
       rooms: [{
-        id: "room",
+        id: "room", ownerUserId: "player",
         floorId: "floor",
         name: "Room",
         color: "#ffffff",

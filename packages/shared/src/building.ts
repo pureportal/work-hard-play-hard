@@ -56,6 +56,13 @@ export interface RoomAccess extends RoomPermission {
   knockable: boolean;
 }
 
+export interface PersonalArea {
+  id: string;
+  name: string;
+  ownerUserId: string;
+  bounds: Rect;
+}
+
 export interface Room {
   id: string;
   floorId: string;
@@ -68,17 +75,23 @@ export interface Room {
   doorIds: string[];
   windowIds: string[];
   privateEligible: boolean;
+  meetingRoom?: boolean;
   access: RoomAccess;
   build?: RoomPermission;
   organisationUnitId?: string;
+  ownerUserId?: string;
+  personalAreas?: PersonalArea[];
 }
 
 export interface RoomSettings {
   name: string;
   color: string;
+  meetingRoom?: boolean;
   access: RoomAccess;
   build?: RoomPermission;
   organisationUnitId?: string;
+  ownerUserId?: string;
+  personalAreas?: PersonalArea[];
 }
 
 export interface FloorTile {

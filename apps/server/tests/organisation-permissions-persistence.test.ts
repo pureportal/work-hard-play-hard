@@ -7,7 +7,7 @@ import { createDatabaseConfig } from "../src/persistence/database-config.js";
 import { WorkspaceStore } from "../src/store.js";
 
 describe("organisation and permissions PostgreSQL migration", () => {
-  it("preserves existing restrictions and round-trips an in-progress CEO vote", async () => {
+  it("preserves existing restrictions and round-trips team-approved organisation changes", async () => {
     const orm = await MikroORM.init(createDatabaseConfig());
     const em = orm.em.fork();
     try {
@@ -37,18 +37,13 @@ describe("organisation and permissions PostgreSQL migration", () => {
       expect(savedRooms[0]!.rooms[0]!.build).toEqual({ mode: "assigned", assignedPersonIds: rooms[0]!.access.assignedPersonIds });
       expect(savedRooms[0]!.rooms[1]!.build?.mode).toBe("default");
       expect(await em.execute("select rooms from floor_layouts where floor_id = 'empty'")).toEqual([{ rooms: [] }]);
-      const change = (edit: Parameters<WorkspaceStore["editOrganisation"]>[2]) => seed.editOrganisation("user-maya", seed.getOrganisation().revision, edit);
-      change({ type: "ceo.propose_removal", userId: "user-sam" });
-      const voteId = seed.getOrganisation().removalVotes[0]!.id;
-      change({ type: "ceo.vote", voteId, approve: true });
+      seed.editOrganisation("user-maya", seed.getOrganisation().revision, { type: "ceo.remove", userId: "user-sam" }, true);
       await em.execute("update workspace_settings set organisation = ?::jsonb where id = 'disabled'", [JSON.stringify(seed.getOrganisation())]);
       const [saved] = await em.execute<{ organisation: OrganisationState }[]>("select organisation from workspace_settings where id = 'disabled'");
       const restored = new WorkspaceStore(createTestData());
       restored.restoreMutableState({ ...seed.exportMutableState(), organisation: saved!.organisation });
-      expect(restored.getOrganisation().ceoIds).toContain("user-sam");
-      restored.editOrganisation("user-noah", restored.getOrganisation().revision, { type: "ceo.vote", voteId, approve: true });
       expect(restored.getOrganisation().ceoIds).not.toContain("user-sam");
-      expect(restored.getOrganisation().removalVotes[0]?.status).toBe("passed");
+      expect(restored.getOrganisation()).toEqual(seed.getOrganisation());
     } finally {
       if (em.isInTransaction()) await em.rollback();
       await orm.close(true);

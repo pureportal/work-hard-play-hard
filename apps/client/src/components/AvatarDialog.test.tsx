@@ -13,7 +13,7 @@ vi.mock("./CharacterPreview", () => ({
 
 const member: Member = {
   id: "user-maya", name: "Maya Chen", initials: "MC", character: { ...DEFAULT_CHARACTER_APPEARANCE },
-  email: "maya@example.com", title: "Product Lead", role: "owner", permissions: ["manage_members", "build"],
+  email: "maya@example.com", title: "Product Lead", role: "owner", permissions: ["manage_members"],
   color: "#5b8def", availability: "available", online: true,
 };
 
