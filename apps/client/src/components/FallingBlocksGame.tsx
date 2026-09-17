@@ -30,7 +30,7 @@ const EMPTY_GRID = Array.from({ length: 20 }, () => Array<number>(10).fill(0));
 
 export function FallingBlocksGame({ state, round, members, currentUserId, onCommand, onClose, onPlayAgain }: FallingBlocksGameProps) {
   const [confirmingExit, setConfirmingExit] = useState(false);
-  const [showControls, setShowControls] = useState(false);
+  const [showControls, setShowControls] = useState(() => window.matchMedia("(pointer: coarse)").matches);
   const controlsId = useId();
   const currentPlayer = round.participants.find((participant) => participant.userId === currentUserId);
   const closeGame = () => currentPlayer?.status === "playing" ? setConfirmingExit(true) : onClose();

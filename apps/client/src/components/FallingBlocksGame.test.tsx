@@ -1,14 +1,26 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { emptyFallingBlocksSpecialCounts, FALLING_BLOCKS_HARD_CELL, FALLING_BLOCKS_GARBAGE_CELL, type FallingBlocksGameState, type GameRoundState, type FallingBlocksCommand } from "@workhard/shared";
 import { FallingBlocksGame } from "./FallingBlocksGame";
+
+beforeEach(() => vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: false }))));
 
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 describe("FallingBlocksGame", () => {
+  it("shows gameplay controls immediately on touch devices", () => {
+    vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
+    renderGame(vi.fn());
+    expect(screen.getByRole("button", { name: "Move left" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Drop" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Hide controls" }));
+    expect(screen.queryByRole("button", { name: "Move left" })).toBeNull();
+  });
+
   it("hides every gameplay button and key hint until controls are toggled", () => {
     const onCommand = vi.fn();
     const { container } = renderGame(onCommand);

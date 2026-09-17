@@ -41,7 +41,7 @@
 
 .falling-blocks-lobby-players,
 .falling-blocks-high-scores {
-  margin-top: 16px;
+  margin-top: 10px;
 }
 
 .falling-blocks-lobby ul,
@@ -88,7 +88,7 @@
 .falling-blocks-settings {
   display: grid;
   gap: 10px;
-  margin: 14px 0;
+  margin: 10px 0;
 }
 
 .falling-blocks-settings label {
@@ -126,7 +126,7 @@
 }
 
 .falling-blocks-special-statistics {
-  margin: 14px 0;
+  margin: 8px 0;
   font-size: 12px;
 }
 
@@ -172,11 +172,11 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
-  margin: 14px 0 0;
+  margin: 10px 0 0;
 }
 
 .falling-blocks-player-stats > div {
-  padding: 10px 3px;
+  padding: 8px 3px;
   text-align: center;
   border-radius: 10px;
 }
@@ -194,8 +194,8 @@
 }
 
 .falling-blocks-game {
-  width: min(960px, 100%);
-  height: min(820px, 100%);
+  width: min(900px, 100%);
+  height: min(760px, 100%);
 }
 
 .falling-blocks-content {
@@ -206,8 +206,8 @@
   flex: 1;
   min-height: 0;
   justify-content: center;
-  gap: 20px;
-  padding: 24px;
+  gap: 16px;
+  padding: 18px;
 }
 
 .falling-blocks-left-rail {

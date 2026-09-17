@@ -11,7 +11,7 @@ const member: Member = {
   email: "maya@example.com",
   title: "Product Lead",
   role: "owner",
-  permissions: ["manage_members", "build"],
+  permissions: ["manage_members"],
   color: "#ff7a66",
   availability: "available",
   online: true,
@@ -33,9 +33,38 @@ const message: ChatMessage = {
   sequence: 1,
 };
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe("ChatPanel", () => {
+  it("follows the visible viewport while the keyboard opens, scrolls, and closes", () => {
+    const viewport = Object.assign(new EventTarget(), { height: window.innerHeight, offsetTop: 0, scale: 1 });
+    vi.stubGlobal("visualViewport", viewport);
+    const removeListener = vi.spyOn(viewport, "removeEventListener");
+    const view = render(<ChatPanel conversations={[conversation]} messages={[]} members={[member]} currentUserId={member.id}
+      onConversationChange={vi.fn()} onSend={vi.fn()} onSendImage={vi.fn()} onClose={vi.fn()} />);
+    const panel = screen.getByRole("complementary", { name: "Messages" });
+    viewport.height = window.innerHeight - 300;
+    viewport.dispatchEvent(new Event("resize"));
+    expect(panel.dataset.keyboardOpen).toBe("true");
+    expect(panel.style.getPropertyValue("--chat-viewport-height")).toBe(`${viewport.height}px`);
+    viewport.offsetTop = 120;
+    viewport.dispatchEvent(new Event("scroll"));
+    expect(panel.style.getPropertyValue("--chat-viewport-top")).toBe("120px");
+    viewport.scale = 2;
+    viewport.dispatchEvent(new Event("resize"));
+    expect(panel.dataset.keyboardOpen).toBe("false");
+    viewport.scale = 1;
+    viewport.height = window.innerHeight;
+    viewport.dispatchEvent(new Event("resize"));
+    expect(panel.dataset.keyboardOpen).toBe("false");
+    view.unmount();
+    expect(removeListener).toHaveBeenCalledWith("resize", expect.any(Function));
+    expect(removeListener).toHaveBeenCalledWith("scroll", expect.any(Function));
+  });
+
   it("renders seeded history and submits a new message", () => {
     const onSend = vi.fn(() => true);
     render(

@@ -106,23 +106,101 @@
 .interaction-panel {
   position: absolute;
   z-index: 35;
+  display: flex;
+  flex-direction: column;
   top: calc(84px + env(safe-area-inset-top));
   right: 20px;
-  width: min(340px, calc(100% - 40px));
-  max-height: calc(100% - 176px);
-  overflow: auto;
+  width: min(316px, calc(100% - 40px));
+  max-height: min(580px, calc(100% - 176px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+  overflow: hidden;
   color: var(--ink);
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 16px;
   box-shadow: var(--shadow);
+}
+
+.interaction-content {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scroll-padding-block: 12px;
+}
+
+.interaction-panel.is-collapsed {
+  width: fit-content;
+  max-width: min(316px, calc(100% - 20px));
+}
+
+.interaction-expand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 12px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 650;
+  background: transparent;
+  border: 0;
+}
+
+.interaction-expand span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.interaction-expand svg {
+  flex-shrink: 0;
+}
+
+.interaction-dismiss {
+  position: absolute;
+  z-index: 2;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.interaction-dismiss + .interaction-content .game-lobby > header {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  padding-right: 40px;
+  background: var(--panel);
+}
+
+.interaction-dismiss + .interaction-content {
+  scroll-padding-top: 64px;
+}
+
+.interaction-dismiss + .interaction-content :is(.nearby-person-actions, .context-action, .door-interaction) {
+  padding-right: 52px;
+}
+
+.workspace-shell:has(.chat-panel) .interaction-panel {
+  visibility: hidden;
+}
+
+.interaction-panel button {
+  touch-action: manipulation;
 }
 
 .interaction-navigation {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 8px;
+  flex-shrink: 0;
+  padding: 4px;
   border-bottom: 1px solid var(--line);
   background: var(--accent-soft);
 }
@@ -151,18 +229,12 @@
   background: transparent;
 }
 
-.interaction-navigation > span {
-  color: var(--muted);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-}
-
 .interaction-navigation button:hover {
   background: var(--panel-strong);
 }
 
 .game-lobby {
-  padding: 16px;
+  padding: 12px;
   color: var(--ink);
   background: var(--panel);
 }
@@ -170,9 +242,9 @@
 .game-lobby > header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 46px;
-  margin-bottom: 16px;
+  gap: 9px;
+  min-height: 40px;
+  margin-bottom: 10px;
 }
 
 .game-lobby > header h2 {
@@ -184,7 +256,7 @@
 .game-opponent-picker {
   display: grid;
   gap: 8px;
-  margin: 14px 0;
+  margin: 10px 0;
 }
 
 .game-segments {
@@ -254,9 +326,9 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   max-width: 100%;
-  padding: 16px;
+  padding: 12px;
   background: transparent;
   border: 0;
   border-radius: 0;
@@ -267,7 +339,8 @@
 .interaction-content .door-interaction > strong,
 .nearby-person-actions > strong {
   flex: 1;
-  min-width: 180px;
+  min-width: min(160px, 100%);
+  overflow-wrap: anywhere;
 }
 
 .game-result-actions {
@@ -324,9 +397,9 @@
     padding-bottom: max(14px, env(safe-area-inset-bottom));
   }
   .interaction-panel {
-    right: 10px;
-    width: min(320px, calc(100% - 20px));
-    max-height: calc(100% - 184px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    right: max(10px, env(safe-area-inset-right));
+    width: min(300px, calc(100% - 20px - env(safe-area-inset-right)));
+    max-height: min(56dvh, calc(100% - 184px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
   }
 }
 
@@ -349,11 +422,23 @@
 }
 
 @media (pointer: coarse) {
-  .interaction-navigation button {
+  .interaction-navigation button,
+  .interaction-dismiss {
     width: 44px;
     height: 44px;
   }
-  .game-lobby select {
+  .interaction-dismiss + .interaction-content .game-lobby > header {
+    min-height: 44px;
+    padding-right: 48px;
+  }
+  .interaction-panel :is(.primary-button, .secondary-button, .chess-new-button, .chess-join-button, .chess-play-button, .chess-cancel-button, .chess-setup-heading button) {
+    min-height: 44px;
+  }
+  .interaction-panel :is(.chess-play-button, .chess-cancel-button, .chess-setup-heading button) {
+    min-width: 44px;
+  }
+  .game-lobby select,
+  .interaction-navigation select {
     min-height: 44px;
     font-size: 16px;
   }

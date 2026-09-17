@@ -6,6 +6,7 @@ import { useHorizontalWheelScroll } from "../hooks/useHorizontalWheelScroll";
 import { Avatar } from "./Avatar";
 import { LinkedText } from "./LinkedText";
 import { SurfaceHeader } from "./SurfaceHeader";
+import "../chat-panel.css";
 
 interface ChatPanelProps {
   conversations: Conversation[];
@@ -43,6 +44,7 @@ export function ChatPanel({
   const [imageError, setImageError] = useState<string>();
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
   const conversationTabsRef = useRef<HTMLDivElement>(null);
@@ -57,6 +59,26 @@ export function ChatPanel({
     () => messages.filter((message) => message.conversationId === selected?.id).sort((left, right) => left.sequence - right.sequence),
     [messages, selected?.id],
   );
+
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const panel = panelRef.current;
+    if (!viewport || !panel) return;
+    const resize = () => {
+      panel.style.setProperty("--chat-viewport-height", `${viewport.height}px`);
+      panel.style.setProperty("--chat-viewport-top", `${viewport.offsetTop}px`);
+      panel.dataset.keyboardOpen = String(viewport.scale === 1 && window.innerHeight - viewport.height > 150);
+      const list = messageListRef.current;
+      if (list && stickToBottomRef.current) list.scrollTop = list.scrollHeight;
+    };
+    resize();
+    viewport.addEventListener("resize", resize);
+    viewport.addEventListener("scroll", resize);
+    return () => {
+      viewport.removeEventListener("resize", resize);
+      viewport.removeEventListener("scroll", resize);
+    };
+  }, []);
 
   useEffect(() => {
     const list = messageListRef.current;
@@ -199,6 +221,7 @@ export function ChatPanel({
 
   return (
     <aside
+      ref={panelRef}
       className={`side-panel chat-panel ${dragging ? "dragging-image" : ""}`}
       aria-label="Messages"
       onDragEnter={handleDragEnter}

@@ -1,0 +1,87 @@
+.side-panel.chat-panel {
+  position: fixed;
+  top: calc(84px + env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  width: min(380px, calc(100vw - var(--nav-rail-width) - 32px));
+  height: min(560px, calc(100dvh - 176px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.chat-panel .panel-header {
+  min-height: 64px;
+  padding: 10px 12px;
+}
+
+.chat-panel .panel-header h2 {
+  font-size: 18px;
+}
+
+.chat-panel .conversation-tabs {
+  gap: 6px;
+  padding: 8px 10px 10px;
+}
+
+.chat-panel .message-list {
+  padding: 12px;
+}
+
+.chat-panel .message-composer-shell {
+  margin: 8px 10px 10px;
+}
+
+.chat-panel .message-composer button {
+  flex-shrink: 0;
+  touch-action: manipulation;
+}
+
+@media (max-width: 700px) {
+  .side-panel.chat-panel {
+    top: auto;
+    right: max(10px, env(safe-area-inset-right));
+    bottom: max(80px, calc(68px + env(safe-area-inset-bottom)));
+    width: calc(100vw - var(--nav-rail-width) - 20px - env(safe-area-inset-right));
+    height: min(520px, 60dvh, calc(100dvh - 164px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+  }
+}
+
+@media (pointer: coarse) {
+  .chat-panel .message-composer button,
+  .chat-panel .surface-header .icon-button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .chat-panel .conversation-tabs button {
+    min-height: 44px;
+  }
+
+  .chat-panel .message-composer input {
+    height: 44px;
+    font-size: 16px;
+  }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .side-panel.chat-panel {
+    top: max(10px, env(safe-area-inset-top));
+    bottom: auto;
+    height: calc(100dvh - 100px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+
+  .chat-panel .panel-header {
+    min-height: 56px;
+    padding-block: 6px;
+  }
+
+  .chat-panel .conversation-tabs {
+    padding-block: 6px;
+  }
+}
+
+.side-panel.chat-panel[data-keyboard-open="true"] {
+  top: calc(var(--chat-viewport-top) + 8px);
+  bottom: auto;
+  height: min(560px, calc(var(--chat-viewport-height) - 16px));
+}
