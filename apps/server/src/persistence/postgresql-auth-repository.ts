@@ -5,11 +5,13 @@ import {
   AuthAccountEntity,
   AuthSessionEntity,
   MagicLinkEntity,
+  PasswordResetEntity,
+  RegistrationLinkEntity,
 } from "./entities/index.js";
 import { synchronizeRows } from "./synchronize-rows.js";
 
 export class PostgreSqlAuthRepository {
-  constructor(private readonly orm: MikroORM) {}
+  constructor(private readonly orm: Pick<MikroORM, "em">) {}
 
   async load(): Promise<AuthPersistenceState | undefined> {
     return this.orm.em.fork({ keepTransactionContext: true }).transactional(async (entityManager) => {
@@ -19,6 +21,8 @@ export class PostgreSqlAuthRepository {
       }
       const sessions = await entityManager.find(AuthSessionEntity, {}, { orderBy: { expiresAt: "asc" } });
       const magicLinks = await entityManager.find(MagicLinkEntity, {}, { orderBy: { expiresAt: "asc" } });
+      const passwordResets = await entityManager.find(PasswordResetEntity, {}, { orderBy: { expiresAt: "asc" } });
+      const registrationLinks = await entityManager.find(RegistrationLinkEntity, {}, { orderBy: { expiresAt: "asc" } });
       return {
         accounts: accounts.map((account) => ({
           id: account.id,
@@ -36,6 +40,12 @@ export class PostgreSqlAuthRepository {
           tokenHash: magicLink.tokenHash,
           userId: magicLink.userId,
           expiresAt: magicLink.expiresAt.toISOString(),
+        })),
+        passwordResets: passwordResets.map(({ tokenHash, userId, expiresAt }) => ({
+          tokenHash, userId, expiresAt: expiresAt.toISOString(),
+        })),
+        registrationLinks: registrationLinks.map(({ tokenHash, username, email, passwordHash, expiresAt }) => ({
+          tokenHash, username, email, passwordHash, expiresAt: expiresAt.toISOString(),
         })),
       };
     }, {
@@ -63,10 +73,18 @@ export class PostgreSqlAuthRepository {
         userId: magicLink.userId,
         expiresAt: new Date(magicLink.expiresAt),
       })));
+      await synchronizeRows(entityManager, PasswordResetEntity, "tokenHash", state.passwordResets.map((reset) => ({
+        ...reset, expiresAt: new Date(reset.expiresAt),
+      })));
+      await synchronizeRows(entityManager, RegistrationLinkEntity, "tokenHash", state.registrationLinks.map((link) => ({
+        ...link, expiresAt: new Date(link.expiresAt),
+      })));
     });
   }
 
   async clear(entityManager: EntityManager): Promise<void> {
+    await entityManager.nativeDelete(RegistrationLinkEntity, {});
+    await entityManager.nativeDelete(PasswordResetEntity, {});
     await entityManager.nativeDelete(MagicLinkEntity, {});
     await entityManager.nativeDelete(AuthSessionEntity, {});
     await entityManager.nativeDelete(AuthAccountEntity, {});

@@ -79,6 +79,7 @@ describe("authentication API", () => {
       setupRequired: true,
       registration: defaultRegistrationAvailability,
       magicLinkEnabled: true,
+      passwordResetEnabled: true,
       corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
     });
     expect(response.statusCode).toBe(201);
@@ -117,6 +118,7 @@ describe("authentication API", () => {
       setupRequired: false,
       registration: defaultRegistrationAvailability,
       magicLinkEnabled: true,
+      passwordResetEnabled: true,
       corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
     });
   }, 15_000);
@@ -169,6 +171,7 @@ describe("authentication API", () => {
       setupRequired: false,
       registration: defaultRegistrationAvailability,
       magicLinkEnabled: true,
+      passwordResetEnabled: true,
       corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
     });
     expect(activeSession.json()).toMatchObject({ user: { id: "user-maya" } });
@@ -198,6 +201,7 @@ describe("authentication API", () => {
       setupRequired: false,
       registration: defaultRegistrationAvailability,
       magicLinkEnabled: true,
+      passwordResetEnabled: true,
       corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
     });
     expect(bootstrap.statusCode).toBe(401);
@@ -354,7 +358,7 @@ describe("authentication API", () => {
     expect(requested.json()).toEqual({ message: "Check your email." });
     expect(unknown.statusCode).toBe(202);
     expect(unknown.json()).toEqual({ message: "Check your email." });
-    expect(deliverMagicLink).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(deliverMagicLink).toHaveBeenCalledOnce());
     expect(deliverMagicLink).toHaveBeenCalledWith(
       "maya@northstar.studio",
       expect.stringMatching(/^http:\/\/127\.0\.0\.1:5173\/auth\/magic#magic=/),
@@ -380,8 +384,9 @@ describe("authentication API", () => {
       payload: { email: "maya@northstar.studio" },
     });
 
-    expect(response.statusCode).toBe(502);
-    expect(response.json()).toMatchObject({ code: "MAGIC_LINK_DELIVERY_FAILED" });
+    expect(response.statusCode).toBe(202);
+    expect(response.json()).toEqual({ message: "Check your email." });
+    await context.app.close();
     expect((await database.loadAuthState())?.magicLinks).toEqual([]);
   });
 
@@ -428,6 +433,7 @@ describe("authentication API", () => {
       setupRequired: false,
       registration: defaultRegistrationAvailability,
       magicLinkEnabled: true,
+      passwordResetEnabled: true,
       corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
     });
   });
@@ -595,8 +601,14 @@ describe("registration administration", () => {
       payload: { username: "uninvited-user", email: "person@outside.com", password: "correct-horse" },
     });
 
-    expect(trusted.statusCode).toBe(201);
-    expect(context.store.getMember(trusted.json().user.id)).toMatchObject({ role: "guest", permissions: [] });
+    expect(trusted.statusCode).toBe(202);
+    expect(trusted.headers["set-cookie"]).toBeUndefined();
+    const trustedVerification = await context.app.inject({
+      method: "POST", url: "/v1/auth/register/verify",
+      payload: { token: new URLSearchParams(new URL(trusted.json().registrationLink).hash.slice(1)).get("registration") },
+    });
+    expect(trustedVerification.statusCode).toBe(201);
+    expect(context.store.getMember(trustedVerification.json().user.id)).toMatchObject({ role: "guest", permissions: [] });
     expect(uninvited.statusCode).toBe(403);
     expect(uninvited.json()).toMatchObject({ code: "INVITATION_REQUIRED" });
 
@@ -617,8 +629,13 @@ describe("registration administration", () => {
       payload: { username: "open-user", email: "open@outside.com", password: "correct-horse" },
     });
 
-    expect(open.statusCode).toBe(201);
-    expect(context.store.getMember(open.json().user.id)).toMatchObject({
+    expect(open.statusCode).toBe(202);
+    const openVerification = await context.app.inject({
+      method: "POST", url: "/v1/auth/register/verify",
+      payload: { token: new URLSearchParams(new URL(open.json().registrationLink).hash.slice(1)).get("registration") },
+    });
+    expect(openVerification.statusCode).toBe(201);
+    expect(context.store.getMember(openVerification.json().user.id)).toMatchObject({
       role: "admin",
       permissions: ["manage_members", "build"],
     });

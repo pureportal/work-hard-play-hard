@@ -14,22 +14,26 @@ export interface PersistedAuthAccount extends AuthUser {
   createdAt: string;
 }
 
-export interface PersistedAuthSession {
+export interface PersistedAuthToken {
   tokenHash: string;
   userId: string;
   expiresAt: string;
 }
 
-export interface PersistedMagicLink {
+export interface PersistedRegistrationLink {
   tokenHash: string;
-  userId: string;
+  username: string;
+  email: string;
+  passwordHash: string;
   expiresAt: string;
 }
 
 export interface AuthPersistenceState {
   accounts: PersistedAuthAccount[];
-  sessions: PersistedAuthSession[];
-  magicLinks: PersistedMagicLink[];
+  sessions: PersistedAuthToken[];
+  magicLinks: PersistedAuthToken[];
+  passwordResets: PersistedAuthToken[];
+  registrationLinks: PersistedRegistrationLink[];
 }
 
 export interface WorkspacePersistenceState {

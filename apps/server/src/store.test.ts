@@ -3,6 +3,20 @@ import { describe, expect, it } from "vitest";
 import { WorkspaceStore } from "./store.js";
 
 describe("WorkspaceStore layout integrity", () => {
+  it("does not revive superseded invitations when an overlapping delivery fails", () => {
+    const store = new WorkspaceStore(createTestData());
+    const original = store.issueInvitation("new@example.com", "admin", []);
+    const first = store.issueInvitation("new@example.com", "member", []);
+    const second = store.issueInvitation("new@example.com", "guest", []);
+    store.rollbackInvitationIssue(first.invitation.id, first.supersededInvitationIds);
+    expect(store.getInvitation(first.invitation.id)).toBeUndefined();
+    expect(store.getInvitation(original.invitation.id)?.status).toBe("revoked");
+    expect(store.getInvitation(second.invitation.id)?.status).toBe("pending");
+    store.rollbackInvitationIssue(second.invitation.id, second.supersededInvitationIds);
+    expect(store.getInvitation(first.invitation.id)).toBeUndefined();
+    expect(store.getInvitation(original.invitation.id)?.status).toBe("revoked");
+  });
+
   it("requires every layout replacement to advance exactly one revision", () => {
     const store = new WorkspaceStore(createTestData());
     const before = structuredClone(store.getLayout("floor-studio")!);

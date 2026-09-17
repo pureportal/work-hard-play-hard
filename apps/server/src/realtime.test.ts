@@ -131,6 +131,25 @@ describe("realtime transport", () => {
     await expect(Promise.all(closed)).resolves.toEqual([1000, 1000]);
   });
 
+  it("closes every session's realtime connection when the password is reset", async () => {
+    const context = await listeningApplication();
+    const firstCookie = await loginCookie(context);
+    const secondCookie = await loginCookie(context);
+    const firstSocket = connect(context, firstCookie);
+    const secondSocket = connect(context, secondCookie);
+    await Promise.all([
+      waitForEvent(firstSocket, (event) => event.type === "session.synced"),
+      waitForEvent(secondSocket, (event) => event.type === "session.synced"),
+    ]);
+    const closed = [firstSocket, secondSocket].map((socket) => new Promise<number>((resolve) => {
+      socket.once("close", (code) => resolve(code));
+    }));
+    const reset = await context.auth.createPasswordReset("maya@northstar.studio");
+    const response = await context.app.inject({ method: "POST", url: "/v1/auth/reset-password", payload: { token: reset!.token, password: "new-password" } });
+    expect(response.statusCode).toBe(200);
+    await expect(Promise.all(closed)).resolves.toEqual([4_401, 4_401]);
+  });
+
   it("starts and records one Falling Blocks round for players gathered over realtime", async () => {
     const context = await listeningApplication();
     context.runtime.restorePlayers(context.runtime.serializePlayers().map((player) => {

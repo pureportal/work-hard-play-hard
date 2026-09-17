@@ -9,6 +9,9 @@ const { app } = await createApplication({
   ...(emailDelivery ? {
     deliverMagicLink: emailDelivery.deliverMagicLink,
     deliverInvitation: emailDelivery.deliverInvitation,
+    deliverRegistrationLink: emailDelivery.deliverRegistrationLink,
+    deliverPasswordReset: emailDelivery.deliverPasswordReset,
+    deliverPasswordChanged: emailDelivery.deliverPasswordChanged,
   } : {}),
 });
 

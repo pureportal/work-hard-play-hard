@@ -39,7 +39,7 @@ describe("workspace initialization", () => {
     try {
       const response = await context.app.inject({ method: "POST", url: "/v1/auth/login", payload: { identifier: "maya", password: "northstar" } });
       expect(response.statusCode).toBe(401);
-      expect(await database.loadAuthState()).toBeUndefined();
+      expect(await database.loadAuthState()).toMatchObject({ accounts: [], sessions: [] });
     } finally {
       await context.app.close();
     }

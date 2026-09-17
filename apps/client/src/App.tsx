@@ -79,7 +79,7 @@ import type {
   WorldObject,
   WorldPlayer,
 } from "@workhard/shared";
-import { acceptInvitation, ApiError, changeMemberAccess, createDirectConversation, fetchBootstrap, fetchSession, inviteMember, isConnectionError, logout, removeCorporateLogo, revokeInvitation, updateCorporateIdentity, updatePlayerCharacter, updateRegistrationSettings, uploadChatImage, uploadCorporateLogo, uploadWhiteboardImage, verifyMagicLink } from "./api";
+import { acceptInvitation, ApiError, changeMemberAccess, createDirectConversation, fetchBootstrap, fetchSession, inviteMember, isConnectionError, logout, removeCorporateLogo, revokeInvitation, updateCorporateIdentity, updatePlayerCharacter, updateRegistrationSettings, uploadChatImage, uploadCorporateLogo, uploadWhiteboardImage, verifyMagicLink, verifyRegistrationLink } from "./api";
 import { applyCorporateIdentity } from "./branding";
 import { Avatar } from "./components/Avatar";
 import { DeferredContent } from "./components/DeferredContent";
@@ -162,6 +162,8 @@ const AUTH_TOKENS_HISTORY_KEY = "northstarAuthTokens";
 interface AuthTokens {
   magic?: string;
   invitation?: string;
+  reset?: string;
+  registration?: string;
 }
 
 interface InitialWorkspaceState {
@@ -169,12 +171,15 @@ interface InitialWorkspaceState {
   corporateIdentity: CorporateIdentity;
   registration: RegistrationAvailability;
   magicLinkEnabled: boolean;
+  passwordResetEnabled: boolean;
   setupRequired: boolean;
 }
 
 let initialWorkspacePromise: Promise<InitialWorkspaceState> | undefined;
 let initialMagicToken: string | undefined;
 let initialInvitationToken: string | undefined;
+let initialResetToken: string | undefined;
+let initialRegistrationToken: string | undefined;
 let initialAuthTokensRead = false;
 
 function restoreInitialWorkspace(): Promise<InitialWorkspaceState> {
@@ -182,6 +187,8 @@ function restoreInitialWorkspace(): Promise<InitialWorkspaceState> {
     const tokens = takeAuthTokens();
     initialMagicToken = tokens.magic;
     initialInvitationToken = tokens.invitation;
+    initialResetToken = tokens.reset;
+    initialRegistrationToken = tokens.registration;
     initialAuthTokensRead = true;
   }
   if (!initialWorkspacePromise) {
@@ -189,23 +196,28 @@ function restoreInitialWorkspace(): Promise<InitialWorkspaceState> {
       const magicToken = initialMagicToken;
       if (magicToken) {
         await verifyMagicLink(magicToken);
-      }
-      const session = await fetchSession();
-      if (session.user) {
-        preloadWorldCanvas();
-      }
-      if (magicToken) {
         discardInitialMagicToken();
       }
-      if (session.user && initialInvitationToken) {
+      if (initialRegistrationToken) {
+        await verifyRegistrationLink(initialRegistrationToken);
+        initialRegistrationToken = undefined;
+        synchronizeAuthTokenHistory();
+      }
+      const session = await fetchSession();
+      const user = initialResetToken ? undefined : session.user;
+      if (user) {
+        preloadWorldCanvas();
+      }
+      if (user && initialInvitationToken) {
         await acceptInvitation(initialInvitationToken);
         clearInitialInvitationToken();
       }
       return {
-        data: session.user ? await fetchBootstrap() : undefined,
+        data: user ? await fetchBootstrap() : undefined,
         corporateIdentity: session.corporateIdentity,
         registration: session.registration,
         magicLinkEnabled: session.magicLinkEnabled,
+        passwordResetEnabled: session.passwordResetEnabled,
         setupRequired: session.setupRequired,
       };
     })();
@@ -254,6 +266,7 @@ export function App() {
     invitationRequired: true,
   });
   const [magicLinkEnabled, setMagicLinkEnabled] = useState(false);
+  const [passwordResetEnabled, setPasswordResetEnabled] = useState(false);
   const [setupRequired, setSetupRequired] = useState(false);
   const [error, setError] = useState<string>();
   const [invitationEmailMismatch, setInvitationEmailMismatch] = useState(false);
@@ -352,6 +365,7 @@ export function App() {
         setError(undefined);
         setRegistration(restored.registration);
         setMagicLinkEnabled(restored.magicLinkEnabled);
+        setPasswordResetEnabled(restored.passwordResetEnabled);
         setCorporateIdentity(restored.data?.corporateIdentity ?? restored.corporateIdentity);
         setSetupRequired(restored.setupRequired);
         if (!restored.data) {
@@ -372,9 +386,27 @@ export function App() {
         finishRecovery();
         discardInitialInvitationToken(reason);
         setInvitationEmailMismatch(reason instanceof ApiError && reason.code === "INVITATION_EMAIL_MISMATCH");
-        const authenticationFailed = initialMagicToken !== undefined
+        const authenticationFailed = initialMagicToken !== undefined || initialRegistrationToken !== undefined
           || (reason instanceof ApiError && reason.status === 401);
         discardInitialMagicToken();
+        initialRegistrationToken = undefined;
+        synchronizeAuthTokenHistory();
+        if (authenticationFailed) {
+          try {
+            const session = await fetchSession();
+            if (!active) return;
+            setRegistration(session.registration);
+            setMagicLinkEnabled(session.magicLinkEnabled);
+            setPasswordResetEnabled(session.passwordResetEnabled);
+            setCorporateIdentity(session.corporateIdentity);
+            setSetupRequired(session.setupRequired);
+          } catch (failure) {
+            if (!active) return;
+            setError(failure instanceof Error ? failure.message : "Authentication failed.");
+            scheduleRecovery();
+            return;
+          }
+        }
         setAuthState(authenticationFailed ? "signed-out" : "loading");
       }
     };
@@ -422,9 +454,15 @@ export function App() {
       <AuthScreen
         initialError={error}
         invitationToken={initialInvitationToken}
+        resetToken={initialResetToken}
+        onResetTokenCleared={() => {
+          initialResetToken = undefined;
+          synchronizeAuthTokenHistory();
+        }}
         registrationsEnabled={registration.enabled}
         invitationRequired={registration.invitationRequired}
         magicLinkEnabled={magicLinkEnabled}
+        passwordResetEnabled={passwordResetEnabled}
         setupRequired={setupRequired}
         corporateIdentity={corporateIdentity}
         onAuthenticated={loadWorkspace}
@@ -3045,12 +3083,16 @@ function takeAuthTokens(): AuthTokens {
   const parameters = new URLSearchParams(window.location.hash.slice(1));
   const hashMagic = parameters.get("magic") ?? undefined;
   const hashInvitation = parameters.get("invite") ?? undefined;
-  const fromHash = Boolean(hashMagic || hashInvitation);
+  const hashReset = parameters.get("reset") ?? undefined;
+  const hashRegistration = parameters.get("registration") ?? undefined;
+  const fromHash = Boolean(hashMagic || hashInvitation || hashReset || hashRegistration);
   const saved = readAuthTokenHistory();
   const tokens: AuthTokens = fromHash
     ? {
       ...(hashMagic ? { magic: hashMagic } : {}),
       ...(hashInvitation ? { invitation: hashInvitation } : {}),
+      ...(hashReset ? { reset: hashReset } : {}),
+      ...(hashRegistration ? { registration: hashRegistration } : {}),
     }
     : saved;
   if (fromHash) {
@@ -3063,6 +3105,8 @@ function synchronizeAuthTokenHistory(): void {
   writeAuthTokenHistory({
     ...(initialMagicToken ? { magic: initialMagicToken } : {}),
     ...(initialInvitationToken ? { invitation: initialInvitationToken } : {}),
+    ...(initialResetToken ? { reset: initialResetToken } : {}),
+    ...(initialRegistrationToken ? { registration: initialRegistrationToken } : {}),
   });
 }
 
@@ -3079,6 +3123,8 @@ function readAuthTokenHistory(): AuthTokens {
   return {
     ...(typeof source.magic === "string" ? { magic: source.magic } : {}),
     ...(typeof source.invitation === "string" ? { invitation: source.invitation } : {}),
+    ...(typeof source.reset === "string" ? { reset: source.reset } : {}),
+    ...(typeof source.registration === "string" ? { registration: source.registration } : {}),
   };
 }
 
@@ -3086,7 +3132,7 @@ function writeAuthTokenHistory(tokens: AuthTokens, url?: string): void {
   const state = typeof window.history.state === "object" && window.history.state !== null
     ? { ...window.history.state as Record<string, unknown> }
     : {};
-  if (tokens.magic || tokens.invitation) {
+  if (tokens.magic || tokens.invitation || tokens.reset || tokens.registration) {
     state[AUTH_TOKENS_HISTORY_KEY] = tokens;
   } else {
     delete state[AUTH_TOKENS_HISTORY_KEY];

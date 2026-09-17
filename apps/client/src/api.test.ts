@@ -24,6 +24,7 @@ describe("client requests", () => {
       setupRequired: false,
       registration: { enabled: false, invitationRequired: true },
       magicLinkEnabled: true,
+      passwordResetEnabled: true,
       corporateIdentity: {
         applicationName: "Northstar",
         primaryColor: "#7357ff",
@@ -38,6 +39,7 @@ describe("client requests", () => {
     await expect(fetchSession()).resolves.toMatchObject({
       user: undefined,
       magicLinkEnabled: true,
+      passwordResetEnabled: true,
     });
   });
 

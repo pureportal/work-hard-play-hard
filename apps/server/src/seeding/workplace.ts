@@ -67,5 +67,5 @@ export async function createWorkplaceAccounts(workspace: WorkspacePersistenceSta
     accounts.push({ id: member.id, username, email: member.email, passwordHash: await hashPassword(password),
       createdAt: new Date(now.getTime() - 30 * 86_400_000).toISOString() });
   }
-  return { auth: { accounts, sessions: [], magicLinks: [] }, credentials };
+  return { auth: { accounts, sessions: [], magicLinks: [], passwordResets: [], registrationLinks: [] }, credentials };
 }

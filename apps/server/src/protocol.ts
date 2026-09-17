@@ -231,8 +231,10 @@ const memberPermissionsSchema = z.array(z.enum(ASSIGNABLE_MEMBER_PERMISSIONS))
   .max(ASSIGNABLE_MEMBER_PERMISSIONS.length)
   .refine((permissions) => new Set(permissions).size === permissions.length);
 
+const emailAddressSchema = z.string().trim().max(254).pipe(z.email());
+
 export const invitationBodySchema = z.object({
-  email: z.email(),
+  email: emailAddressSchema,
   role: z.enum(["admin", "member", "guest"]).default("member"),
   permissions: memberPermissionsSchema.default([]),
 }).strict().refine(({ role, permissions }) => role === "member" || permissions.length === 0);
@@ -279,21 +281,31 @@ const passwordSchema = z.string().min(8).max(128);
 
 export const registerBodySchema = z.object({
   username: usernameSchema,
-  email: z.email(),
+  email: emailAddressSchema,
   password: passwordSchema,
   invitationToken: invitationTokenSchema.optional(),
 }).strict();
 
 export const loginBodySchema = z.object({
   identifier: z.string().trim().min(1).max(254),
-  password: passwordSchema,
+  password: z.string().min(1).max(128),
 }).strict();
 
 export const magicLinkRequestBodySchema = z.object({
-  email: z.email(),
+  email: emailAddressSchema,
   invitationToken: invitationTokenSchema.optional(),
 }).strict();
 
 export const magicLinkVerifyBodySchema = z.object({
   token: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+}).strict();
+
+export const passwordResetRequestBodySchema = z.object({
+  email: emailAddressSchema,
+  invitationToken: invitationTokenSchema.optional(),
+}).strict();
+
+export const passwordResetBodySchema = z.object({
+  token: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+  password: passwordSchema,
 }).strict();

@@ -50,7 +50,7 @@ On Windows PowerShell, copy the settings file with:
 Copy-Item .env.example .env
 ```
 
-Open `.env`, replace `POSTGRES_DB_PASSWORD`, and set `NORTHSTAR_PUBLIC_URL` to the exact HTTPS origin people will use. The default `http://localhost:8080` is suitable for local use. Set `SMTP_HOST` and `SMTP_FROM` to enable email sign-in links and invitation delivery.
+Open `.env`, replace `POSTGRES_DB_PASSWORD`, and set `NORTHSTAR_PUBLIC_URL` to the exact HTTPS origin people will use. The default `http://localhost:8080` is suitable for local use. Set `SMTP_HOST` and `SMTP_FROM` to enable email sign-in, password recovery, registration verification, and invitations.
 
 Start the application:
 
@@ -60,7 +60,7 @@ docker compose up --build --detach --wait
 
 Open [http://localhost:8080](http://localhost:8080). The first account created on an empty installation becomes the owner.
 
-New installations allow registration but require an invitation after the owner account is created. Without SMTP, email sign-in and invitation delivery remain unavailable. To admit teammates without email delivery, open **Settings → Registration** and either add their email domain under **Domains without invitations** or turn off **Require invitation**.
+Create the first owner account before making a new installation publicly accessible. Subsequent registrations require an invitation by default. Public registration, including domain exemptions, verifies the email address before granting access. Configure SMTP to send verification, invitation, sign-in, and password-reset emails.
 
 To run the optional public landing page as well, enable its Compose profile:
 
@@ -101,12 +101,12 @@ The copied [`.env.example`](.env.example) contains the normal deployment setting
 | `CLIENT_ORIGINS` | Comma-separated additional HTTP or HTTPS client origins allowed by the API. |
 | `SMTP_HOST` | SMTP server hostname. Setting this with `SMTP_FROM` enables email delivery. |
 | `SMTP_PORT` | SMTP server port; defaults to `587`, or `465` when `SMTP_SECURE=true` and the port is empty. |
-| `SMTP_SECURE` | Use TLS from connection start; set to `true` for port `465`. |
+| `SMTP_SECURE` | Use TLS from connection start; set to `true` for port `465`. Otherwise STARTTLS is required. |
 | `SMTP_USERNAME` | SMTP username. Set this together with `SMTP_PASSWORD` when authentication is required. |
 | `SMTP_PASSWORD` | SMTP password. |
 | `SMTP_FROM` | Sender address, optionally with a display name, such as `Northstar <office@example.com>`. |
 
-When running the server directly, `HOST` defaults to `127.0.0.1`, `PORT` to `3001`, and `CLIENT_URL` to `http://127.0.0.1:5173`.
+When running the server directly, `HOST` defaults to `127.0.0.1`, `PORT` to `3001`, and `CLIENT_URL` to `http://127.0.0.1:5173`. In production, non-loopback client URLs must use HTTPS. Authentication links are delivered by email; direct links are exposed only when explicitly enabled by a non-production test fixture.
 
 ## Current scope
 

@@ -720,10 +720,14 @@ export class WorkspaceStore {
   }
 
   rollbackInvitationIssue(invitationId: string, supersededInvitationIds: string[]): void {
+    const issued = this.data.invitations.find((invitation) => invitation.id === invitationId);
+    if (!issued || issued.status === "accepted") return;
     this.data.invitations = this.data.invitations.filter((invitation) => invitation.id !== invitationId);
+    this.dirty = true;
+    if (this.data.invitations.some((invitation) => invitation.email === issued.email && invitation.status === "pending")) return;
     const superseded = new Set(supersededInvitationIds);
     for (const invitation of this.data.invitations) {
-      if (superseded.has(invitation.id)) {
+      if (superseded.has(invitation.id) && invitation.status === "revoked") {
         invitation.status = "pending";
       }
     }

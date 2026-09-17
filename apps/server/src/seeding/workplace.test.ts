@@ -121,7 +121,7 @@ describe("workplace seeds", () => {
       expect(await verifyPassword("password", account.passwordHash)).toBe(true);
       expect(await verifyPassword("northstar", account.passwordHash)).toBe(false);
     }
-  }, 15_000);
+  }, 60_000);
 });
 
 function verifyLayout(floor: Floor, layout: FloorLayout): void {

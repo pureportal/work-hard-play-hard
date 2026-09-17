@@ -21,6 +21,7 @@ import type {
 import { resolveServerUrl } from "./server-url";
 
 const REQUEST_TIMEOUT_MS = 10_000;
+const EMAIL_DELIVERY_TIMEOUT_MS = 45_000;
 const UPLOAD_TIMEOUT_MS = 45_000;
 const SPOTIFY_REQUEST_TIMEOUT_MS = 30_000;
 
@@ -56,6 +57,7 @@ interface SessionResponse {
   setupRequired: boolean;
   registration: RegistrationAvailability;
   magicLinkEnabled: boolean;
+  passwordResetEnabled: boolean;
   corporateIdentity: CorporateIdentity;
 }
 
@@ -64,6 +66,7 @@ export interface AuthSession {
   setupRequired: boolean;
   registration: RegistrationAvailability;
   magicLinkEnabled: boolean;
+  passwordResetEnabled: boolean;
   corporateIdentity: CorporateIdentity;
 }
 
@@ -71,6 +74,8 @@ interface MagicLinkResponse {
   message: string;
   magicLink?: string;
 }
+
+export type RegistrationResponse = { user: AuthUser } | { verificationRequired: true; registrationLink?: string };
 
 export interface IssuedInvitation extends Invitation {
   inviteLink?: string;
@@ -84,6 +89,7 @@ export async function fetchSession(): Promise<AuthSession> {
     setupRequired: session.setupRequired,
     registration: session.registration,
     magicLinkEnabled: session.magicLinkEnabled,
+    passwordResetEnabled: session.passwordResetEnabled,
     corporateIdentity: session.corporateIdentity,
   };
 }
@@ -93,13 +99,13 @@ export async function registerAccount(
   email: string,
   password: string,
   invitationToken?: string,
-): Promise<AuthUser> {
+): Promise<RegistrationResponse> {
   const response = await fetchWithTimeout("/v1/auth/register", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ username, email, password, ...(invitationToken ? { invitationToken } : {}) }),
-  });
-  return (await readResponse<AuthResponse>(response)).user;
+  }, EMAIL_DELIVERY_TIMEOUT_MS);
+  return readResponse<RegistrationResponse>(response);
 }
 
 export async function login(identifier: string, password: string): Promise<AuthUser> {
@@ -127,6 +133,33 @@ export async function verifyMagicLink(token: string): Promise<AuthUser> {
     body: JSON.stringify({ token }),
   });
   return (await readResponse<AuthResponse>(response)).user;
+}
+
+export async function verifyRegistrationLink(token: string): Promise<AuthUser> {
+  const response = await fetchWithTimeout("/v1/auth/register/verify", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ token }),
+  });
+  return (await readResponse<AuthResponse>(response)).user;
+}
+
+export async function requestPasswordReset(email: string, invitationToken?: string): Promise<{ message: string; resetLink?: string }> {
+  const response = await fetchWithTimeout("/v1/auth/forgot-password", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email, ...(invitationToken ? { invitationToken } : {}) }),
+  });
+  return readResponse(response);
+}
+
+export async function resetPassword(token: string, password: string): Promise<void> {
+  const response = await fetchWithTimeout("/v1/auth/reset-password", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ token, password }),
+  });
+  await readResponse(response);
 }
 
 export async function logout(): Promise<void> {
@@ -206,7 +239,7 @@ export async function inviteMember(
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ email, role, permissions }),
-  });
+  }, EMAIL_DELIVERY_TIMEOUT_MS);
   return readResponse<IssuedInvitation>(response, "Invitation could not be sent.");
 }
 

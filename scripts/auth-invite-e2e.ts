@@ -1,5 +1,5 @@
 import { createServer } from "node:net";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer, { type Page } from "puppeteer";
@@ -16,13 +16,15 @@ const context = await createApplication({
   clientOrigins: [origin],
   exposeMagicLinks: true,
   exposeInvitationLinks: true,
+  exposePasswordResetLinks: true,
+  exposeRegistrationLinks: true,
 });
 
 context.app.get("/*", async (request, reply) => {
   const pathname = new URL(request.url, origin).pathname;
-  if (pathname.startsWith("/assets/")) {
+  if (pathname.startsWith("/assets/") || pathname.startsWith("/optimized-images/")) {
     const assetPath = resolve(distributionDirectory, pathname.slice(1));
-    const assetDirectory = resolve(distributionDirectory, "assets") + sep;
+    const assetDirectory = resolve(distributionDirectory) + sep;
     if (!assetPath.startsWith(assetDirectory)) {
       return reply.code(404).send();
     }
@@ -47,10 +49,10 @@ try {
   if (!adminPage) {
     throw new Error("Browser page is missing");
   }
-  adminPage.setDefaultTimeout(15_000);
+  adminPage.setDefaultTimeout(45_000);
   const recipientContext = await browser.createBrowserContext();
   const recipientPage = await recipientContext.newPage();
-  recipientPage.setDefaultTimeout(15_000);
+  recipientPage.setDefaultTimeout(45_000);
 
   await adminPage.goto(origin, { waitUntil: "domcontentloaded" });
   await register(adminPage, "owner-e2e", "owner-e2e@example.com", "correct-horse");
@@ -100,11 +102,11 @@ try {
   }
   await adminPage.click('button[aria-label="Invite member"]');
   await adminPage.type('.invite-form input[type="email"]', "invite-e2e@example.com");
-  const invitationResponse = adminPage.waitForResponse((response) =>
-    response.request().method() === "POST" && response.url().endsWith("/v1/teams/team/invitations"),
-  );
-  await adminPage.click('.invite-form button[type="submit"]');
-  const invitation = await (await invitationResponse).json() as { id: string; inviteLink?: string };
+  const [invitationResponse] = await Promise.all([
+    adminPage.waitForResponse((response) => response.request().method() === "POST" && response.url().endsWith("/v1/teams/team/invitations")),
+    adminPage.click('.invite-form button[type="submit"]'),
+  ]);
+  const invitation = await invitationResponse.json() as { id: string; inviteLink?: string };
   if (!invitation.inviteLink) {
     throw new Error("Invitation link is missing");
   }
@@ -160,11 +162,11 @@ try {
 
   await adminPage.waitForSelector('button[aria-label="invite-e2e"]', { visible: true });
   await adminPage.click('button[aria-label="invite-e2e"]');
-  const accessResponse = adminPage.waitForResponse((response) =>
-    response.request().method() === "PATCH" && response.url().includes("/members/"),
-  );
-  await adminPage.click('.person-row-wrap.expanded .permission-toggle input[type="checkbox"]');
-  if ((await accessResponse).status() !== 200) {
+  const [accessResponse] = await Promise.all([
+    adminPage.waitForResponse((response) => response.request().method() === "PATCH" && response.url().includes("/members/")),
+    adminPage.locator('.person-row-wrap.expanded .permission-toggle input[type="checkbox"]').click(),
+  ]);
+  if (accessResponse.status() !== 200) {
     throw new Error("Build permission assignment failed");
   }
   await adminPage.waitForFunction(() => (document.querySelector('.person-row-wrap.expanded .permission-toggle input[type="checkbox"]') as HTMLInputElement | null)?.checked === true);
@@ -173,11 +175,11 @@ try {
   await recipientPage.waitForSelector(".build-panel", { visible: true });
   report("member build permission granted");
 
-  const revokeAccessResponse = adminPage.waitForResponse((response) =>
-    response.request().method() === "PATCH" && response.url().includes("/members/"),
-  );
-  await adminPage.click('.person-row-wrap.expanded .permission-toggle input[type="checkbox"]');
-  if ((await revokeAccessResponse).status() !== 200) {
+  const [revokeAccessResponse] = await Promise.all([
+    adminPage.waitForResponse((response) => response.request().method() === "PATCH" && response.url().includes("/members/")),
+    adminPage.locator('.person-row-wrap.expanded .permission-toggle input[type="checkbox"]').click(),
+  ]);
+  if (revokeAccessResponse.status() !== 200) {
     throw new Error("Build permission revocation failed");
   }
   await recipientPage.waitForFunction(() => (
@@ -186,8 +188,74 @@ try {
   ));
   report("member office build permission revoked");
 
-  await signOut(recipientPage);
+  const artifactDirectory = fileURLToPath(new URL("../artifacts/auth-review/", import.meta.url));
+  await mkdir(artifactDirectory, { recursive: true });
+  const recoveryContext = await browser.createBrowserContext();
+  const recoveryPage = await recoveryContext.newPage();
+  recoveryPage.setDefaultTimeout(45_000);
+  await recoveryPage.setViewport({ width: 390, height: 844 });
+  await recoveryPage.goto(origin, { waitUntil: "domcontentloaded" });
+  await recoveryPage.locator('button::-p-text(Forgot password?)').click();
+  await recoveryPage.waitForSelector('input[name="email"]', { visible: true });
+  await recoveryPage.screenshot({ path: resolve(artifactDirectory, "forgot-password-mobile.png") });
+  await recoveryPage.type('input[name="email"]', "invite-e2e@example.com");
+  await recoveryPage.click('button[type="submit"]');
+  await recoveryPage.waitForSelector('a.auth-submit', { visible: true });
+  const resetLink = await recoveryPage.$eval('a.auth-submit', (element) => (element as HTMLAnchorElement).href);
+  const resetToken = new URLSearchParams(new URL(resetLink).hash.slice(1)).get("reset")!;
+  await recoveryPage.goto(resetLink, { waitUntil: "domcontentloaded" });
+  await recoveryPage.waitForSelector('#reset-password', { visible: true });
+  if (new URL(recoveryPage.url()).hash) throw new Error("Reset token remained in the browser URL");
+  await recoveryPage.reload({ waitUntil: "domcontentloaded" });
+  await recoveryPage.waitForSelector('#reset-password', { visible: true });
+  await recoveryPage.screenshot({ path: resolve(artifactDirectory, "reset-password-mobile.png") });
+  await recoveryPage.type('#reset-password', "replacement-password");
+  await recoveryPage.type('#confirm-password', "replacement-password");
+  await recoveryPage.click('button[type="submit"]');
+  await recoveryPage.waitForFunction(() => document.body.innerText.includes("Password changed"));
+  await recipientPage.waitForSelector('.auth-card', { visible: true });
+  const resetSession = await recoveryPage.evaluate(async () => (await (await fetch("/v1/auth/session")).json()).user);
+  if (resetSession !== null) throw new Error("Password reset automatically signed in");
+  const resetReplay = await recoveryPage.evaluate(async (token) => (await fetch("/v1/auth/reset-password", {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token, password: "replayed-password" }),
+  })).status, resetToken);
+  if (resetReplay !== 401) throw new Error(`Reset replay returned ${resetReplay}`);
+  await recoveryPage.locator('button::-p-text(Back to sign in)').click();
+  await signIn(recoveryPage, "invite-e2e", "replacement-password");
+  report("password recovery revoked active sessions and rejected replay");
+  await signOut(recoveryPage);
   report("logout returned to authentication");
+
+  context.store.updateRegistrationSettings({ enabled: true, invitationRequired: false, whitelistedDomains: [], defaultRole: "member" });
+  await recoveryPage.reload({ waitUntil: "domcontentloaded" });
+  await recoveryPage.waitForSelector('#auth-register-tab', { visible: true });
+  await recoveryPage.click('#auth-register-tab');
+  await recoveryPage.type('input[name="username"]', "verified-e2e");
+  await recoveryPage.type('input[name="email"]', "verified-e2e@example.com");
+  await recoveryPage.type('input[name="password"]', "verified-password");
+  await recoveryPage.click('button[type="submit"]');
+  await recoveryPage.waitForFunction(() => document.body.innerText.includes("Verify your email"));
+  const pendingSession = await recoveryPage.evaluate(async () => (await (await fetch("/v1/auth/session")).json()).user);
+  if (pendingSession !== null) throw new Error("Registration signed in before email verification");
+  await recoveryPage.screenshot({ path: resolve(artifactDirectory, "registration-verification-mobile.png") });
+  await recoveryPage.click('a.auth-submit');
+  await waitForOffice(recoveryPage);
+  await assertSession(recoveryPage, "verified-e2e@example.com");
+  report("public registration required email verification");
+  await signOut(recoveryPage);
+  await recoveryPage.goto(`${origin}/auth/register#registration=${"x".repeat(43)}`, { waitUntil: "domcontentloaded" });
+  await recoveryPage.waitForSelector('.auth-error', { visible: true });
+  await recoveryPage.waitForSelector('#auth-register-tab', { visible: true });
+  await recoveryPage.locator('button::-p-text(Forgot password?)').wait();
+  report("invalid email links preserved account recovery actions");
+} catch (error) {
+  const failureDirectory = fileURLToPath(new URL("../artifacts/auth-review/", import.meta.url));
+  await mkdir(failureDirectory, { recursive: true });
+  for (const [index, page] of (await browser.pages()).entries()) {
+    await page.screenshot({ path: resolve(failureDirectory, `failure-${index}.png`) });
+    console.error(`Browser ${index}: ${await page.evaluate(() => document.body.innerText.slice(0, 2000))}`);
+  }
+  throw error;
 } finally {
   const closed = await Promise.race([
     browser.close().then(() => true).catch(() => false),
@@ -256,6 +324,7 @@ function contentType(path: string): string {
     ".css": "text/css; charset=utf-8",
     ".js": "text/javascript; charset=utf-8",
     ".png": "image/png",
+    ".webp": "image/webp",
     ".svg": "image/svg+xml",
     ".woff": "font/woff",
     ".woff2": "font/woff2",

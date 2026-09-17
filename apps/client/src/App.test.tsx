@@ -53,6 +53,7 @@ describe("App startup recovery", () => {
       setupRequired: false,
       registration,
       magicLinkEnabled: true,
+      passwordResetEnabled: true,
       corporateIdentity: configuredIdentity,
     });
 
@@ -71,6 +72,7 @@ describe("App startup recovery", () => {
       setupRequired: true,
       registration,
       magicLinkEnabled: true,
+      passwordResetEnabled: true,
       corporateIdentity,
     });
 
@@ -90,6 +92,7 @@ describe("App startup recovery", () => {
         setupRequired: false,
         registration,
         magicLinkEnabled: true,
+      passwordResetEnabled: true,
         corporateIdentity,
       });
 
@@ -115,6 +118,7 @@ describe("App startup recovery", () => {
         setupRequired: false,
         registration,
         magicLinkEnabled: true,
+      passwordResetEnabled: true,
         corporateIdentity,
       });
 
@@ -144,6 +148,7 @@ describe("App startup recovery", () => {
         setupRequired: false,
         registration,
         magicLinkEnabled: true,
+      passwordResetEnabled: true,
         corporateIdentity,
       });
 

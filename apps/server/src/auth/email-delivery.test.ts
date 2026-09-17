@@ -2,6 +2,20 @@ import { describe, expect, it, vi } from "vitest";
 import { createAuthenticationEmailDelivery } from "./email-delivery.js";
 
 describe("authentication email delivery", () => {
+  it("requires STARTTLS and sends escaped verification, recovery, and change emails", async () => {
+    const sendMail = vi.fn(async (_message: { subject: string; text: string; html: string }) => undefined);
+    const transportFactory = vi.fn(() => ({ sendMail }));
+    const delivery = createAuthenticationEmailDelivery({ SMTP_HOST: "smtp.example.com", SMTP_FROM: "office@example.com" }, transportFactory)!;
+    expect(transportFactory).toHaveBeenCalledWith(expect.objectContaining({ secure: false, requireTLS: true, port: 587 }));
+    await delivery.deliverRegistrationLink("person@example.com", "https://office.example.com/#registration=one", "Acme <Spaces>");
+    await delivery.deliverPasswordReset("person@example.com", "https://office.example.com/#reset=one&invite=two", "Acme <Spaces>");
+    await delivery.deliverPasswordChanged("person@example.com", "Acme <Spaces>");
+    expect(sendMail.mock.calls[0]?.[0].subject).toBe("Verify your email for Acme <Spaces>");
+    expect(sendMail.mock.calls[1]?.[0].html).toContain("reset=one&amp;invite=two");
+    expect(sendMail.mock.calls[1]?.[0].html).toContain("Acme &lt;Spaces&gt;");
+    expect(sendMail.mock.calls[2]?.[0].text).toContain("all sessions were signed out");
+  });
+
   it("stays disabled when SMTP is not configured", () => {
     const transportFactory = vi.fn();
 
@@ -38,6 +52,10 @@ describe("authentication email delivery", () => {
       host: "smtp.example.com",
       port: 465,
       secure: true,
+      requireTLS: false,
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 20_000,
       auth: { user: "northstar", pass: "secret value" },
     });
     expect(sendMail).toHaveBeenNthCalledWith(1, expect.objectContaining({

@@ -28,8 +28,38 @@ afterEach(() => {
 });
 
 describe("AuthScreen setup", () => {
+  it("offers password recovery and returns to the password form", () => {
+    render(<AuthScreen corporateIdentity={corporateIdentity} setupRequired={false} registrationsEnabled invitationRequired magicLinkEnabled passwordResetEnabled onAuthenticated={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Forgot password?" }));
+    expect(screen.getByRole("heading", { name: "Forgot password" })).toBeDefined();
+    expect(screen.queryByRole("tab")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Back to sign in" }));
+    expect(screen.getByLabelText("Username or email")).toBeDefined();
+  });
+
+  it("hides password recovery when email delivery is unavailable", () => {
+    render(<AuthScreen corporateIdentity={corporateIdentity} setupRequired={false} registrationsEnabled invitationRequired magicLinkEnabled passwordResetEnabled={false} onAuthenticated={vi.fn()} />);
+    expect(screen.queryByRole("button", { name: "Forgot password?" })).toBeNull();
+  });
+
+  it("waits for mailbox verification before treating public registration as authenticated", async () => {
+    apiMocks.registerAccount.mockResolvedValue({ verificationRequired: true });
+    const onAuthenticated = vi.fn();
+    render(<AuthScreen corporateIdentity={corporateIdentity} setupRequired={false} registrationsEnabled invitationRequired={false} magicLinkEnabled passwordResetEnabled onAuthenticated={onAuthenticated} />);
+    fireEvent.click(screen.getByRole("tab", { name: "Create account" }));
+    fireEvent.change(screen.getByLabelText("Username"), { target: { value: "person" } });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "person@example.com" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "new-password" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create account" }));
+    await screen.findByRole("heading", { name: "Verify your email" });
+    expect(onAuthenticated).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText("Password")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Back to sign in" }));
+    expect(screen.getByLabelText("Username or email")).toBeDefined();
+  });
+
   it("switches account tabs by keyboard and keeps a single tab stop", () => {
-    render(<AuthScreen corporateIdentity={corporateIdentity} setupRequired={false} registrationsEnabled invitationRequired magicLinkEnabled onAuthenticated={vi.fn()} />);
+    render(<AuthScreen passwordResetEnabled corporateIdentity={corporateIdentity} setupRequired={false} registrationsEnabled invitationRequired magicLinkEnabled onAuthenticated={vi.fn()} />);
     const signIn = screen.getByRole("tab", { name: "Sign in" });
     const register = screen.getByRole("tab", { name: "Create account" });
     signIn.focus();
@@ -45,7 +75,7 @@ describe("AuthScreen setup", () => {
 
   it("applies the configured name, logo, and centered authentication layout", () => {
     const { container } = render(
-      <AuthScreen
+      <AuthScreen passwordResetEnabled
         corporateIdentity={{
           applicationName: "Acme Spaces",
           primaryColor: "#123abc",
@@ -69,7 +99,7 @@ describe("AuthScreen setup", () => {
 
   it("reveals and hides the password without clearing it", () => {
     render(
-      <AuthScreen
+      <AuthScreen passwordResetEnabled
         corporateIdentity={corporateIdentity}
         setupRequired={false}
         registrationsEnabled={false}
@@ -93,10 +123,10 @@ describe("AuthScreen setup", () => {
   });
 
   it("opens first-user account creation without requiring an invitation", async () => {
-    apiMocks.registerAccount.mockResolvedValue({ id: "owner", username: "owner", email: "owner@example.com" });
+    apiMocks.registerAccount.mockResolvedValue({ user: { id: "owner", username: "owner", email: "owner@example.com" } });
     const onAuthenticated = vi.fn().mockResolvedValue(undefined);
     render(
-      <AuthScreen
+      <AuthScreen passwordResetEnabled
         corporateIdentity={corporateIdentity}
         setupRequired
         registrationsEnabled={false}
@@ -124,7 +154,7 @@ describe("AuthScreen setup", () => {
 
   it("keeps account creation available for invited users", () => {
     render(
-      <AuthScreen
+      <AuthScreen passwordResetEnabled
         corporateIdentity={corporateIdentity}
         setupRequired={false}
         registrationsEnabled
@@ -141,7 +171,7 @@ describe("AuthScreen setup", () => {
 
   it("hides account creation when registrations are disabled", () => {
     render(
-      <AuthScreen
+      <AuthScreen passwordResetEnabled
         corporateIdentity={corporateIdentity}
         setupRequired={false}
         registrationsEnabled={false}
@@ -157,7 +187,7 @@ describe("AuthScreen setup", () => {
 
   it("hides email sign-in when the server cannot deliver links", () => {
     render(
-      <AuthScreen
+      <AuthScreen passwordResetEnabled
         corporateIdentity={corporateIdentity}
         setupRequired={false}
         registrationsEnabled={false}
@@ -172,7 +202,7 @@ describe("AuthScreen setup", () => {
 
   it("returns from email sign-in to the password form without reloading", () => {
     render(
-      <AuthScreen
+      <AuthScreen passwordResetEnabled
         corporateIdentity={corporateIdentity}
         setupRequired={false}
         registrationsEnabled
@@ -195,7 +225,7 @@ describe("AuthScreen setup", () => {
   it("returns from the sent email state to the password form", async () => {
     apiMocks.requestMagicLink.mockResolvedValue({ magicLink: "https://office.example.com/#magic=token" });
     render(
-      <AuthScreen
+      <AuthScreen passwordResetEnabled
         corporateIdentity={corporateIdentity}
         setupRequired={false}
         registrationsEnabled={false}
@@ -222,7 +252,7 @@ describe("AuthScreen setup", () => {
       rejectLogin = reject;
     }));
     render(
-      <AuthScreen
+      <AuthScreen passwordResetEnabled
         corporateIdentity={corporateIdentity}
         setupRequired={false}
         registrationsEnabled={false}
@@ -245,10 +275,10 @@ describe("AuthScreen setup", () => {
 
   it("accepts an invitation code from public account creation", async () => {
     const token = "b".repeat(43);
-    apiMocks.registerAccount.mockResolvedValue({ id: "invited", username: "invited", email: "invited@example.com" });
+    apiMocks.registerAccount.mockResolvedValue({ user: { id: "invited", username: "invited", email: "invited@example.com" } });
     const onAuthenticated = vi.fn().mockResolvedValue(undefined);
     render(
-      <AuthScreen
+      <AuthScreen passwordResetEnabled
         corporateIdentity={corporateIdentity}
         setupRequired={false}
         registrationsEnabled
@@ -277,7 +307,7 @@ describe("AuthScreen setup", () => {
   it("connects to a custom server before authentication", async () => {
     const onServerChanged = vi.fn();
     render(
-      <AuthScreen
+      <AuthScreen passwordResetEnabled
         corporateIdentity={corporateIdentity}
         setupRequired={false}
         registrationsEnabled={false}
@@ -304,7 +334,7 @@ describe("AuthScreen setup", () => {
     setServerOrigin("https://office.example.com");
     const onServerChanged = vi.fn();
     render(
-      <AuthScreen
+      <AuthScreen passwordResetEnabled
         corporateIdentity={corporateIdentity}
         setupRequired={false}
         registrationsEnabled={false}
@@ -325,7 +355,7 @@ describe("AuthScreen setup", () => {
 
   it("shows invalid custom URLs beside the server field", async () => {
     render(
-      <AuthScreen
+      <AuthScreen passwordResetEnabled
         corporateIdentity={corporateIdentity}
         setupRequired={false}
         registrationsEnabled={false}

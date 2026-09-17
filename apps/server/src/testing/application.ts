@@ -8,7 +8,7 @@ export async function createTestApplication(
   { fixture = false, database = new MemoryDatabase(), ...options }: Omit<NonNullable<Parameters<typeof createApplication>[0]>, "database"> & { database?: MemoryDatabase; fixture?: boolean } = {},
 ) {
   if (fixture && !await database.loadWorkspaceState()) await populateTestWorkspace(database);
-  return createApplication({ ...options, database });
+  return createApplication({ exposeMagicLinks: true, exposeInvitationLinks: true, exposePasswordResetLinks: true, exposeRegistrationLinks: true, ...options, database });
 }
 
 export async function populateTestWorkspace(database: MemoryDatabase): Promise<void> {
@@ -27,6 +27,8 @@ export async function populateTestWorkspace(database: MemoryDatabase): Promise<v
       })),
       sessions: [],
       magicLinks: [],
+      passwordResets: [],
+      registrationLinks: [],
     });
   } finally {
     runtime.stop();

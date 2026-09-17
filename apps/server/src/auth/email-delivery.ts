@@ -5,6 +5,9 @@ const DEFAULT_SMTP_PORT = 587;
 export interface AuthenticationEmailDelivery {
   deliverMagicLink(email: string, link: string, applicationName: string): Promise<void>;
   deliverInvitation(email: string, link: string, applicationName: string): Promise<void>;
+  deliverRegistrationLink(email: string, link: string, applicationName: string): Promise<void>;
+  deliverPasswordReset(email: string, link: string, applicationName: string): Promise<void>;
+  deliverPasswordChanged(email: string, applicationName: string): Promise<void>;
 }
 
 interface EmailMessage {
@@ -23,6 +26,10 @@ interface SmtpTransportOptions {
   host: string;
   port: number;
   secure: boolean;
+  requireTLS: boolean;
+  connectionTimeout: number;
+  greetingTimeout: number;
+  socketTimeout: number;
   auth?: {
     user: string;
     pass: string;
@@ -62,6 +69,10 @@ export function createAuthenticationEmailDelivery(
     host,
     port,
     secure,
+    requireTLS: !secure,
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
     ...(username && password ? { auth: { user: username, pass: password } } : {}),
   });
 
@@ -84,6 +95,36 @@ export function createAuthenticationEmailDelivery(
         subject: `Join ${name}`,
         text: `Join ${name}:\n\n${link}`,
         html: `<p><a href="${escapeHtml(link)}">Join ${escapeHtml(name)}</a></p>`,
+      });
+    },
+    async deliverRegistrationLink(email, link, applicationName) {
+      const name = normalizeApplicationName(applicationName);
+      await transport.sendMail({
+        from,
+        to: email,
+        subject: `Verify your email for ${name}`,
+        text: `Complete your ${name} registration:\n\n${link}\n\nThis link expires in 15 minutes.`,
+        html: `<p><a href="${escapeHtml(link)}">Complete your ${escapeHtml(name)} registration</a></p><p>This link expires in 15 minutes.</p>`,
+      });
+    },
+    async deliverPasswordReset(email, link, applicationName) {
+      const name = normalizeApplicationName(applicationName);
+      await transport.sendMail({
+        from,
+        to: email,
+        subject: `Reset your ${name} password`,
+        text: `Reset your ${name} password:\n\n${link}\n\nThis link expires in 15 minutes. If you did not request it, ignore this email.`,
+        html: `<p><a href="${escapeHtml(link)}">Reset your ${escapeHtml(name)} password</a></p><p>This link expires in 15 minutes. If you did not request it, ignore this email.</p>`,
+      });
+    },
+    async deliverPasswordChanged(email, applicationName) {
+      const name = normalizeApplicationName(applicationName);
+      await transport.sendMail({
+        from,
+        to: email,
+        subject: `Your ${name} password was changed`,
+        text: `Your ${name} password was changed and all sessions were signed out. If this was not you, reset your password or contact the workspace owner.`,
+        html: `<p>Your ${escapeHtml(name)} password was changed and all sessions were signed out. If this was not you, reset your password or contact the workspace owner.</p>`,
       });
     },
   };

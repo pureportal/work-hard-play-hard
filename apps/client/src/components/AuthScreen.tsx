@@ -1,19 +1,24 @@
-import { ArrowLeft, Eye, EyeOff, Mail, ServerCog } from "lucide-react";
+import { ArrowLeft, Mail, ServerCog } from "lucide-react";
 import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import type { CorporateIdentity } from "@workhard/shared";
 import { login, registerAccount, requestMagicLink } from "../api";
 import officePreview from "../assets/blockbench-office.webp";
 import { clearServerOrigin, getDefaultServerOrigin, getServerOrigin, setServerOrigin } from "../server-url";
 import { BrandMark } from "./BrandMark";
+import { PasswordField } from "./PasswordField";
+import { PasswordRecovery } from "./PasswordRecovery";
 
-type AuthMode = "login" | "register" | "magic";
+type AuthMode = "login" | "register" | "magic" | "forgot" | "reset";
 
 interface AuthScreenProps {
   initialError?: string | undefined;
   invitationToken?: string | undefined;
+  resetToken?: string | undefined;
+  onResetTokenCleared?: (() => void) | undefined;
   registrationsEnabled: boolean;
   invitationRequired: boolean;
   magicLinkEnabled: boolean;
+  passwordResetEnabled: boolean;
   setupRequired: boolean;
   corporateIdentity: CorporateIdentity;
   onAuthenticated: (invitationAccepted?: boolean) => Promise<void>;
@@ -23,16 +28,19 @@ interface AuthScreenProps {
 export function AuthScreen({
   initialError,
   invitationToken,
+  resetToken,
+  onResetTokenCleared,
   registrationsEnabled,
   invitationRequired,
   magicLinkEnabled,
+  passwordResetEnabled,
   setupRequired,
   corporateIdentity,
   onAuthenticated,
   onServerChanged,
 }: AuthScreenProps) {
   const [mode, setMode] = useState<AuthMode>(
-    setupRequired || (registrationsEnabled && invitationToken) ? "register" : "login",
+    resetToken ? "reset" : setupRequired || (registrationsEnabled && invitationToken) ? "register" : "login",
   );
   const accountTabs = useRef<HTMLDivElement>(null);
   const focusAccountTab = useRef(false);
@@ -46,6 +54,8 @@ export function AuthScreen({
   const [magicLink, setMagicLink] = useState<string>();
   const [magicEmail, setMagicEmail] = useState("");
   const [magicSent, setMagicSent] = useState(false);
+  const [registrationEmail, setRegistrationEmail] = useState<string>();
+  const [registrationLink, setRegistrationLink] = useState<string>();
   const [activeServer, setActiveServer] = useState(getServerOrigin);
   const [server, setServer] = useState(activeServer);
   const [serverError, setServerError] = useState<string>();
@@ -54,10 +64,14 @@ export function AuthScreen({
   const serverLabel = customServerActive ? new URL(activeServer).host : "Server";
 
   const switchMode = (nextMode: AuthMode) => {
+    if (loading) return;
+    if (mode === "reset") onResetTokenCleared?.();
     setMode(nextMode);
     setError(undefined);
     setMagicSent(false);
     setMagicLink(undefined);
+    setRegistrationEmail(undefined);
+    setRegistrationLink(undefined);
   };
 
   const submitLogin = async (event: FormEvent<HTMLFormElement>) => {
@@ -75,12 +89,17 @@ export function AuthScreen({
     await perform(async () => {
       const enteredInvitationCode = String(form.get("invitationCode") ?? "").trim();
       const registrationInvitationToken = (invitationToken ?? enteredInvitationCode) || undefined;
-      await registerAccount(
+      const response = await registerAccount(
         String(form.get("username")),
         String(form.get("email")),
         String(form.get("password")),
         registrationInvitationToken,
       );
+      if ("verificationRequired" in response) {
+        setRegistrationEmail(String(form.get("email")));
+        setRegistrationLink(response.registrationLink);
+        return;
+      }
       await onAuthenticated(Boolean(registrationInvitationToken));
     });
   };
@@ -153,7 +172,7 @@ export function AuthScreen({
             <h1 id="auth-title">{setupRequired ? `Set up ${corporateIdentity.applicationName}` : corporateIdentity.applicationName}</h1>
           </header>
 
-        {mode !== "magic" && !setupRequired && registrationsEnabled && (
+        {(mode === "login" || mode === "register") && !registrationEmail && !setupRequired && registrationsEnabled && (
           <div ref={accountTabs} className="auth-tabs" role="tablist" aria-label="Account" onKeyDown={(event) => {
             const next = event.key === "Home" ? "login" : event.key === "End" ? "register"
               : ["ArrowLeft", "ArrowRight"].includes(event.key) ? mode === "login" ? "register" : "login" : undefined;
@@ -197,12 +216,13 @@ export function AuthScreen({
               <input name="identifier" autoComplete="username" required autoFocus />
             </label>
             <PasswordField id="login-password" autoComplete="current-password" />
+            {passwordResetEnabled && <button type="button" className="auth-link-button" disabled={loading} onClick={() => switchMode("forgot")}>Forgot password?</button>}
             {error && <output className="auth-error" role="alert">{error}</output>}
             <button type="submit" className="auth-submit" disabled={loading}>{loading ? "Signing in…" : "Sign in"}</button>
           </form>
         )}
 
-        {mode === "register" && (
+        {mode === "register" && !registrationEmail && (
           <form id="auth-account-form" className="auth-form" onSubmit={submitRegistration}>
             <label>
               <span>Username</span>
@@ -238,6 +258,21 @@ export function AuthScreen({
           </form>
         )}
 
+        {mode === "register" && registrationEmail && (
+          <div className="auth-email-sent" role="status">
+            <span><Mail size={24} /></span>
+            <h2>Verify your email</h2>
+            <p>{registrationEmail}</p>
+            {registrationLink && <a className="auth-submit" href={registrationLink}>Verify email</a>}
+            <button type="button" className="auth-link-button" onClick={() => switchMode("login")}>Back to sign in</button>
+          </div>
+        )}
+
+        {(mode === "forgot" || mode === "reset") && (
+          <PasswordRecovery key={mode} resetToken={mode === "reset" ? resetToken : undefined} invitationToken={invitationToken}
+            onTokenCleared={() => onResetTokenCleared?.()} onBack={() => switchMode("login")} />
+        )}
+
         {mode === "magic" && !magicSent && (
           <>
             <h2>Sign in by email</h2>
@@ -262,7 +297,7 @@ export function AuthScreen({
           </div>
         )}
 
-        {showServer && !magicSent && (
+        {showServer && !magicSent && !registrationEmail && mode !== "forgot" && mode !== "reset" && (
           <form className="auth-form auth-server-form" onSubmit={submitServer}>
             <label>
               <span>Server URL</span>
@@ -286,7 +321,7 @@ export function AuthScreen({
           </form>
         )}
 
-        {!magicSent && (
+        {!magicSent && !registrationEmail && mode !== "forgot" && mode !== "reset" && (
           <div className="auth-utilities">
             {mode === "login" && magicLinkEnabled && (
               <button type="button" className="auth-link-button" onClick={() => switchMode("magic")}>
@@ -315,41 +350,5 @@ export function AuthScreen({
         </section>
       </div>
     </main>
-  );
-}
-
-interface PasswordFieldProps {
-  id: string;
-  autoComplete: "current-password" | "new-password";
-  maxLength?: number | undefined;
-}
-
-function PasswordField({ id, autoComplete, maxLength }: PasswordFieldProps) {
-  const [visible, setVisible] = useState(false);
-
-  return (
-    <div className="auth-field">
-      <label htmlFor={id}>Password</label>
-      <div className="auth-password-field">
-        <input
-          id={id}
-          name="password"
-          type={visible ? "text" : "password"}
-          autoComplete={autoComplete}
-          minLength={8}
-          maxLength={maxLength}
-          required
-        />
-        <button
-          type="button"
-          className="auth-password-toggle"
-          aria-label={visible ? "Hide password" : "Show password"}
-          aria-pressed={visible}
-          onClick={() => setVisible((current) => !current)}
-        >
-          {visible ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
-        </button>
-      </div>
-    </div>
   );
 }

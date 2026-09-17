@@ -2,11 +2,14 @@ import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import cors from "@fastify/cors";
 import websocket from "@fastify/websocket";
-import type { AuthUser, ClientCommand, Member, MemberRole, ServerEvent } from "@workhard/shared";
-import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
+import type { AuthUser, ClientCommand, MemberRole, ServerEvent } from "@workhard/shared";
+import Fastify, { type FastifyError, type FastifyInstance, type FastifyRequest } from "fastify";
 import { characterAppearanceSchema } from "./avatar/character-schema.js";
 import { AuthStore } from "./auth/auth-store.js";
 import { AuthRateLimiter } from "./auth/rate-limiter.js";
+import { clearSessionCookie, getSessionToken, sendInvitationError, sendRateLimit, setSessionCookie } from "./auth/auth-http.js";
+import { registerEmailLinkRoutes, type EmailLinkOptions } from "./auth/email-link-routes.js";
+import { registerRegistrationRoutes, type RegistrationOptions } from "./auth/registration-routes.js";
 import {
   BRANDING_LOGO_MAX_BYTES,
   BrandingLogoInputError,
@@ -29,10 +32,8 @@ import {
   invitationAcceptBodySchema,
   invitationBodySchema,
   loginBodySchema,
-  magicLinkRequestBodySchema,
   magicLinkVerifyBodySchema,
   memberAccessBodySchema,
-  registerBodySchema,
   registrationSettingsBodySchema,
 } from "./protocol.js";
 import { createInitialData } from "./initial-data.js";
@@ -48,8 +49,6 @@ import { GitHubService } from "./github/github-service.js";
 import { registerGitHubRoutes } from "./github/github-routes.js";
 import { GITHUB_TRAY_ASSET_ID, canUseWorkObject } from "@workhard/shared";
 
-const SESSION_COOKIE_NAME = "whph_session";
-const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
 const AUTH_WINDOW_MS = 15 * 60 * 1_000;
 const AUTHENTICATION_CLOSE_CODE = 4_401;
 const REALTIME_COMMAND_LIMIT = 200;
@@ -63,7 +62,7 @@ interface RealtimeCommandWindow {
   count: number;
 }
 
-interface ApplicationOptions {
+interface ApplicationOptions extends EmailLinkOptions, RegistrationOptions {
   githubConfig?: GitHubConfig | null;
   githubFetch?: typeof fetch;
   spotifyConfig?: SpotifyConfig | null;
@@ -72,8 +71,6 @@ interface ApplicationOptions {
   chatImagePath?: string;
   clientUrl?: string;
   clientOrigins?: string[];
-  exposeMagicLinks?: boolean;
-  deliverMagicLink?: (email: string, link: string, applicationName: string) => Promise<void>;
   exposeInvitationLinks?: boolean;
   deliverInvitation?: (email: string, link: string, applicationName: string) => Promise<void>;
   logger?: boolean;
@@ -108,9 +105,10 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
   const github = await GitHubService.create(database, githubConfig, options.githubFetch);
   const chatImages = new ChatImageStore(options.chatImagePath ?? defaultChatImagePath);
   const authRateLimiter = new AuthRateLimiter();
-  const exposeMagicLinks = options.exposeMagicLinks ?? process.env.NODE_ENV !== "production";
-  const exposeInvitationLinks = options.exposeInvitationLinks ?? process.env.NODE_ENV !== "production";
+  const exposeMagicLinks = options.exposeMagicLinks === true && process.env.NODE_ENV !== "production";
+  const exposeInvitationLinks = options.exposeInvitationLinks === true && process.env.NODE_ENV !== "production";
   const magicLinkEnabled = Boolean(options.deliverMagicLink || exposeMagicLinks);
+  const passwordResetEnabled = Boolean(options.deliverPasswordReset || (options.exposePasswordResetLinks === true && process.env.NODE_ENV !== "production"));
   const realtimeSocketsBySession = new Map<string, Set<RealtimeSocket>>();
   const realtimeSocketsByUser = new Map<string, Set<RealtimeSocket>>();
   const realtimeCommandWindowsByUser = new Map<string, RealtimeCommandWindow>();
@@ -167,7 +165,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
 
   app.addHook("onRequest", async (request, reply) => {
     const origin = request.headers.origin;
-    if (origin && !clientOrigins.has(origin)) {
+    if ((origin && !clientOrigins.has(origin)) || (!origin && request.headers["sec-fetch-site"] === "cross-site")) {
       return reply.code(403).send({ code: "ORIGIN_FORBIDDEN", message: "Request origin is not allowed." });
     }
   });
@@ -262,73 +260,19 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
         invitationRequired: registrationSettings.invitationRequired,
       },
       magicLinkEnabled,
+      passwordResetEnabled,
       corporateIdentity: store.getCorporateIdentity(),
     };
   });
 
-  app.post("/v1/auth/register", async (request, reply) => {
-    const retryAfter = authRateLimiter.consume("register-ip", request.ip, 10, 60 * 60 * 1_000);
-    if (retryAfter) {
-      return sendRateLimit(reply, retryAfter);
-    }
-    const parsed = registerBodySchema.safeParse(request.body);
-    if (!parsed.success) {
-      return reply.code(400).send({ code: "REGISTRATION_INVALID", message: "Check the account details." });
-    }
-    try {
-      store.assertRegistrationAllowed(parsed.data.email, Boolean(parsed.data.invitationToken));
-      const registered = await auth.register(parsed.data.username, parsed.data.email, parsed.data.password);
-      let member: Member;
-      let invitationAccepted = false;
-      try {
-        if (parsed.data.invitationToken) {
-          store.assertRegistrationAllowed(registered.user.email, true);
-          member = store.acceptInvitation(parsed.data.invitationToken, registered.user).member;
-          invitationAccepted = true;
-        } else if (store.needsSetup()) {
-          member = store.addInitialMember(registered.user);
-        } else {
-          member = store.addRegisteredMember(registered.user);
-        }
-      } catch (error) {
-        await auth.removeAccount(registered.user.id);
-        throw error;
-      }
-      await persist();
-      runtime.publishMember(member);
-      if (invitationAccepted) {
-        runtime.publishWorkspaceAccess();
-      }
-      setSessionCookie(reply, registered.sessionToken);
-      return reply.code(201).send({ user: registered.user });
-    } catch (error) {
-      const code = error instanceof Error ? error.message : "REGISTRATION_FAILED";
-      if (code === "USERNAME_TAKEN") {
-        return reply.code(409).send({ code, message: "Username is already taken." });
-      }
-      if (code === "EMAIL_TAKEN") {
-        return reply.code(409).send({ code, message: "Email is already registered." });
-      }
-      if (code === "REGISTRATION_DISABLED") {
-        return reply.code(403).send({ code, message: "Registration is disabled." });
-      }
-      if (code === "REGISTRATION_CLOSED" || code === "INVITATION_REQUIRED") {
-        return reply.code(403).send({ code: "INVITATION_REQUIRED", message: "An invitation is required." });
-      }
-      if (code.startsWith("INVITATION_")) {
-        return sendInvitationError(reply, code);
-      }
-      request.log.error(error);
-      return reply.code(500).send({ code: "REGISTRATION_FAILED", message: "Account could not be created." });
-    }
-  });
+  registerRegistrationRoutes(app, { ...options, auth, store, runtime, rateLimiter: authRateLimiter, clientUrl, persist });
 
   app.post("/v1/auth/login", async (request, reply) => {
     const parsed = loginBodySchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.code(400).send({ code: "LOGIN_INVALID", message: "Enter your username and password." });
     }
-    const identifier = parsed.data.identifier.normalize("NFKC").trim().toLowerCase();
+    const identifier = parsed.data.identifier.normalize(parsed.data.identifier.includes("@") ? "NFC" : "NFKC").trim().toLowerCase();
     const ipRetryAfter = authRateLimiter.consume("login-ip", request.ip, 50, AUTH_WINDOW_MS);
     const identifierRetryAfter = authRateLimiter.consume("login-identifier", identifier, 10, AUTH_WINDOW_MS);
     const retryAfter = Math.max(ipRetryAfter ?? 0, identifierRetryAfter ?? 0);
@@ -344,52 +288,13 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     return { user: authenticated.user };
   });
 
-  app.post("/v1/auth/magic-link", async (request, reply) => {
-    if (!options.deliverMagicLink && !exposeMagicLinks) {
-      return reply.code(503).send({ code: "MAGIC_LINK_UNAVAILABLE", message: "Magic-link sign-in is unavailable." });
-    }
-    const parsed = magicLinkRequestBodySchema.safeParse(request.body);
-    if (!parsed.success) {
-      return reply.code(400).send({ code: "EMAIL_INVALID", message: "Enter a valid email." });
-    }
-    const email = parsed.data.email.normalize("NFC").trim().toLowerCase();
-    const ipRetryAfter = authRateLimiter.consume("magic-ip", request.ip, 30, AUTH_WINDOW_MS);
-    const emailRetryAfter = authRateLimiter.consume("magic-email", email, 5, AUTH_WINDOW_MS);
-    const retryAfter = Math.max(ipRetryAfter ?? 0, emailRetryAfter ?? 0);
-    if (retryAfter > 0) {
-      return sendRateLimit(reply, retryAfter);
-    }
-    const magicLink = await auth.createMagicLink(email);
-    let link: string | undefined;
-    if (magicLink) {
-      const fragment = new URLSearchParams({
-        magic: magicLink.token,
-        ...(parsed.data.invitationToken ? { invite: parsed.data.invitationToken } : {}),
-      });
-      const magicUrl = new URL("/auth/magic", clientUrl);
-      magicUrl.hash = fragment.toString();
-      link = magicUrl.toString();
-      if (options.deliverMagicLink) {
-        try {
-          await options.deliverMagicLink(
-            magicLink.email,
-            link,
-            store.getCorporateIdentity().applicationName,
-          );
-        } catch (error) {
-          await auth.revokeMagicLink(magicLink.token);
-          request.log.error(error);
-          return reply.code(502).send({
-            code: "MAGIC_LINK_DELIVERY_FAILED",
-            message: "Sign-in link could not be sent.",
-          });
-        }
+  const drainAuthEmails = registerEmailLinkRoutes(app, {
+    ...options, auth, store, rateLimiter: authRateLimiter, clientUrl,
+    onPasswordReset: (userId) => {
+      for (const socket of realtimeSocketsByUser.get(userId) ?? []) {
+        socket.close(AUTHENTICATION_CLOSE_CODE, "Password changed");
       }
-    }
-    return reply.code(202).send({
-      message: "Check your email.",
-      ...(exposeMagicLinks && link ? { magicLink: link } : {}),
-    });
+    },
   });
 
   app.post("/v1/auth/magic-link/verify", async (request, reply) => {
@@ -702,6 +607,8 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     if (!store.canIssueInvitation(user.id, parsed.data.email, parsed.data.role)) {
       return reply.code(403).send({ code: "FORBIDDEN", message: "You cannot assign this role." });
     }
+    const retryAfter = authRateLimiter.consume("invitation-issue", user.id, 30, AUTH_WINDOW_MS);
+    if (retryAfter) return sendRateLimit(reply, retryAfter);
     let issued: ReturnType<WorkspaceStore["issueInvitation"]>;
     try {
       issued = store.issueInvitation(parsed.data.email, parsed.data.role as Exclude<MemberRole, "owner">, parsed.data.permissions);
@@ -711,6 +618,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     const invitationUrl = new URL("/auth/invite", clientUrl);
     invitationUrl.hash = new URLSearchParams({ invite: issued.token }).toString();
     const inviteLink = invitationUrl.toString();
+    await persist();
     if (options.deliverInvitation) {
       try {
         await options.deliverInvitation(
@@ -720,6 +628,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
         );
       } catch (error) {
         store.rollbackInvitationIssue(issued.invitation.id, issued.supersededInvitationIds);
+        await persist();
         request.log.error(error);
         return reply.code(502).send({
           code: "INVITATION_DELIVERY_FAILED",
@@ -755,6 +664,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     }
     try {
       const revokedInvitation = store.revokeInvitation(params.invitationId);
+      await persist();
       runtime.publishWorkspaceAccess();
       return revokedInvitation;
     } catch (error) {
@@ -946,6 +856,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
   });
 
   app.addHook("onClose", async () => {
+    await drainAuthEmails();
     if (persistenceTimer) {
       clearInterval(persistenceTimer);
     }
@@ -995,48 +906,6 @@ function brandingLogoUrl(reference: BrandingLogoReference | undefined): string |
 
 function getAuthenticatedUser(auth: AuthStore, request: FastifyRequest): AuthUser | undefined {
   return auth.getUserFromSession(getSessionToken(request.headers.cookie));
-}
-
-function getSessionToken(cookieHeader: string | undefined): string | undefined {
-  const source = cookieHeader?.split(";").map((cookie) => cookie.trim()).find((cookie) => cookie.startsWith(`${SESSION_COOKIE_NAME}=`));
-  if (!source) {
-    return undefined;
-  }
-  try {
-    return decodeURIComponent(source.slice(SESSION_COOKIE_NAME.length + 1));
-  } catch {
-    return undefined;
-  }
-}
-
-function setSessionCookie(reply: FastifyReply, token: string): void {
-  const security = process.env.NODE_ENV === "production" ? "; SameSite=None; Secure" : "; SameSite=Lax";
-  reply.header("set-cookie", `${SESSION_COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; HttpOnly; Max-Age=${SESSION_MAX_AGE_SECONDS}; Priority=High${security}`);
-}
-
-function clearSessionCookie(reply: FastifyReply): void {
-  const security = process.env.NODE_ENV === "production" ? "; SameSite=None; Secure" : "; SameSite=Lax";
-  reply.header("set-cookie", `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; Max-Age=0; Priority=High${security}`);
-}
-
-function sendRateLimit(reply: FastifyReply, retryAfter: number): FastifyReply {
-  return reply.code(429).header("retry-after", String(retryAfter)).send({
-    code: "RATE_LIMITED",
-    message: "Too many attempts. Try again later.",
-  });
-}
-
-function sendInvitationError(reply: FastifyReply, code: string): FastifyReply {
-  const errors: Record<string, { status: number; message: string }> = {
-    INVITATION_INVALID: { status: 404, message: "Invitation is invalid." },
-    INVITATION_EXPIRED: { status: 410, message: "Invitation has expired." },
-    INVITATION_REVOKED: { status: 410, message: "Invitation was revoked." },
-    INVITATION_ACCEPTED: { status: 409, message: "Invitation has already been used." },
-    INVITATION_EMAIL_MISMATCH: { status: 403, message: "Sign in with the invited email." },
-    INVITATION_MEMBER_EXISTS: { status: 409, message: "This person is already a member." },
-  };
-  const error = errors[code] ?? errors.INVITATION_INVALID!;
-  return reply.code(error.status).send({ code: errors[code] ? code : "INVITATION_INVALID", message: error.message });
 }
 
 interface RealtimeSocket {
@@ -1106,6 +975,9 @@ function parseClientOrigins(value: string | undefined): string[] {
 
 function normalizeClientUrl(value: string): string {
   const url = new URL(value);
+  if (process.env.NODE_ENV === "production" && url.protocol === "http:" && !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) {
+    throw new Error("CLIENT_URL must use HTTPS for non-loopback addresses in production.");
+  }
   if (
     !["http:", "https:"].includes(url.protocol)
     || url.username
