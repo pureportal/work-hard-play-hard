@@ -1,10 +1,11 @@
-import { PhoneOff } from "lucide-react";
-import { useEffect, useSyncExternalStore } from "react";
+import { PhoneOff, Settings } from "lucide-react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Member, ProximityMediaSession } from "@workhard/shared";
 import { useMediaDevices } from "../hooks/useMediaDevices";
 import type { MediaConnection } from "../media-connection";
 import { Avatar } from "./Avatar";
 import { MeetingAudio, MeetingVideo } from "./MeetingMediaElement";
+import { MediaDeviceSettings } from "./MediaDeviceSettings";
 
 interface ProximityCallProps {
   connection: MediaConnection<ProximityMediaSession>;
@@ -14,23 +15,25 @@ interface ProximityCallProps {
   onMutedChange: (muted: boolean) => void;
   onCameraChange: (enabled: boolean) => void;
   onLeave: () => void;
-  onError: (message: string) => void;
 }
 
-export function ProximityCall({ connection, members, muted, cameraOn, onMutedChange, onCameraChange, onLeave, onError }: ProximityCallProps) {
+export function ProximityCall({ connection, members, muted, cameraOn, onMutedChange, onCameraChange, onLeave }: ProximityCallProps) {
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const media = useMediaDevices(muted, cameraOn, onMutedChange, onCameraChange);
   const { session, remote } = useSyncExternalStore(connection.subscribe, connection.getSnapshot);
   const failed = [...remote.values()].some((participant) => participant.state === "failed");
-  const error = media.errors.join(" ");
 
   useEffect(() => { connection.start(); }, [connection]);
   useEffect(() => { connection.setStreams(media.streams); }, [connection, media.streams]);
-  useEffect(() => { if (error) onError(error); }, [error, onError]);
 
-  return <>
-    {session.callId && <section className="proximity-call" aria-label="Open call">
-      <header><strong>Open call</strong><button className="leave-call" aria-label="Leave conversation" onClick={onLeave}><PhoneOff size={18} /></button></header>
+  return <section className="proximity-call" aria-label="Open call">
+      <header><strong>Open call</strong><div className="proximity-call-actions">
+        <button aria-label="Call settings" aria-expanded={settingsOpen} onClick={() => setSettingsOpen(!settingsOpen)}><Settings size={18} /></button>
+        <button className="leave-call" aria-label="Leave conversation" onClick={onLeave}><PhoneOff size={18} /></button>
+      </div></header>
+      {media.errors.length > 0 && <div role="alert">{media.errors.map((error) => <p key={error}>{error}</p>)}</div>}
       {failed && <p role="alert">Connection interrupted. <button onClick={() => connection.retry()}>Retry</button></p>}
+      {settingsOpen && <MediaDeviceSettings media={media} />}
       <div className="proximity-call-videos">
         {session.participants.map((participant) => {
           const member = members.find((candidate) => candidate.id === participant.userId);
@@ -45,6 +48,5 @@ export function ProximityCall({ connection, members, muted, cameraOn, onMutedCha
           </article>;
         })}
       </div>
-    </section>}
-  </>;
+    </section>;
 }

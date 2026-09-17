@@ -86,6 +86,8 @@ import { DeferredContent } from "./components/DeferredContent";
 import { RoomKnockNotice } from "./components/RoomKnockNotice";
 import { AuthScreen } from "./components/AuthScreen";
 import { CallNotice, type ActiveCall } from "./components/CallNotice";
+import { CallRequestNotice } from "./components/CallRequestNotice";
+import { useCallRequest } from "./hooks/useCallRequest";
 import { ChatPanel } from "./components/ChatPanel";
 import { Dock } from "./components/Dock";
 import { IconButton } from "./components/IconButton";
@@ -621,6 +623,7 @@ export function Workspace({
   const { connection: proximityConnection, start: startProximity, stop: stopProximity, leave: leaveProximity, handle: handleProximityEvent } = useProximitySession(realtimeSendRef, setMuted, setCameraOn);
   const [activeCall, setActiveCall] = useState<ActiveCall>();
   const activeCallRef = useRef<ActiveCall | undefined>(undefined);
+  const callRequest = useCallRequest(realtimeSendRef);
   const [reactions, setReactions] = useState<DisplayReaction[]>([]);
   const [highFives, setHighFives] = useState<DisplayHighFive[]>([]);
   const [gongRings, setGongRings] = useState<DisplayGongRing[]>([]);
@@ -823,6 +826,7 @@ export function Workspace({
   }, []);
 
   const handleRealtimeEvent = useCallback((event: ServerEvent) => {
+    const callErrorHandled = callRequest.handle(event);
     workspaceCommand.handleEvent(event);
     publicCommand.handleEvent(event);
     lobbyRequest.handleEvent(event);
@@ -1135,8 +1139,7 @@ export function Workspace({
     } else if (event.type === "call.state") {
       const previous = activeCallRef.current;
       if (event.state === "accepted" && previous?.callId === event.callId && previous.state === "ringing") {
-        setMuted(false);
-        setCameraOn(true);
+        startProximity();
       }
       if (event.state === "ended" && previous?.callId === event.callId && previous.state === "accepted"
         && !proximityConnection?.getSnapshot().session.callId) leaveProximity();
@@ -1290,9 +1293,9 @@ export function Workspace({
         pendingPlayerAssetRequest.current = undefined;
         setMovingBuildItem(undefined);
       }
-      showToast(event.message);
+      if (!callErrorHandled) showToast(event.message);
     }
-  }, [activeCall, activeConversationId, activePanel, announceOffscreenGong, currentMeeting, currentUser.availability, data.currentUserId, data.members, displayGongRing, displayHighFive, displayReaction, floorId, handleSpotifyEvent, handleSpecialPropEvent, handleWorkEvent, onCorporateIdentityChange, showToast]);
+  }, [activeCall, activeConversationId, activePanel, announceOffscreenGong, callRequest.handle, currentMeeting, currentUser.availability, data.currentUserId, data.members, displayGongRing, displayHighFive, displayReaction, floorId, handleSpotifyEvent, handleSpecialPropEvent, handleWorkEvent, onCorporateIdentityChange, showToast]);
 
   const { connection, snapshot, send } = useRealtime({
     floorId,
@@ -1300,6 +1303,10 @@ export function Workspace({
     onUnauthorized: onSessionExpired,
   });
   realtimeSendRef.current = send;
+  useEffect(() => {
+    if (connection !== "online") callRequest.fail("Connection lost. Reconnect and try again.");
+  }, [connection, callRequest.fail]);
+  useEffect(() => { callRequest.clear(); }, [floorId, meetingId, activePanel === "build", callRequest.clear]);
   useEffect(() => { if (connection !== "online") workspaceCommand.clear(); }, [connection, workspaceCommand.clear]);
 
   useEffect(() => {
@@ -1474,12 +1481,35 @@ export function Workspace({
 
   const request = useCallback(<T extends ClientCommand>(command: T): boolean => {
     const sent = send(command);
+    if (sent && callRequest.status?.command.type === "movement.approach_user"
+      && (command.type === "movement.set_destination" || command.type === "movement.input" && (command.dx !== 0 || command.dy !== 0))) callRequest.clear();
     if (!sent && command.type !== "movement.input") {
       showToast("Connection unavailable.");
     }
     return sent;
-  }, [send, showToast]);
+  }, [send, showToast, callRequest.status, callRequest.clear]);
   const requestId = () => crypto.randomUUID();
+
+  const callMember = (targetUserId: string, type: "call.request" | "movement.approach_user" = "call.request") => {
+    if (callRequest.pending) return;
+    if (activeCallRef.current?.state === "ringing" || activeCallRef.current?.state === "accepted") {
+      showToast("End your current call before starting another.");
+      return;
+    }
+    if (currentUser.availability === "dnd") {
+      showToast("Turn off Do not disturb before calling.");
+      return;
+    }
+    pendingTravelFocus.current = undefined;
+    const target = visiblePlayers.find((player) => player.userId === targetUserId);
+    if (currentPlayer && target?.proximity?.callId && target.roomId === currentPlayer.roomId
+      && Math.hypot(target.x - currentPlayer.x, target.y - currentPlayer.y) <= PROXIMITY_INTERACTION_RADIUS) {
+      callRequest.clear();
+      startProximity();
+      return;
+    }
+    callRequest.run(targetUserId, type);
+  };
 
   const claimDailyReward = () => {
     if (pendingEconomyRequestRef.current) {
@@ -1504,9 +1534,9 @@ export function Workspace({
   };
 
   useEffect(() => {
-    if (connection === "online" && activePanel !== "build" && !meetingId && (!muted || cameraOn)) startProximity();
-    else stopProximity();
-  }, [connection, activePanel, meetingId, muted, cameraOn, startProximity, stopProximity]);
+    if (connection !== "online" || activePanel === "build" || meetingId) stopProximity();
+    else if (!muted || cameraOn) startProximity();
+  }, [connection, activePanel, meetingId, muted, cameraOn, proximityConnection, startProximity, stopProximity]);
 
   const sendReaction = useCallback((reaction: ReactionKind) => request({
     type: "interaction.react",
@@ -2099,6 +2129,8 @@ export function Workspace({
   const visibleMeetingEntry = enteredMeetings.find((meeting) => meeting.id === activeInteraction?.id);
   const visibleNearbyDoor = nearbyDoors.find(({ door }) => door.id === activeInteraction?.id);
   const nearbyMember = data.members.find((member) => member.id === activeInteraction?.id);
+  const nearbyCallId = visiblePlayers.find((player) => player.userId === nearbyMember?.id)?.proximity?.callId;
+  const inNearbyCall = Boolean(nearbyCallId && nearbyCallId === currentPlayer?.proximity?.callId);
   const nearbyWorkObject = layout.objects.find((object) => object.id === activeInteraction?.id && (getAssetDefinition(object.assetId)?.workKind || object.assetId === GITHUB_TRAY_ASSET_ID));
   const selectedGameLobbyVisible = Boolean(selectedGameDefinition && interactionAreas.some((area) => area.id === selectedObject?.id));
   const visibleIncomingKnocks = useMemo(() => incomingKnocks.flatMap((knock) => {
@@ -2493,9 +2525,9 @@ export function Workspace({
                 <Avatar member={nearbyMember} className="person-avatar" />
                 <strong>{nearbyMember.name}</strong>
                 <button className="primary-button" onClick={() => messageMember(nearbyMember.id)}>Chat</button>
-                <button className="secondary-button" disabled={Boolean(activeCall) || nearbyMember.availability === "dnd"}
-                  onClick={() => { setMuted(false); setCameraOn(true); }}>
-                  <Phone size={16} />Call
+                <button className="secondary-button" disabled={Boolean(activeCall) || callRequest.pending || inNearbyCall}
+                  onClick={() => callMember(nearbyMember.id)}>
+                  <Phone size={16} />{inNearbyCall ? "In call" : nearbyCallId ? "Join call" : "Call"}
                 </button>
               </div>
             )}
@@ -2530,11 +2562,8 @@ export function Workspace({
                 <button
                   className="primary-button"
                   aria-label={`Call ${selectedPlayerMember.name}`}
-                  disabled={Boolean(activeCall) || selectedPlayerMember.availability === "dnd"}
-                  onClick={() => {
-                    pendingTravelFocus.current = undefined;
-                    request({ type: "movement.approach_user", requestId: requestId(), targetUserId: selectedPlayerMember.id });
-                  }}
+                  disabled={Boolean(activeCall) || callRequest.pending}
+                  onClick={() => callMember(selectedPlayerMember.id, "movement.approach_user")}
                 >
                   <Phone size={16} />Call
                 </button>
@@ -2678,7 +2707,6 @@ export function Workspace({
             if (activeCall?.state === "accepted") request({ type: "call.end", requestId: requestId(), callId: activeCall.callId });
             leaveProximity();
           }}
-          onError={showToast}
         />}
 
         {activePanel !== "build" && (carriedMember || carrierMember) && (
@@ -2703,6 +2731,13 @@ export function Workspace({
           onAvailabilityChange={(availability) => request({ type: "presence.set_availability", requestId: requestId(), availability })}
           onReact={sendReaction}
           reactionsDisabled={connection !== "online"}
+        />}
+
+        {activePanel !== "build" && !activeCall && callRequest.status && <CallRequestNotice
+          status={callRequest.status}
+          peer={data.members.find((member) => member.id === callRequest.status?.command.targetUserId)}
+          onRetry={() => callMember(callRequest.status!.command.targetUserId, callRequest.status!.command.type)}
+          onDismiss={callRequest.clear}
         />}
 
         {activePanel !== "build" && activeCall && (activeCall.state === "ringing" || activeCall.state === "accepted" && proximityCallParticipants.length === 0) && (
@@ -2809,7 +2844,7 @@ export function Workspace({
           onClose={() => setActivePanel(null)}
           onWave={(targetUserId) => request({ type: "interaction.wave", requestId: requestId(), targetUserId })}
           onMessage={messageMember}
-          onCall={(targetUserId) => request({ type: "call.request", requestId: requestId(), targetUserId })}
+          onCall={callMember}
           onLocate={locateMember}
           onInvite={addInvitation}
           onRevokeInvite={removeInvitation}

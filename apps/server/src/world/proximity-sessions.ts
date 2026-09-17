@@ -23,10 +23,6 @@ export class ProximitySessions {
   set(peer: { id: string; userId: string; send: ProximitySession["send"] }, sessionId: string, microphone: boolean, camera: boolean): void {
     if ([...this.sessions.values()].some((session) => session.sessionId === sessionId && session.peerId !== peer.id)) throw new Error("PROXIMITY_SESSION_INVALID");
     const current = this.sessions.get(peer.userId);
-    if (!microphone && !camera) {
-      this.leave(peer.id, sessionId);
-      return;
-    }
     if (current && (current.peerId !== peer.id || current.sessionId !== sessionId)) this.delete(peer.userId);
     const session = this.sessions.get(peer.userId);
     if (session) Object.assign(session, { microphone, camera });

@@ -12,6 +12,28 @@ function fixture() {
 }
 
 describe("open call sessions", () => {
+  it("keeps participants and signaling connected with no microphone or camera", () => {
+    const { sessions, maya, leo } = fixture();
+    sessions.set(maya, "maya-session", false, false);
+    sessions.set(leo, "leo-session", true, false);
+    const groups = new Map([["maya", "call"], ["leo", "call"]]);
+    sessions.reconcile(groups);
+    expect(maya.events.at(-1)).toMatchObject({ type: "proximity.media_state", session: { callId: "call", participants: [
+      { userId: "maya", microphone: false, camera: false }, { userId: "leo", microphone: true, camera: false },
+    ] } });
+    sessions.signal(maya.id, "maya-session", "leo-session", { type: "restart" });
+    expect(leo.events.at(-1)).toMatchObject({ type: "proximity.signal", fromSessionId: "maya-session" });
+    sessions.set(leo, "leo-session", false, false);
+    sessions.reconcile(groups);
+    expect([...sessions.values()]).toHaveLength(2);
+    expect(maya.events.some((event) => event.type === "proximity.left")).toBe(false);
+    sessions.set(maya, "maya-session", true, true);
+    sessions.reconcile(groups);
+    expect(leo.events.at(-1)).toMatchObject({ type: "proximity.media_state", session: { callId: "call", participants: [
+      { userId: "maya", microphone: true, camera: true }, { userId: "leo", microphone: false, camera: false },
+    ] } });
+  });
+
   it("admits nearby participants, publishes media changes once, and scopes signaling to their call", () => {
     const { sessions, maya, leo, theo, viewer } = fixture();
     sessions.set(maya, "maya-session", true, true);

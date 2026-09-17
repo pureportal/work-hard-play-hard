@@ -122,7 +122,7 @@ describe("WorldRuntime proximity calls", () => {
     runtime.stop();
   });
 
-  it("ends a call when a participant turns off both devices", () => {
+  it("joins without devices, keeps the call while devices change, and leaves explicitly", () => {
     const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     placePlayers(runtime, {
       "user-maya": { x: 100, y: 100 },
@@ -131,12 +131,20 @@ describe("WorldRuntime proximity calls", () => {
     const events: ServerEvent[] = [];
     const mayaPeer = connect(runtime, "user-maya", events);
     const leoPeer = connect(runtime, "user-leo", []);
-    setMedia(runtime, mayaPeer, true, false);
-    setMedia(runtime, leoPeer, true, false);
-    expect(player(snapshot(runtime, events), "user-maya").proximity?.callId).toBeTruthy();
-
+    setMedia(runtime, mayaPeer, false, false);
     setMedia(runtime, leoPeer, false, false);
+    const callId = player(snapshot(runtime, events), "user-maya").proximity?.callId;
+    expect(callId).toBeTruthy();
 
+    for (const [microphone, camera] of [[true, false], [false, true], [true, true], [false, false]] as const) {
+      setMedia(runtime, leoPeer, microphone, camera);
+      const current = snapshot(runtime, events);
+      expect(player(current, "user-maya").proximity).toEqual({ callId, microphone: false, camera: false });
+      expect(player(current, "user-leo").proximity).toEqual({ callId, microphone, camera });
+      expect(events.some((event) => event.type === "proximity.left")).toBe(false);
+    }
+
+    send(runtime, leoPeer, { type: "proximity.leave", requestId: "leave", sessionId: leoPeer });
     const current = snapshot(runtime, events);
     expect(player(current, "user-maya").proximity?.callId).toBeUndefined();
     expect(player(current, "user-leo").proximity).toBeUndefined();

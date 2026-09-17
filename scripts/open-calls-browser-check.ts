@@ -6,11 +6,14 @@ import { createServer, type AddressInfo } from "node:net";
 import { chromium, type Page } from "playwright-core";
 import { createTestApplication } from "../apps/server/src/testing/application.js";
 import { MemoryDatabase } from "../apps/server/src/persistence/memory-database.js";
+import { verifyCallDeviceChanges, verifyMeetingDeviceChanges } from "./call-devices-browser-check.js";
 
 declare global {
   var openCallCaptures: MediaStream[];
   var openCallPeers: RTCPeerConnection[];
   var openCallSocket: WebSocket;
+  var openCallDevices: { microphone: "available" | "missing" | "blocked"; camera: "available" | "missing" | "blocked" };
+  var openCallCaptureRequests: MediaStreamConstraints[];
 }
 
 const port = await new Promise<number>((resolve, reject) => {
@@ -24,7 +27,7 @@ const port = await new Promise<number>((resolve, reject) => {
 const origin = `http://127.0.0.1:${port}`;
 const application = await createTestApplication({ database: new MemoryDatabase(), fixture: true, clientUrl: origin, clientOrigins: [origin] });
 application.runtime.restorePlayers(application.runtime.serializePlayers().map((player) => {
-  const positions: Record<string, { x: number; y: number }> = { "user-maya": { x: 100, y: 100 }, "user-leo": { x: 160, y: 100 }, "user-theo": { x: 150, y: 200 } };
+  const positions: Record<string, { x: number; y: number }> = { "user-maya": { x: 100, y: 100 }, "user-leo": { x: 160, y: 100 }, "user-theo": { x: 150, y: 175 } };
   return { ...player, ...positions[player.userId] };
 }));
 await application.app.listen({ host: "127.0.0.1", port });
@@ -40,8 +43,16 @@ async function login(identifier: string) {
     localStorage.setItem("northstar.serverOrigin", location.origin);
     globalThis.openCallCaptures = [];
     globalThis.openCallPeers = [];
+    globalThis.openCallDevices = { microphone: "available", camera: "available" };
+    globalThis.openCallCaptureRequests = [];
+    const enumerate = navigator.mediaDevices.enumerateDevices.bind(navigator.mediaDevices);
+    navigator.mediaDevices.enumerateDevices = async () => (await enumerate()).filter((device) =>
+      device.kind === "audioinput" ? openCallDevices.microphone === "available" : device.kind === "videoinput" ? openCallDevices.camera === "available" : true);
     const capture = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
     navigator.mediaDevices.getUserMedia = async (constraints) => {
+      globalThis.openCallCaptureRequests.push(constraints!);
+      const state = constraints?.audio ? openCallDevices.microphone : openCallDevices.camera;
+      if (state !== "available") throw new DOMException("Capture unavailable", state === "missing" ? "NotFoundError" : "NotAllowedError");
       let stream: MediaStream;
       if (constraints?.video) {
         const canvas = document.createElement("canvas");
@@ -101,15 +112,16 @@ async function enableMedia(page: Page) {
   await page.locator(".control-dock").getByRole("button", { name: "Turn camera on", exact: true }).click();
 }
 
-async function connected(page: Page, participants: number) {
-  try { await page.waitForFunction((count) => {
+async function connected(page: Page, participants: number, withMedia = true) {
+  try { await page.waitForFunction(({ count, withMedia }) => {
     const peers = openCallPeers.filter((peer) => peer.connectionState !== "closed");
     const videos = [...document.querySelectorAll<HTMLVideoElement>(".proximity-call video")];
     const audio = [...document.querySelectorAll<HTMLAudioElement>(".proximity-call audio")];
     return peers.length === count - 1 && peers.every((peer) => peer.connectionState === "connected")
-      && videos.length === count && videos.every((video) => video.videoWidth > 0 && video.readyState >= 2)
-      && audio.length === count - 1 && audio.every((element) => (element.srcObject as MediaStream)?.getAudioTracks().some((track) => !track.muted));
-  }, participants, { timeout: 30_000 }); } catch (error) {
+      && document.querySelectorAll(".proximity-call .video-tile").length === count
+      && (!withMedia || videos.length === count && videos.every((video) => video.videoWidth > 0 && video.readyState >= 2)
+        && audio.length === count - 1 && audio.every((element) => (element.srcObject as MediaStream)?.getAudioTracks().some((track) => !track.muted)));
+  }, { count: participants, withMedia }, { timeout: 30_000 }); } catch (error) {
     console.error(await page.evaluate(() => ({
       peers: openCallPeers.map((peer) => ({ state: peer.connectionState, signaling: peer.signalingState, tracks: peer.getReceivers().map((receiver) => ({ kind: receiver.track.kind, state: receiver.track.readyState, muted: receiver.track.muted })) })),
       captures: openCallCaptures.map((stream) => stream.getTracks().map((track) => ({ kind: track.kind, state: track.readyState }))),
@@ -133,11 +145,50 @@ try {
   const maya = await login("maya");
   const leo = await login("leo");
   const theo = await login("theo");
+  await maya.evaluate(() => {
+    const send = openCallSocket.send.bind(openCallSocket);
+    openCallSocket.send = (data) => {
+      if (typeof data === "string" && JSON.parse(data).type === "call.request") {
+        openCallSocket.send = send;
+        return;
+      }
+      send(data);
+    };
+  });
   await maya.getByRole("region", { name: "Nearby actions" }).getByRole("button", { name: "Call", exact: true }).click();
-  assert.equal(await maya.getByRole("region", { name: "Open call" }).count(), 0);
-  await maya.evaluate(() => openCallSocket.send(JSON.stringify({ type: "call.request", requestId: crypto.randomUUID(), targetUserId: "user-leo" })));
+  await maya.getByText("Starting call…", { exact: true }).waitFor();
+  await maya.getByRole("alert").getByText("The call did not start. Try again.", { exact: true }).waitFor();
+  await leo.getByRole("combobox", { name: "Availability" }).selectOption("dnd");
+  await leo.waitForFunction(() => document.querySelector<HTMLSelectElement>('[aria-label="Availability"]')?.value === "dnd");
+  await maya.getByRole("button", { name: "Retry call", exact: true }).click();
+  await maya.getByRole("alert").getByText("They are unavailable.", { exact: true }).waitFor();
+  assert.equal(await leo.getByRole("button", { name: "Accept call from Maya Chen" }).count(), 0);
+  await maya.screenshot({ path: resolve(artifacts, "call-error-desktop.png") });
+  await maya.setViewportSize({ width: 390, height: 844 });
+  const errorBounds = await maya.getByRole("alert").boundingBox();
+  assert(errorBounds && errorBounds.x >= 0 && errorBounds.x + errorBounds.width <= 390);
+  await maya.getByRole("button", { name: "Retry call", exact: true }).click({ trial: true });
+  await maya.getByRole("button", { name: "Dismiss call error", exact: true }).click({ trial: true });
+  await maya.screenshot({ path: resolve(artifacts, "call-error-mobile.png") });
+  await maya.setViewportSize({ width: 1440, height: 1000 });
+  await leo.getByRole("combobox", { name: "Availability" }).selectOption("available");
+  await leo.waitForFunction(() => document.querySelector<HTMLSelectElement>('[aria-label="Availability"]')?.value === "available");
+  await maya.getByRole("button", { name: "Retry call", exact: true }).click();
+  await maya.getByRole("button", { name: "Cancel call to Leo Martins" }).waitFor();
+  await leo.setViewportSize({ width: 390, height: 844 });
+  await leo.getByRole("button", { name: "Accept call from Maya Chen" }).click({ trial: true });
+  await leo.screenshot({ path: resolve(artifacts, "incoming-call-mobile.png") });
+  assert.equal(await maya.evaluate(() => openCallCaptureRequests.length), 0);
   await leo.getByRole("button", { name: "Accept call from Maya Chen" }).click();
+  await leo.setViewportSize({ width: 1440, height: 1000 });
+  await Promise.all([maya, leo].map((page) => connected(page, 2, false)));
+  assert.equal(await leo.evaluate(() => openCallCaptureRequests.length), 0);
+  await verifyCallDeviceChanges(maya, leo, artifacts);
   await Promise.all([maya, leo].map((page) => connected(page, 2)));
+  await theo.getByRole("region", { name: "Nearby actions" }).getByRole("button", { name: "Join call", exact: true }).click();
+  await Promise.all([maya, leo, theo].map((page) => connected(page, 3, false)));
+  assert(await theo.getByRole("region", { name: "Nearby actions" }).getByRole("button", { name: "In call", exact: true }).isDisabled());
+  assert.equal(await theo.evaluate(() => openCallCaptureRequests.length), 0);
   await enableMedia(theo);
   await Promise.all([maya, leo, theo].map((page) => connected(page, 3)));
   await maya.screenshot({ path: resolve(artifacts, "open-call-desktop.png") });
@@ -156,8 +207,9 @@ try {
   await Promise.all([maya, theo].map((page) => connected(page, 2)));
   await theo.context().close();
   await stopped(maya);
+  await verifyMeetingDeviceChanges(maya, leo, artifacts);
   assert.deepEqual(errors, []);
-  console.log("PASS: Three browser tabs exchange camera and audio; new coworkers join; leave, walking away, and disconnect stop devices; desktop and mobile fit.");
+  console.log("PASS: The Call button sends the invitation; lost requests time out, rejected calls show errors, and retry rings the recipient. Calls and meetings join without devices, keep receiving after capture failures and muting, and enable selected devices after joining. Three participants exchange media; leave, walking away, and disconnect stop capture; desktop and mobile fit.");
 } finally {
   await browser.close();
   await application.app.close();

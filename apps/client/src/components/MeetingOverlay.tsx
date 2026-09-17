@@ -7,6 +7,7 @@ import type { MediaConnection } from "../media-connection";
 import { REACTION_EMOJI, REACTION_LABEL, type DisplayReaction } from "../reactions";
 import { Avatar } from "./Avatar";
 import { MeetingAudio, MeetingVideo } from "./MeetingMediaElement";
+import { MediaDeviceSettings } from "./MediaDeviceSettings";
 import { MeetingChat } from "./MeetingChat";
 import { ReactionPicker } from "./ReactionPicker";
 import "../meeting.css";
@@ -84,13 +85,7 @@ export function MeetingOverlay({ small, meeting, connection, members, currentUse
             {failed && <p>Media connection interrupted. <button onClick={() => connection.retry()}>Retry media</button></p>}
           </div>}
           {settingsOpen && <div className="meeting-settings" aria-label="Meeting settings">
-            <label>Microphone<select disabled={leaving} value={media.microphoneId} onChange={(event) => media.setMicrophoneId(event.target.value)}>
-              <option value="">Default</option>{media.devices.filter((device) => device.kind === "audioinput").map((device, index) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Microphone ${index + 1}`}</option>)}
-            </select></label>
-            <label>Camera<select disabled={leaving} value={media.cameraId} onChange={(event) => media.setCameraId(event.target.value)}>
-              <option value="">Default</option>{media.devices.filter((device) => device.kind === "videoinput").map((device, index) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Camera ${index + 1}`}</option>)}
-            </select></label>
-            <label className="meeting-noise-setting"><input type="checkbox" disabled={leaving} checked={media.noiseSuppression} onChange={(event) => media.setNoiseSuppression(event.target.checked)} />Noise filtering</label>
+            <MediaDeviceSettings media={media} disabled={leaving} />
             <form onSubmit={(event) => { event.preventDefault(); if (invitee && onInvite(invitee)) setInvitee(""); }}>
               <label>Invite<select value={invitee} onChange={(event) => setInvitee(event.target.value)}>
                 <option value="">Choose a person</option>{eligibleInvitees.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}

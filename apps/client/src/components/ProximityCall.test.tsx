@@ -13,7 +13,7 @@ function fixture() {
   connections.push(connection);
   const props = { connection, members: [{ id: "maya", name: "Maya Chen", initials: "MC", character: { ...DEFAULT_CHARACTER_APPEARANCE }, email: "maya@example.com",
     title: "Designer", role: "member" as const, permissions: [], color: "#ff7a66", availability: "available" as const, online: true }],
-    muted: true, cameraOn: false, onMutedChange: vi.fn(), onCameraChange: vi.fn(), onLeave: vi.fn(), onError: vi.fn() };
+    muted: true, cameraOn: false, onMutedChange: vi.fn(), onCameraChange: vi.fn(), onLeave: vi.fn() };
   return { send, connection, props };
 }
 
@@ -23,6 +23,32 @@ function stream(kind: "audio" | "video") {
 }
 
 describe("open call", () => {
+  it("opens without capture support and keeps device settings and leave available", () => {
+    const { send, props } = fixture();
+    vi.stubGlobal("navigator", {});
+    render(<ProximityCall {...props} />);
+    expect(screen.getByRole("region", { name: "Open call" })).toBeTruthy();
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({ type: "proximity.set_media", microphone: false, camera: false }));
+    fireEvent.click(screen.getByRole("button", { name: "Call settings" }));
+    expect(screen.getByRole("combobox", { name: "Microphone" })).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "Camera" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Leave conversation" }));
+    expect(props.onLeave).toHaveBeenCalledOnce();
+  });
+
+  it("keeps microphone audio when no camera is available", async () => {
+    const { send, props } = fixture();
+    const microphone = stream("audio");
+    vi.stubGlobal("navigator", { mediaDevices: { getUserMedia: vi.fn((constraints: MediaStreamConstraints) => constraints.audio
+      ? Promise.resolve(microphone) : Promise.reject(new DOMException("Missing camera", "NotFoundError"))) } });
+    render(<ProximityCall {...props} muted={false} cameraOn />);
+    await waitFor(() => expect(props.onCameraChange).toHaveBeenCalledWith(false));
+    expect(props.onMutedChange).not.toHaveBeenCalled();
+    expect(props.onLeave).not.toHaveBeenCalled();
+    expect(microphone.getTracks()[0]!.stop).not.toHaveBeenCalled();
+    expect(send).toHaveBeenLastCalledWith(expect.objectContaining({ type: "proximity.set_media", microphone: true, camera: false }));
+  });
+
   it("waits for capture, keeps the microphone when enabling camera, and stops both devices on leaving", async () => {
     const { send, props } = fixture();
     const microphone = stream("audio");
@@ -73,6 +99,6 @@ describe("open call", () => {
     render(<ProximityCall {...props} muted={false} />);
     await waitFor(() => expect(props.onMutedChange).toHaveBeenCalledWith(true));
     expect(props.onCameraChange).not.toHaveBeenCalled();
-    expect(props.onError).toHaveBeenCalledWith("Microphone blocked. Allow access in your browser and try again.");
+    expect(screen.getByRole("alert").textContent).toBe("Microphone blocked. Allow access in your browser and try again.");
   });
 });

@@ -1,0 +1,10 @@
+.media-device-settings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; grid-column: 1 / -1; color: #f4f2f7; font-size: 12px; }
+.media-device-settings label { display: grid; gap: 5px; min-width: 0; }
+.media-device-settings select { min-width: 0; width: 100%; padding: 8px; color: #fff; background: #343441; border: 1px solid #666371; border-radius: 6px; }
+.media-device-settings .media-noise-setting { display: flex; align-items: center; gap: 8px; grid-column: 1 / -1; }
+
+@media (max-width: 560px) {
+  .media-device-settings { grid-template-columns: minmax(0, 1fr); }
+  .media-device-settings select, .media-device-settings .media-noise-setting { min-height: 44px; }
+  .media-device-settings select { font-size: 16px; }
+}

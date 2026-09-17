@@ -517,7 +517,7 @@ describe("meeting area entry", () => {
     expect(meetingLeaveCommands()).toHaveLength(0);
   });
 
-  it("starts open media after accepting a matching invitation and ignores repeated acceptance", async () => {
+  it("joins an accepted call before enabling devices and ignores repeated acceptance", async () => {
     const getUserMedia = vi.fn(async (constraints: MediaStreamConstraints) => ({
       getTracks: () => [{ kind: constraints.audio ? "audio" : "video", stop: vi.fn() }],
     }) as unknown as MediaStream);
@@ -528,11 +528,47 @@ describe("meeting area entry", () => {
     fireEvent.click(screen.getByRole("button", { name: "Accept call from Leo Martins" }));
     expect(getUserMedia).not.toHaveBeenCalled();
     act(() => realtime.handler?.({ ...call, state: "accepted" }));
+    expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({ type: "proximity.set_media", microphone: false, camera: false }));
+    expect(getUserMedia).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Unmute" }));
+    fireEvent.click(screen.getByRole("button", { name: "Turn camera on" }));
     await waitFor(() => expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({ type: "proximity.set_media", microphone: true, camera: true })));
     fireEvent.click(screen.getByRole("button", { name: "Mute" }));
+    fireEvent.click(screen.getByRole("button", { name: "Turn camera off" }));
     act(() => realtime.handler?.({ ...call, state: "accepted" }));
     expect(screen.getByRole("button", { name: "Unmute" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Open call" })).toBeTruthy();
+    expect(realtime.send.mock.calls.some(([command]) => command.type === "proximity.leave")).toBe(false);
     expect(getUserMedia).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(["NotFoundError", "NotAllowedError"])("keeps a nearby call joined after %s and enables a microphone later", async (errorName) => {
+    const getUserMedia = vi.fn().mockRejectedValue(new DOMException("No capture", errorName));
+    vi.stubGlobal("navigator", { mediaDevices: { getUserMedia } });
+    realtime.snapshot!.players[1]!.x = 290;
+    realtime.snapshot!.players[1]!.roomId = "room-review";
+    renderWorkspace();
+    fireEvent.change(screen.getByRole("combobox", { name: "Active interaction" }), { target: { value: "user-leo" } });
+    fireEvent.click(within(screen.getByRole("region", { name: "Nearby actions" })).getByRole("button", { name: "Call" }));
+    expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({ type: "call.request", targetUserId: "user-leo" }));
+    expect(getUserMedia).not.toHaveBeenCalled();
+    const call = { type: "call.state" as const, callId: "nearby", peerUserId: "user-leo", direction: "outgoing" as const };
+    act(() => realtime.handler?.({ ...call, state: "ringing" }));
+    act(() => realtime.handler?.({ ...call, state: "accepted" }));
+    expect(screen.getByRole("region", { name: "Open call" })).toBeTruthy();
+    expect(getUserMedia).not.toHaveBeenCalled();
+    const sessionId = realtime.send.mock.calls.map(([command]) => command).find((command) => command.type === "proximity.set_media")!.sessionId;
+    fireEvent.click(screen.getByRole("button", { name: "Unmute" }));
+    fireEvent.click(screen.getByRole("button", { name: "Turn camera on" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Unmute" })).toBeTruthy());
+    expect(screen.getByRole("button", { name: "Turn camera on" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Open call" })).toBeTruthy();
+    expect(realtime.send.mock.calls.some(([command]) => command.type === "proximity.leave")).toBe(false);
+    getUserMedia.mockResolvedValue({ getTracks: () => [{ kind: "audio", stop: vi.fn() }] });
+    fireEvent.click(screen.getByRole("button", { name: "Unmute" }));
+    await waitFor(() => expect(realtime.send).toHaveBeenLastCalledWith(expect.objectContaining({ type: "proximity.set_media", sessionId, microphone: true, camera: false })));
+    fireEvent.click(screen.getByRole("button", { name: "Leave conversation" }));
+    expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({ type: "proximity.leave", sessionId }));
   });
 
   it("does not enable devices for an unsolicited call acceptance", () => {
@@ -542,6 +578,18 @@ describe("meeting area entry", () => {
     act(() => realtime.handler?.({ type: "call.state", callId: "stale", peerUserId: "user-leo", direction: "outgoing", state: "accepted" }));
     expect(getUserMedia).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Unmute" })).toBeTruthy();
+  });
+
+  it("keeps open calls stopped if an invitation is accepted after entering build mode", () => {
+    const getUserMedia = vi.fn();
+    vi.stubGlobal("navigator", { mediaDevices: { getUserMedia } });
+    renderWorkspace();
+    const call = { type: "call.state" as const, callId: "late", peerUserId: "user-leo", direction: "outgoing" as const };
+    act(() => realtime.handler?.({ ...call, state: "ringing" }));
+    fireEvent.click(screen.getByRole("button", { name: "Build" }));
+    act(() => realtime.handler?.({ ...call, state: "accepted" }));
+    expect(screen.queryByRole("region", { name: "Open call" })).toBeNull();
+    expect(getUserMedia).not.toHaveBeenCalled();
   });
 
   it("keeps devices off if an accepted invitation ends before media starts", () => {
@@ -560,6 +608,88 @@ describe("meeting area entry", () => {
     expect(screen.getByRole("button", { name: "Turn camera on" })).toBeTruthy();
   });
 
+  it("rings a nearby person even when a local media session is already open", async () => {
+    vi.stubGlobal("navigator", { mediaDevices: { getUserMedia: vi.fn().mockRejectedValue(new DOMException("Missing microphone", "NotFoundError")) } });
+    realtime.snapshot!.players[1]!.x = 290;
+    realtime.snapshot!.players[1]!.roomId = "room-review";
+    renderWorkspace();
+    fireEvent.click(screen.getByRole("button", { name: "Unmute" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Unmute" })).toBeTruthy());
+    expect(screen.getByRole("region", { name: "Open call" })).toBeTruthy();
+    fireEvent.change(screen.getByRole("combobox", { name: "Active interaction" }), { target: { value: "user-leo" } });
+    fireEvent.click(within(screen.getByRole("region", { name: "Nearby actions" })).getByRole("button", { name: "Call" }));
+    expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({ type: "call.request", targetUserId: "user-leo" }));
+    expect(screen.getByText("Starting call…")).toBeTruthy();
+  });
+
+  it("shows call progress, preserves a rejection, and retries from the error", () => {
+    renderWorkspace();
+    fireEvent.click(screen.getByRole("button", { name: "People" }));
+    fireEvent.click(screen.getByRole("button", { name: "Leo Martins" }));
+    const button = screen.getByRole("button", { name: "Call Leo Martins" });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    const commands = realtime.send.mock.calls.map(([command]) => command).filter((command) => command.type === "call.request");
+    expect(commands).toHaveLength(1);
+    expect(screen.getByText("Starting call…")).toBeTruthy();
+    act(() => realtime.handler?.({ type: "command.error", requestId: commands[0]!.requestId, code: "CALL_OUT_OF_RANGE", message: "Move closer to call." }));
+    expect(screen.getByRole("alert").textContent).toContain("Move closer to call.");
+    expect(screen.queryByText("Starting call…")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Retry call" }));
+    expect(realtime.send.mock.calls.filter(([command]) => command.type === "call.request")).toHaveLength(2);
+    expect(screen.queryByRole("alert")).toBeNull();
+    act(() => realtime.handler?.({ type: "call.state", callId: "call", peerUserId: "user-leo", direction: "outgoing", state: "ringing" }));
+    expect(screen.queryByText("Starting call…")).toBeNull();
+    expect(screen.getByRole("button", { name: "Cancel call to Leo Martins" })).toBeTruthy();
+  });
+
+  it("joins an existing nearby conversation without sending a busy call invitation", () => {
+    realtime.snapshot!.players[1]!.x = 290;
+    realtime.snapshot!.players[1]!.roomId = "room-review";
+    realtime.snapshot!.players[1]!.proximity = { callId: "open-call", microphone: false, camera: false };
+    renderWorkspace();
+    fireEvent.change(screen.getByRole("combobox", { name: "Active interaction" }), { target: { value: "user-leo" } });
+    fireEvent.click(screen.getByRole("button", { name: "Join call" }));
+    expect(screen.getByRole("region", { name: "Open call" })).toBeTruthy();
+    expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({ type: "proximity.set_media", microphone: false, camera: false }));
+    expect(realtime.send.mock.calls.some(([command]) => command.type === "call.request")).toBe(false);
+  });
+
+  it("explains why calling is unavailable when Do not disturb is on", () => {
+    const data = structuredClone(workspace);
+    data.members[0]!.availability = "dnd";
+    render(<Workspace initialData={data} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Select Leo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Call Leo Martins" }));
+    expect(screen.getByText("Turn off Do not disturb before calling.")).toBeTruthy();
+    expect(realtime.send.mock.calls.some(([command]) => command.type === "movement.approach_user")).toBe(false);
+  });
+
+  it("shows an actionable error when a call cannot be sent", () => {
+    realtime.send.mockReturnValue(false);
+    renderWorkspace();
+    fireEvent.click(screen.getByRole("button", { name: "Select Leo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Call Leo Martins" }));
+    expect(screen.getByRole("alert").textContent).toContain("Connection unavailable. Reconnect and try again.");
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss call error" }));
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("reports an unanswered call request and releases pending state on disconnect", () => {
+    vi.useFakeTimers();
+    const props = { initialData: structuredClone(workspace), onSignOut: vi.fn(), onSessionExpired: vi.fn() };
+    const view = render(<Workspace {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: "People" }));
+    fireEvent.click(screen.getByRole("button", { name: "Leo Martins" }));
+    fireEvent.click(screen.getByRole("button", { name: "Call Leo Martins" }));
+    act(() => vi.advanceTimersByTime(10_000));
+    expect(screen.getByRole("alert").textContent).toContain("The call did not start. Try again.");
+    fireEvent.click(screen.getByRole("button", { name: "Retry call" }));
+    realtime.connection = "offline";
+    view.rerender(<Workspace {...props} />);
+    expect(screen.getByRole("alert").textContent).toContain("Connection lost. Reconnect and try again.");
+  });
+
   it("selects an avatar before walking over to call", () => {
     renderWorkspace();
 
@@ -572,6 +702,7 @@ describe("meeting area entry", () => {
       targetUserId: "user-leo",
     }));
     expect(screen.queryByLabelText("Selected Leo Martins")).toBeNull();
+    expect(screen.getByText("Walking over…")).toBeTruthy();
   });
 });
 

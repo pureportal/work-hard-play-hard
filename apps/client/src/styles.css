@@ -3042,7 +3042,7 @@ button:disabled {
 
 .call-pill {
   position: absolute;
-  z-index: 34;
+  z-index: 46;
   top: max(78px, calc(env(safe-area-inset-top) + 62px));
   left: 50%;
   display: flex;
@@ -3103,12 +3103,17 @@ button:disabled {
   background: var(--success);
 }
 
+.call-request .call-copy span { font-size: 12px; }
+.call-request button { flex-shrink: 0; background: #45414e; }
+
 .proximity-call {
   position: absolute;
-  z-index: 34;
-  top: max(78px, calc(env(safe-area-inset-top) + 62px));
+  z-index: 36;
+  bottom: calc(110px + env(safe-area-inset-bottom));
   right: 14px;
   width: min(340px, calc(100% - 28px));
+  max-height: calc(100dvh - 190px);
+  overflow-y: auto;
   padding: 10px;
   color: #f4f2f7;
   background: #24232e;
@@ -3136,6 +3141,9 @@ button:disabled {
 }
 
 .proximity-call .leave-call { background: #b74254; }
+.proximity-call-actions { display: flex; gap: 6px; }
+.proximity-call .media-device-settings { margin-bottom: 12px; }
+.proximity-call [role="alert"] { font-size: 12px; }
 
 .proximity-call-videos {
   display: grid;
