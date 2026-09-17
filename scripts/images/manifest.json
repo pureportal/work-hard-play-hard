@@ -17271,135 +17271,135 @@
   },
   "/world-assets/decor-desk-fan/coral.png": {
     "group": "world",
-    "sourceHash": "4b4a828f6f28af30500d3fe210966f66ae0555f4ab852b323ba6f1ade18154f1",
-    "recipe": "905782482ed58b1ef18fce4a96d6e87b07174a3c34ec75d5ee6cfe8848596e9a",
-    "originalBytes": 18133,
+    "sourceHash": "f008804480057ff694f8a297899a1644a7e2f1a98b409adcb0259154870df80a",
+    "recipe": "7854a962f84729f733cecd69c2b8620317be4bfee1f811f5c99eb719fefe68d6",
+    "originalBytes": 27342,
     "image": {
-      "id": "19823795e7a532242fc4679b",
-      "sha256": "19823795e7a532242fc4679b469fb49f27fbf36fda7c9bf6522b273b5142b9c4",
-      "bytes": 9382,
-      "width": 600,
-      "height": 250
+      "id": "1d201843713db358b29ce2af",
+      "sha256": "1d201843713db358b29ce2afc1f8217bc00ef2c33e5f0b436b86a2c14e07bf04",
+      "bytes": 16326,
+      "width": 608,
+      "height": 232
     },
     "previews": [
       {
-        "id": "1312d2a3e1e574729ef098c9",
-        "sha256": "1312d2a3e1e574729ef098c91dfa0815f2ba748a3b8a87bdc428216f18d8c5b0",
-        "bytes": 13312,
-        "width": 87,
+        "id": "ccf1dcca9cb1c0a9ebcecf97",
+        "sha256": "ccf1dcca9cb1c0a9ebcecf977145ca9bf682a3fd5f85ae49c840f5498c9377ee",
+        "bytes": 15554,
+        "width": 89,
         "height": 128
       },
       {
-        "id": "80d3873da6f070aa94642bd3",
-        "sha256": "80d3873da6f070aa94642bd3b30d36151fabc77c94b199df6cd2f204336a249b",
-        "bytes": 3818,
-        "width": 56,
+        "id": "f81d436d871ca259e4370f42",
+        "sha256": "f81d436d871ca259e4370f4244a0652494736979f5fdabe65dc9085940aaeb3c",
+        "bytes": 7394,
+        "width": 53,
         "height": 128
       },
       {
-        "id": "b13f4bf302dbe9229852e37f",
-        "sha256": "b13f4bf302dbe9229852e37fded276d969095c0bfb21081b9f82428a818a87a5",
-        "bytes": 13272,
-        "width": 97,
+        "id": "5b0cbdc7ef0a1fed9383ab8f",
+        "sha256": "5b0cbdc7ef0a1fed9383ab8f3816183d8d4025ff59dcacb65584a3b1dccfe05a",
+        "bytes": 18346,
+        "width": 104,
         "height": 128
       },
       {
-        "id": "66dfd34320529fff14b2ff3a",
-        "sha256": "66dfd34320529fff14b2ff3a513d4cf20902639ab1165b72c8644ce04f5a4691",
-        "bytes": 3668,
-        "width": 56,
+        "id": "b08a3fc020f913e65d41701c",
+        "sha256": "b08a3fc020f913e65d41701c3c02b6871e179c5ad59879d5be3b41d11bbea48e",
+        "bytes": 7408,
+        "width": 53,
         "height": 128
       }
     ],
-    "layoutHash": "e7b7947f9efec34c1bb7bf41b465117735bacfbaa6f1e24185e2735bf5c05a98"
+    "layoutHash": "911731661037d651844acc302f24f4d48c1a59432a4c567a3ba1a4fab13d951e"
   },
   "/world-assets/decor-desk-fan/graphite.png": {
     "group": "world",
-    "sourceHash": "bb97b1fdd9677630e03129e34d359edbc903d31a2a1de06e4a035eff0b4d61b1",
-    "recipe": "905782482ed58b1ef18fce4a96d6e87b07174a3c34ec75d5ee6cfe8848596e9a",
-    "originalBytes": 18132,
+    "sourceHash": "34f2a4f8d7db88f2790f32bcdbc21924cd71eca5e2dc78db7f72dbe1d7b79889",
+    "recipe": "7854a962f84729f733cecd69c2b8620317be4bfee1f811f5c99eb719fefe68d6",
+    "originalBytes": 27388,
     "image": {
-      "id": "f0e078ee0f942e201c4a367c",
-      "sha256": "f0e078ee0f942e201c4a367cd14a3c3164124623babb231656c45684441a4f36",
-      "bytes": 9372,
-      "width": 600,
-      "height": 250
+      "id": "dc9b6d4f9924ebb76680ed03",
+      "sha256": "dc9b6d4f9924ebb76680ed039a0c7535adb8810531b14fd30aaf7c971566b120",
+      "bytes": 16128,
+      "width": 608,
+      "height": 232
     },
     "previews": [
       {
-        "id": "995a795f2d9d3eeab533ea2a",
-        "sha256": "995a795f2d9d3eeab533ea2a6648355cfadb874fa0369b7e2a95aa5162de4035",
-        "bytes": 11450,
-        "width": 87,
+        "id": "54e2bb292bc9385d06da6578",
+        "sha256": "54e2bb292bc9385d06da657859c55e5b04432bf1be0a32cac9135656d0a531de",
+        "bytes": 14542,
+        "width": 89,
         "height": 128
       },
       {
-        "id": "4670b51d95f15b436816f383",
-        "sha256": "4670b51d95f15b436816f383e9f4d69004c5e435a0ff062aec9d5f1207f770d1",
-        "bytes": 3328,
-        "width": 56,
+        "id": "b147087f1f3d890892a5bdd2",
+        "sha256": "b147087f1f3d890892a5bdd2b0f241059785c9e04791965917d5f0b21c37ba9b",
+        "bytes": 6000,
+        "width": 53,
         "height": 128
       },
       {
-        "id": "cab952d31db0d340fd36b29d",
-        "sha256": "cab952d31db0d340fd36b29d9123800e05c52dd08df3b21952bf040747aaf3bc",
-        "bytes": 11062,
-        "width": 97,
+        "id": "43c62c9c6d530c1b21b48ae3",
+        "sha256": "43c62c9c6d530c1b21b48ae396fb93b901572941ade5ad8012aae8d2b4a4e9f0",
+        "bytes": 15020,
+        "width": 104,
         "height": 128
       },
       {
-        "id": "22bb3c241e2b2cf8d10b5bac",
-        "sha256": "22bb3c241e2b2cf8d10b5bac086248130bdb9dd6919789509a33122a82722322",
-        "bytes": 3212,
-        "width": 56,
+        "id": "df319cecd5c524d1a18a6f3f",
+        "sha256": "df319cecd5c524d1a18a6f3fa28027f29bf71240f74f6e1feff8bc210f97dccd",
+        "bytes": 6124,
+        "width": 53,
         "height": 128
       }
     ],
-    "layoutHash": "e7b7947f9efec34c1bb7bf41b465117735bacfbaa6f1e24185e2735bf5c05a98"
+    "layoutHash": "911731661037d651844acc302f24f4d48c1a59432a4c567a3ba1a4fab13d951e"
   },
   "/world-assets/decor-desk-fan/ivory.png": {
     "group": "world",
-    "sourceHash": "da2b8ed988249e977e89988b841dbe5f840d1bb63b9b472f98827dd5038137f0",
-    "recipe": "905782482ed58b1ef18fce4a96d6e87b07174a3c34ec75d5ee6cfe8848596e9a",
-    "originalBytes": 18195,
+    "sourceHash": "9d3ac0980062a5034af5f2954941f9d99e201a0453759ced134cd4324483f63e",
+    "recipe": "7854a962f84729f733cecd69c2b8620317be4bfee1f811f5c99eb719fefe68d6",
+    "originalBytes": 27327,
     "image": {
-      "id": "f098bea19eb7e2a1153d17d0",
-      "sha256": "f098bea19eb7e2a1153d17d0509d6a743fa9f4e5c247073414610b7c96228179",
-      "bytes": 9422,
-      "width": 600,
-      "height": 250
+      "id": "49cce8d22d31060eeb6c5b9e",
+      "sha256": "49cce8d22d31060eeb6c5b9e0757317ae577b7e9d1251518733e94f8e02279e3",
+      "bytes": 16182,
+      "width": 608,
+      "height": 232
     },
     "previews": [
       {
-        "id": "9497c9c5d3b7bc6c5fc97f5e",
-        "sha256": "9497c9c5d3b7bc6c5fc97f5e2769ccf7bef1aaac1f83030096685e1c4a16422f",
-        "bytes": 13104,
-        "width": 87,
+        "id": "62f5da5173477f5fae48a394",
+        "sha256": "62f5da5173477f5fae48a394e19cc4ac544acf1b31bf0f61d33e1e49e2af33c1",
+        "bytes": 16682,
+        "width": 89,
         "height": 128
       },
       {
-        "id": "a9aeacade2e60f39461a2103",
-        "sha256": "a9aeacade2e60f39461a210358ba34829cfefdaa61b3fa1bba8398994ec3a9e7",
-        "bytes": 3670,
-        "width": 56,
+        "id": "c7fa9bf689dff5f3c5580d31",
+        "sha256": "c7fa9bf689dff5f3c5580d3155bdce3810ccd3f2a044ebbdee0f946c67211ad2",
+        "bytes": 7162,
+        "width": 53,
         "height": 128
       },
       {
-        "id": "e388941839868a373143e09a",
-        "sha256": "e388941839868a373143e09a4cecad572a66815c83d72529ae36062c929ca796",
-        "bytes": 13098,
-        "width": 97,
+        "id": "91f1a57b63e72f706c74d15e",
+        "sha256": "91f1a57b63e72f706c74d15e87f27bc1112983e112bd072233a30d18eeca2917",
+        "bytes": 17530,
+        "width": 104,
         "height": 128
       },
       {
-        "id": "b6ab5a037be30982678f9bd4",
-        "sha256": "b6ab5a037be30982678f9bd413c8cbb771dbfacf69025603c00ebca2af995816",
-        "bytes": 3616,
-        "width": 56,
+        "id": "45837a8e96cc9525fa07475d",
+        "sha256": "45837a8e96cc9525fa07475d432872c3a6eeb4540086b30ea38825ab484240d4",
+        "bytes": 7260,
+        "width": 53,
         "height": 128
       }
     ],
-    "layoutHash": "e7b7947f9efec34c1bb7bf41b465117735bacfbaa6f1e24185e2735bf5c05a98"
+    "layoutHash": "911731661037d651844acc302f24f4d48c1a59432a4c567a3ba1a4fab13d951e"
   },
   "/world-assets/decor-desk-plant/autumn.png": {
     "group": "world",
@@ -17535,399 +17535,399 @@
   },
   "/world-assets/decor-globe/coral.png": {
     "group": "world",
-    "sourceHash": "bf762b386dee93a16a4b642d9d5af4e29517fdb67e2c5a9b6d771f0f509013e8",
-    "recipe": "92f8d0a26427a1c0a45cfdc8863e966f6d93fc025111d5bee4a4d5bb11a8b8fd",
-    "originalBytes": 18595,
+    "sourceHash": "515af55bf8e8702065094ad1ac5d2daec9869b0deb2abcaebb2cf1bf75d9400c",
+    "recipe": "dee2ac6cc596d1e4015cf0b2875394c18f4ef2626fe3afc392081ad39868c7f6",
+    "originalBytes": 23574,
     "image": {
-      "id": "076941bef3a82c5e51da9d52",
-      "sha256": "076941bef3a82c5e51da9d52562191219ad741dc27e9d6b92ab1633ac7ed400a",
-      "bytes": 10868,
+      "id": "8e5724ece31aa82f0f31b794",
+      "sha256": "8e5724ece31aa82f0f31b794d05a3d35e8058a5fcae61b6e730d366e030f19cb",
+      "bytes": 14618,
       "width": 640,
-      "height": 247
+      "height": 229
     },
     "previews": [
       {
-        "id": "6188409b7c08fa3826d8819a",
-        "sha256": "6188409b7c08fa3826d8819a5939963e74118e7bc0ba323c7c88160480eefdfb",
-        "bytes": 9878,
-        "width": 87,
+        "id": "760abd6cb88f2685791100e1",
+        "sha256": "760abd6cb88f2685791100e1f5d636e8772244ba43295663f014f5a6620c0b8c",
+        "bytes": 11618,
+        "width": 94,
         "height": 128
       },
       {
-        "id": "109d343b21194aca8385c00e",
-        "sha256": "109d343b21194aca8385c00e3c1a838d68cfe2d3d3f8021789a7a40007c2b28a",
-        "bytes": 8370,
-        "width": 74,
+        "id": "dd3b11bbf95f4c2e5967ffd9",
+        "sha256": "dd3b11bbf95f4c2e5967ffd9e51edea5bc4e3164ba28a01e87315fe2672bc9a0",
+        "bytes": 9480,
+        "width": 77,
         "height": 128
       },
       {
-        "id": "cd1c129be2266ecc50ac3262",
-        "sha256": "cd1c129be2266ecc50ac32625ac60f10b046b51a23afe899e85d48f855a3d516",
-        "bytes": 9660,
-        "width": 85,
+        "id": "42f440c3ac894619097537f7",
+        "sha256": "42f440c3ac894619097537f7890762e605f30e839bfa8f0de0eeae1e509800b9",
+        "bytes": 10964,
+        "width": 94,
         "height": 128
       },
       {
-        "id": "ca39bb782784ef0af0272774",
-        "sha256": "ca39bb782784ef0af02727743173ab51b9f622f968c7dbce2f613a440ffd2c04",
-        "bytes": 8528,
-        "width": 74,
+        "id": "fd74a74142dfe8de05894d88",
+        "sha256": "fd74a74142dfe8de05894d88a9e84b73a1412e77f2dd2f97e6d0c6617b16fdd4",
+        "bytes": 9146,
+        "width": 77,
         "height": 128
       }
     ],
-    "layoutHash": "c3b4935a02d9bb5262392c1fd4ea153e69610486c6b5163d2a2d54719978634f"
+    "layoutHash": "dea82944bf037ac21acce38f2e75930dc6f75f36936f7813b9e3e6c5940f3834"
   },
   "/world-assets/decor-globe/graphite.png": {
     "group": "world",
-    "sourceHash": "eff5a588ae12518556019b88794c74c7a22678c80ff17f2bde81eaabecd81d26",
-    "recipe": "92f8d0a26427a1c0a45cfdc8863e966f6d93fc025111d5bee4a4d5bb11a8b8fd",
-    "originalBytes": 18610,
+    "sourceHash": "91a3421a5960ea5b9bb808bb9ef4913404a4a83169bc97a7af2ade93348b32c1",
+    "recipe": "dee2ac6cc596d1e4015cf0b2875394c18f4ef2626fe3afc392081ad39868c7f6",
+    "originalBytes": 23596,
     "image": {
-      "id": "d723c748eb3e93a03e0e40b0",
-      "sha256": "d723c748eb3e93a03e0e40b02ddb33feabdef7986e42a9d86909c940efcc1cd3",
-      "bytes": 10950,
+      "id": "c3b7a5413035d473fd6edbe7",
+      "sha256": "c3b7a5413035d473fd6edbe7e11611223b8bafa5d7cee071a101f50b3cff5163",
+      "bytes": 14630,
       "width": 640,
-      "height": 247
+      "height": 229
     },
     "previews": [
       {
-        "id": "928e3ab21e37960a8c3ddc3f",
-        "sha256": "928e3ab21e37960a8c3ddc3f1dbaef04b7f2c5f166f0e4c0c53ab2abd1fdc852",
-        "bytes": 9354,
-        "width": 87,
+        "id": "2d24575009f687481b39c88a",
+        "sha256": "2d24575009f687481b39c88aa4dfa6fe458f3a6114054f88b8fee309574a4ebc",
+        "bytes": 11266,
+        "width": 94,
         "height": 128
       },
       {
-        "id": "05638c1c0a9c03b691f9a38a",
-        "sha256": "05638c1c0a9c03b691f9a38af1796493d98c7218841e370e64f3b40bf6d62a7f",
-        "bytes": 7450,
-        "width": 74,
+        "id": "8f6fe4e1f9b0f7a2fd4022f3",
+        "sha256": "8f6fe4e1f9b0f7a2fd4022f38273342550fa2cb9b4555969d38f76db6edc3283",
+        "bytes": 8906,
+        "width": 77,
         "height": 128
       },
       {
-        "id": "48837fa76ca4d49cd39b9eb6",
-        "sha256": "48837fa76ca4d49cd39b9eb69f0adacc00bf64b7594c05a81e3f523bbf05e608",
-        "bytes": 9086,
-        "width": 85,
+        "id": "9a766a68d3b782dfb9ff01a1",
+        "sha256": "9a766a68d3b782dfb9ff01a12897e09fa0d4fff9276fcc48a1edf2949e45eb52",
+        "bytes": 10596,
+        "width": 94,
         "height": 128
       },
       {
-        "id": "f880521e5a914c85843458b9",
-        "sha256": "f880521e5a914c85843458b993f52aa662128c7213dd76c7ccc1a35f96cda0bb",
-        "bytes": 7614,
-        "width": 74,
+        "id": "3a6f7154d7530463be4afd91",
+        "sha256": "3a6f7154d7530463be4afd91e1f0cb400b5fc1d1311ec812430f968435319df5",
+        "bytes": 9380,
+        "width": 77,
         "height": 128
       }
     ],
-    "layoutHash": "c3b4935a02d9bb5262392c1fd4ea153e69610486c6b5163d2a2d54719978634f"
+    "layoutHash": "dea82944bf037ac21acce38f2e75930dc6f75f36936f7813b9e3e6c5940f3834"
   },
   "/world-assets/decor-globe/ivory.png": {
     "group": "world",
-    "sourceHash": "3fb85a7355d73c43b691843dc570976e6a08f09092ddd141a85f0b70d6ab06ae",
-    "recipe": "92f8d0a26427a1c0a45cfdc8863e966f6d93fc025111d5bee4a4d5bb11a8b8fd",
-    "originalBytes": 18643,
+    "sourceHash": "81eb964eb4912708c9a5e103836345426e75bfe3ec20968d15c4d735c4e16853",
+    "recipe": "dee2ac6cc596d1e4015cf0b2875394c18f4ef2626fe3afc392081ad39868c7f6",
+    "originalBytes": 23583,
     "image": {
-      "id": "1a2537f45817938da4723ee7",
-      "sha256": "1a2537f45817938da4723ee76554f345d6844ce41ac8ce625563a1106052fde9",
-      "bytes": 10996,
+      "id": "3917aa2cd79ad36a62972e6a",
+      "sha256": "3917aa2cd79ad36a62972e6a0ae37532701b3c5ff711513097a1a2d2c6912e5d",
+      "bytes": 14644,
       "width": 640,
-      "height": 247
+      "height": 229
     },
     "previews": [
       {
-        "id": "8965cd19363ee3ab0275d61a",
-        "sha256": "8965cd19363ee3ab0275d61abcfcefd5773636af26eafc2a7147e9d65ca0b368",
-        "bytes": 9844,
-        "width": 87,
+        "id": "405563c15097ae86192a63ca",
+        "sha256": "405563c15097ae86192a63caaecbd185cfda0fe419354e79326bdeb54e386966",
+        "bytes": 11410,
+        "width": 94,
         "height": 128
       },
       {
-        "id": "d785c8c0db4e36a0b3a36382",
-        "sha256": "d785c8c0db4e36a0b3a363824b363a0e5ac1ab8d35ec002a18a34c610ecd5819",
-        "bytes": 8226,
-        "width": 74,
+        "id": "48655c8bffca498809c72a5f",
+        "sha256": "48655c8bffca498809c72a5f75731becf068de7dbe6b3030622a0075ae391037",
+        "bytes": 9172,
+        "width": 77,
         "height": 128
       },
       {
-        "id": "c80930eb740f5d2d9a2d653f",
-        "sha256": "c80930eb740f5d2d9a2d653f1476914f0d7ba3f1a23646f5ba39ab6058de1582",
-        "bytes": 9672,
-        "width": 85,
+        "id": "9290298824f18d5fa4904bbb",
+        "sha256": "9290298824f18d5fa4904bbb65c56da6f415f308b49a93c688d1247e40daa2d2",
+        "bytes": 10730,
+        "width": 94,
         "height": 128
       },
       {
-        "id": "4fb336cdfa14ba7783ac61f8",
-        "sha256": "4fb336cdfa14ba7783ac61f8fbd5200b42b5794784e471967ba35362ffa78017",
-        "bytes": 8352,
-        "width": 74,
+        "id": "0eee564f3d3f08e636ac2ba5",
+        "sha256": "0eee564f3d3f08e636ac2ba52d9a2c9318854f8743bb3965ee0a45686c923039",
+        "bytes": 9006,
+        "width": 77,
         "height": 128
       }
     ],
-    "layoutHash": "c3b4935a02d9bb5262392c1fd4ea153e69610486c6b5163d2a2d54719978634f"
+    "layoutHash": "dea82944bf037ac21acce38f2e75930dc6f75f36936f7813b9e3e6c5940f3834"
   },
   "/world-assets/decor-headphones/coral.png": {
     "group": "world",
-    "sourceHash": "3798f4fe4ba1a56a8dcebfb56b0304f64a6ce23829ed1de8e609d65689d2ec28",
-    "recipe": "8cd04eb4195b212c12f1e54dd02770abc5decbbf817ab6da2e0ed404f60a2161",
-    "originalBytes": 7402,
+    "sourceHash": "2e412d302185920a82f8bb22f2052287ff8185bc637618cc88277f024baa281c",
+    "recipe": "fd5aaff8f456b76437441737b14258bec2b723a118e7d2b646da30c40e24d9ae",
+    "originalBytes": 8029,
     "image": {
-      "id": "98b58134147be6d5463ee8dc",
-      "sha256": "98b58134147be6d5463ee8dcaeb23e0686c4f0511a977ca0589d36a7a3a20f19",
-      "bytes": 3402,
-      "width": 424,
-      "height": 182
+      "id": "e9856e8a49ea0026de81fdac",
+      "sha256": "e9856e8a49ea0026de81fdac73935c55b2058413c5577cab34150d29b9299345",
+      "bytes": 4312,
+      "width": 392,
+      "height": 169
     },
     "previews": [
       {
-        "id": "a87157c794637f105e9fc8c7",
-        "sha256": "a87157c794637f105e9fc8c799f98d157f115d79fcbe2c04accc9516ec7567fd",
-        "bytes": 6424,
-        "width": 82,
+        "id": "5f20ab1ea6705aa86bdaa4c3",
+        "sha256": "5f20ab1ea6705aa86bdaa4c32b0351ab5ec474225f8b11ebd5c3e655e3feddee",
+        "bytes": 10676,
+        "width": 81,
         "height": 128
       },
       {
-        "id": "b43faa9813b93c6e4764beac",
-        "sha256": "b43faa9813b93c6e4764beacc8d1de05859bf4a01d29f83e50f0d466b01d4944",
-        "bytes": 3874,
-        "width": 68,
+        "id": "306f2561d99c657684d2888d",
+        "sha256": "306f2561d99c657684d2888dcd9d12312d8c26f503affa279320a50a12caa75b",
+        "bytes": 6948,
+        "width": 64,
         "height": 128
       },
       {
-        "id": "a87157c794637f105e9fc8c7",
-        "sha256": "a87157c794637f105e9fc8c799f98d157f115d79fcbe2c04accc9516ec7567fd",
-        "bytes": 6424,
-        "width": 82,
+        "id": "5f20ab1ea6705aa86bdaa4c3",
+        "sha256": "5f20ab1ea6705aa86bdaa4c32b0351ab5ec474225f8b11ebd5c3e655e3feddee",
+        "bytes": 10676,
+        "width": 81,
         "height": 128
       },
       {
-        "id": "b43faa9813b93c6e4764beac",
-        "sha256": "b43faa9813b93c6e4764beacc8d1de05859bf4a01d29f83e50f0d466b01d4944",
-        "bytes": 3874,
-        "width": 68,
+        "id": "306f2561d99c657684d2888d",
+        "sha256": "306f2561d99c657684d2888dcd9d12312d8c26f503affa279320a50a12caa75b",
+        "bytes": 6948,
+        "width": 64,
         "height": 128
       }
     ],
-    "layoutHash": "61091f1cabc2fe06b24c459b514d0d40b7a7e7f5269255f6b836e2367dd739aa"
+    "layoutHash": "6c9145125ba0291cdf1f7a8996fca9e9873c91023990510e7f5b48492e7c47e6"
   },
   "/world-assets/decor-headphones/graphite.png": {
     "group": "world",
-    "sourceHash": "bc38c64be96d4759095b077893c44074d1ddf7b1f2d8f3c451030d84d321e5be",
-    "recipe": "8cd04eb4195b212c12f1e54dd02770abc5decbbf817ab6da2e0ed404f60a2161",
-    "originalBytes": 7376,
+    "sourceHash": "98973612809cc7add24be179407e9d6de2dc7c2e43806076d34e57642079fe92",
+    "recipe": "fd5aaff8f456b76437441737b14258bec2b723a118e7d2b646da30c40e24d9ae",
+    "originalBytes": 7992,
     "image": {
-      "id": "a69709c37294f18d69b40700",
-      "sha256": "a69709c37294f18d69b407000b4657249da6329a22b29cf75465745c0b4dd91a",
-      "bytes": 3348,
-      "width": 424,
-      "height": 182
+      "id": "ccac556a608bd7de4d83db32",
+      "sha256": "ccac556a608bd7de4d83db324c0114dad5cfdceab58eb4a76080f5b8b564bf3b",
+      "bytes": 4284,
+      "width": 392,
+      "height": 169
     },
     "previews": [
       {
-        "id": "5b6944e3a97e5bc1b944e0d1",
-        "sha256": "5b6944e3a97e5bc1b944e0d1d02d35cc1232dddfb00539bb8373eaf2820dcfd1",
-        "bytes": 5252,
-        "width": 82,
+        "id": "6d078a91c3d3e7666c140d48",
+        "sha256": "6d078a91c3d3e7666c140d48030a03fbc6a5955928ed6bd9139f6923c7266851",
+        "bytes": 8762,
+        "width": 81,
         "height": 128
       },
       {
-        "id": "fa7086e7475837193d296525",
-        "sha256": "fa7086e7475837193d29652582691fc13ce90f9db2662d65511af686857288ea",
-        "bytes": 2926,
-        "width": 68,
+        "id": "5ad56ecba5c8dadc2cc77ae2",
+        "sha256": "5ad56ecba5c8dadc2cc77ae21f983f614e2da00ac2086bc209bcefa71db5c453",
+        "bytes": 5664,
+        "width": 64,
         "height": 128
       },
       {
-        "id": "5b6944e3a97e5bc1b944e0d1",
-        "sha256": "5b6944e3a97e5bc1b944e0d1d02d35cc1232dddfb00539bb8373eaf2820dcfd1",
-        "bytes": 5252,
-        "width": 82,
+        "id": "6d078a91c3d3e7666c140d48",
+        "sha256": "6d078a91c3d3e7666c140d48030a03fbc6a5955928ed6bd9139f6923c7266851",
+        "bytes": 8762,
+        "width": 81,
         "height": 128
       },
       {
-        "id": "fa7086e7475837193d296525",
-        "sha256": "fa7086e7475837193d29652582691fc13ce90f9db2662d65511af686857288ea",
-        "bytes": 2926,
-        "width": 68,
+        "id": "5ad56ecba5c8dadc2cc77ae2",
+        "sha256": "5ad56ecba5c8dadc2cc77ae21f983f614e2da00ac2086bc209bcefa71db5c453",
+        "bytes": 5664,
+        "width": 64,
         "height": 128
       }
     ],
-    "layoutHash": "61091f1cabc2fe06b24c459b514d0d40b7a7e7f5269255f6b836e2367dd739aa"
+    "layoutHash": "6c9145125ba0291cdf1f7a8996fca9e9873c91023990510e7f5b48492e7c47e6"
   },
   "/world-assets/decor-headphones/ivory.png": {
     "group": "world",
-    "sourceHash": "8d7c8f496c2dfd7747ec61cc65afe162a72dfe8936966297ff0e61d430a755da",
-    "recipe": "8cd04eb4195b212c12f1e54dd02770abc5decbbf817ab6da2e0ed404f60a2161",
-    "originalBytes": 7437,
+    "sourceHash": "cf74372131809546caad7f5125cd03d5efca7d4d67aafd7b86bdd881c1d46f78",
+    "recipe": "fd5aaff8f456b76437441737b14258bec2b723a118e7d2b646da30c40e24d9ae",
+    "originalBytes": 8072,
     "image": {
-      "id": "1f4998edd474420ba97eba02",
-      "sha256": "1f4998edd474420ba97eba02ba6f28e0e07cf962682081f2f6ddf3403aa0b057",
-      "bytes": 3394,
-      "width": 424,
-      "height": 182
+      "id": "58d3903b3ffa48d4dc46e1c1",
+      "sha256": "58d3903b3ffa48d4dc46e1c1f115ee5c31390f473ce7d0f89c5b8301e72e8992",
+      "bytes": 4324,
+      "width": 392,
+      "height": 169
     },
     "previews": [
       {
-        "id": "4a80b75a09254394643a6911",
-        "sha256": "4a80b75a09254394643a6911137ebd6afbb240b17f707c5916ed2a913da668e4",
-        "bytes": 6350,
-        "width": 82,
+        "id": "df0e5e4e39658432d4efb4ff",
+        "sha256": "df0e5e4e39658432d4efb4ff14ed40afcf5dd92012d498d184db2263017a1966",
+        "bytes": 10268,
+        "width": 81,
         "height": 128
       },
       {
-        "id": "5d75861117447ee5ee66c5f6",
-        "sha256": "5d75861117447ee5ee66c5f689794815b8a2e300965533dd319ad1d601a039e0",
-        "bytes": 3706,
-        "width": 68,
+        "id": "e6602db0d16d390ff915f95b",
+        "sha256": "e6602db0d16d390ff915f95be98d072f62521783bddbbaaa0dd896c2dd6aea40",
+        "bytes": 6662,
+        "width": 64,
         "height": 128
       },
       {
-        "id": "4a80b75a09254394643a6911",
-        "sha256": "4a80b75a09254394643a6911137ebd6afbb240b17f707c5916ed2a913da668e4",
-        "bytes": 6350,
-        "width": 82,
+        "id": "df0e5e4e39658432d4efb4ff",
+        "sha256": "df0e5e4e39658432d4efb4ff14ed40afcf5dd92012d498d184db2263017a1966",
+        "bytes": 10268,
+        "width": 81,
         "height": 128
       },
       {
-        "id": "5d75861117447ee5ee66c5f6",
-        "sha256": "5d75861117447ee5ee66c5f689794815b8a2e300965533dd319ad1d601a039e0",
-        "bytes": 3706,
-        "width": 68,
+        "id": "e6602db0d16d390ff915f95b",
+        "sha256": "e6602db0d16d390ff915f95be98d072f62521783bddbbaaa0dd896c2dd6aea40",
+        "bytes": 6662,
+        "width": 64,
         "height": 128
       }
     ],
-    "layoutHash": "61091f1cabc2fe06b24c459b514d0d40b7a7e7f5269255f6b836e2367dd739aa"
+    "layoutHash": "6c9145125ba0291cdf1f7a8996fca9e9873c91023990510e7f5b48492e7c47e6"
   },
   "/world-assets/decor-hourglass/coral.png": {
     "group": "world",
-    "sourceHash": "f343a0695a3099bd81f954421ccf3687fd35ac40c919ecafe7174d4abeb8c073",
-    "recipe": "23405a16bcde8267dfce56fb7e394cd973e0721ac746a8dd16b02d7fcc37680c",
-    "originalBytes": 6803,
+    "sourceHash": "76913dcbbdf93622fb62d54140fc07bb98f6ce8c3981ecf36f9da0a1bac1ed36",
+    "recipe": "9bcb9e6a00de51ffc2b65409e58eb68488bd5c29db1b4795f51090b758b7aa51",
+    "originalBytes": 10760,
     "image": {
-      "id": "1664d4257cbb64196f95538c",
-      "sha256": "1664d4257cbb64196f95538c74cd4240d74fb5a784b1eb573581cf8405300b7c",
-      "bytes": 3278,
-      "width": 352,
-      "height": 193
+      "id": "72546af41ec14ba137cd6549",
+      "sha256": "72546af41ec14ba137cd6549279de63eb24be6336e4a3464bf09450c732ca44e",
+      "bytes": 5982,
+      "width": 344,
+      "height": 195
     },
     "previews": [
       {
-        "id": "b05f989c3bfe950e750d6279",
-        "sha256": "b05f989c3bfe950e750d62795c53ac7f08b0fc8564be432a6bdb7c2449ecc0be",
-        "bytes": 7830,
-        "width": 57,
+        "id": "3d5eaf2c9bd177e456133591",
+        "sha256": "3d5eaf2c9bd177e456133591f382b9907fe91910204551c4fff7809261716135",
+        "bytes": 12556,
+        "width": 55,
         "height": 128
       },
       {
-        "id": "a021cd3cf865c705bfb5575a",
-        "sha256": "a021cd3cf865c705bfb5575a35a020b687ca33dcf7c314b8898b398245e4590c",
-        "bytes": 7918,
-        "width": 57,
+        "id": "549d3b7f90ea7a5ff0cf665e",
+        "sha256": "549d3b7f90ea7a5ff0cf665e87e86c9951230089719af7a3ca43c20fda518254",
+        "bytes": 12998,
+        "width": 55,
         "height": 128
       },
       {
-        "id": "b05f989c3bfe950e750d6279",
-        "sha256": "b05f989c3bfe950e750d62795c53ac7f08b0fc8564be432a6bdb7c2449ecc0be",
-        "bytes": 7830,
-        "width": 57,
+        "id": "3d5eaf2c9bd177e456133591",
+        "sha256": "3d5eaf2c9bd177e456133591f382b9907fe91910204551c4fff7809261716135",
+        "bytes": 12556,
+        "width": 55,
         "height": 128
       },
       {
-        "id": "a021cd3cf865c705bfb5575a",
-        "sha256": "a021cd3cf865c705bfb5575a35a020b687ca33dcf7c314b8898b398245e4590c",
-        "bytes": 7918,
-        "width": 57,
+        "id": "549d3b7f90ea7a5ff0cf665e",
+        "sha256": "549d3b7f90ea7a5ff0cf665e87e86c9951230089719af7a3ca43c20fda518254",
+        "bytes": 12998,
+        "width": 55,
         "height": 128
       }
     ],
-    "layoutHash": "c0838a0f55be3e0b53468d3e66c45eb263b35f9eb42f5e2ce0c122ca4d6a1c56"
+    "layoutHash": "145a946ac76d0770a8cd40d7569fa8c2584feb85981da733c449ab5afd2f6910"
   },
   "/world-assets/decor-hourglass/graphite.png": {
     "group": "world",
-    "sourceHash": "7837c0153d064e12bab03b874682490011c8e7fd93c7fe50adf68da358d78392",
-    "recipe": "23405a16bcde8267dfce56fb7e394cd973e0721ac746a8dd16b02d7fcc37680c",
-    "originalBytes": 6782,
+    "sourceHash": "bc1d5ae00f67a822d787d034cde46a81c00c991ff47327f84c05ddd558585e3f",
+    "recipe": "9bcb9e6a00de51ffc2b65409e58eb68488bd5c29db1b4795f51090b758b7aa51",
+    "originalBytes": 10768,
     "image": {
-      "id": "4ee4a2ae3e51faef75595c29",
-      "sha256": "4ee4a2ae3e51faef75595c295ce0167ac02636b326e8bf12d8cb2b419124242a",
-      "bytes": 3242,
-      "width": 352,
-      "height": 193
+      "id": "000f066eb905b0d20a748091",
+      "sha256": "000f066eb905b0d20a748091eb1edff83206849700e29eccf03f19917b7d6de1",
+      "bytes": 5942,
+      "width": 344,
+      "height": 195
     },
     "previews": [
       {
-        "id": "5271668221a4cd2bea284eca",
-        "sha256": "5271668221a4cd2bea284eca59bed06b77e621cc947f1796c3cc3d73bcda3467",
-        "bytes": 6698,
-        "width": 57,
+        "id": "bff14ebbaf51b848f18177f6",
+        "sha256": "bff14ebbaf51b848f18177f685e27bd771c668d3271e061577b6924d7e2dfabb",
+        "bytes": 11444,
+        "width": 55,
         "height": 128
       },
       {
-        "id": "5f59121bcb4d29a69143279d",
-        "sha256": "5f59121bcb4d29a69143279d7ea4f550dd02d51a41bccf39748cf0dd4c3cb78c",
-        "bytes": 6750,
-        "width": 57,
+        "id": "2d4d80f7ad1f7a6aad89e7a2",
+        "sha256": "2d4d80f7ad1f7a6aad89e7a2e8d38ec9a7578cc995908fd95cf9d60d70165284",
+        "bytes": 11790,
+        "width": 55,
         "height": 128
       },
       {
-        "id": "5271668221a4cd2bea284eca",
-        "sha256": "5271668221a4cd2bea284eca59bed06b77e621cc947f1796c3cc3d73bcda3467",
-        "bytes": 6698,
-        "width": 57,
+        "id": "bff14ebbaf51b848f18177f6",
+        "sha256": "bff14ebbaf51b848f18177f685e27bd771c668d3271e061577b6924d7e2dfabb",
+        "bytes": 11444,
+        "width": 55,
         "height": 128
       },
       {
-        "id": "5f59121bcb4d29a69143279d",
-        "sha256": "5f59121bcb4d29a69143279d7ea4f550dd02d51a41bccf39748cf0dd4c3cb78c",
-        "bytes": 6750,
-        "width": 57,
+        "id": "2d4d80f7ad1f7a6aad89e7a2",
+        "sha256": "2d4d80f7ad1f7a6aad89e7a2e8d38ec9a7578cc995908fd95cf9d60d70165284",
+        "bytes": 11790,
+        "width": 55,
         "height": 128
       }
     ],
-    "layoutHash": "c0838a0f55be3e0b53468d3e66c45eb263b35f9eb42f5e2ce0c122ca4d6a1c56"
+    "layoutHash": "145a946ac76d0770a8cd40d7569fa8c2584feb85981da733c449ab5afd2f6910"
   },
   "/world-assets/decor-hourglass/ivory.png": {
     "group": "world",
-    "sourceHash": "95cb3336a58f624c054f9e1ff8ae162b2f687e59773e68174fa0002d7d911708",
-    "recipe": "23405a16bcde8267dfce56fb7e394cd973e0721ac746a8dd16b02d7fcc37680c",
-    "originalBytes": 6803,
+    "sourceHash": "2dcd62e866f8c9b21d5264e655882c02a6c3df6d4a95640115b188abc39928fe",
+    "recipe": "9bcb9e6a00de51ffc2b65409e58eb68488bd5c29db1b4795f51090b758b7aa51",
+    "originalBytes": 10754,
     "image": {
-      "id": "ee930d7b054e225904b44d08",
-      "sha256": "ee930d7b054e225904b44d080d484f2d4a54d56da6a4e7f3eb06a08a2916fdb3",
-      "bytes": 3272,
-      "width": 352,
-      "height": 193
+      "id": "6d47fbee238141c0491986dc",
+      "sha256": "6d47fbee238141c0491986dc93bf2953ea0b39408195e08500ca0dfb6f37f66b",
+      "bytes": 5974,
+      "width": 344,
+      "height": 195
     },
     "previews": [
       {
-        "id": "462bbe140cca139c74d728be",
-        "sha256": "462bbe140cca139c74d728be5b8c119a53a50a7f34a2f18135dda46a6fea29f0",
-        "bytes": 7618,
-        "width": 57,
+        "id": "f47743e005ee727e39897551",
+        "sha256": "f47743e005ee727e39897551f46daa4b2d3f4ae713ad297ace02668a3c4a6bae",
+        "bytes": 11782,
+        "width": 55,
         "height": 128
       },
       {
-        "id": "a55e2130a8bd8899774b1715",
-        "sha256": "a55e2130a8bd8899774b17151b57827b5e379ad78d77b18b32e8e9bb2dec5e0d",
-        "bytes": 7690,
-        "width": 57,
+        "id": "45448241eb9f1890e6fd48f5",
+        "sha256": "45448241eb9f1890e6fd48f5d4653fa78287d10e9018baa1c5863f85add615b4",
+        "bytes": 12294,
+        "width": 55,
         "height": 128
       },
       {
-        "id": "462bbe140cca139c74d728be",
-        "sha256": "462bbe140cca139c74d728be5b8c119a53a50a7f34a2f18135dda46a6fea29f0",
-        "bytes": 7618,
-        "width": 57,
+        "id": "f47743e005ee727e39897551",
+        "sha256": "f47743e005ee727e39897551f46daa4b2d3f4ae713ad297ace02668a3c4a6bae",
+        "bytes": 11782,
+        "width": 55,
         "height": 128
       },
       {
-        "id": "a55e2130a8bd8899774b1715",
-        "sha256": "a55e2130a8bd8899774b17151b57827b5e379ad78d77b18b32e8e9bb2dec5e0d",
-        "bytes": 7690,
-        "width": 57,
+        "id": "45448241eb9f1890e6fd48f5",
+        "sha256": "45448241eb9f1890e6fd48f5d4653fa78287d10e9018baa1c5863f85add615b4",
+        "bytes": 12294,
+        "width": 55,
         "height": 128
       }
     ],
-    "layoutHash": "c0838a0f55be3e0b53468d3e66c45eb263b35f9eb42f5e2ce0c122ca4d6a1c56"
+    "layoutHash": "145a946ac76d0770a8cd40d7569fa8c2584feb85981da733c449ab5afd2f6910"
   },
   "/world-assets/decor-jellyfish-lamp/mint.png": {
     "group": "world",
@@ -18327,135 +18327,135 @@
   },
   "/world-assets/decor-laptop/coral.png": {
     "group": "world",
-    "sourceHash": "e592278dfb41840c354da8876b3b8233f26ed812767dae41d8446de6221a8282",
-    "recipe": "90cd27f507de4e854ce77c9b09f2bb2febadfc60e604abd0d3a41363ee277d77",
-    "originalBytes": 11506,
+    "sourceHash": "45bba7e91cb5af087f83d520d3277260b895933e68ce7ec2443dfc4cfb673227",
+    "recipe": "02f0cec768bc7e73ded46c757c8508c29ef3f4c4bac5b6d2d46549faa1cc938b",
+    "originalBytes": 18094,
     "image": {
-      "id": "a13eee62db2940e91816f319",
-      "sha256": "a13eee62db2940e91816f3190b59114b7c13e34380e445547293ae793d53d0d0",
-      "bytes": 4240,
-      "width": 792,
-      "height": 291
+      "id": "1189b5c3b793ffa46ea72ca8",
+      "sha256": "1189b5c3b793ffa46ea72ca809f8a12b1413e6fb0bc7fca967bb0476a77e4fba",
+      "bytes": 8686,
+      "width": 784,
+      "height": 277
     },
     "previews": [
       {
-        "id": "ea729abbd05a0fb6b715e50d",
-        "sha256": "ea729abbd05a0fb6b715e50d67480334a3ceb0c668b3784526561dbbf14729f2",
-        "bytes": 5338,
+        "id": "a15dbf4f800973f9fd11467a",
+        "sha256": "a15dbf4f800973f9fd11467a909554566ce8f8c51aae0a56a4dff4bc76d651af",
+        "bytes": 8210,
         "width": 128,
-        "height": 125
+        "height": 117
       },
       {
-        "id": "07a76fb3f9afd66ad7fd2e52",
-        "sha256": "07a76fb3f9afd66ad7fd2e52ed2621d1536a442de48206788a817d76518abca4",
-        "bytes": 4084,
-        "width": 44,
+        "id": "d58cb598b7f855ed5fa2ddf1",
+        "sha256": "d58cb598b7f855ed5fa2ddf15fa88d00e9d9a2b501a6bfe8f73b2ee5f3087f5a",
+        "bytes": 7404,
+        "width": 45,
         "height": 128
       },
       {
-        "id": "bb319bb06a8df4f62588330d",
-        "sha256": "bb319bb06a8df4f62588330d16deaddb72547f48ac84c1b56f92dbcb8449ade1",
-        "bytes": 3050,
+        "id": "757c73b46a612322c08bc360",
+        "sha256": "757c73b46a612322c08bc360d50e1337c903e649f781efc82fa88c2c25da57ab",
+        "bytes": 2332,
         "width": 128,
-        "height": 77
+        "height": 67
       },
       {
-        "id": "9a22731d3981d2afd7dcc6f1",
-        "sha256": "9a22731d3981d2afd7dcc6f19b88079755d14c7f843fbe567401d2214ecca840",
-        "bytes": 3924,
-        "width": 44,
+        "id": "8b3baaf325175ec4351d76f3",
+        "sha256": "8b3baaf325175ec4351d76f36c79b01b40a274ebfbfd9157368e712020ef342f",
+        "bytes": 7332,
+        "width": 45,
         "height": 128
       }
     ],
-    "layoutHash": "f55a8ba630b6ace11bb406fd5e821310bac42be6319d6b249c2cd101d4033e5f"
+    "layoutHash": "e73de3566b10d2e605622f5c18717a870ef9d05e3c6fd67dc3c77c17a9c0a7c1"
   },
   "/world-assets/decor-laptop/graphite.png": {
     "group": "world",
-    "sourceHash": "f5c163073cf365ec470e9cdcacc9b4bd76851c3f4a50f265990cd2d535e7a5de",
-    "recipe": "90cd27f507de4e854ce77c9b09f2bb2febadfc60e604abd0d3a41363ee277d77",
-    "originalBytes": 11504,
+    "sourceHash": "0c8c6845e26a61f185673f73e361d315251c09642ece9ab3d97ac2261d435087",
+    "recipe": "02f0cec768bc7e73ded46c757c8508c29ef3f4c4bac5b6d2d46549faa1cc938b",
+    "originalBytes": 18129,
     "image": {
-      "id": "d8e83566455a467f2a77709b",
-      "sha256": "d8e83566455a467f2a77709b6f7a5fc5e8ef720f306007388b625a2f99ca1ad7",
-      "bytes": 4112,
-      "width": 792,
-      "height": 291
+      "id": "3c8a199e569b81d652d0460c",
+      "sha256": "3c8a199e569b81d652d0460cfc6413c378add2480bf2ea6aa8e4abef1eb9dd2c",
+      "bytes": 8488,
+      "width": 784,
+      "height": 277
     },
     "previews": [
       {
-        "id": "509c8ed3273f557f53731962",
-        "sha256": "509c8ed3273f557f53731962f82804c54518ca519ee73498617e5645f1171992",
-        "bytes": 4672,
+        "id": "548d2144efc393f6194465c6",
+        "sha256": "548d2144efc393f6194465c65a4ba4592f80aabbd0a0965489747e066c70f8a9",
+        "bytes": 7634,
         "width": 128,
-        "height": 125
+        "height": 117
       },
       {
-        "id": "10b4fbebc032f40f7ad17f22",
-        "sha256": "10b4fbebc032f40f7ad17f2211cb939f105d02d943aebf6e70c54dd0a0931f5d",
-        "bytes": 3120,
-        "width": 44,
+        "id": "c01871489a2dc754f08f3c28",
+        "sha256": "c01871489a2dc754f08f3c28fd8b67c85f7a717df9ed870d993eb72e40ef4086",
+        "bytes": 6558,
+        "width": 45,
         "height": 128
       },
       {
-        "id": "51784e1cdca1e1116b001528",
-        "sha256": "51784e1cdca1e1116b001528d72f40c047d3ec7dc56eabfafb29f516f37b25c1",
-        "bytes": 2476,
+        "id": "1af48f8d499d76016d4d4d41",
+        "sha256": "1af48f8d499d76016d4d4d417b44c014930a154783c8f9f46f3fc11570c60f7a",
+        "bytes": 2028,
         "width": 128,
-        "height": 77
+        "height": 67
       },
       {
-        "id": "a130007ff289f7445cb109fd",
-        "sha256": "a130007ff289f7445cb109fd85f098cda75d2530234caca73d61738f9cc1e7ce",
-        "bytes": 3076,
-        "width": 44,
+        "id": "06dba2caf9b580116fc3c75d",
+        "sha256": "06dba2caf9b580116fc3c75dc3e15152efbcfe5b935fd75fca3dd675114b1412",
+        "bytes": 6442,
+        "width": 45,
         "height": 128
       }
     ],
-    "layoutHash": "f55a8ba630b6ace11bb406fd5e821310bac42be6319d6b249c2cd101d4033e5f"
+    "layoutHash": "e73de3566b10d2e605622f5c18717a870ef9d05e3c6fd67dc3c77c17a9c0a7c1"
   },
   "/world-assets/decor-laptop/ivory.png": {
     "group": "world",
-    "sourceHash": "61a4b77efda010744262f69ac8baf2a55ae4b485ee8b0351b72e4045fadddd4b",
-    "recipe": "90cd27f507de4e854ce77c9b09f2bb2febadfc60e604abd0d3a41363ee277d77",
-    "originalBytes": 11500,
+    "sourceHash": "ef42e41bf19b5697ab1922314e50a35e539655c2d24016f754f3126b412923fb",
+    "recipe": "02f0cec768bc7e73ded46c757c8508c29ef3f4c4bac5b6d2d46549faa1cc938b",
+    "originalBytes": 17970,
     "image": {
-      "id": "94eb893d5ade4b47755aa14e",
-      "sha256": "94eb893d5ade4b47755aa14edfa65ab44fef63a61650e360f72d875ead242423",
-      "bytes": 4136,
-      "width": 792,
-      "height": 291
+      "id": "f6cc35498f97fc7770f3d903",
+      "sha256": "f6cc35498f97fc7770f3d9038526f5ffdde1ff4bd4c3d92aa0c78e8233a4e1c0",
+      "bytes": 8520,
+      "width": 784,
+      "height": 277
     },
     "previews": [
       {
-        "id": "fa4d256bc6ae080ec1c940f0",
-        "sha256": "fa4d256bc6ae080ec1c940f088f66a81a862ef4b5c1d4b3580eb1c581e571d62",
-        "bytes": 5376,
+        "id": "edf88619a80fe7bccb7d502a",
+        "sha256": "edf88619a80fe7bccb7d502ab0603665f0b5179ccf7d27d02d1d8802d5cdfc99",
+        "bytes": 7748,
         "width": 128,
-        "height": 125
+        "height": 117
       },
       {
-        "id": "ce07033a910c4f7d9dc4c4b1",
-        "sha256": "ce07033a910c4f7d9dc4c4b1c244cb9bdd8f9d1cdb8ac8f8ae69dfd60db11062",
-        "bytes": 3886,
-        "width": 44,
+        "id": "52a3c39a56e0083f04d8aeef",
+        "sha256": "52a3c39a56e0083f04d8aeef28ad20009c35e4dce9542f1fe599580786c80f59",
+        "bytes": 6844,
+        "width": 45,
         "height": 128
       },
       {
-        "id": "b3456589e588db447d6d5e5c",
-        "sha256": "b3456589e588db447d6d5e5ce4a0c32bd1cea9cd24424249c9ad9a3d5a6a6415",
-        "bytes": 3016,
+        "id": "d7378913cf26b569af89d69c",
+        "sha256": "d7378913cf26b569af89d69cd8828256ca64272957dc503f789880c9beeb9937",
+        "bytes": 2230,
         "width": 128,
-        "height": 77
+        "height": 67
       },
       {
-        "id": "208f5beb612934e28bc97f05",
-        "sha256": "208f5beb612934e28bc97f0572e35db8304e8b9819074fcbf42daa724f803985",
-        "bytes": 3722,
-        "width": 44,
+        "id": "2335f944090a574aef81af04",
+        "sha256": "2335f944090a574aef81af047042fdc1dcce4211896e09ff98857c2d06b38a1b",
+        "bytes": 6702,
+        "width": 45,
         "height": 128
       }
     ],
-    "layoutHash": "f55a8ba630b6ace11bb406fd5e821310bac42be6319d6b249c2cd101d4033e5f"
+    "layoutHash": "e73de3566b10d2e605622f5c18717a870ef9d05e3c6fd67dc3c77c17a9c0a7c1"
   },
   "/world-assets/decor-maneki-cat/indigo.png": {
     "group": "world",
@@ -18591,399 +18591,399 @@
   },
   "/world-assets/decor-model-ship/coral.png": {
     "group": "world",
-    "sourceHash": "0806688247c2c2677be6fcac277191103376b4761572202bff94a86db7615c2c",
-    "recipe": "2760b3c7eeb67c2f83bf46e2d1694043194f4edba919d765b30d3097fa5e6969",
-    "originalBytes": 15433,
+    "sourceHash": "5940cec70b6e3ab6d8af4854a3f94181ff34b1b2c3a5f0d45270d209c4b3d5d1",
+    "recipe": "8c9e9264560e82b2fa5bc45c91b56e69ce9c39e41762e70cb633a09a80a64383",
+    "originalBytes": 28074,
     "image": {
-      "id": "87e8c1efa81fb8f44aee4770",
-      "sha256": "87e8c1efa81fb8f44aee4770d8a2dff1ae7d7c316036a531d29126f56a8735b6",
-      "bytes": 6422,
-      "width": 1144,
-      "height": 296
+      "id": "8df1ad50cda08649425be434",
+      "sha256": "8df1ad50cda08649425be434827045892b1f42b0e85f1f264982d389135cb4eb",
+      "bytes": 14362,
+      "width": 1120,
+      "height": 306
     },
     "previews": [
       {
-        "id": "36055ca3536bb795e94a357d",
-        "sha256": "36055ca3536bb795e94a357d9ca5f3a9cef620f01f506f3981641e76029af30e",
-        "bytes": 6514,
+        "id": "ef0a15aca1f7351032823dd8",
+        "sha256": "ef0a15aca1f7351032823dd8ba6ebbacdbc926ce20d650012dd50a1bd66c2851",
+        "bytes": 7158,
         "width": 128,
-        "height": 92
+        "height": 86
       },
       {
-        "id": "89a54fcfff856b2f55d66fcd",
-        "sha256": "89a54fcfff856b2f55d66fcd6469e4dadeb642ec3167612de74334595fae4291",
-        "bytes": 5374,
-        "width": 45,
+        "id": "f91678c52a9133205295fe35",
+        "sha256": "f91678c52a9133205295fe358a0866f386e3af404a07c6ecb68816604f243fec",
+        "bytes": 7378,
+        "width": 42,
         "height": 128
       },
       {
-        "id": "57501a46238135fa4cafa6d9",
-        "sha256": "57501a46238135fa4cafa6d9c677f4daa21b075fecc6725a2ce74e8cd5f66200",
-        "bytes": 6632,
+        "id": "03be903a98837ecbdc66d33c",
+        "sha256": "03be903a98837ecbdc66d33c9ba9a29a4884af37f2df21282c272fc58d4391e9",
+        "bytes": 6882,
         "width": 128,
-        "height": 92
+        "height": 86
       },
       {
-        "id": "89a54fcfff856b2f55d66fcd",
-        "sha256": "89a54fcfff856b2f55d66fcd6469e4dadeb642ec3167612de74334595fae4291",
-        "bytes": 5374,
-        "width": 45,
+        "id": "279f90e739f13f619e244359",
+        "sha256": "279f90e739f13f619e244359613ae6b4edf902cfb5822870bc4c9155539156f5",
+        "bytes": 6550,
+        "width": 41,
         "height": 128
       }
     ],
-    "layoutHash": "ce57ec69febc7301874b7e82ca15d4669f44f2a63c624a8f2b41072a93b5b0a9"
+    "layoutHash": "a7ca25e785b65ef5e958e837ccbb47705f22a819e9ce0f0fce03b22318bbd4f6"
   },
   "/world-assets/decor-model-ship/graphite.png": {
     "group": "world",
-    "sourceHash": "e683bbd541ad01ca3747a05ef25f6daf826804abea7b2684677ecd4c4dd55159",
-    "recipe": "2760b3c7eeb67c2f83bf46e2d1694043194f4edba919d765b30d3097fa5e6969",
-    "originalBytes": 15415,
+    "sourceHash": "e4067a485117b69ef2200c0e7f6ea39b500eb5b5913e3b80cf96945c591992b6",
+    "recipe": "8c9e9264560e82b2fa5bc45c91b56e69ce9c39e41762e70cb633a09a80a64383",
+    "originalBytes": 28126,
     "image": {
-      "id": "b233e2e3fc9a2280e4cb506e",
-      "sha256": "b233e2e3fc9a2280e4cb506edb56755040251f10723529d43034a3b968f99535",
-      "bytes": 6390,
-      "width": 1144,
-      "height": 296
+      "id": "6b2c4ea8c865b961d23706ff",
+      "sha256": "6b2c4ea8c865b961d23706ff66e2d3ad51f0568bc8992545eca89b910db65851",
+      "bytes": 14328,
+      "width": 1120,
+      "height": 306
     },
     "previews": [
       {
-        "id": "e8dbd04c7e82472d879c7228",
-        "sha256": "e8dbd04c7e82472d879c7228b7852ecfed6a08c6d941d8bb8275282bc26921de",
-        "bytes": 5894,
+        "id": "2bb0a88388391339263f3c9b",
+        "sha256": "2bb0a88388391339263f3c9b9ba385041845eeb4474f28a476d1bcb500302ff2",
+        "bytes": 6600,
         "width": 128,
-        "height": 92
+        "height": 86
       },
       {
-        "id": "d05217d88bf83bf54a35c71c",
-        "sha256": "d05217d88bf83bf54a35c71cb94e1dfb47f93af33340e7aa49ef8a4ad8ff7197",
-        "bytes": 4492,
-        "width": 45,
+        "id": "670bdf7e74047d752f7c6630",
+        "sha256": "670bdf7e74047d752f7c6630315539d604fef9cf5f3a8b88cf3471ddcd49a86a",
+        "bytes": 6522,
+        "width": 42,
         "height": 128
       },
       {
-        "id": "7768bda31240be4e514c84f1",
-        "sha256": "7768bda31240be4e514c84f1f960d712adc2c590fe654182e5ef0f5c8ae38e46",
-        "bytes": 6030,
+        "id": "617d26656d6da239a43253eb",
+        "sha256": "617d26656d6da239a43253ebfee4cc3299e0542f5b935c869aa06024bcfcdf6b",
+        "bytes": 6394,
         "width": 128,
-        "height": 92
+        "height": 86
       },
       {
-        "id": "d05217d88bf83bf54a35c71c",
-        "sha256": "d05217d88bf83bf54a35c71cb94e1dfb47f93af33340e7aa49ef8a4ad8ff7197",
-        "bytes": 4492,
-        "width": 45,
+        "id": "2b2fb22553fc733185fb21bf",
+        "sha256": "2b2fb22553fc733185fb21bfd23f733065961efb9fb5c5d3cae44a5c86dc3414",
+        "bytes": 5602,
+        "width": 41,
         "height": 128
       }
     ],
-    "layoutHash": "ce57ec69febc7301874b7e82ca15d4669f44f2a63c624a8f2b41072a93b5b0a9"
+    "layoutHash": "a7ca25e785b65ef5e958e837ccbb47705f22a819e9ce0f0fce03b22318bbd4f6"
   },
   "/world-assets/decor-model-ship/ivory.png": {
     "group": "world",
-    "sourceHash": "c30e3b980cba903d65fb0f3c6a95fb2d2658dd425dd1ccb582c1c468cba47689",
-    "recipe": "2760b3c7eeb67c2f83bf46e2d1694043194f4edba919d765b30d3097fa5e6969",
-    "originalBytes": 15433,
+    "sourceHash": "6618a1b7f05ef4564f81849372190fcef378a6d628b3d314e4f9ed1c8d84698b",
+    "recipe": "8c9e9264560e82b2fa5bc45c91b56e69ce9c39e41762e70cb633a09a80a64383",
+    "originalBytes": 28089,
     "image": {
-      "id": "cb8f813aed59f53705933fbc",
-      "sha256": "cb8f813aed59f53705933fbc4e5e369704fff3dd1720196babc9c0481b18c6d8",
-      "bytes": 6404,
-      "width": 1144,
-      "height": 296
+      "id": "4f981aa21e5a592320a198b8",
+      "sha256": "4f981aa21e5a592320a198b8611479f61b88ffc8e4bd57a69ed7bbd498cded57",
+      "bytes": 14304,
+      "width": 1120,
+      "height": 306
     },
     "previews": [
       {
-        "id": "e9f4afc88d5ac03f0b9b826f",
-        "sha256": "e9f4afc88d5ac03f0b9b826f75bf3de8b33b57c9e67732ea295fd49aea4b0d80",
-        "bytes": 6410,
+        "id": "78c7e52d94b166eea0ce981a",
+        "sha256": "78c7e52d94b166eea0ce981a2cad2c31994b5656e1487df40f69fe365107dfb1",
+        "bytes": 6972,
         "width": 128,
-        "height": 92
+        "height": 86
       },
       {
-        "id": "53a2c74688810b9f540be44c",
-        "sha256": "53a2c74688810b9f540be44c220e4c284db922ea76bef3b757c01d84a8efd8c3",
-        "bytes": 5468,
-        "width": 45,
+        "id": "9cfc131840e761eb07934b11",
+        "sha256": "9cfc131840e761eb07934b1150e648ad464e2d3c9b905bef7f87483a546b6753",
+        "bytes": 6950,
+        "width": 42,
         "height": 128
       },
       {
-        "id": "f22ba5c59a1197a9f0509478",
-        "sha256": "f22ba5c59a1197a9f0509478d54e80ceaa2b0bae3543b12bec48480eed6dd93a",
-        "bytes": 6488,
+        "id": "ba24c69da1a5c3b90763b325",
+        "sha256": "ba24c69da1a5c3b90763b3257e5e0911a7e4b69f5792b0bc1706d3c3218ee8db",
+        "bytes": 6702,
         "width": 128,
-        "height": 92
+        "height": 86
       },
       {
-        "id": "53a2c74688810b9f540be44c",
-        "sha256": "53a2c74688810b9f540be44c220e4c284db922ea76bef3b757c01d84a8efd8c3",
-        "bytes": 5468,
-        "width": 45,
+        "id": "743235c5fec7b84507971c22",
+        "sha256": "743235c5fec7b84507971c22e22135850a007e5bb451dbaccfbe8d0f99c54dd0",
+        "bytes": 6142,
+        "width": 41,
         "height": 128
       }
     ],
-    "layoutHash": "ce57ec69febc7301874b7e82ca15d4669f44f2a63c624a8f2b41072a93b5b0a9"
+    "layoutHash": "a7ca25e785b65ef5e958e837ccbb47705f22a819e9ce0f0fce03b22318bbd4f6"
   },
   "/world-assets/decor-monitor/coral.png": {
     "group": "world",
-    "sourceHash": "6e805d9ee26c7a1d123abe2f8d1fa4db5dd98856b18c568fefa4769c91f67825",
-    "recipe": "430a9c08d9d600b9de867408f9f7ee41081dbbdb6aebb008afa6cf55adb5eab8",
-    "originalBytes": 12701,
+    "sourceHash": "91ac6fc2002eac315ce30c3425de586d619613945f5b82f2dda5ee025fae2d64",
+    "recipe": "200cc222d8ead64d66f943ec89367bd1bbee5b8cb2082de748cc4cddb0b4f122",
+    "originalBytes": 21161,
     "image": {
-      "id": "3e7501927fadc9ccac9e0521",
-      "sha256": "3e7501927fadc9ccac9e05210b8ef53bebe77ea0ab2dc2ae234d7e38b546920e",
-      "bytes": 4652,
-      "width": 792,
-      "height": 329
+      "id": "7eefd42224317504a760fffb",
+      "sha256": "7eefd42224317504a760fffb8f87152831a7d20f6a08fb09ccd72e832449c488",
+      "bytes": 10646,
+      "width": 776,
+      "height": 312
     },
     "previews": [
       {
-        "id": "10bc9c1b07df2909a27143a4",
-        "sha256": "10bc9c1b07df2909a27143a4419292367e438f37241ee2bbb77f46b0295165df",
-        "bytes": 5142,
-        "width": 109,
+        "id": "cf7180b00b158c0177685656",
+        "sha256": "cf7180b00b158c0177685656fc0d6390c7a9db0b49521ac88cbcea01c39acfec",
+        "bytes": 10094,
+        "width": 117,
         "height": 128
       },
       {
-        "id": "4b35d7da96153b444439fc56",
-        "sha256": "4b35d7da96153b444439fc564d66b1ee9d1313ab6231c61021d1d7935cc1a402",
-        "bytes": 4156,
-        "width": 39,
+        "id": "93ca50cb4be1d8b6b4df8fe7",
+        "sha256": "93ca50cb4be1d8b6b4df8fe74c21ef8bf731052cdd7da262cdc19ae056abee34",
+        "bytes": 6668,
+        "width": 38,
         "height": 128
       },
       {
-        "id": "f4096f2514e5396eabcfbbfd",
-        "sha256": "f4096f2514e5396eabcfbbfd01b5cc10a97cdc300d90638371c3b0a0d62613f4",
-        "bytes": 4054,
+        "id": "078f36dd7e521ff555167110",
+        "sha256": "078f36dd7e521ff555167110a554b1206aa81188f50dad0aa5e01c7b61ed0c5f",
+        "bytes": 4450,
         "width": 128,
-        "height": 102
+        "height": 88
       },
       {
-        "id": "41e0561d2031e29c2041edbb",
-        "sha256": "41e0561d2031e29c2041edbbd891e2eddd9c6833f0805c021647f591f3fd887a",
-        "bytes": 4180,
-        "width": 39,
+        "id": "9d4a7bee03709d3185e5e527",
+        "sha256": "9d4a7bee03709d3185e5e527800099cb3917836f56d74f369d683b1a28f8c4b0",
+        "bytes": 6472,
+        "width": 38,
         "height": 128
       }
     ],
-    "layoutHash": "d1f1b250b12ea93eab39d5c5380d96919a15404c291e6e26dad68fba2f66910a"
+    "layoutHash": "9aece5362bc53a45fe8ed1ed051ad0cca5d121bc714425bafdc09a87d0f09b95"
   },
   "/world-assets/decor-monitor/graphite.png": {
     "group": "world",
-    "sourceHash": "55beaf96a9a36087e83cc19d825c7f7ba6148c78dc9322becd27f0b89c40e2b2",
-    "recipe": "430a9c08d9d600b9de867408f9f7ee41081dbbdb6aebb008afa6cf55adb5eab8",
-    "originalBytes": 12668,
+    "sourceHash": "f60e7f3e3588b0e4e1472b13c9e7ed2383a4ab1613a8e0f7e208a6ee3a9154ac",
+    "recipe": "200cc222d8ead64d66f943ec89367bd1bbee5b8cb2082de748cc4cddb0b4f122",
+    "originalBytes": 21126,
     "image": {
-      "id": "85ec6b402613ae642dd56525",
-      "sha256": "85ec6b402613ae642dd56525705f31032bf45fab90d5d4920375523ff9c2d046",
-      "bytes": 4488,
-      "width": 792,
-      "height": 329
+      "id": "ef52c7609d69d73e9a369a1f",
+      "sha256": "ef52c7609d69d73e9a369a1f1232d9b710ccfbecdc2515985fe778e91e11c819",
+      "bytes": 10510,
+      "width": 776,
+      "height": 312
     },
     "previews": [
       {
-        "id": "d9c9b4e7b64c8ec488b2cd49",
-        "sha256": "d9c9b4e7b64c8ec488b2cd49306b8e0ef67e0ac8b066a2a275a75d92faa3cc13",
-        "bytes": 4498,
-        "width": 109,
+        "id": "5d50744c9bdc3314f5302492",
+        "sha256": "5d50744c9bdc3314f5302492a39127a5074c6948f2dadd786c63f9e744429bfa",
+        "bytes": 9538,
+        "width": 117,
         "height": 128
       },
       {
-        "id": "c40d7825a458942c25250a04",
-        "sha256": "c40d7825a458942c25250a049208005d2c79b6cfa52e77bb545288c747dad789",
-        "bytes": 3446,
-        "width": 39,
+        "id": "a42615f6aa1152f39faef438",
+        "sha256": "a42615f6aa1152f39faef4382bdcd8838a1e63ff46150680f05d19c983e5e762",
+        "bytes": 6098,
+        "width": 38,
         "height": 128
       },
       {
-        "id": "a4290a490fe60174021407e3",
-        "sha256": "a4290a490fe60174021407e3ecbe31bd6b24c8caf19606b8e71799baa59a232d",
-        "bytes": 3204,
+        "id": "130d288b781ae27ce47d1f14",
+        "sha256": "130d288b781ae27ce47d1f14c6a6def567a060f44f4164dfe2bd65f0de6949a3",
+        "bytes": 3638,
         "width": 128,
-        "height": 102
+        "height": 88
       },
       {
-        "id": "27549c65115345b208456aa4",
-        "sha256": "27549c65115345b208456aa4d99b20ef52a4e59644fe272f40fd9573064ebca2",
-        "bytes": 3418,
-        "width": 39,
+        "id": "e8c52dd9b1e7defe1c02c1ca",
+        "sha256": "e8c52dd9b1e7defe1c02c1caf2ca13ab7ac82801dd816dd578122acd3a2fd232",
+        "bytes": 5870,
+        "width": 38,
         "height": 128
       }
     ],
-    "layoutHash": "d1f1b250b12ea93eab39d5c5380d96919a15404c291e6e26dad68fba2f66910a"
+    "layoutHash": "9aece5362bc53a45fe8ed1ed051ad0cca5d121bc714425bafdc09a87d0f09b95"
   },
   "/world-assets/decor-monitor/ivory.png": {
     "group": "world",
-    "sourceHash": "89d4d1a82dc259cd20fdeb29577604ea283b4f0366dd2e190feb9688783fee59",
-    "recipe": "430a9c08d9d600b9de867408f9f7ee41081dbbdb6aebb008afa6cf55adb5eab8",
-    "originalBytes": 12682,
+    "sourceHash": "3797584268610bd49d26567d51734ce9956831438c6d6632d597350e64d128f0",
+    "recipe": "200cc222d8ead64d66f943ec89367bd1bbee5b8cb2082de748cc4cddb0b4f122",
+    "originalBytes": 21003,
     "image": {
-      "id": "6f40168c3aa1cfc83d785db2",
-      "sha256": "6f40168c3aa1cfc83d785db2fec0c9667ad91f83292565b67dc10b1aca11e03b",
-      "bytes": 4506,
-      "width": 792,
-      "height": 329
+      "id": "b557996642d03a15d03afa7c",
+      "sha256": "b557996642d03a15d03afa7c2e0a1ee2f625ba3840f91a1fb69c6a1f4117742d",
+      "bytes": 10424,
+      "width": 776,
+      "height": 312
     },
     "previews": [
       {
-        "id": "fa9883362e0bdef49792ec31",
-        "sha256": "fa9883362e0bdef49792ec313eea90841f2b9aed7b5701fc83dd183e3713f9f1",
-        "bytes": 5130,
-        "width": 109,
+        "id": "6e78d156d283d8d1e77ff99b",
+        "sha256": "6e78d156d283d8d1e77ff99b838cded1fc070eea749317c52e12f0bda0377fa7",
+        "bytes": 9594,
+        "width": 117,
         "height": 128
       },
       {
-        "id": "94fa1938731fc643d99b5685",
-        "sha256": "94fa1938731fc643d99b568548ac342e29afb27921e11b75583f764d26dfdd96",
-        "bytes": 3876,
-        "width": 39,
+        "id": "59079601b67d6484d5fb2939",
+        "sha256": "59079601b67d6484d5fb2939cafa05e1ef69b00f98cf2e9fc73c930cb444636a",
+        "bytes": 6184,
+        "width": 38,
         "height": 128
       },
       {
-        "id": "5296349ed27b68943da07859",
-        "sha256": "5296349ed27b68943da07859d53121f213c9870f403548ae7372253856ed4188",
-        "bytes": 3936,
+        "id": "cfd97cfb8900706ef70519f4",
+        "sha256": "cfd97cfb8900706ef70519f4d8bf490dd61cfcb28f0b1db3c3670d7f22b2015e",
+        "bytes": 4774,
         "width": 128,
-        "height": 102
+        "height": 88
       },
       {
-        "id": "6d2473eb80aa9b3197326edf",
-        "sha256": "6d2473eb80aa9b3197326edf675281ba91e9c231e662351614a2ed5f58b2b39e",
-        "bytes": 3890,
-        "width": 39,
+        "id": "6d01786e3cdc237de2b5da1b",
+        "sha256": "6d01786e3cdc237de2b5da1b8ede602c505c5964169047484f751b83b3582dc7",
+        "bytes": 5956,
+        "width": 38,
         "height": 128
       }
     ],
-    "layoutHash": "d1f1b250b12ea93eab39d5c5380d96919a15404c291e6e26dad68fba2f66910a"
+    "layoutHash": "9aece5362bc53a45fe8ed1ed051ad0cca5d121bc714425bafdc09a87d0f09b95"
   },
   "/world-assets/decor-origami/coral.png": {
     "group": "world",
-    "sourceHash": "1365a34482112c0653840164f5326dbe7ff2e19f86d38437ec10fc1abd5edd7c",
-    "recipe": "9ef58028d649c0855f94e5251cfa1f1b04d7a8556b8442c1468a62370d8c99bd",
-    "originalBytes": 8827,
+    "sourceHash": "f6943f7b11145fdfdd8fa84cbc5058532f6cba906623c8fbd4e6bf51ec3d99bd",
+    "recipe": "40effd4686d9ecb854fea3a10cab7f19dd5d511a406b2ff83710ea2c59c2e687",
+    "originalBytes": 12759,
     "image": {
-      "id": "ff649757a35a4e2a276bee5f",
-      "sha256": "ff649757a35a4e2a276bee5f33c90901dc46d3f2db15bddc91ed9fad35374f84",
-      "bytes": 4576,
-      "width": 784,
-      "height": 213
+      "id": "276f1800f61a70751d499f94",
+      "sha256": "276f1800f61a70751d499f942b2883152af8126f8ad6dfbfa57e150a00f6f03b",
+      "bytes": 7028,
+      "width": 732,
+      "height": 187
     },
     "previews": [
       {
-        "id": "7d9e07eb5ecc0657a10711c1",
-        "sha256": "7d9e07eb5ecc0657a10711c10f9e67e5dc87dbf3abec52ccd91ea9f5c9639f3b",
-        "bytes": 5410,
-        "width": 128,
-        "height": 97
-      },
-      {
-        "id": "8cb56bcc0b53bfbc663d06ae",
-        "sha256": "8cb56bcc0b53bfbc663d06ae48447fb5b6044e4eaa6244741490588b3b5845df",
-        "bytes": 4666,
-        "width": 69,
+        "id": "8cf2b9849228824e76f5bc08",
+        "sha256": "8cf2b9849228824e76f5bc08aab0ef41608e3cf7da8f2d10bc73cf48b09644b0",
+        "bytes": 7838,
+        "width": 122,
         "height": 128
       },
       {
-        "id": "7fe3c7d99e41cc03948f0c4c",
-        "sha256": "7fe3c7d99e41cc03948f0c4c27bac2d3dabf89d39f89a5004378654539943c68",
-        "bytes": 4746,
+        "id": "73830fbc65e62127af552352",
+        "sha256": "73830fbc65e62127af552352920ae271cad1c004472d2dbe0b6c62fc161ad7fe",
+        "bytes": 8584,
         "width": 128,
-        "height": 103
+        "height": 125
       },
       {
-        "id": "c8fc8d1dc8d0b460d7287625",
-        "sha256": "c8fc8d1dc8d0b460d728762580b10667683434b5c9addee86cebe0c40ffb71dd",
-        "bytes": 5190,
-        "width": 69,
+        "id": "96b21c0f6e76919c9674b7a8",
+        "sha256": "96b21c0f6e76919c9674b7a8ac6edcfe8413e533fba42c5c6b2c1f15ff27d040",
+        "bytes": 7136,
+        "width": 124,
         "height": 128
+      },
+      {
+        "id": "0b5a991bc1e70642cb42dbbf",
+        "sha256": "0b5a991bc1e70642cb42dbbfcc68c25b0a1907e5611e1197ba3c05672462b5cd",
+        "bytes": 8322,
+        "width": 128,
+        "height": 127
       }
     ],
-    "layoutHash": "0e7f965a4656d89f0b6d41504dbea6d20f49755aa11695ae814379f741048db9"
+    "layoutHash": "8a0e17e782736202cb21fb86b7123ce5e95cac80c729db05b9f6332be02512a3"
   },
   "/world-assets/decor-origami/graphite.png": {
     "group": "world",
-    "sourceHash": "905d219a7711e7156d9db3e50124c59d74c929c97ffe2030b438fff2681e1f9d",
-    "recipe": "9ef58028d649c0855f94e5251cfa1f1b04d7a8556b8442c1468a62370d8c99bd",
-    "originalBytes": 8865,
+    "sourceHash": "633d09d76f568aff7a2ab45f3074dcf032a631081b437a55b0712bacd71d502b",
+    "recipe": "40effd4686d9ecb854fea3a10cab7f19dd5d511a406b2ff83710ea2c59c2e687",
+    "originalBytes": 12766,
     "image": {
-      "id": "b290de33d823e952f446ed71",
-      "sha256": "b290de33d823e952f446ed71176fef537d6f5f83844fe31dd28216ab426e8368",
-      "bytes": 4572,
-      "width": 784,
-      "height": 213
+      "id": "9b6ec084d5cf20159e509ac4",
+      "sha256": "9b6ec084d5cf20159e509ac485af08a405170137d64121d8fa8a5717e090b8d2",
+      "bytes": 7024,
+      "width": 732,
+      "height": 187
     },
     "previews": [
       {
-        "id": "f996c972be5f2bc8f1a8613d",
-        "sha256": "f996c972be5f2bc8f1a8613dd2451b56cb04b5b769fd2100996fecaaa6bfbd5c",
-        "bytes": 4716,
-        "width": 128,
-        "height": 97
-      },
-      {
-        "id": "4d5257bfc36b364a8b1e5bbd",
-        "sha256": "4d5257bfc36b364a8b1e5bbd778d80da5ba6b0a69bf1375d09b129bcad70b0bb",
-        "bytes": 4096,
-        "width": 69,
+        "id": "aecb6260b99e0c9d0802538c",
+        "sha256": "aecb6260b99e0c9d0802538cd7a6081389607d6e888b8c093dd38c5b456a1099",
+        "bytes": 6890,
+        "width": 122,
         "height": 128
       },
       {
-        "id": "bda15ed969a54d370b8dc0d1",
-        "sha256": "bda15ed969a54d370b8dc0d1efaddcf449ebf5ff8df8a2f6e9102c097f20df42",
-        "bytes": 4188,
+        "id": "f4e46d40cfe6a4275ecb66fa",
+        "sha256": "f4e46d40cfe6a4275ecb66fa0499d3228f953571bb06df5ccc149e394edb572a",
+        "bytes": 7552,
         "width": 128,
-        "height": 103
+        "height": 125
       },
       {
-        "id": "e4c73a1704e400636dcd6c30",
-        "sha256": "e4c73a1704e400636dcd6c300ae3f73acd461195fd05041fd7258e9210e9619f",
-        "bytes": 4258,
-        "width": 69,
+        "id": "5cae7430ff86680b2d32914c",
+        "sha256": "5cae7430ff86680b2d32914c184426d375b102c569cc3ea98364542dfb5b4a0f",
+        "bytes": 6330,
+        "width": 124,
         "height": 128
+      },
+      {
+        "id": "80099609878c677f31701863",
+        "sha256": "80099609878c677f31701863e79ae236f73a31a9ec811a82046cfdcdc1c7817d",
+        "bytes": 7432,
+        "width": 128,
+        "height": 127
       }
     ],
-    "layoutHash": "0e7f965a4656d89f0b6d41504dbea6d20f49755aa11695ae814379f741048db9"
+    "layoutHash": "8a0e17e782736202cb21fb86b7123ce5e95cac80c729db05b9f6332be02512a3"
   },
   "/world-assets/decor-origami/ivory.png": {
     "group": "world",
-    "sourceHash": "fab34367d96a213277371d7b30c30b916aaaac37235650cf2e56751c7e4f58c2",
-    "recipe": "9ef58028d649c0855f94e5251cfa1f1b04d7a8556b8442c1468a62370d8c99bd",
-    "originalBytes": 8845,
+    "sourceHash": "61fabd3e2f4123e6956b896c32afc39123f02b7228e9dd6caf883fb0bce176f7",
+    "recipe": "40effd4686d9ecb854fea3a10cab7f19dd5d511a406b2ff83710ea2c59c2e687",
+    "originalBytes": 12745,
     "image": {
-      "id": "fc356488096f703adedb3b07",
-      "sha256": "fc356488096f703adedb3b075a54f1099813db43fd43c00fdf74fcc206c416f9",
-      "bytes": 4574,
-      "width": 784,
-      "height": 213
+      "id": "a225e9467ee2cb3367543613",
+      "sha256": "a225e9467ee2cb3367543613d7f30ecc998457400722a7f5a74339f2c3abf950",
+      "bytes": 7022,
+      "width": 732,
+      "height": 187
     },
     "previews": [
       {
-        "id": "6f61a86461b4c0c42acb3fb8",
-        "sha256": "6f61a86461b4c0c42acb3fb8f301a5c64bb6ed20f78186a407a4e091865934cc",
-        "bytes": 5072,
-        "width": 128,
-        "height": 97
-      },
-      {
-        "id": "0f0493933908aedc33c0d1d1",
-        "sha256": "0f0493933908aedc33c0d1d166111aee1a84fe6dedce31b9bfe79e2a1ac76d00",
-        "bytes": 4366,
-        "width": 69,
+        "id": "406ea237b62e559bbf15abaa",
+        "sha256": "406ea237b62e559bbf15abaa45e567dacfb03d0a89edd0d9e8b720f468efeb59",
+        "bytes": 7522,
+        "width": 122,
         "height": 128
       },
       {
-        "id": "dd1721e8cc2f622cb40549bd",
-        "sha256": "dd1721e8cc2f622cb40549bde474e044dbdec00fed393ea5ce7092bb3d1d5177",
-        "bytes": 4376,
+        "id": "3adff7e4d6568735cf652816",
+        "sha256": "3adff7e4d6568735cf652816aaa68642bc35603af9dd92178b30da7576cc7c1d",
+        "bytes": 8178,
         "width": 128,
-        "height": 103
+        "height": 125
       },
       {
-        "id": "4f0416adee1f4eecfc4ca21f",
-        "sha256": "4f0416adee1f4eecfc4ca21f37d1818d15de2eba0cfaa729615cccf5fd876868",
-        "bytes": 4834,
-        "width": 69,
+        "id": "df6f9723e66c77217f20e6ed",
+        "sha256": "df6f9723e66c77217f20e6ede57eb7199342d6e7073fbf8892633a9bd5ea9dcd",
+        "bytes": 6886,
+        "width": 124,
         "height": 128
+      },
+      {
+        "id": "171624ab77a9bb6aa39cdd16",
+        "sha256": "171624ab77a9bb6aa39cdd1676e1f578c2826d4ea301d0547a19dd3a906b4ffe",
+        "bytes": 8058,
+        "width": 128,
+        "height": 127
       }
     ],
-    "layoutHash": "0e7f965a4656d89f0b6d41504dbea6d20f49755aa11695ae814379f741048db9"
+    "layoutHash": "8a0e17e782736202cb21fb86b7123ce5e95cac80c729db05b9f6332be02512a3"
   },
   "/world-assets/decor-pencil-cup/coral.png": {
     "group": "world",
@@ -20043,135 +20043,135 @@
   },
   "/world-assets/decor-tea-set/coral.png": {
     "group": "world",
-    "sourceHash": "0360ff3927f174c82256e9d8e7e7a8dec07917f87f385352d6507ec912ef8f10",
-    "recipe": "d8e44e2c66b3bde75c5a192737afc8d47e411a815b1c544861b71c7fd828630d",
-    "originalBytes": 20854,
+    "sourceHash": "9e7281e9bdc9476d3a4602cfa9fe6137be7c978c0dcf28bbfa4db9b320d34f16",
+    "recipe": "836b01e1991650551a70aaae7c0c509512846f5a39d173f15d8cde2a3bb88651",
+    "originalBytes": 23220,
     "image": {
-      "id": "1ff36b4bd3fd9fd3c9fd1624",
-      "sha256": "1ff36b4bd3fd9fd3c9fd1624cbe1b5aed942a2a265aaa35eb3bccff0ce6ac6dc",
-      "bytes": 8384,
+      "id": "9e86c49918c0f77d2db76051",
+      "sha256": "9e86c49918c0f77d2db760519a99f937942a0133c4153ffd38c570b4cf3e6b9f",
+      "bytes": 9696,
       "width": 784,
-      "height": 223
+      "height": 221
     },
     "previews": [
       {
-        "id": "1a21288eb744f02de291bc08",
-        "sha256": "1a21288eb744f02de291bc0881ae93ca176f9140382fd70a2cb10b95faab63c7",
-        "bytes": 8860,
-        "width": 124,
+        "id": "fa6d0c076392ce73b90f60ab",
+        "sha256": "fa6d0c076392ce73b90f60abc04dddf4eb12d9b03da840b56476b69ff44c3867",
+        "bytes": 9564,
+        "width": 123,
         "height": 128
       },
       {
-        "id": "0efb83e05c0cd336a32c2071",
-        "sha256": "0efb83e05c0cd336a32c20712fd3262034aa1d140c4b876f12d6e7aff533841d",
-        "bytes": 8362,
-        "width": 112,
+        "id": "c672153bdb9f146d64892ff5",
+        "sha256": "c672153bdb9f146d64892ff5b1cefcf18ccb63160325c53d2e6d610b1681e356",
+        "bytes": 9900,
+        "width": 113,
         "height": 128
       },
       {
-        "id": "b5152f6a071d299017421402",
-        "sha256": "b5152f6a071d299017421402c00cd740437b3139b81762a0a8048af5aa398102",
-        "bytes": 9484,
-        "width": 125,
+        "id": "4f15f10d0902601ae37c3877",
+        "sha256": "4f15f10d0902601ae37c38776ad3af67b33b6bf262368c2a37b3fddd9f559922",
+        "bytes": 9238,
+        "width": 123,
         "height": 128
       },
       {
-        "id": "01d003293b2561fcf283a732",
-        "sha256": "01d003293b2561fcf283a732415424fb24bfc4835caab881d2faa0786a8bd08a",
-        "bytes": 9630,
-        "width": 125,
+        "id": "179f26bd686f1d40b191904f",
+        "sha256": "179f26bd686f1d40b191904f1ffc938a23f80bd998171c07f96883c3617bc32a",
+        "bytes": 10322,
+        "width": 123,
         "height": 128
       }
     ],
-    "layoutHash": "80d7ef73c4622fe86bd4710f4661b0b96c5bf86b110658d218cbcd73d3bdbf10"
+    "layoutHash": "078e54c4e6aa7190216c1a1b8edd0bb44c399c957db101bea0c7a33e4a5022bc"
   },
   "/world-assets/decor-tea-set/graphite.png": {
     "group": "world",
-    "sourceHash": "d9f2ede0ec011f27d22a161be76c51c1f389e2744b3fa2f167ad92dc8b0f60b7",
-    "recipe": "d8e44e2c66b3bde75c5a192737afc8d47e411a815b1c544861b71c7fd828630d",
-    "originalBytes": 20818,
+    "sourceHash": "d201dec060d9960dac8051f4bbb02fa729ea3e49457d1579ded5097576ec6cb2",
+    "recipe": "836b01e1991650551a70aaae7c0c509512846f5a39d173f15d8cde2a3bb88651",
+    "originalBytes": 23151,
     "image": {
-      "id": "ba1e0dd34d99ca0c94bd71d0",
-      "sha256": "ba1e0dd34d99ca0c94bd71d0cb6cbb63a06e32f84c8b5558963a0866ec5669fd",
-      "bytes": 8378,
+      "id": "d33bc034f4299f94023f657b",
+      "sha256": "d33bc034f4299f94023f657b333343127684e2583fe65356829c67126a6aae6d",
+      "bytes": 9710,
       "width": 784,
-      "height": 223
+      "height": 221
     },
     "previews": [
       {
-        "id": "a205655c64265a3490698b2f",
-        "sha256": "a205655c64265a3490698b2f02ab6f083ad3104e659835239915b01cb7e9c298",
-        "bytes": 8474,
-        "width": 124,
+        "id": "5cd8d5022a3521561e080afa",
+        "sha256": "5cd8d5022a3521561e080afaa98867e01610629d2fa6ede3b6ecf13b64bf89a9",
+        "bytes": 9036,
+        "width": 123,
         "height": 128
       },
       {
-        "id": "fe1e2bae9cb052fbc2250972",
-        "sha256": "fe1e2bae9cb052fbc22509727aa36a7e29780d60751396751a19aaed99f013e6",
-        "bytes": 8162,
-        "width": 112,
+        "id": "524e6be6fce9237959b37a61",
+        "sha256": "524e6be6fce9237959b37a61981d22eb16fdac0a37a059cd128c5e0f4f5ddc4d",
+        "bytes": 8818,
+        "width": 113,
         "height": 128
       },
       {
-        "id": "8432c504d07e92d93b9a0b1a",
-        "sha256": "8432c504d07e92d93b9a0b1ac685434c378e8732f625147c2af18966516dd24c",
-        "bytes": 8806,
-        "width": 125,
+        "id": "14d6dff1aa8d0cc32a34ae2f",
+        "sha256": "14d6dff1aa8d0cc32a34ae2f9babf4040b79eeaa24d5e342929af98649b4cf61",
+        "bytes": 8544,
+        "width": 123,
         "height": 128
       },
       {
-        "id": "e6d7fed117b34f474586a9ff",
-        "sha256": "e6d7fed117b34f474586a9ff9c5e972f9fb1f49524e3210c9b4641684e946e93",
-        "bytes": 9042,
-        "width": 125,
+        "id": "1ed24fd1329d1525ae386242",
+        "sha256": "1ed24fd1329d1525ae38624203513cd3839edf1c484af611c87d052231ce82cd",
+        "bytes": 9442,
+        "width": 123,
         "height": 128
       }
     ],
-    "layoutHash": "80d7ef73c4622fe86bd4710f4661b0b96c5bf86b110658d218cbcd73d3bdbf10"
+    "layoutHash": "078e54c4e6aa7190216c1a1b8edd0bb44c399c957db101bea0c7a33e4a5022bc"
   },
   "/world-assets/decor-tea-set/ivory.png": {
     "group": "world",
-    "sourceHash": "1fc1ae22c0ff2c1b25b04446a4c2ca643d06e147ce9c13ea869478107e2274e6",
-    "recipe": "d8e44e2c66b3bde75c5a192737afc8d47e411a815b1c544861b71c7fd828630d",
-    "originalBytes": 20922,
+    "sourceHash": "e07f93c8ab57d5bc5573973b5fa10025088ca01c3e1865354e1cb8dbab18f6b2",
+    "recipe": "836b01e1991650551a70aaae7c0c509512846f5a39d173f15d8cde2a3bb88651",
+    "originalBytes": 23345,
     "image": {
-      "id": "12b37e9ecdb1019a1a5009b1",
-      "sha256": "12b37e9ecdb1019a1a5009b127a99752f6ab80994a20d757b70e6229f58dd33c",
-      "bytes": 8404,
+      "id": "3655695353c02520bcd02967",
+      "sha256": "3655695353c02520bcd02967617f38ae1300147223b52e9c8f402796b02d307d",
+      "bytes": 9710,
       "width": 784,
-      "height": 223
+      "height": 221
     },
     "previews": [
       {
-        "id": "85dadbf9ad8726a87dad263e",
-        "sha256": "85dadbf9ad8726a87dad263ec0bb2b90f4966c500ef69de029b749e6d41149de",
-        "bytes": 9318,
-        "width": 124,
+        "id": "ae4b9c4e5be4867d1bf9f93d",
+        "sha256": "ae4b9c4e5be4867d1bf9f93dfd229f614a90dbb53d558c0e75a9a270c8893fe9",
+        "bytes": 10136,
+        "width": 123,
         "height": 128
       },
       {
-        "id": "e28f884e74a238ddd593f8bd",
-        "sha256": "e28f884e74a238ddd593f8bd490d3c535091f38fb425b6d9eb89318eecf0701a",
-        "bytes": 9748,
-        "width": 112,
+        "id": "4c8bf3da690e054a3fe954ad",
+        "sha256": "4c8bf3da690e054a3fe954adcfbcd3a95bfbedf69849e981ad77c183e1787a8a",
+        "bytes": 9826,
+        "width": 113,
         "height": 128
       },
       {
-        "id": "371e87a4f9f33a350f054120",
-        "sha256": "371e87a4f9f33a350f0541203fadd70777e450f2b7743cc7a8dd877c4b1ae3cf",
-        "bytes": 9596,
-        "width": 125,
+        "id": "6cf5bfadbb393ae9c0ce57da",
+        "sha256": "6cf5bfadbb393ae9c0ce57daa32d45a24f2952e60592dd0f8a612d2ba9959e1f",
+        "bytes": 9738,
+        "width": 123,
         "height": 128
       },
       {
-        "id": "bcf705f1b87842b4048c0981",
-        "sha256": "bcf705f1b87842b4048c0981d988b47e0ab237f4e6c69d33a3d8b88ab7e84271",
-        "bytes": 10110,
-        "width": 125,
+        "id": "b60ea2a4bedfc6f35208dd20",
+        "sha256": "b60ea2a4bedfc6f35208dd20265f61b397dda0d685ada070cc527197d7a503c4",
+        "bytes": 10478,
+        "width": 123,
         "height": 128
       }
     ],
-    "layoutHash": "80d7ef73c4622fe86bd4710f4661b0b96c5bf86b110658d218cbcd73d3bdbf10"
+    "layoutHash": "078e54c4e6aa7190216c1a1b8edd0bb44c399c957db101bea0c7a33e4a5022bc"
   },
   "/world-assets/decor-terrarium/autumn.png": {
     "group": "world",

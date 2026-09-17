@@ -3998,186 +3998,6 @@
       }
     },
     {
-      "assetId": "decor-laptop",
-      "pixelsPerUnit": 6,
-      "variants": {
-        "graphite": {
-          "model": "scripts/world-assets/blockbench/models/decor-laptop-graphite.bbmodel",
-          "parts": 18,
-          "footprint": {
-            "width": 32,
-            "height": 16
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-laptop/graphite/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 672,
-                "y": 872.7350647362941,
-                "width": 192,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-laptop/graphite/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 720,
-                "y": 824.7350647362941,
-                "width": 96,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-laptop/graphite/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 672,
-                "y": 872.7350647362941,
-                "width": 192,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-laptop/graphite/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 720,
-                "y": 824.7350647362941,
-                "width": 96,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        },
-        "ivory": {
-          "model": "scripts/world-assets/blockbench/models/decor-laptop-ivory.bbmodel",
-          "parts": 18,
-          "footprint": {
-            "width": 32,
-            "height": 16
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-laptop/ivory/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 672,
-                "y": 872.7350647362941,
-                "width": 192,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-laptop/ivory/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 720,
-                "y": 824.7350647362941,
-                "width": 96,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-laptop/ivory/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 672,
-                "y": 872.7350647362941,
-                "width": 192,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-laptop/ivory/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 720,
-                "y": 824.7350647362941,
-                "width": 96,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        },
-        "coral": {
-          "model": "scripts/world-assets/blockbench/models/decor-laptop-coral.bbmodel",
-          "parts": 18,
-          "footprint": {
-            "width": 32,
-            "height": 16
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-laptop/coral/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 672,
-                "y": 872.7350647362941,
-                "width": 192,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-laptop/coral/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 720,
-                "y": 824.7350647362941,
-                "width": 96,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-laptop/coral/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 672,
-                "y": 872.7350647362941,
-                "width": 192,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-laptop/coral/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 720,
-                "y": 824.7350647362941,
-                "width": 96,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        }
-      }
-    },
-    {
       "assetId": "decor-lamp",
       "pixelsPerUnit": 6,
       "variants": {
@@ -5984,186 +5804,6 @@
                 "y": 632.7350647362941,
                 "width": 192.0000000000001,
                 "height": 576.0000000000002
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        }
-      }
-    },
-    {
-      "assetId": "decor-monitor",
-      "pixelsPerUnit": 6,
-      "variants": {
-        "graphite": {
-          "model": "scripts/world-assets/blockbench/models/decor-monitor-graphite.bbmodel",
-          "parts": 19,
-          "footprint": {
-            "width": 32,
-            "height": 16
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-monitor/graphite/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 672,
-                "y": 872.7350647362941,
-                "width": 192,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-monitor/graphite/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 720,
-                "y": 824.7350647362941,
-                "width": 96,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-monitor/graphite/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 672,
-                "y": 872.7350647362941,
-                "width": 192,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-monitor/graphite/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 720,
-                "y": 824.7350647362941,
-                "width": 96,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        },
-        "ivory": {
-          "model": "scripts/world-assets/blockbench/models/decor-monitor-ivory.bbmodel",
-          "parts": 19,
-          "footprint": {
-            "width": 32,
-            "height": 16
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-monitor/ivory/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 672,
-                "y": 872.7350647362941,
-                "width": 192,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-monitor/ivory/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 720,
-                "y": 824.7350647362941,
-                "width": 96,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-monitor/ivory/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 672,
-                "y": 872.7350647362941,
-                "width": 192,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-monitor/ivory/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 720,
-                "y": 824.7350647362941,
-                "width": 96,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        },
-        "coral": {
-          "model": "scripts/world-assets/blockbench/models/decor-monitor-coral.bbmodel",
-          "parts": 19,
-          "footprint": {
-            "width": 32,
-            "height": 16
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-monitor/coral/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 672,
-                "y": 872.7350647362941,
-                "width": 192,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-monitor/coral/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 720,
-                "y": 824.7350647362941,
-                "width": 96,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-monitor/coral/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 672,
-                "y": 872.7350647362941,
-                "width": 192,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-monitor/coral/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 720,
-                "y": 824.7350647362941,
-                "width": 96,
-                "height": 192
               },
               "width": 1536,
               "height": 1536
@@ -9449,186 +9089,6 @@
             },
             {
               "path": "scripts/world-assets/blockbench/renders/decor-clock/coral/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        }
-      }
-    },
-    {
-      "assetId": "decor-headphones",
-      "pixelsPerUnit": 6,
-      "variants": {
-        "graphite": {
-          "model": "scripts/world-assets/blockbench/models/decor-headphones-graphite.bbmodel",
-          "parts": 9,
-          "footprint": {
-            "width": 16,
-            "height": 16
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-headphones/graphite/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-headphones/graphite/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-headphones/graphite/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-headphones/graphite/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        },
-        "ivory": {
-          "model": "scripts/world-assets/blockbench/models/decor-headphones-ivory.bbmodel",
-          "parts": 9,
-          "footprint": {
-            "width": 16,
-            "height": 16
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-headphones/ivory/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-headphones/ivory/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-headphones/ivory/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-headphones/ivory/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        },
-        "coral": {
-          "model": "scripts/world-assets/blockbench/models/decor-headphones-coral.bbmodel",
-          "parts": 9,
-          "footprint": {
-            "width": 16,
-            "height": 16
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-headphones/coral/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-headphones/coral/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-headphones/coral/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-headphones/coral/east.png",
               "direction": "east",
               "groundFootprint": {
                 "x": 720,
@@ -32021,366 +31481,6 @@
       }
     },
     {
-      "assetId": "decor-globe",
-      "pixelsPerUnit": 6,
-      "variants": {
-        "graphite": {
-          "model": "scripts/world-assets/blockbench/models/decor-globe-graphite.bbmodel",
-          "parts": 9,
-          "footprint": {
-            "width": 32,
-            "height": 32
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-globe/graphite/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-globe/graphite/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-globe/graphite/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-globe/graphite/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        },
-        "ivory": {
-          "model": "scripts/world-assets/blockbench/models/decor-globe-ivory.bbmodel",
-          "parts": 9,
-          "footprint": {
-            "width": 32,
-            "height": 32
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-globe/ivory/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-globe/ivory/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-globe/ivory/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-globe/ivory/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        },
-        "coral": {
-          "model": "scripts/world-assets/blockbench/models/decor-globe-coral.bbmodel",
-          "parts": 9,
-          "footprint": {
-            "width": 32,
-            "height": 32
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-globe/coral/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-globe/coral/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-globe/coral/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-globe/coral/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        }
-      }
-    },
-    {
-      "assetId": "decor-hourglass",
-      "pixelsPerUnit": 6,
-      "variants": {
-        "graphite": {
-          "model": "scripts/world-assets/blockbench/models/decor-hourglass-graphite.bbmodel",
-          "parts": 10,
-          "footprint": {
-            "width": 16,
-            "height": 16
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/graphite/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/graphite/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/graphite/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/graphite/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        },
-        "ivory": {
-          "model": "scripts/world-assets/blockbench/models/decor-hourglass-ivory.bbmodel",
-          "parts": 10,
-          "footprint": {
-            "width": 16,
-            "height": 16
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/ivory/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/ivory/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/ivory/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/ivory/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        },
-        "coral": {
-          "model": "scripts/world-assets/blockbench/models/decor-hourglass-coral.bbmodel",
-          "parts": 10,
-          "footprint": {
-            "width": 16,
-            "height": 16
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/coral/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/coral/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/coral/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/coral/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 720,
-                "y": 872.7350647362941,
-                "width": 96,
-                "height": 96
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        }
-      }
-    },
-    {
       "assetId": "decor-radio",
       "pixelsPerUnit": 6,
       "variants": {
@@ -32921,366 +32021,6 @@
       }
     },
     {
-      "assetId": "decor-tea-set",
-      "pixelsPerUnit": 6,
-      "variants": {
-        "graphite": {
-          "model": "scripts/world-assets/blockbench/models/decor-tea-set-graphite.bbmodel",
-          "parts": 12,
-          "footprint": {
-            "width": 32,
-            "height": 32
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/graphite/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/graphite/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/graphite/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/graphite/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        },
-        "ivory": {
-          "model": "scripts/world-assets/blockbench/models/decor-tea-set-ivory.bbmodel",
-          "parts": 12,
-          "footprint": {
-            "width": 32,
-            "height": 32
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/ivory/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/ivory/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/ivory/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/ivory/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        },
-        "coral": {
-          "model": "scripts/world-assets/blockbench/models/decor-tea-set-coral.bbmodel",
-          "parts": 12,
-          "footprint": {
-            "width": 32,
-            "height": 32
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/coral/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/coral/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/coral/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/coral/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        }
-      }
-    },
-    {
-      "assetId": "decor-origami",
-      "pixelsPerUnit": 6,
-      "variants": {
-        "graphite": {
-          "model": "scripts/world-assets/blockbench/models/decor-origami-graphite.bbmodel",
-          "parts": 2,
-          "footprint": {
-            "width": 32,
-            "height": 32
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-origami/graphite/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-origami/graphite/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-origami/graphite/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-origami/graphite/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        },
-        "ivory": {
-          "model": "scripts/world-assets/blockbench/models/decor-origami-ivory.bbmodel",
-          "parts": 2,
-          "footprint": {
-            "width": 32,
-            "height": 32
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-origami/ivory/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-origami/ivory/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-origami/ivory/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-origami/ivory/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        },
-        "coral": {
-          "model": "scripts/world-assets/blockbench/models/decor-origami-coral.bbmodel",
-          "parts": 2,
-          "footprint": {
-            "width": 32,
-            "height": 32
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-origami/coral/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-origami/coral/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-origami/coral/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-origami/coral/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        }
-      }
-    },
-    {
       "assetId": "decor-succulents",
       "pixelsPerUnit": 6,
       "variants": {
@@ -33811,366 +32551,6 @@
                 "x": 720,
                 "y": 824.7350647362941,
                 "width": 96,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        }
-      }
-    },
-    {
-      "assetId": "decor-model-ship",
-      "pixelsPerUnit": 6,
-      "variants": {
-        "graphite": {
-          "model": "scripts/world-assets/blockbench/models/decor-model-ship-graphite.bbmodel",
-          "parts": 6,
-          "footprint": {
-            "width": 48,
-            "height": 32
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/graphite/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 624,
-                "y": 824.7350647362941,
-                "width": 288,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/graphite/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 672,
-                "y": 776.7350647362941,
-                "width": 192,
-                "height": 288.0000000000002
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/graphite/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 624,
-                "y": 824.7350647362941,
-                "width": 288,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/graphite/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 672,
-                "y": 776.7350647362941,
-                "width": 192,
-                "height": 288.0000000000002
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        },
-        "ivory": {
-          "model": "scripts/world-assets/blockbench/models/decor-model-ship-ivory.bbmodel",
-          "parts": 6,
-          "footprint": {
-            "width": 48,
-            "height": 32
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/ivory/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 624,
-                "y": 824.7350647362941,
-                "width": 288,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/ivory/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 672,
-                "y": 776.7350647362941,
-                "width": 192,
-                "height": 288.0000000000002
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/ivory/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 624,
-                "y": 824.7350647362941,
-                "width": 288,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/ivory/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 672,
-                "y": 776.7350647362941,
-                "width": 192,
-                "height": 288.0000000000002
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        },
-        "coral": {
-          "model": "scripts/world-assets/blockbench/models/decor-model-ship-coral.bbmodel",
-          "parts": 6,
-          "footprint": {
-            "width": 48,
-            "height": 32
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/coral/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 624,
-                "y": 824.7350647362941,
-                "width": 288,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/coral/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 672,
-                "y": 776.7350647362941,
-                "width": 192,
-                "height": 288.0000000000002
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/coral/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 624,
-                "y": 824.7350647362941,
-                "width": 288,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/coral/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 672,
-                "y": 776.7350647362941,
-                "width": 192,
-                "height": 288.0000000000002
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        }
-      }
-    },
-    {
-      "assetId": "decor-desk-fan",
-      "pixelsPerUnit": 6,
-      "variants": {
-        "graphite": {
-          "model": "scripts/world-assets/blockbench/models/decor-desk-fan-graphite.bbmodel",
-          "parts": 19,
-          "footprint": {
-            "width": 32,
-            "height": 32
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/graphite/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/graphite/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/graphite/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/graphite/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        },
-        "ivory": {
-          "model": "scripts/world-assets/blockbench/models/decor-desk-fan-ivory.bbmodel",
-          "parts": 19,
-          "footprint": {
-            "width": 32,
-            "height": 32
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/ivory/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/ivory/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/ivory/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/ivory/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            }
-          ]
-        },
-        "coral": {
-          "model": "scripts/world-assets/blockbench/models/decor-desk-fan-coral.bbmodel",
-          "parts": 19,
-          "footprint": {
-            "width": 32,
-            "height": 32
-          },
-          "frames": [
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/coral/south.png",
-              "direction": "south",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/coral/west.png",
-              "direction": "west",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/coral/north.png",
-              "direction": "north",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
-                "height": 192
-              },
-              "width": 1536,
-              "height": 1536
-            },
-            {
-              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/coral/east.png",
-              "direction": "east",
-              "groundFootprint": {
-                "x": 672,
-                "y": 824.7350647362941,
-                "width": 192,
                 "height": 192
               },
               "width": 1536,
@@ -66503,6 +64883,1626 @@
                 "y": 776.7350647362941,
                 "width": 192,
                 "height": 288.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        }
+      }
+    },
+    {
+      "assetId": "decor-monitor",
+      "pixelsPerUnit": 6,
+      "variants": {
+        "graphite": {
+          "model": "scripts/world-assets/blockbench/models/decor-monitor-graphite.bbmodel",
+          "parts": 58,
+          "footprint": {
+            "width": 32,
+            "height": 16
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-monitor/graphite/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 672,
+                "y": 872.7350647362941,
+                "width": 192,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-monitor/graphite/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 720,
+                "y": 824.7350647362941,
+                "width": 96,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-monitor/graphite/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 672,
+                "y": 872.7350647362941,
+                "width": 192,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-monitor/graphite/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 720,
+                "y": 824.7350647362941,
+                "width": 96,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "ivory": {
+          "model": "scripts/world-assets/blockbench/models/decor-monitor-ivory.bbmodel",
+          "parts": 58,
+          "footprint": {
+            "width": 32,
+            "height": 16
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-monitor/ivory/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 672,
+                "y": 872.7350647362941,
+                "width": 192,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-monitor/ivory/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 720,
+                "y": 824.7350647362941,
+                "width": 96,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-monitor/ivory/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 672,
+                "y": 872.7350647362941,
+                "width": 192,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-monitor/ivory/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 720,
+                "y": 824.7350647362941,
+                "width": 96,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "coral": {
+          "model": "scripts/world-assets/blockbench/models/decor-monitor-coral.bbmodel",
+          "parts": 58,
+          "footprint": {
+            "width": 32,
+            "height": 16
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-monitor/coral/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 672,
+                "y": 872.7350647362941,
+                "width": 192,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-monitor/coral/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 720,
+                "y": 824.7350647362941,
+                "width": 96,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-monitor/coral/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 672,
+                "y": 872.7350647362941,
+                "width": 192,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-monitor/coral/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 720,
+                "y": 824.7350647362941,
+                "width": 96,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        }
+      }
+    },
+    {
+      "assetId": "decor-laptop",
+      "pixelsPerUnit": 6,
+      "variants": {
+        "graphite": {
+          "model": "scripts/world-assets/blockbench/models/decor-laptop-graphite.bbmodel",
+          "parts": 52,
+          "footprint": {
+            "width": 32,
+            "height": 16
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-laptop/graphite/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 672,
+                "y": 872.7350647362941,
+                "width": 192,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-laptop/graphite/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 720,
+                "y": 824.7350647362941,
+                "width": 96,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-laptop/graphite/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 672,
+                "y": 872.7350647362941,
+                "width": 192,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-laptop/graphite/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 720,
+                "y": 824.7350647362941,
+                "width": 96,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "ivory": {
+          "model": "scripts/world-assets/blockbench/models/decor-laptop-ivory.bbmodel",
+          "parts": 52,
+          "footprint": {
+            "width": 32,
+            "height": 16
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-laptop/ivory/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 672,
+                "y": 872.7350647362941,
+                "width": 192,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-laptop/ivory/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 720,
+                "y": 824.7350647362941,
+                "width": 96,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-laptop/ivory/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 672,
+                "y": 872.7350647362941,
+                "width": 192,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-laptop/ivory/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 720,
+                "y": 824.7350647362941,
+                "width": 96,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "coral": {
+          "model": "scripts/world-assets/blockbench/models/decor-laptop-coral.bbmodel",
+          "parts": 52,
+          "footprint": {
+            "width": 32,
+            "height": 16
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-laptop/coral/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 672,
+                "y": 872.7350647362941,
+                "width": 192,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-laptop/coral/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 720,
+                "y": 824.7350647362941,
+                "width": 96,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-laptop/coral/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 672,
+                "y": 872.7350647362941,
+                "width": 192,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-laptop/coral/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 720,
+                "y": 824.7350647362941,
+                "width": 96,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        }
+      }
+    },
+    {
+      "assetId": "decor-headphones",
+      "pixelsPerUnit": 6,
+      "variants": {
+        "graphite": {
+          "model": "scripts/world-assets/blockbench/models/decor-headphones-graphite.bbmodel",
+          "parts": 14,
+          "footprint": {
+            "width": 16,
+            "height": 16
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-headphones/graphite/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-headphones/graphite/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-headphones/graphite/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-headphones/graphite/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "ivory": {
+          "model": "scripts/world-assets/blockbench/models/decor-headphones-ivory.bbmodel",
+          "parts": 14,
+          "footprint": {
+            "width": 16,
+            "height": 16
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-headphones/ivory/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-headphones/ivory/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-headphones/ivory/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-headphones/ivory/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "coral": {
+          "model": "scripts/world-assets/blockbench/models/decor-headphones-coral.bbmodel",
+          "parts": 14,
+          "footprint": {
+            "width": 16,
+            "height": 16
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-headphones/coral/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-headphones/coral/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-headphones/coral/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-headphones/coral/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        }
+      }
+    },
+    {
+      "assetId": "decor-globe",
+      "pixelsPerUnit": 6,
+      "variants": {
+        "graphite": {
+          "model": "scripts/world-assets/blockbench/models/decor-globe-graphite.bbmodel",
+          "parts": 14,
+          "footprint": {
+            "width": 32,
+            "height": 32
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-globe/graphite/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-globe/graphite/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-globe/graphite/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-globe/graphite/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "ivory": {
+          "model": "scripts/world-assets/blockbench/models/decor-globe-ivory.bbmodel",
+          "parts": 14,
+          "footprint": {
+            "width": 32,
+            "height": 32
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-globe/ivory/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-globe/ivory/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-globe/ivory/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-globe/ivory/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "coral": {
+          "model": "scripts/world-assets/blockbench/models/decor-globe-coral.bbmodel",
+          "parts": 14,
+          "footprint": {
+            "width": 32,
+            "height": 32
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-globe/coral/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-globe/coral/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-globe/coral/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-globe/coral/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        }
+      }
+    },
+    {
+      "assetId": "decor-tea-set",
+      "pixelsPerUnit": 6,
+      "variants": {
+        "graphite": {
+          "model": "scripts/world-assets/blockbench/models/decor-tea-set-graphite.bbmodel",
+          "parts": 22,
+          "footprint": {
+            "width": 32,
+            "height": 32
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/graphite/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/graphite/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/graphite/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/graphite/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "ivory": {
+          "model": "scripts/world-assets/blockbench/models/decor-tea-set-ivory.bbmodel",
+          "parts": 22,
+          "footprint": {
+            "width": 32,
+            "height": 32
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/ivory/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/ivory/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/ivory/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/ivory/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "coral": {
+          "model": "scripts/world-assets/blockbench/models/decor-tea-set-coral.bbmodel",
+          "parts": 22,
+          "footprint": {
+            "width": 32,
+            "height": 32
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/coral/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/coral/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/coral/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-tea-set/coral/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        }
+      }
+    },
+    {
+      "assetId": "decor-model-ship",
+      "pixelsPerUnit": 6,
+      "variants": {
+        "graphite": {
+          "model": "scripts/world-assets/blockbench/models/decor-model-ship-graphite.bbmodel",
+          "parts": 18,
+          "footprint": {
+            "width": 48,
+            "height": 32
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/graphite/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 624,
+                "y": 824.7350647362941,
+                "width": 288,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/graphite/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 672,
+                "y": 776.7350647362941,
+                "width": 192,
+                "height": 288.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/graphite/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 624,
+                "y": 824.7350647362941,
+                "width": 288,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/graphite/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 672,
+                "y": 776.7350647362941,
+                "width": 192,
+                "height": 288.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "ivory": {
+          "model": "scripts/world-assets/blockbench/models/decor-model-ship-ivory.bbmodel",
+          "parts": 18,
+          "footprint": {
+            "width": 48,
+            "height": 32
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/ivory/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 624,
+                "y": 824.7350647362941,
+                "width": 288,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/ivory/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 672,
+                "y": 776.7350647362941,
+                "width": 192,
+                "height": 288.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/ivory/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 624,
+                "y": 824.7350647362941,
+                "width": 288,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/ivory/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 672,
+                "y": 776.7350647362941,
+                "width": 192,
+                "height": 288.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "coral": {
+          "model": "scripts/world-assets/blockbench/models/decor-model-ship-coral.bbmodel",
+          "parts": 18,
+          "footprint": {
+            "width": 48,
+            "height": 32
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/coral/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 624,
+                "y": 824.7350647362941,
+                "width": 288,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/coral/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 672,
+                "y": 776.7350647362941,
+                "width": 192,
+                "height": 288.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/coral/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 624,
+                "y": 824.7350647362941,
+                "width": 288,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-model-ship/coral/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 672,
+                "y": 776.7350647362941,
+                "width": 192,
+                "height": 288.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        }
+      }
+    },
+    {
+      "assetId": "decor-desk-fan",
+      "pixelsPerUnit": 6,
+      "variants": {
+        "graphite": {
+          "model": "scripts/world-assets/blockbench/models/decor-desk-fan-graphite.bbmodel",
+          "parts": 42,
+          "footprint": {
+            "width": 32,
+            "height": 32
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/graphite/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/graphite/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/graphite/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/graphite/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "ivory": {
+          "model": "scripts/world-assets/blockbench/models/decor-desk-fan-ivory.bbmodel",
+          "parts": 42,
+          "footprint": {
+            "width": 32,
+            "height": 32
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/ivory/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/ivory/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/ivory/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/ivory/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "coral": {
+          "model": "scripts/world-assets/blockbench/models/decor-desk-fan-coral.bbmodel",
+          "parts": 42,
+          "footprint": {
+            "width": 32,
+            "height": 32
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/coral/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/coral/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/coral/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-desk-fan/coral/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        }
+      }
+    },
+    {
+      "assetId": "decor-hourglass",
+      "pixelsPerUnit": 6,
+      "variants": {
+        "graphite": {
+          "model": "scripts/world-assets/blockbench/models/decor-hourglass-graphite.bbmodel",
+          "parts": 18,
+          "footprint": {
+            "width": 16,
+            "height": 16
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/graphite/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/graphite/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/graphite/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/graphite/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "ivory": {
+          "model": "scripts/world-assets/blockbench/models/decor-hourglass-ivory.bbmodel",
+          "parts": 18,
+          "footprint": {
+            "width": 16,
+            "height": 16
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/ivory/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/ivory/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/ivory/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/ivory/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "coral": {
+          "model": "scripts/world-assets/blockbench/models/decor-hourglass-coral.bbmodel",
+          "parts": 18,
+          "footprint": {
+            "width": 16,
+            "height": 16
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/coral/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/coral/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/coral/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-hourglass/coral/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 720,
+                "y": 872.7350647362941,
+                "width": 96,
+                "height": 96
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        }
+      }
+    },
+    {
+      "assetId": "decor-origami",
+      "pixelsPerUnit": 6,
+      "variants": {
+        "graphite": {
+          "model": "scripts/world-assets/blockbench/models/decor-origami-graphite.bbmodel",
+          "parts": 14,
+          "footprint": {
+            "width": 32,
+            "height": 32
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-origami/graphite/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-origami/graphite/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-origami/graphite/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-origami/graphite/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "ivory": {
+          "model": "scripts/world-assets/blockbench/models/decor-origami-ivory.bbmodel",
+          "parts": 14,
+          "footprint": {
+            "width": 32,
+            "height": 32
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-origami/ivory/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-origami/ivory/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-origami/ivory/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-origami/ivory/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "coral": {
+          "model": "scripts/world-assets/blockbench/models/decor-origami-coral.bbmodel",
+          "parts": 14,
+          "footprint": {
+            "width": 32,
+            "height": 32
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-origami/coral/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-origami/coral/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-origami/coral/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/decor-origami/coral/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 672,
+                "y": 824.7350647362941,
+                "width": 192,
+                "height": 192
               },
               "width": 1536,
               "height": 1536

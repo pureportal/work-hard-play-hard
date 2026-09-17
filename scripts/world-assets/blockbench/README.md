@@ -13,6 +13,9 @@ pnpm assets:world:review
 - `furniture.cjs`, `botanical.cjs`, `objects.cjs`, `equipment.cjs`: catalog geometry by family.
 - `game-tables.cjs`, `celebration-gong.cjs`: sculpted chess set, tabletop Falling Blocks cabinet and cardinal-facing gong with a hollow bronze bowl, including their material palettes.
 - `arcade-cabinet.cjs`: enclosed upright cabinet, CRT playfield, controls and side artwork.
+- `desktop-monitor.cjs`: tilted display, connected stand, separate keyboard and mouse.
+- `tabletop-electronics.cjs`: hinged laptop, supported headphones and enclosed desk fan.
+- `tabletop-ornaments.cjs`: spherical globe artwork, open-frame hourglass, tea set, folded cranes and supported model sailboat.
 - `courtyard.cjs`: reading bench, low tea table, bamboo, stone lantern, native wind chimes and pinwheel animations.
 - `architecture.cjs`: wall, open threshold and window geometry and dimensions.
 - `catalog-models.cjs`: catalog footprints, theme materials and model selection.

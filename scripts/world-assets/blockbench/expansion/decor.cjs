@@ -1,6 +1,6 @@
 const { expansionRing } = require("./joinery.cjs");
 
-const expandedDecor = ["decor-typewriter", "decor-globe", "decor-hourglass", "decor-radio", "decor-record-player", "decor-camera", "decor-tea-set", "decor-origami", "decor-succulents", "decor-pencil-cup", "decor-candles", "decor-aquarium", "decor-model-ship", "decor-desk-fan"];
+const expandedDecor = ["decor-typewriter", "decor-radio", "decor-record-player", "decor-camera", "decor-succulents", "decor-pencil-cup", "decor-candles", "decor-aquarium"];
 
 function buildExpandedDecor(kit, asset, width, depth) {
   const { box, roundedBox, cylinder, ellipsoid, branch, shape, THREE } = kit;
@@ -13,20 +13,6 @@ function buildExpandedDecor(kit, asset, width, depth) {
     box("Loaded paper", [0, 18, -10], [18, 12, 0.4], "paper");
     for (let y = 15; y < 20; y += 2) box("Typed line", [0, y, -9.7], [10, 0.5, 0.1], "shade");
     branch("Carriage return lever", [-13, 13, -8], [-13, 16, -2], 0.7, "gold");
-  } else if (id === "decor-globe") {
-    cylinder("Globe base", [0, 1, 0], 10, 2, "main");
-    cylinder("Globe pedestal", [0, 5, 0], 2, 8, "gold");
-    ellipsoid("Globe ocean", [0, 20, 0], [11, 11, 11], "water");
-    expansionRing(kit, "Globe meridian", [0, 20, 0], 12, 0.65, "gold", [0, 0, -18]);
-    for (const [x, y, z, sx, sy] of [[-4,24,8,3,4],[3,18,9,3,5],[5,24,-8,4,3],[-6,17,-7,3,4]]) ellipsoid("Continent", [x,y,z], [sx,sy,1.3], "green");
-    expansionRing(kit, "Equator", [0,20,0], 11.1, 0.2, "light");
-  } else if (id === "decor-hourglass") {
-    for (const y of [1, 24]) cylinder("Hourglass end", [0,y,0], 6.5, 2, "main");
-    for (const x of [-5,5]) for (const z of [-3,3]) branch("Hourglass upright", [x,2,z], [x,23,z], 0.5, "gold");
-    cylinder("Upper glass bulb", [0,18,0], 0.9, 10, "waterLight", 5);
-    cylinder("Lower glass bulb", [0,8,0], 5, 10, "waterLight", 0.9);
-    cylinder("Falling sand", [0,12,0], 0.25, 12, "gold");
-    cylinder("Sand mound", [0,5,0], 4, 5, "gold", 0.2);
   } else if (id === "decor-radio") {
     roundedBox("Radio cabinet", [0,8,0], [width-1,16,depth-2], "main");
     roundedBox("Speaker grille", [-6,8,depth/2-0.8], [15,11,0.5], "shade");
@@ -49,27 +35,6 @@ function buildExpandedDecor(kit, asset, width, depth) {
     cylinder("Lens glass",[0,6,7.6],2.8,0.3,"water",2.8,[90,0,0]);
     box("Viewfinder",[0,12,0],[5,3,4],"gold");
     cylinder("Shutter button",[5,11,0],1.3,1,"gold");
-  } else if (id === "decor-tea-set") {
-    roundedBox("Tea tray",[0,1,0],[width-1,2,depth-1],"wood");
-    ellipsoid("Teapot body",[-5,7,-4],[6,5,6],"main");
-    cylinder("Teapot lid",[-5,12,-4],4,1.5,"light");
-    ellipsoid("Lid finial",[-5,13,-4],[1.3,1,1.3],"gold");
-    branch("Teapot spout",[0,7,-4],[5,11,-4],1.5,"main");
-    expansionRing(kit,"Teapot handle",[-11,8,-4],4,0.8,"gold",[0,90,0]);
-    for(const [x,z] of [[7,7],[-7,8]]) {
-      cylinder("Tea saucer",[x,2.3,z],4.8,0.7,"light");
-      cylinder("Tea cup",[x,4.5,z],2.4,4,"main",3.2);
-      cylinder("Tea surface",[x,6.6,z],2.6,0.15,"wood");
-    }
-  } else if (id === "decor-origami") {
-    for(const [x,z,turn] of [[-7,-3,-20],[7,5,35]]) {
-      const rotation = turn*Math.PI/180;
-      const points = [[0,7,0],[-9,14,-2],[-4,5,3],[0,8,0],[9,14,-2],[4,5,3],[0,7,0],[1,16,1],[3,13,3],[0,7,0],[-2,3,-7],[2,4,-5]];
-      const geometry=new THREE.BufferGeometry();
-      geometry.setAttribute("position",new THREE.Float32BufferAttribute(points.flatMap(([px,py,pz])=>[px*Math.cos(rotation)-pz*Math.sin(rotation),py,px*Math.sin(rotation)+pz*Math.cos(rotation)]),3));
-      geometry.computeVertexNormals();
-      shape("Folded paper crane",geometry,[x,0,z],x<0?"light":"main");
-    }
   } else if (id === "decor-succulents") {
     for(const [index,x] of [-16,0,16].entries()) {
       cylinder("Small ceramic planter",[x,4,0],5,8,"main",6);
@@ -113,26 +78,6 @@ function buildExpandedDecor(kit, asset, width, depth) {
     for(const x of [-18,17]) for(const side of [-1,1]) branch("Aquatic leaf",[x,3,depth/2],[x+side*3,12,depth/2],0.9,"green");
     branch("Glass reflection",[-14,21,depth/2+0.7],[-7,14,depth/2+0.7],0.45,"waterLight");
     branch("Water surface reflection",[-12,24.5,-7],[1,24.5,4],0.35,"paper");
-  } else if (id === "decor-model-ship") {
-    roundedBox("Ship display base",[0,1,0],[width-2,2,depth/2],"main");
-    ellipsoid("Sailboat hull",[0,7,0],[width/2-4,4,depth/4],"wood");
-    branch("Mast",[0,7,0],[0,35,0],0.7,"gold");
-    const sail=new THREE.BufferGeometry();
-    sail.setAttribute("position",new THREE.Float32BufferAttribute([0,33,0,0,13,0,17,13,0,-2,29,0,-2,13,0,-15,13,0],3));
-    sail.computeVertexNormals();
-    shape("Canvas sails",sail,[0,0,0],"paper");
-    branch("Rigging",[-18,7,0],[0,33,0],0.22,"shade");
-    branch("Rigging",[18,7,0],[0,33,0],0.22,"shade");
-  } else if (id === "decor-desk-fan") {
-    roundedBox("Fan base",[0,1.5,2],[20,3,17],"main");
-    cylinder("Fan neck",[0,9,0],1.5,15,"gold");
-    expansionRing(kit,"Fan guard",[0,23,0],11,0.8,"main",[0,0,0]);
-    for(let i=0;i<12;i++) {
-      const a=i*Math.PI/6;
-      branch("Guard spoke",[0,23,1.8],[Math.cos(a)*11,23+Math.sin(a)*11,0],0.24,"gold");
-    }
-    for(let i=0;i<3;i++) {const a=i*120;ellipsoid("Fan blade",[Math.cos(a*Math.PI/180)*4,23+Math.sin(a*Math.PI/180)*4,0],[6,2.4,0.6],"light",[0,0,a]);}
-    cylinder("Fan hub",[0,23,2],2.3,2,"main",2.3,[90,0,0]);
   }
 }
 

@@ -104,21 +104,9 @@ function buildLamp(kit, asset, width, depth) {
 }
 
 function buildDecoration(kit, asset, width, depth) {
-  const { box, roundedBox, cylinder, ellipsoid, shape, THREE } = kit;
+  const { box, cylinder, ellipsoid, shape, THREE } = kit;
   const id = asset.id;
-  if (["decor-monitor", "decor-laptop"].includes(id)) {
-    roundedBox("Computer base", [0, 1, 0], [width - 0.5, 2, depth - 0.5], "main");
-    const h = id === "decor-monitor" ? 24 : 15;
-    if (id === "decor-monitor") box("Monitor stand", [0, 8, -2], [3, 13, 3], "gold");
-    roundedBox("Screen bezel", [0, h, -depth / 2 + 2], [width - 1, 16, 2.4], "shade");
-    box("Screen", [0, h, -depth / 2 + 3.1], [width - 4, 13, 0.2], "ink");
-    box("Screen sky", [0, h + 2, -depth / 2 + 3.25], [width - 6, 7, 0.1], "water");
-    cylinder("Wallpaper sun", [7, h + 3, -depth / 2 + 3.4], 2.1, 0.1, "pink", 2.1, [90, 0, 0]);
-    for (let row = 0; row < 2; row++) for (let x = -10; x < 10; x += 4) box("Keyboard key", [x, 2.1, 1 + row * 3], [2.8, 0.2, 2], "light");
-    box("Trackpad", [0, 2.11, depth / 2 - 3], [7, 0.1, 2.5], "grain");
-    box("Rear emblem", [0, h, -depth / 2 + 0.72], [3, 3, 0.2], "light", [0, 0, 45]);
-    box("Display horizon", [0, h - 1, -depth / 2 + 3.4], [width - 6, 0.6, 0.1], "waterLight");
-  } else if (id === "decor-pr-tray") {
+  if (id === "decor-pr-tray") {
     box("Tray base", [0, 1, 0], [width - 0.5, 2, depth - 0.5], "main");
     for (const x of [-width / 2 + 1, width / 2 - 1]) box("Tray rim", [x, 3.5, 0], [1.5, 5, depth - 0.5], "main");
     box("Tray back", [0, 3.5, -depth / 2 + 1], [width - 2, 5, 1.5], "main");
@@ -154,15 +142,6 @@ function buildDecoration(kit, asset, width, depth) {
     }
     cylinder("Clock rear cover", [0, 9, -2.15], 5.8, 0.2, "shade", 5.8, [90, 0, 0]);
     cylinder("Clock winder", [0, 9, -2.5], 1.2, 0.8, "gold", 1.2, [90, 0, 0]);
-  } else if (id === "decor-headphones") {
-    box("Stand", [0, 1, 0], [15.5, 2, 15.5], "main");
-    cylinder("Stand stem", [0, 10, 0], 1, 18, "gold");
-    shape("Headphone band", new THREE.TorusGeometry(6, 1.4, 8, 32, Math.PI), [0, 17, 0], "shade");
-    for (const x of [-6, 6]) {
-      ellipsoid("Ear cup", [x, 15, 0], [2, 4, 3], "main");
-      ellipsoid("Ear pad", [x - Math.sign(x), 15, 0], [1.1, 3.2, 2.6], "ink");
-      ellipsoid("Ear cup glint", [x + Math.sign(x) * 1.8, 15.5, 0], [0.3, 2.2, 1.8], "light");
-    }
   } else if (id === "decor-trophy") {
     box("Trophy base", [0, 2, 0], [width - 0.5, 4, depth - 0.5], "main");
     cylinder("Trophy stem", [0, 9, 0], 2, 12, "gold");

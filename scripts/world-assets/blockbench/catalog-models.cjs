@@ -3,6 +3,9 @@ const { buildFlooring } = require("./flooring/index.cjs");
 const { gameTablePalette } = require("./game-tables.cjs");
 const { gongPalette } = require("./celebration-gong.cjs");
 const { arcadePalette } = require("./arcade-cabinet.cjs");
+const { desktopMonitorPalette, buildDesktopMonitor } = require("./desktop-monitor.cjs");
+const { tabletopElectronics, buildTabletopElectronics } = require("./tabletop-electronics.cjs");
+const { tabletopOrnaments, buildTabletopOrnament } = require("./tabletop-ornaments.cjs");
 const { expandedDesks, buildExpandedDesk } = require("./expansion/desks.cjs");
 const { expandedSeating, buildExpandedSeating } = require("./expansion/seating.cjs");
 const { expandedTables, buildExpandedTable } = require("./expansion/tables.cjs");
@@ -57,6 +60,7 @@ async function createCatalogModel(api, asset, variant, rasterSize) {
   if (["equipment-chess", "equipment-falling-blocks"].includes(asset.id)) Object.assign(palette, gameTablePalette);
   if (asset.id === "equipment-gong") Object.assign(palette, gongPalette);
   if (asset.id === "equipment-arcade") Object.assign(palette, arcadePalette);
+  if (asset.id === "decor-monitor") Object.assign(palette, desktopMonitorPalette);
   if (asset.id === "light-stone-lantern") Object.assign(palette, { stone: "#aba5b2", stoneLight: "#d8d3db", stoneShade: "#777180" });
   if (indoorPlants.includes(asset.id) || outdoorPlants.includes(asset.id)) Object.assign(palette, gardenPalette);
   if (asset.id === "plant-echeveria") Object.assign(palette, { leaf: "#84aaa2", leafLight: "#b9cfc0", leafDeep: "#517f76", flower: "#d49baa" });
@@ -81,6 +85,8 @@ async function createCatalogModel(api, asset, variant, rasterSize) {
   else if (outdoorPlants.includes(asset.id)) buildOutdoorPlant(kit, asset, variant, width, depth);
   else if (foodAssets.includes(asset.id)) buildFood(kit, asset, variant, width, depth);
   else if (playfulAssets.includes(asset.id)) metadata = buildPlayful(api, kit, asset);
+  else if (tabletopElectronics.includes(asset.id)) buildTabletopElectronics(api, kit, asset, width, depth);
+  else if (tabletopOrnaments.includes(asset.id)) buildTabletopOrnament(api, kit, asset, width, depth);
   else if (expandedDesks[asset.id]) metadata = buildExpandedDesk(kit, asset, width, depth);
   else if (expandedSeating[asset.id]) metadata = buildExpandedSeating(kit, asset, width, depth);
   else if (expandedTables[asset.id]) metadata = buildExpandedTable(kit, asset, width, depth);
@@ -102,6 +108,7 @@ async function createCatalogModel(api, asset, variant, rasterSize) {
   else if (asset.kind === "floor-tile") buildFlooring(kit, asset, width, depth, variant);
   else if (asset.placement.layer === "ground") buildSurface(kit, asset, width, depth, variant);
   else if (["whiteboard", "gong", "game", "arcade", "portal"].includes(asset.kind)) buildEquipment(kit, asset, width, depth);
+  else if (asset.id === "decor-monitor") buildDesktopMonitor(api, kit, width, depth);
   else if (asset.placement.layer === "surface") buildDecoration(kit, asset, width, depth);
   else throw new Error(`Missing Blockbench model builder: ${asset.id}`);
   api.Canvas.updateAll();
