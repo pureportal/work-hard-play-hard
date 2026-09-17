@@ -17,7 +17,8 @@ export function digest(buffer) {
 }
 
 export function recipeHash(source) {
-  return digest(JSON.stringify({ webpOptions, previewOptions, versions: sharp.versions, frames: source.frames }));
+  const { sharp: sharpVersion, vips, png, webp } = sharp.versions;
+  return digest(JSON.stringify({ webpOptions, previewOptions, versions: { sharp: sharpVersion, vips, png, webp }, frames: source.frames }));
 }
 
 export async function readImageSources() {

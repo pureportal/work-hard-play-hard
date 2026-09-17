@@ -50,7 +50,7 @@
     "assets:world": "node scripts/world-assets/blockbench/generate.mjs && node scripts/world-assets/blockbench/import.mjs && node scripts/world-assets/blockbench/generate.mjs --architecture && node scripts/world-assets/blockbench/import.mjs --architecture && pnpm assets:optimize",
     "assets:audit": "pnpm --filter @workhard/server exec tsx ../../scripts/images/audit.mjs",
     "assets:optimize": "node scripts/images/optimize.mjs",
-    "assets:optimize:check": "node scripts/images/optimize.mjs --check"
+    "assets:optimize:check": "node --test scripts/images/sources.test.mjs && node scripts/images/optimize.mjs --check"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",

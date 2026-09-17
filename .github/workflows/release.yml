@@ -381,6 +381,7 @@ jobs:
             org.opencontainers.image.version=${{ needs.metadata.outputs.version }}
 
       - name: Build and publish image
+        id: build
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a
         env:
           DOCKER_BUILD_RECORD_UPLOAD: false
@@ -397,6 +398,43 @@ jobs:
           cache-to: type=gha,mode=max,scope=northstar-${{ matrix.component }}
           provenance: mode=max
           sbom: true
+
+      - name: Verify published image
+        env:
+          IMAGE_TAGS: ${{ steps.image.outputs.tags }}
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE_REVISION: ${{ needs.metadata.outputs.sha }}
+          IMAGE_VERSION: ${{ needs.metadata.outputs.version }}
+          IMAGE_SOURCE: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          while IFS= read -r tag; do
+            manifest="$(docker buildx imagetools inspect "$tag" --format '{{json .Manifest}}')"
+            jq --exit-status --arg digest "$IMAGE_DIGEST" '.digest == $digest' <<< "$manifest"
+            echo "Verified $tag@$IMAGE_DIGEST"
+            image="${tag%:*}"
+          done <<< "$IMAGE_TAGS"
+
+          for architecture in amd64 arm64; do
+            platform_digest="$(jq --exit-status --raw-output --arg architecture "$architecture" '
+              [.manifests[] | select(.platform.os == "linux" and .platform.architecture == $architecture)]
+              | if length == 1 then .[0].digest else error("Expected exactly one platform image") end
+            ' <<< "$manifest")"
+            reference="$image@$platform_digest"
+            docker pull --platform "linux/$architecture" "$reference"
+            config="$(docker image inspect "$reference" --format '{{json .}}')"
+            jq --exit-status \
+              --arg architecture "$architecture" \
+              --arg revision "$IMAGE_REVISION" \
+              --arg version "$IMAGE_VERSION" \
+              --arg source "$IMAGE_SOURCE" '
+                .Os == "linux" and .Architecture == $architecture and
+                .Config.Labels["org.opencontainers.image.revision"] == $revision and
+                .Config.Labels["org.opencontainers.image.version"] == $version and
+                .Config.Labels["org.opencontainers.image.source"] == $source
+              ' <<< "$config"
+            jq '{created: .Created, architecture: .Architecture, labels: .Config.Labels}' <<< "$config"
+            echo "Verified linux/$architecture $reference"
+          done
 
   publish:
     name: Publish GitHub release
