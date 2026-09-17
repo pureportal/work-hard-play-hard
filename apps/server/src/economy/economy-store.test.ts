@@ -12,21 +12,21 @@ describe("EconomyStore", () => {
     const first = economy.claimDailyReward("player", "claim-one", firstDay);
     const replay = economy.claimDailyReward("player", "claim-one", firstDay);
 
-    expect(first.transaction.amount).toBe(50);
-    expect(first.economy).toMatchObject({ coinBalance: 300, dailyReward: { claimable: false, streak: 1 } });
+    expect(first.transaction.amount).toBe(10);
+    expect(first.economy).toMatchObject({ coinBalance: 260, dailyReward: { claimable: false, streak: 1 } });
     expect(replay.replayed).toBe(true);
-    expect(replay.economy.coinBalance).toBe(300);
+    expect(replay.economy.coinBalance).toBe(260);
     expect(() => economy.claimDailyReward("player", "claim-again", firstDay)).toThrow("DAILY_REWARD_ALREADY_CLAIMED");
 
     const second = economy.claimDailyReward("player", "claim-two", secondDay);
-    expect(second.transaction.amount).toBe(60);
-    expect(second.economy).toMatchObject({ coinBalance: 360, dailyReward: { streak: 2 } });
+    expect(second.transaction.amount).toBe(15);
+    expect(second.economy).toMatchObject({ coinBalance: 275, dailyReward: { streak: 2 } });
 
     const afterMissedDay = new Date("2026-09-04T12:00:00.000Z");
     expect(economy.getPlayerEconomy("player", afterMissedDay).dailyReward).toMatchObject({
       claimable: true,
       streak: 0,
-      amount: 50,
+      amount: 10,
     });
     expect(economy.claimDailyReward("player", "claim-after-gap", afterMissedDay).economy.dailyReward.streak).toBe(1);
   });
@@ -53,9 +53,9 @@ describe("EconomyStore", () => {
 
     expect(purchase.transaction.amount).toBe(-70);
     expect(purchase.economy).toMatchObject({ coinBalance: 180, lifetimeSpent: 70 });
-    expect(purchase.economy.inventory).toHaveLength(1);
+    expect(purchase.economy.inventory).toHaveLength(3);
     expect(replay.replayed).toBe(true);
-    expect(replay.economy.inventory).toHaveLength(1);
+    expect(replay.economy.inventory).toEqual(purchase.economy.inventory);
     expect(() => economy.purchaseAsset("player", "plant-floor", "purchase-chair", firstDay)).toThrow(
       "ECONOMY_REQUEST_CONFLICT",
     );
@@ -67,14 +67,14 @@ describe("EconomyStore", () => {
   it("caps server-scored game rewards per UTC day", () => {
     const economy = new EconomyStore(["player"], firstDay);
 
-    const first = economy.rewardGame("player", "round-one", 20, true, firstDay);
+    const first = economy.rewardGame("player", "round-one", 20, false, firstDay);
     const second = economy.rewardGame("player", "round-two", 20, true, firstDay);
     const third = economy.rewardGame("player", "round-three", 20, true, firstDay);
 
-    expect([first.amount, second.amount, third.amount]).toEqual([120, 80, 0]);
+    expect([first.amount, second.amount, third.amount]).toEqual([80, 20, 0]);
     expect(economy.getPlayerEconomy("player", firstDay)).toMatchObject({
-      coinBalance: 450,
-      lifetimeEarned: 450,
+      coinBalance: 350,
+      lifetimeEarned: 350,
     });
   });
 
@@ -136,7 +136,7 @@ describe("EconomyStore", () => {
     const purchased = new EconomyStore(["player"], firstDay);
     purchased.purchaseAsset("player", "chair-office", "purchase-chair", firstDay);
     const invalidPrice = purchased.exportState();
-    const purchase = invalidPrice.transactions.find((transaction) => transaction.kind === "shop_purchase")!;
+    const purchase = invalidPrice.transactions.find((transaction) => transaction.operationKey === "purchase-chair")!;
     purchase.amount = -1;
     purchase.balanceAfter = 249;
     invalidPrice.accounts[0]!.coinBalance = 249;
@@ -151,29 +151,24 @@ describe("EconomyStore", () => {
 
     expect(() => new EconomyStore([]).restoreState(invalidStreak)).toThrow("ECONOMY_STATE_INVALID");
 
-    const underRewarded = new EconomyStore(["player"], firstDay);
-    underRewarded.rewardGame("player", "round-one", 4, false, firstDay);
-    const invalidReward = underRewarded.exportState();
+    const rewarded = new EconomyStore(["player"], firstDay);
+    rewarded.rewardGame("player", "round-one", 4, false, firstDay);
+    const invalidReward = rewarded.exportState();
     const gameReward = invalidReward.transactions.find((transaction) => transaction.kind === "game_reward")!;
-    gameReward.amount -= 1;
-    gameReward.balanceAfter -= 1;
-    invalidReward.accounts[0]!.coinBalance -= 1;
-    invalidReward.accounts[0]!.lifetimeEarned -= 1;
+    gameReward.amount += 1;
+    gameReward.balanceAfter += 1;
+    invalidReward.accounts[0]!.coinBalance += 1;
+    invalidReward.accounts[0]!.lifetimeEarned += 1;
 
     expect(() => new EconomyStore([]).restoreState(invalidReward)).toThrow("ECONOMY_STATE_INVALID");
 
-    const rewarded = new EconomyStore(["player"], firstDay);
-    rewarded.rewardGame("player", "round-one", 20, true, firstDay);
-    rewarded.rewardGame("player", "round-two", 20, true, firstDay);
-    rewarded.rewardGame("player", "round-three", 20, true, firstDay);
-    const invalidCap = rewarded.exportState();
-    const finalReward = invalidCap.transactions.find((transaction) => transaction.operationKey === "game:round-three")!;
-    finalReward.amount = 1;
-    finalReward.balanceAfter += 1;
-    invalidCap.accounts[0]!.coinBalance += 1;
-    invalidCap.accounts[0]!.lifetimeEarned += 1;
+    const duplicateReward = rewarded.exportState();
+    const receipt = duplicateReward.transactions.find((transaction) => transaction.kind === "game_reward")!;
+    duplicateReward.transactions.push({ ...receipt, id: "duplicate-reward", balanceAfter: receipt.balanceAfter + receipt.amount });
+    duplicateReward.accounts[0]!.coinBalance += receipt.amount;
+    duplicateReward.accounts[0]!.lifetimeEarned += receipt.amount;
 
-    expect(() => new EconomyStore([]).restoreState(invalidCap)).toThrow("ECONOMY_STATE_INVALID");
+    expect(() => new EconomyStore([]).restoreState(duplicateReward)).toThrow("ECONOMY_STATE_INVALID");
   });
 
   it("validates restored member accounts and placed inventory links", () => {

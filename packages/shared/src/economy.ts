@@ -1,8 +1,8 @@
 import type { DefaultRoomPermission } from "./room-permissions.js";
 
 export const WELCOME_COIN_REWARD = 250;
-export const DAILY_REWARD_AMOUNTS = [50, 60, 70, 80, 90, 100, 150] as const;
-export const GAME_REWARD_DAILY_CAP = 200;
+export const DAILY_REWARD_AMOUNTS = [10, 15, 20, 25, 30, 35, 50] as const;
+export const GAME_REWARD_DAILY_CAP = 100;
 export const MAX_OWNED_ASSETS = 500;
 
 export interface GameSettings {

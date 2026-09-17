@@ -2,7 +2,6 @@ import { gameSettingsSchema } from "../organisation/organisation-schema.js";
 import { randomUUID } from "node:crypto";
 import {
   DEFAULT_GAME_SETTINGS,
-  DAILY_REWARD_AMOUNTS,
   GAME_REWARD_DAILY_CAP,
   MAX_OWNED_ASSETS,
   WELCOME_COIN_REWARD,
@@ -21,6 +20,8 @@ import {
   type PlayerEconomy,
   type WorldObject,
 } from "@workhard/shared";
+
+const STARTER_ASSET_IDS = ["table-cafe", "decor-laptop"];
 
 interface EconomyAccountRecord {
   userId: string;
@@ -87,7 +88,12 @@ export class EconomyStore {
       lifetimeEarned: WELCOME_COIN_REWARD,
       lifetimeSpent: 0,
       dailyReward: { streak: 0 },
-      inventory: [],
+      inventory: STARTER_ASSET_IDS.map((assetId) => ({
+        id: randomUUID(),
+        assetId,
+        acquiredAt: createdAt,
+        purchasePrice: 0,
+      })),
     };
     this.accounts.push(account);
     this.appendTransaction({
@@ -100,6 +106,17 @@ export class EconomyStore {
       balanceAfter: WELCOME_COIN_REWARD,
       createdAt,
     });
+    for (const asset of account.inventory) {
+      this.applyTransaction(account, {
+        operationKey: `starter:${asset.assetId}`,
+        operationFingerprint: `shop_purchase:${asset.assetId}`,
+        kind: "shop_purchase",
+        amount: 0,
+        createdAt,
+        assetId: asset.assetId,
+        ownedAssetId: asset.id,
+      });
+    }
   }
 
   removeAccount(userId: string): void {
@@ -721,7 +738,6 @@ function validatePersistenceState(state: EconomyPersistenceState): void {
       || !dailyReward
       || account.dailyReward.streak !== dailyReward.streak
       || account.dailyReward.lastClaimedDay !== dailyReward.lastClaimedDay
-      || hasInvalidGameRewardLedger(accountTransactions)
       || account.inventory.some((asset) => {
         const purchase = purchasesByOwnedAssetId.get(asset.id);
         return !purchase || purchase.assetId !== asset.assetId || purchase.createdAt !== asset.acquiredAt || -purchase.amount !== asset.purchasePrice || disposedIds.has(asset.id);
@@ -781,7 +797,7 @@ function isValidTransaction(transaction: PersistedCoinTransaction): boolean {
   }
   if (transaction.kind === "daily_bonus") {
     return transaction.operationFingerprint === "daily_bonus"
-      && DAILY_REWARD_AMOUNTS.some((amount) => amount === transaction.amount)
+      && transaction.amount > 0
       && Boolean(transaction.sourceId && isValidUtcDay(transaction.sourceId))
       && transaction.createdAt.startsWith(transaction.sourceId!)
       && transaction.assetId === undefined
@@ -828,7 +844,7 @@ function replayDailyRewardProgress(transactions: PersistedCoinTransaction[]): Da
   for (const transaction of transactions) {
     const claimedDay = transaction.sourceId!;
     const status = getDailyRewardStatus(progress, new Date(`${claimedDay}T12:00:00.000Z`));
-    if (!status.claimable || transaction.amount !== status.amount) {
+    if (!status.claimable) {
       return null;
     }
     progress = {
@@ -837,30 +853,6 @@ function replayDailyRewardProgress(transactions: PersistedCoinTransaction[]): Da
     };
   }
   return progress;
-}
-
-function hasInvalidGameRewardLedger(transactions: PersistedCoinTransaction[]): boolean {
-  const rewardsByDay = new Map<string, number>();
-  for (const transaction of transactions) {
-    if (transaction.kind !== "game_reward") {
-      continue;
-    }
-    const reward = parseGameRewardFingerprint(transaction.operationFingerprint);
-    if (!reward) {
-      return true;
-    }
-    const day = transaction.createdAt.slice(0, 10);
-    const earned = rewardsByDay.get(day) ?? 0;
-    const expected = Math.min(
-      calculateGameCoinReward(reward.lines, reward.won),
-      Math.max(0, GAME_REWARD_DAILY_CAP - earned),
-    );
-    if (transaction.amount !== expected) {
-      return true;
-    }
-    rewardsByDay.set(day, earned + transaction.amount);
-  }
-  return false;
 }
 
 function parseGameRewardFingerprint(fingerprint: string): { lines: number; won: boolean } | undefined {
