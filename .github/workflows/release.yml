@@ -468,7 +468,7 @@ jobs:
 
       - name: Create checksum manifest
         working-directory: release-assets
-        run: sha256sum ./* > "$RUNNER_TEMP/SHA256SUMS" && mv "$RUNNER_TEMP/SHA256SUMS" SHA256SUMS
+        run: find . -type f -execdir sha256sum -- {} + | LC_ALL=C sort -k2 > "$RUNNER_TEMP/SHA256SUMS" && mv "$RUNNER_TEMP/SHA256SUMS" SHA256SUMS
 
       - name: Publish release
         env:
@@ -478,7 +478,7 @@ jobs:
           RELEASE_SHA: ${{ needs.metadata.outputs.sha }}
           RELEASE_TAG: ${{ needs.metadata.outputs.tag }}
         run: |
-          mapfile -t assets < <(find release-assets -maxdepth 1 -type f | sort)
+          mapfile -t assets < <(find release-assets -type f | sort)
           if [ ${#assets[@]} -eq 0 ]; then
             echo "::error::No release assets were downloaded."
             exit 1
