@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { GITHUB_MAILROOM_VIEWS } from "@workhard/shared";
 import { AuthRateLimiter } from "../auth/rate-limiter.js";
+import { BrowserAuthorization, connectionRequestSchema } from "../auth/browser-authorization.js";
 import { GitHubError } from "./github-error.js";
 import { repositoryNameSchema } from "./github-mailroom.js";
 import type { GitHubService } from "./github-service.js";
@@ -18,10 +19,13 @@ export async function registerGitHubRoutes(app: FastifyInstance, options: {
   authenticate: (request: FastifyRequest) => { userId: string; sessionToken: string } | undefined;
   canOpenTray: (userId: string, objectId: string) => boolean;
 }): Promise<void> {
+  const browserAuthorization = new BrowserAuthorization(app, "github");
   await app.register(async (routes) => {
     const limiter = new AuthRateLimiter();
     routes.addHook("onRequest", async (request, reply) => {
       reply.header("cache-control", "no-store").header("referrer-policy", "no-referrer");
+      if (request.routeOptions.url === "/v1/github/callback"
+        && browserAuthorization.has((request.query as { state?: unknown }).state)) return;
       const session = options.authenticate(request);
       if (!session) return reply.code(401).send({ code: "AUTH_REQUIRED", message: "Sign in and connect GitHub again." });
       if (request.method === "POST" && request.headers["content-type"]?.split(";")[0] !== "application/json") {
@@ -44,28 +48,36 @@ export async function registerGitHubRoutes(app: FastifyInstance, options: {
     routes.get("/v1/github", async (request) => options.service.status(options.authenticate(request)!.userId));
     routes.post("/v1/github/connect", { logLevel: "silent" }, async (request, reply) => {
       const session = options.authenticate(request)!;
+      const { native } = connectionRequestSchema.parse(request.body);
       const result = options.service.beginConnection(session.userId, session.sessionToken);
+      if (native) return { url: browserAuthorization.begin(result, session,
+        () => options.authenticate(request)?.sessionToken === session.sessionToken) };
       reply.header("set-cookie", cookie(result.state, 600));
       return { url: result.url };
     });
     routes.get("/v1/github/callback", { logLevel: "silent" }, async (request, reply) => {
       const returnUrl = new URL(options.clientUrl);
+      const native = browserAuthorization.has((request.query as { state?: unknown }).state);
       try {
         const query = callbackSchema.parse(request.query);
-        const session = options.authenticate(request)!;
         const stateCookie = request.headers.cookie?.split(";").map((value) => value.trim()).find((value) => value.startsWith(`${COOKIE}=`))?.slice(COOKIE.length + 1);
+        const browser = native ? browserAuthorization.consume(query.state, stateCookie) : undefined;
+        const session = browser ? browser.session : options.authenticate(request)!;
         const verifier = options.service.authorization.consume(query.state, stateCookie, session.userId, session.sessionToken);
         if (query.error === "access_denied") returnUrl.searchParams.set("github", "cancelled");
         else {
           if (!query.code || query.error) throw new GitHubError("GITHUB_AUTH_FAILED", "GitHub could not connect.", 400);
           await options.service.completeConnection(session.userId, query.code, verifier,
-            () => options.authenticate(request)?.sessionToken === session.sessionToken);
+            browser ? browser.isActive : () => options.authenticate(request)?.sessionToken === session.sessionToken);
           returnUrl.searchParams.set("github", "connected");
         }
       } catch {
         returnUrl.searchParams.set("github", "error");
       }
       reply.header("set-cookie", cookie("", 0));
+      if (native) return reply.type("text/plain").send(returnUrl.searchParams.get("github") === "connected"
+        ? "GitHub connected. Return to the app."
+        : "GitHub was not connected. Return to the app to try again.");
       return reply.redirect(returnUrl.toString());
     });
     routes.delete("/v1/github", async (request) => options.service.disconnect(options.authenticate(request)!.userId));

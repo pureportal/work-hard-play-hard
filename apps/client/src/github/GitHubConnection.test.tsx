@@ -3,14 +3,33 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GitHubStatus } from "@workhard/shared";
 import { connectGitHub, disconnectGitHub, fetchGitHubStatus } from "../api";
 import { GitHubConnection } from "./GitHubConnection";
+import { openAuthorization } from "../open-authorization";
+
+vi.mock("../open-authorization", () => ({ openAuthorization: vi.fn((connect: () => Promise<string>) => connect()) }));
 
 vi.mock("../api", () => ({ fetchGitHubStatus: vi.fn(), connectGitHub: vi.fn(), disconnectGitHub: vi.fn() }));
 const status: GitHubStatus = { configured: true, connected: false, login: null, needsReconnect: false, installationUrl: null };
 
-beforeEach(() => { vi.mocked(fetchGitHubStatus).mockResolvedValue(status); });
-afterEach(() => { cleanup(); vi.resetAllMocks(); window.history.replaceState(null, "", "/"); });
+beforeEach(() => {
+  vi.mocked(fetchGitHubStatus).mockResolvedValue(status);
+  vi.mocked(openAuthorization).mockImplementation(async (connect) => { await connect(); });
+});
+afterEach(() => { cleanup(); vi.resetAllMocks(); vi.unstubAllGlobals(); window.history.replaceState(null, "", "/"); });
 
 describe("GitHub connection", () => {
+  it("connects from Tauri and refreshes the account when returning", async () => {
+    vi.stubGlobal("__TAURI_INTERNALS__", {});
+    vi.mocked(connectGitHub).mockResolvedValue("https://office.example/v1/github/browser?ticket=test");
+    const view = render(<GitHubConnection />);
+    const button = await view.findByRole("button", { name: "Connect GitHub" });
+    fireEvent.click(button);
+    await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false));
+    expect(openAuthorization).toHaveBeenCalledWith(connectGitHub);
+    vi.mocked(fetchGitHubStatus).mockResolvedValue({ ...status, connected: true, login: "maya" });
+    fireEvent.focus(window);
+    expect(await view.findByRole("button", { name: "Disconnect GitHub" })).toBeTruthy();
+  });
+
   it("recovers a failed status check when returning to the app", async () => {
     vi.mocked(fetchGitHubStatus).mockRejectedValueOnce(new Error("GitHub could not load. Try again."));
     const view = render(<GitHubConnection />);

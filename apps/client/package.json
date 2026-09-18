@@ -19,6 +19,7 @@
     "android:release": "pnpm android:build && pnpm android:sign"
   },
   "dependencies": {
+    "@tauri-apps/plugin-opener": "^2.5.5",
     "@workhard/shared": "workspace:*",
     "lucide-react": "^0.542.0",
     "pixi.js": "^8.20.0",

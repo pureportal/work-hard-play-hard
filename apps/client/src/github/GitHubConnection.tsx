@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Github, LoaderCircle, Unlink } from "lucide-react";
 import type { GitHubStatus } from "@workhard/shared";
 import { connectGitHub, disconnectGitHub, fetchGitHubStatus } from "../api";
+import { openAuthorization } from "../open-authorization";
 import "./github.css";
 
 const callbackError = "GitHub could not connect. Try connecting again.";
@@ -53,8 +54,7 @@ export function GitHubConnection({ onStatus, compact = false }: { onStatus?: (st
         const next = await disconnectGitHub();
         if (revision.current === version) accept(next);
       } else {
-        const url = await connectGitHub();
-        if (revision.current === version) window.location.assign(url);
+        await openAuthorization(connectGitHub);
       }
     } catch (failure) {
       if (revision.current === version) setError(failure instanceof Error ? failure.message : "GitHub could not connect. Try again.");
@@ -70,9 +70,7 @@ export function GitHubConnection({ onStatus, compact = false }: { onStatus?: (st
     {status && !status.configured && <p>GitHub has not been set up for this workspace.</p>}
     {status?.configured && (status.connected
       ? <button className={compact ? "text-button" : "secondary-button"} disabled={busy} onClick={() => void update(true)}>{busy ? <LoaderCircle size={14} className="github-spinner" aria-hidden="true" /> : <Unlink size={14} aria-hidden="true" />}Disconnect GitHub</button>
-      : "__TAURI_INTERNALS__" in window
-        ? <p>Connect GitHub from the web app, then return here.</p>
-        : <button className="primary-button" disabled={busy} onClick={() => void update(false)}>{busy ? <LoaderCircle size={16} className="github-spinner" aria-hidden="true" /> : <Github size={16} aria-hidden="true" />}{status.needsReconnect ? "Reconnect GitHub" : "Connect GitHub"}</button>)}
+      : <button className="primary-button" disabled={busy} onClick={() => void update(false)}>{busy ? <LoaderCircle size={16} className="github-spinner" aria-hidden="true" /> : <Github size={16} aria-hidden="true" />}{status.needsReconnect ? "Reconnect GitHub" : "Connect GitHub"}</button>)}
     {error && <p className="github-error" role="alert">{error} <button className="text-button" disabled={busy} onClick={() => { setError(null); void refresh(); }}>Retry</button></p>}
   </section>;
 }

@@ -22,6 +22,7 @@ import type {
   GitHubMailroomView,
 } from "@workhard/shared";
 import { resolveServerUrl } from "./server-url";
+import { isNativeClient } from "./native-client";
 
 const REQUEST_TIMEOUT_MS = 10_000;
 const EMAIL_DELIVERY_TIMEOUT_MS = 45_000;
@@ -205,7 +206,7 @@ export async function updateGitHubAdminSettings(settings: GitHubAppSettingsUpdat
 
 export async function connectGitHub(): Promise<string> {
   const response = await fetchWithTimeout("/v1/github/connect", {
-    method: "POST", headers: { "content-type": "application/json" }, body: "{}",
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ native: isNativeClient() }),
   });
   return (await readResponse<{ url: string }>(response)).url;
 }
@@ -225,7 +226,7 @@ export async function fetchGitHubMailroom(objectId: string, repository: string, 
 
 export async function connectSpotify(): Promise<string> {
   const response = await fetchWithTimeout("/v1/spotify/connect", {
-    method: "POST", headers: { "content-type": "application/json" }, body: "{}",
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ native: isNativeClient() }),
   });
   return (await readResponse<{ url: string }>(response)).url;
 }

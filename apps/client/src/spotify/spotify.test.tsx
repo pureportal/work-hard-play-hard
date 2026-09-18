@@ -5,6 +5,9 @@ import { ApiError } from "../api";
 import { SpotifySettings } from "./SpotifySettings";
 import { SpotifySongDetails } from "./SpotifySongDetails";
 import { useSpotifyPresence } from "./useSpotifyPresence";
+import { openAuthorization } from "../open-authorization";
+
+vi.mock("../open-authorization", () => ({ openAuthorization: vi.fn() }));
 
 const api = vi.hoisted(() => ({
   fetchSpotifyStatus: vi.fn(), connectSpotify: vi.fn(), disconnectSpotify: vi.fn(),
@@ -21,9 +24,22 @@ beforeEach(() => {
   vi.resetAllMocks();
   api.fetchSpotifyStatus.mockResolvedValue(status);
 });
-afterEach(() => { cleanup(); vi.useRealTimers(); });
+afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 describe("Spotify controls", () => {
+  it("connects from Tauri and refreshes the account when returning", async () => {
+    vi.stubGlobal("__TAURI_INTERNALS__", {});
+    api.fetchSpotifyStatus.mockResolvedValue({ ...status, connected: false });
+    render(<SpotifySettings />);
+    const button = await screen.findByRole("button", { name: "Connect Spotify" });
+    fireEvent.click(button);
+    await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false));
+    expect(openAuthorization).toHaveBeenCalledWith(api.connectSpotify);
+    api.fetchSpotifyStatus.mockResolvedValue(status);
+    fireEvent.focus(window);
+    expect(await screen.findByRole("button", { name: "Disconnect Spotify" })).toBeTruthy();
+  });
+
   it("confirms sharing changes on the server and disconnects without keeping activity controls", async () => {
     api.setSpotifySharing.mockResolvedValue({ ...status, sharing: true });
     api.disconnectSpotify.mockResolvedValue({ ...status, connected: false });

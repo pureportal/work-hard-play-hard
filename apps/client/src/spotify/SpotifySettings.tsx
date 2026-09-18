@@ -3,6 +3,7 @@ import { Link2, Unlink } from "lucide-react";
 import { isSpotifyJamUrl, type SpotifyStatus } from "@workhard/shared";
 import { connectSpotify, disconnectSpotify, fetchSpotifyStatus, setSpotifyJam, setSpotifySharing } from "../api";
 import { SpotifyMark } from "./SpotifyMark";
+import { openAuthorization } from "../open-authorization";
 import "./spotify.css";
 
 export function SpotifySettings() {
@@ -17,7 +18,6 @@ export function SpotifySettings() {
   const [editingJam, setEditingJam] = useState(false);
   const [jamUrl, setJamUrl] = useState("");
   const revision = useRef(0);
-  const nativeClient = "__TAURI_INTERNALS__" in window;
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -64,9 +64,10 @@ export function SpotifySettings() {
     setBusy(true);
     setError(null);
     try {
-      window.location.assign(await connectSpotify());
+      await openAuthorization(connectSpotify);
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Spotify could not connect. Try again.");
+    } finally {
       setBusy(false);
     }
   };
@@ -103,11 +104,11 @@ export function SpotifySettings() {
           }}><Link2 size={15} />{status.jamUrl ? "Remove Jam invite" : "Share Jam invite"}</button>}
         </div>}
         <button className="spotify-disconnect" disabled={busy} onClick={() => void update(disconnectSpotify)}><Unlink size={14} />Disconnect Spotify</button>
-      </> : nativeClient ? <p className="spotify-muted">Connect Spotify from the web app, then return here.</p> : <button className="primary-button spotify-connect" disabled={busy} onClick={() => void connect()}>
+      </> : <button className="primary-button spotify-connect" disabled={busy} onClick={() => void connect()}>
         <SpotifyMark />{status.needsReconnect ? "Reconnect Spotify" : "Connect Spotify"}
       </button>}
     </>}
     {(error || loadError || status?.error) && <p className="spotify-error" role="alert">{error || loadError || status?.error}</p>}
-    {status?.connected && status.error && !nativeClient && <button className="secondary-button" disabled={busy} onClick={() => void connect()}>Reconnect Spotify</button>}
+    {status?.connected && status.error && <button className="secondary-button" disabled={busy} onClick={() => void connect()}>Reconnect Spotify</button>}
   </section>;
 }
