@@ -165,6 +165,40 @@ afterEach(() => {
 });
 
 describe("meeting area entry", () => {
+  it("keeps an invitation when cancelling a meeting switch and uses it on retry", () => {
+    const data = structuredClone(workspace);
+    const nextMeeting = { ...meeting, id: "planning", title: "Planning" };
+    data.meetings.push(nextMeeting);
+    render(<Workspace initialData={data} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Open" })[0]!);
+    emitJoined();
+    const invitation = { id: "invite-planning", meetingId: nextMeeting.id, inviterUserId: "user-leo", targetUserId: "user-maya",
+      expiresAt: new Date(Date.now() + 60_000).toISOString() };
+    act(() => realtime.handler?.({ type: "meeting.invited", invitation }));
+    fireEvent.click(within(screen.getByRole("complementary", { name: "Meeting invitation" })).getByRole("button", { name: "Open" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Open Planning?" })).getByRole("button", { name: "Cancel" }));
+    const notice = screen.getByRole("complementary", { name: "Meeting invitation" });
+    expect(screen.getByRole("dialog", { name: meeting.title })).toBeTruthy();
+    expect(meetingJoinCommands()).toHaveLength(1);
+    fireEvent.click(within(notice).getByRole("button", { name: "Open" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Open Planning?" })).getByRole("button", { name: "Open" }));
+    expect(meetingJoinCommands().at(-1)).toMatchObject({ meetingId: nextMeeting.id, invitationId: invitation.id });
+    expect(screen.queryByRole("complementary", { name: "Meeting invitation" })).toBeNull();
+  });
+
+  it("shows the next invitation when the first meeting no longer exists", () => {
+    renderWorkspace();
+    const invitation = { id: "unavailable", meetingId: "removed-meeting", inviterUserId: "user-leo", targetUserId: "user-maya",
+      expiresAt: new Date(Date.now() + 60_000).toISOString() };
+    act(() => {
+      realtime.handler?.({ type: "meeting.invited", invitation });
+      realtime.handler?.({ type: "meeting.invited", invitation: { ...invitation, id: "available", meetingId: meeting.id } });
+    });
+    const notice = screen.getByRole("complementary", { name: "Meeting invitation" });
+    fireEvent.click(within(notice).getByRole("button", { name: "Open" }));
+    expect(meetingJoinCommands().at(-1)).toMatchObject({ meetingId: meeting.id, invitationId: "available" });
+  });
+
   it("offers an idle room meeting on entry after its settings change", () => {
     const data = structuredClone(workspace);
     data.meetings = [];

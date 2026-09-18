@@ -20,7 +20,9 @@ Open calls share the WebRTC transport and ICE configuration below. Run `pnpm e2e
 
 Meetings use WebRTC connections between participants and the existing authenticated WebSocket for signaling. A session belongs to the tab that joined it. Disconnecting that tab releases its membership even when another tab remains open.
 
-Serve the client over HTTPS outside localhost. Configure `MEETING_ICE_SERVERS` on the server with a JSON array of ICE servers. Each entry has a `urls` array; TURN entries also require `username` and `credential`. The default is an empty array. Cross-network connections need a reachable TURN service; no public relay is selected automatically. Each admitted participant receives the configured credentials, so use credentials intended for browser clients.
+Serve the client over HTTPS outside localhost. When `MEETING_ICE_SERVERS` is unset or blank, calls use [Cloudflare's public STUN service](https://developers.cloudflare.com/realtime/turn/) at `stun:stun.cloudflare.com:3478` for address discovery. Override it with a JSON array of ICE servers. Each entry has a `urls` array; TURN entries also require `username` and `credential`. An explicit `[]` disables STUN/TURN. Restart the server after changing this configuration and rejoin the call.
+
+STUN does not relay media. Networks that block direct peer connections, including some corporate networks, VPNs and mobile networks, require a reachable TURN service. Include your provider's TURN URLs and browser credentials in `MEETING_ICE_SERVERS`, alongside STUN if needed. Each admitted participant receives the configured credentials, so use credentials intended for browser clients. A call's “Connection interrupted” message reports a peer media failure; it does not indicate that the application server crashed.
 
 Microphones request echo cancellation, noise suppression, automatic gain control and mono audio. Noise filtering can be changed in meeting settings. Camera and screen capture use separate tracks, and shared audio stops with the screen share.
 

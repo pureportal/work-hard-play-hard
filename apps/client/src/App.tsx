@@ -1870,6 +1870,7 @@ export function Workspace({
     if (pendingMeetingOpen.current || pendingMeetingLeave.current) {
       return;
     }
+    if (invitation) setMeetingInvitations((current) => current.filter((candidate) => candidate.id !== invitation.id));
     const meetingRequestId = requestId();
     pendingMeetingOpen.current = { requestId: meetingRequestId, meetingId: meeting.id, view, ...(invitation ? { invitation } : {}) };
     setOpeningMeeting({ meetingId: meeting.id, view });
@@ -1882,6 +1883,7 @@ export function Workspace({
 
   const openMeeting = (meeting: Meeting, view: MeetingView, invitation?: MeetingInvitation) => {
     if (currentMeeting?.id === meeting.id) {
+      if (invitation) setMeetingInvitations((current) => current.filter((candidate) => candidate.id !== invitation.id));
       setMeetingView(view);
       return;
     }
@@ -3082,12 +3084,12 @@ export function Workspace({
           changeEditingAsset(assetId); setEditingTool("asset"); }}
         onViewChange={(view) => { openPanel("build"); changeBuildView(view); }} onClose={() => openPanel(null)} /></DeferredContent>}
 
-      {meetingInvitations.slice(0, 1).map((invitation) => {
+      {meetingInvitations.filter((invitation) => data.meetings.some((meeting) => meeting.id === invitation.meetingId && meeting.status !== "ended")).slice(0, 1).map((invitation) => {
         const meeting = data.meetings.find((candidate) => candidate.id === invitation.meetingId);
         const dismiss = () => setMeetingInvitations((current) => current.filter((candidate) => candidate.id !== invitation.id));
         return meeting && <MeetingInvitationNotice key={invitation.id} invitation={invitation} meeting={meeting}
           inviter={data.members.find((member) => member.id === invitation.inviterUserId)} onDismiss={dismiss}
-          onOpen={(small) => { dismiss(); openMeeting(meeting, small ? "small" : "full", invitation); }} />;
+          onOpen={(small) => openMeeting(meeting, small ? "small" : "full", invitation)} />;
       })}
 
       {activePanel !== "build" && meetingSwitch && (

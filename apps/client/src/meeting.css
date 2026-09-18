@@ -54,7 +54,7 @@
   .work-object-layer .work-object-dialog > header,
   .work-object-layer .work-object-dialog > footer { padding: 8px 12px; }
   .work-object-layer .whiteboard-toolbar { gap: 4px; padding: 4px 8px; }
-  .workspace-shell:has(.work-object-layer) .meeting-window-layer { z-index: 70; }
+  .workspace-shell:has(.work-object-layer) .meeting-window-layer { position: fixed; z-index: 70; }
   .workspace-shell:has(.work-object-layer) .meeting-overlay-small { right: 12px; bottom: 12px; width: min(420px, calc(100vw - 24px)); height: 210px; min-height: 0; }
   .workspace-shell:has(.work-object-layer) .meeting-overlay-small .video-grid { grid-auto-rows: minmax(64px, 1fr); }
   .workspace-shell:has(.work-object-layer) .meeting-overlay-small .video-tile { min-height: 64px; }

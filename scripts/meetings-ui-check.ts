@@ -21,7 +21,9 @@ export async function verifyMeetingUi(browser: Browser, store: WorkspaceStore, o
   store.getLayout("floor-studio")!.objects.push(board);
   for (let index = 0; index < 36; index++) store.addMessage("conversation-daily", "user-maya", `Discussion ${index + 1}`);
 
-  const distribution = fileURLToPath(new URL("../apps/client/dist/", import.meta.url));
+  const distribution = process.env.MEETINGS_CLIENT_DIST
+    ? resolve(process.env.MEETINGS_CLIENT_DIST)
+    : fileURLToPath(new URL("../apps/client/dist/", import.meta.url));
   const artifacts = fileURLToPath(new URL("../artifacts/meetings/", import.meta.url));
   await mkdir(artifacts, { recursive: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, permissions: ["local-network-access"] });

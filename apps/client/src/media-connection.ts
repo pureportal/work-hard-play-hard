@@ -81,11 +81,13 @@ export class MediaConnection<Session extends MeetingMediaSession | ProximityMedi
     this.closed = true;
     for (const peer of this.peers.values()) this.closePeer(peer);
     this.peers.clear();
+    this.snapshot = { ...this.snapshot, remote: new Map() };
     this.streams = {};
     this.listeners.clear();
   }
 
   private synchronize(): void {
+    if (this.closed) return;
     const { session } = this.snapshot;
     const remoteIds = new Set(session.participants.filter((participant) => participant.sessionId !== session.sessionId).map((participant) => participant.sessionId));
     for (const [id, peer] of this.peers) {
@@ -116,9 +118,14 @@ export class MediaConnection<Session extends MeetingMediaSession | ProximityMedi
       track.onended = () => { stream.removeTrack(track); this.publish(); };
       this.publish();
     };
-    connection.onconnectionstatechange = () => {
+    let previousState: RTCPeerConnectionState | undefined;
+    const updateConnectionState = () => {
       if (this.peers.get(id) !== peer) return;
-      const state = connection.connectionState;
+      const iceState = connection.iceConnectionState;
+      const state = iceState === "failed" || iceState === "disconnected" ? iceState
+        : iceState === "checking" ? "connecting" : connection.connectionState;
+      if (state === previousState) return;
+      previousState = state;
       if (state === "connected") {
         clearTimeout(peer.timer);
         peer.restarts = 0;
@@ -132,12 +139,15 @@ export class MediaConnection<Session extends MeetingMediaSession | ProximityMedi
       }
       this.publish();
     };
+    connection.onconnectionstatechange = updateConnectionState;
+    connection.oniceconnectionstatechange = updateConnectionState;
     if (this.isOfferer(id)) {
       for (const kind of ["audio", "video", "video", "audio"]) connection.addTransceiver(kind, { direction: "sendrecv" });
       connection.onnegotiationneeded = () => this.enqueue(id, peer, async () => {
         await this.replaceTracks(peer);
+        if (!this.isActivePeer(id, peer)) return;
         await connection.setLocalDescription();
-        this.sendDescription(id, connection);
+        this.sendDescription(id, peer);
       });
     }
     peer.timer = setTimeout(() => this.restart(id, peer), 15_000);
@@ -169,16 +179,22 @@ export class MediaConnection<Session extends MeetingMediaSession | ProximityMedi
     }
     if ((signal.description.type === "offer") === this.isOfferer(id)) return;
     await connection.setRemoteDescription(signal.description);
-    for (const candidate of peer.candidates.splice(0)) await connection.addIceCandidate(candidate);
+    if (!this.isActivePeer(id, peer)) return;
+    for (const candidate of peer.candidates.splice(0)) {
+      await connection.addIceCandidate(candidate);
+      if (!this.isActivePeer(id, peer)) return;
+    }
     if (signal.description.type === "offer") {
       await this.replaceTracks(peer);
+      if (!this.isActivePeer(id, peer)) return;
       await connection.setLocalDescription();
-      this.sendDescription(id, connection);
+      this.sendDescription(id, peer);
     }
   }
 
-  private sendDescription(id: string, connection: RTCPeerConnection): void {
-    const description = connection.localDescription;
+  private sendDescription(id: string, peer: Peer): void {
+    if (!this.isActivePeer(id, peer)) return;
+    const description = peer.connection.localDescription;
     if (description && (description.type === "offer" || description.type === "answer")) {
       this.signal(id, { type: "description", description: { type: description.type, sdp: description.sdp } });
     }
@@ -194,17 +210,21 @@ export class MediaConnection<Session extends MeetingMediaSession | ProximityMedi
 
   private enqueue(id: string, peer: Peer, operation: () => Promise<void>): void {
     peer.queue = peer.queue.then(async () => {
-      if (!this.closed && this.peers.get(id) === peer) await operation();
+      if (this.isActivePeer(id, peer)) await operation();
     }).catch(() => {
-      if (!this.closed && this.peers.get(id) === peer) {
+      if (this.isActivePeer(id, peer)) {
         peer.media.state = "failed";
         this.publish();
       }
     });
   }
 
+  private isActivePeer(id: string, peer: Peer): boolean {
+    return !this.closed && this.peers.get(id) === peer;
+  }
+
   private restart(id: string, peer: Peer): void {
-    if (this.closed || this.peers.get(id) !== peer) return;
+    if (!this.isActivePeer(id, peer)) return;
     clearTimeout(peer.timer);
     if (peer.restarts >= 2) {
       peer.media.state = "failed";
@@ -225,6 +245,7 @@ export class MediaConnection<Session extends MeetingMediaSession | ProximityMedi
     peer.connection.onicecandidate = null;
     peer.connection.onnegotiationneeded = null;
     peer.connection.onconnectionstatechange = null;
+    peer.connection.oniceconnectionstatechange = null;
     peer.connection.close();
     for (const stream of [peer.media.camera, peer.media.screen, peer.media.audio]) {
       for (const track of stream.getTracks()) { track.onunmute = null; track.onended = null; track.stop(); }

@@ -29,6 +29,25 @@ function pendingCapture() {
 }
 
 describe("meeting capture lifecycle", () => {
+  it.each(["resolve", "reject"] as const)("ignores an older device scan that finishes with %s after a newer scan", async (outcome) => {
+    let complete!: (devices: MediaDeviceInfo[]) => void;
+    let fail!: (reason: Error) => void;
+    const pending = new Promise<MediaDeviceInfo[]>((resolve, reject) => { complete = resolve; fail = reject; });
+    const currentDevices = [{ deviceId: "usb-microphone", kind: "audioinput", label: "USB microphone" }] as MediaDeviceInfo[];
+    const enumerateDevices = vi.fn().mockReturnValueOnce(pending).mockResolvedValue(currentDevices);
+    const mediaDevices = Object.assign(new EventTarget(), { enumerateDevices });
+    Object.defineProperty(navigator, "mediaDevices", { configurable: true, value: mediaDevices });
+    const { result } = renderHook(() => useMediaDevices(true, false, vi.fn(), vi.fn()));
+    act(() => { mediaDevices.dispatchEvent(new Event("devicechange")); });
+    await waitFor(() => expect(result.current.devices).toEqual(currentDevices));
+    await act(async () => {
+      if (outcome === "resolve") complete([]);
+      else fail(new Error("Old scan failed"));
+      await pending.catch(() => undefined);
+    });
+    expect(result.current.devices).toEqual(currentDevices);
+  });
+
   it("keeps microphone capture when the camera disconnects", async () => {
     const microphone = capture("audio");
     const camera = capture("video");

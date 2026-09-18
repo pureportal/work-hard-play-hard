@@ -17,14 +17,16 @@ class PeerConnection {
   remoteDescription: RTCSessionDescriptionInit | null = null;
   localDescription: RTCSessionDescriptionInit | null = null;
   connectionState = "new";
+  iceConnectionState = "new";
   onnegotiationneeded?: (() => void) | null;
   onconnectionstatechange?: (() => void) | null;
+  oniceconnectionstatechange?: (() => void) | null;
   onicecandidate?: unknown;
   ontrack?: ((event: { track: MediaStreamTrack; transceiver: unknown }) => void) | null;
   restartIce = vi.fn();
   close = vi.fn();
   addIceCandidate = vi.fn().mockResolvedValue(undefined);
-  constructor() { PeerConnection.instances.push(this); }
+  constructor(readonly configuration: RTCConfiguration) { PeerConnection.instances.push(this); }
   addTransceiver(_kind: string, options: { direction: string }) {
     const transceiver = { direction: options.direction, sender: { replaceTrack: vi.fn().mockResolvedValue(undefined) } };
     this.transceivers.push(transceiver);
@@ -68,6 +70,15 @@ function stream(kind: "audio" | "video") {
 }
 
 describe("meeting peer media", () => {
+  it("passes the session's STUN and TURN configuration to each peer", () => {
+    const { connection, session } = fixture();
+    const iceServers = [{ urls: ["stun:media.example.test:3478"] },
+      { urls: ["turns:media.example.test:5349"], username: "participant", credential: "test-credential" }];
+    connection.handle({ type: "meeting.media_state", session: { ...session, iceServers,
+      participants: [...session.participants, { sessionId: "c", userId: "third", microphone: false, camera: false, screen: false }] } });
+    expect(PeerConnection.instances[1]!.configuration).toEqual({ iceServers, bundlePolicy: "max-bundle" });
+  });
+
   it("answers with outgoing microphone, camera, screen and shared audio enabled", async () => {
     const { connection, send, receive, peer } = fixture();
     const microphone = stream("audio");
@@ -153,5 +164,77 @@ describe("meeting peer media", () => {
     connection.setStreams({ microphone: stream("audio") });
     expect(send).not.toHaveBeenCalled();
     expect(peer.close).toHaveBeenCalledOnce();
+  });
+
+  it("does not recreate peers when a closed connection is started again", () => {
+    const { connection } = fixture();
+    connection.close();
+    connection.start();
+    expect(PeerConnection.instances).toHaveLength(1);
+    expect(connection.getSnapshot().remote.size).toBe(0);
+  });
+
+  it("abandons an in-flight offer after its participant leaves", async () => {
+    const { connection, peer, session, send } = fixture("a", "b");
+    let complete!: () => void;
+    const pending = new Promise<void>((resolve) => { complete = resolve; });
+    peer.transceivers[0]!.sender.replaceTrack.mockReturnValueOnce(pending);
+    const describe = vi.spyOn(peer, "setLocalDescription");
+    peer.onnegotiationneeded?.();
+    await vi.waitFor(() => expect(peer.transceivers[0]!.sender.replaceTrack).toHaveBeenCalled());
+    connection.handle({ type: "meeting.media_state", session: { ...session, participants: [session.participants[0]!] } });
+    complete();
+    await pending;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(describe).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("does not send a description that finishes after its participant leaves", async () => {
+    const { connection, peer, session, receive, send } = fixture();
+    let complete!: () => void;
+    const pending = new Promise<void>((resolve) => { complete = resolve; });
+    const describe = vi.spyOn(peer, "setLocalDescription").mockImplementation(async () => {
+      await pending;
+      peer.localDescription = { type: "answer", sdp: "v=0" };
+    });
+    receive({ type: "description", description: { type: "offer", sdp: "v=0" } });
+    await vi.waitFor(() => expect(describe).toHaveBeenCalled());
+    connection.handle({ type: "meeting.media_state", session: { ...session, participants: [session.participants[0]!] } });
+    complete();
+    await pending;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("recovers ICE failures without waiting for the aggregate connection state", () => {
+    vi.useFakeTimers();
+    const { connection, peer } = fixture("a", "b");
+    peer.connectionState = "connecting";
+    peer.iceConnectionState = "failed";
+    peer.oniceconnectionstatechange?.();
+    expect(peer.restartIce).toHaveBeenCalledOnce();
+    peer.connectionState = "failed";
+    peer.onconnectionstatechange?.();
+    expect(peer.restartIce).toHaveBeenCalledOnce();
+    peer.iceConnectionState = "checking";
+    peer.connectionState = "connecting";
+    peer.oniceconnectionstatechange?.();
+    peer.iceConnectionState = "connected";
+    peer.connectionState = "connected";
+    peer.onconnectionstatechange?.();
+    expect(connection.getSnapshot().remote.get("b")?.state).toBe("connected");
+    vi.advanceTimersByTime(60_000);
+    expect(peer.restartIce).toHaveBeenCalledOnce();
+    connection.close();
+    expect(peer.oniceconnectionstatechange).toBeNull();
+  });
+
+  it("asks the offerer to restart when the answering peer loses ICE", () => {
+    const { peer, send } = fixture();
+    peer.iceConnectionState = "failed";
+    peer.oniceconnectionstatechange?.();
+    expect(peer.restartIce).not.toHaveBeenCalled();
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({ type: "meeting.signal", targetSessionId: "a", signal: { type: "restart" } }));
   });
 });

@@ -73,7 +73,15 @@ export function useMediaDevices(muted: boolean, cameraOn: boolean, onMutedChange
     const media = navigator.mediaDevices;
     if (!media?.enumerateDevices) return;
     let active = true;
-    const update = () => { void media.enumerateDevices().then((next) => { if (active) setDevices(next); }).catch(() => { if (active) setDevices([]); }); };
+    let generation = 0;
+    const update = () => {
+      const request = ++generation;
+      void media.enumerateDevices().then((next) => {
+        if (active && request === generation) setDevices(next);
+      }).catch(() => {
+        if (active && request === generation) setDevices([]);
+      });
+    };
     update();
     media.addEventListener("devicechange", update);
     return () => { active = false; media.removeEventListener("devicechange", update); };

@@ -7,6 +7,7 @@ import { chromium, type Page } from "playwright-core";
 import { createTestApplication } from "../apps/server/src/testing/application.js";
 import { MemoryDatabase } from "../apps/server/src/persistence/memory-database.js";
 import { verifyCallDeviceChanges, verifyMeetingDeviceChanges } from "./call-devices-browser-check.js";
+import { verifyCallRecovery } from "./call-recovery-browser-check.js";
 
 declare global {
   var openCallCaptures: MediaStream[];
@@ -185,6 +186,7 @@ try {
   assert.equal(await leo.evaluate(() => openCallCaptureRequests.length), 0);
   await verifyCallDeviceChanges(maya, leo, artifacts);
   await Promise.all([maya, leo].map((page) => connected(page, 2)));
+  await verifyCallRecovery([maya, leo]);
   await theo.getByRole("region", { name: "Nearby actions" }).getByRole("button", { name: "Join call", exact: true }).click();
   await Promise.all([maya, leo, theo].map((page) => connected(page, 3, false)));
   assert(await theo.getByRole("region", { name: "Nearby actions" }).getByRole("button", { name: "In call", exact: true }).isDisabled());
@@ -209,7 +211,7 @@ try {
   await stopped(maya);
   await verifyMeetingDeviceChanges(maya, leo, artifacts);
   assert.deepEqual(errors, []);
-  console.log("PASS: The Call button sends the invitation; lost requests time out, rejected calls show errors, and retry rings the recipient. Calls and meetings join without devices, keep receiving after capture failures and muting, and enable selected devices after joining. Three participants exchange media; leave, walking away, and disconnect stop capture; desktop and mobile fit.");
+  console.log("PASS: The Call button sends the invitation; lost requests time out, rejected calls show errors, and retry rings the recipient. Calls and meetings join without devices, keep receiving after capture failures and muting, and enable selected devices after joining. ICE recovery and WebGL restoration preserve audio, video and the WebSocket connection. Three participants exchange media; leave, walking away, and disconnect stop capture; desktop and mobile fit.");
 } finally {
   await browser.close();
   await application.app.close();
