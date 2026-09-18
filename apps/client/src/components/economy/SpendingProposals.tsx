@@ -33,7 +33,7 @@ export function SpendingProposals({ proposals, economy, organisation, members, u
       </div>
     </article>;
   };
-  return <section className="spending-proposals" aria-label="Proposals">
+  return <section className="spending-proposals" aria-label="Proposals" data-guide="proposals">
     {active.length ? <div className="proposal-grid">{active.map(card)}</div> : <div className="dialog-empty"><Vote size={32} /><p>No votes waiting.</p></div>}
     {history.length > 0 && <details className="proposal-history"><summary>Past proposals ({history.length})</summary><div className="proposal-grid">{history.map(card)}</div></details>}
   </section>;

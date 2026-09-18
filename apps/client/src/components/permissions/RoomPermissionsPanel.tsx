@@ -9,6 +9,7 @@ import { RoomPermissionEditor } from "./RoomPermissionEditor";
 import "../../permissions.css";
 
 interface RoomPermissionsPanelProps {
+  initialRoomId?: string;
   equalTeam?: boolean;
   floors: Floor[];
   layouts: FloorLayout[];
@@ -26,10 +27,10 @@ interface RoomPermissionsPanelProps {
   onClose: () => void;
 }
 
-export function RoomPermissionsPanel({ equalTeam = false, floors, layouts, currentFloorId, currentUser, members, organisation, publicEconomy, settings, pending, error, onSaveRoom, onSaveDefaults, onBack, onClose }: RoomPermissionsPanelProps) {
+export function RoomPermissionsPanel({ initialRoomId = "", equalTeam = false, floors, layouts, currentFloorId, currentUser, members, organisation, publicEconomy, settings, pending, error, onSaveRoom, onSaveDefaults, onBack, onClose }: RoomPermissionsPanelProps) {
   const [tab, setTab] = useState<"rooms" | "defaults">("rooms");
   const [floorId, setFloorId] = useState(currentFloorId);
-  const [roomId, setRoomId] = useState("");
+  const [roomId, setRoomId] = useState(initialRoomId);
   const [defaults, setDefaults] = useState(settings);
   useEffect(() => setDefaults(settings), [settings]);
   const layout = layouts.find((candidate) => candidate.floorId === floorId)!;
@@ -41,7 +42,7 @@ export function RoomPermissionsPanel({ equalTeam = false, floors, layouts, curre
   return <WorkspaceDialog title="Room settings" className="room-settings-dialog" error={error} onBack={onBack} onClose={onClose}>
     <DialogTabs label="Room settings views" tabs={[{ id: "rooms", label: "Rooms" }, { id: "defaults", label: "Defaults" }]} value={tab} onChange={setTab}>
       {tab === "rooms" ? <div className="room-settings-layout">
-        <nav className="room-directory permission-content" aria-label="Rooms">
+        <nav className="room-directory permission-content" aria-label="Rooms" data-guide="room-directory">
         <label>Floor<select value={floorId} onChange={(event) => { setFloorId(event.target.value); setRoomId(""); }}>
           {floors.map((floor) => <option key={floor.id} value={floor.id}>{floor.name}</option>)}
         </select></label>

@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_CORPORATE_IDENTITY } from "@workhard/shared";
 import type { BootstrapData, ClientCommand, ServerEvent, WorldSnapshot } from "@workhard/shared";
 import { Workspace } from "./App";
+import { getServerOrigin } from "./server-url";
 import {
   createTestEconomy,
   createTestGameSettings,
@@ -112,6 +113,7 @@ const workspace: BootstrapData = {
 };
 
 beforeEach(() => {
+  localStorage.setItem(`game-guide:${getServerOrigin()}:user-maya`, "seen");
   Object.defineProperty(window, "innerWidth", { configurable: true, value: 800 });
   realtime.snapshot = snapshot();
   realtime.send.mockReset();

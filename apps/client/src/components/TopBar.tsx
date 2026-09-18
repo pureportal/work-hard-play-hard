@@ -3,8 +3,10 @@ import type { ConnectionState } from "../hooks/useRealtime";
 import type { ColorTheme } from "../theme";
 import type { Floor } from "@workhard/shared";
 import { IconButton } from "./IconButton";
+import type { ReactNode } from "react";
 
 interface TopBarProps {
+  guide?: ReactNode;
   officeName: string;
   floors: Floor[];
   floorId: string;
@@ -16,7 +18,7 @@ interface TopBarProps {
   onFloorChange: (floorId: string) => void;
 }
 
-export function TopBar({ officeName, floors, floorId, roomName, connection, coinBalance, colorTheme = "light", onColorThemeChange, onFloorChange }: TopBarProps) {
+export function TopBar({ guide, officeName, floors, floorId, roomName, connection, coinBalance, colorTheme = "light", onColorThemeChange, onFloorChange }: TopBarProps) {
   const connectionLabel = connection === "online" ? "Connected" : connection === "connecting" ? "Connecting" : "Connection Lost";
   const selectedFloor = floors.find((floor) => floor.id === floorId);
 
@@ -32,6 +34,7 @@ export function TopBar({ officeName, floors, floorId, roomName, connection, coin
         )}
       </div>
       <div className="top-bar-actions">
+        {guide}
         {onColorThemeChange && (
           <IconButton
             className="theme-toggle"

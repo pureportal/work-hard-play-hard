@@ -539,7 +539,7 @@ export function WorldCanvas(props: WorldCanvasProps) {
   }, [props.inputEnabled]);
 
   return (
-    <div className={`world-viewport ${props.editing ? "editing" : ""}`}>
+    <div className={`world-viewport ${props.editing ? "editing" : ""}`} data-guide="world">
       <div
         ref={hostRef}
         className="world-canvas"

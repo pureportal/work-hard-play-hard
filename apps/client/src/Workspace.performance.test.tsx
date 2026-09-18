@@ -7,6 +7,7 @@ import type { BootstrapData, Meeting, WorldPlayer, WorldSnapshot } from "@workha
 import type { DisplayHighFive, DisplayReaction } from "./reactions";
 import type { DisplayGongRing } from "./gong";
 import { Workspace } from "./App";
+import { getServerOrigin } from "./server-url";
 import { createTestCorporateIdentity, createTestEconomy, createTestGameSettings, createTestKidnappingConfiguration } from "./test-fixtures";
 
 const realtime = vi.hoisted(() => ({
@@ -122,6 +123,7 @@ function snapshot(tick: number, x: number): WorldSnapshot {
 }
 
 beforeEach(() => {
+  localStorage.setItem(`game-guide:${getServerOrigin()}:user-one`, "seen");
   Object.defineProperty(window, "innerWidth", { configurable: true, value: 800 });
   canvasRenders.length = 0;
   realtime.snapshot = snapshot(1, 100);

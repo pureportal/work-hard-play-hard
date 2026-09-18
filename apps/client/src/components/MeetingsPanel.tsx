@@ -17,7 +17,7 @@ export function MeetingsPanel({ meetings, rooms, members, openingMeetingId, onJo
     .sort((left, right) => (left.startsAt ? Date.parse(left.startsAt) : 0) - (right.startsAt ? Date.parse(right.startsAt) : 0)
       || left.title.localeCompare(right.title));
   return (
-    <aside className="side-panel meetings-panel" aria-label="Meetings">
+    <aside className="side-panel meetings-panel" aria-label="Meetings" data-guide="meetings">
       <SurfaceHeader className="panel-header" title="Meetings" onClose={onClose} />
       <div className="panel-scroll meeting-list">
         {activeMeetings.length === 0 && <p className="panel-empty">No meetings.</p>}
@@ -40,6 +40,7 @@ export function MeetingsPanel({ meetings, rooms, members, openingMeetingId, onJo
                   })}
                 </div>
                 <button
+                  data-guide-room={meeting.location.roomId}
                   className={meeting.status === "live" ? "primary-button" : "secondary-button"}
                   disabled={Boolean(openingMeetingId)}
                   onClick={() => onJoin(meeting)}

@@ -24,11 +24,12 @@
     "lucide-react": "^0.542.0",
     "pixi.js": "^8.20.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-joyride": "^3.2.0"
   },
   "devDependencies": {
-    "@testing-library/react": "^16.3.0",
     "@tauri-apps/cli": "^2.11.4",
+    "@testing-library/react": "^16.3.0",
     "@types/react": "^19.1.12",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^6.0.0",

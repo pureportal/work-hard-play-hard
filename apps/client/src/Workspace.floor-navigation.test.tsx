@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_CORPORATE_IDENTITY } from "@workhard/shared";
 import type { BootstrapData, ClientCommand, Floor, FloorLayout, LayoutEdit, LayoutItemReference, ServerEvent, WorldObject, WorldSnapshot } from "@workhard/shared";
 import { Workspace } from "./App";
+import { getServerOrigin } from "./server-url";
 import { createTestEconomy, createTestGameSettings, createTestKidnappingConfiguration } from "./test-fixtures";
 
 const realtime = vi.hoisted(() => ({
@@ -66,6 +67,7 @@ vi.mock("./components/WorldCanvasLoader", () => ({
 }));
 
 beforeEach(() => {
+  localStorage.setItem(`game-guide:${getServerOrigin()}:user-maya`, "seen");
   Object.defineProperty(window, "innerWidth", { configurable: true, value: 800 });
   realtime.snapshot = snapshot("floor-1", 64, 448);
   realtime.send.mockReset();

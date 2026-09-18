@@ -6,6 +6,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import type { BootstrapData, CharacterAppearance, Member } from "@workhard/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Workspace } from "./App";
+import { getServerOrigin } from "./server-url";
 import { createTestCorporateIdentity, createTestEconomy, createTestGameSettings, createTestKidnappingConfiguration } from "./test-fixtures";
 
 const apiMocks = vi.hoisted(() => ({
@@ -86,6 +87,7 @@ const workspace: BootstrapData = {
 };
 
 beforeEach(() => {
+  localStorage.setItem(`game-guide:${getServerOrigin()}:user-one`, "seen");
   Object.defineProperty(window, "innerWidth", { configurable: true, value: 800 });
   apiMocks.updatePlayerCharacter.mockReset();
 });

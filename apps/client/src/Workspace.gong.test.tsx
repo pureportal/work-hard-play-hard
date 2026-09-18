@@ -16,6 +16,7 @@ import type {
 import type { DisplayGongRing } from "./gong";
 import type { DisplayReaction } from "./reactions";
 import { Workspace } from "./App";
+import { getServerOrigin } from "./server-url";
 import { createTestEconomy, createTestGameSettings, createTestKidnappingConfiguration } from "./test-fixtures";
 
 const realtime = vi.hoisted(() => ({
@@ -71,6 +72,7 @@ vi.mock("./components/WorldCanvasLoader", () => ({
 }));
 
 beforeEach(() => {
+  localStorage.setItem(`game-guide:${getServerOrigin()}:user-maya`, "seen");
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-09-03T10:00:00.000Z"));
   Object.defineProperty(window, "innerWidth", { configurable: true, value: 800 });

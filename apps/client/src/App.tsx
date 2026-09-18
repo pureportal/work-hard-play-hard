@@ -82,6 +82,8 @@ import type {
 import { acceptInvitation, ApiError, changeMemberAccess, createDirectConversation, fetchBootstrap, fetchSession, inviteMember, isConnectionError, logout, removeCorporateLogo, revokeInvitation, updateCorporateIdentity, updatePlayerCharacter, updateRegistrationSettings, uploadChatImage, uploadCorporateLogo, uploadWhiteboardImage, verifyMagicLink, verifyRegistrationLink } from "./api";
 import { applyCorporateIdentity } from "./branding";
 import { Avatar } from "./components/Avatar";
+import { GameGuide } from "./components/guide/GameGuide";
+import type { GuideScreen } from "./components/guide/guide-steps";
 import { DeferredContent } from "./components/DeferredContent";
 import { RoomKnockNotice } from "./components/RoomKnockNotice";
 import { AuthScreen } from "./components/AuthScreen";
@@ -666,6 +668,8 @@ export function Workspace({
   const [focusTarget, setFocusTarget] = useState<WorldFocusTarget>();
   const [toast, setToast] = useState<string>();
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
+  const [guideScreen, setGuideScreen] = useState<GuideScreen>();
+  const guidePreviousScreen = useRef<{ panel: WorkspacePanel; buildView: BuildView } | undefined>(undefined);
   const [invitationLinks, setInvitationLinks] = useState<Record<string, string>>({});
   const toastTimer = useRef<number | undefined>(undefined);
   const callDismissTimer = useRef<number | undefined>(undefined);
@@ -2396,6 +2400,27 @@ export function Workspace({
       />
       <section className="workspace-main">
         <TopBar
+          guide={<GameGuide data={data} floorId={floorId} grantedRoomIds={grantedRoomIds}
+            unavailable={connection !== "online" ? "Reconnect to start the guide."
+              : projectDraft || reviewingProject || editingTool || movingBuildItem || (!guideScreen && pendingEconomyRequest) || publicCommand.pending
+                ? "Finish building before starting the guide."
+                : gameOpen || gameRound?.status === "playing" || chessOpen || currentMeeting || activeCall || proximityCallParticipants.length > 0 || workObject || avatarDialogOpen || openingMeeting || meetingSwitch
+                  ? "Close your activity before starting the guide."
+                  : !guideScreen && (activePanel === "rooms" || activePanel === "settings" || activePanel === "admin" || activePanel === "organisation" || activePanel === "approvals" || buildView === "donate" && activePanel === "build")
+                    ? "Close this panel before starting the guide." : undefined}
+            onStart={() => { guidePreviousScreen.current = { panel: activePanel, buildView }; }}
+            onNavigate={(screen) => {
+              setGuideScreen(screen);
+              setActivePanel(screen.panel);
+              if (screen.panel === "build") setBuildView("personal");
+            }}
+            onFinish={() => {
+              const previous = guidePreviousScreen.current;
+              setGuideScreen(undefined);
+              if (previous) { setActivePanel(previous.panel); setBuildView(previous.buildView); }
+              guidePreviousScreen.current = undefined;
+              requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('[data-guide="help"]')?.focus());
+            }} />}
           officeName={data.office.name}
           floors={data.floors}
           floorId={floorId}
@@ -2870,7 +2895,9 @@ export function Workspace({
           onClose={() => openPanel(null)} />
       </DeferredContent>}
       {activePanel === "rooms" && <DeferredContent onClose={() => openPanel(null)}>
-        <RoomPermissionsPanel floors={data.floors} layouts={data.layouts} currentFloorId={floorId} currentUser={currentUser}
+        <RoomPermissionsPanel key={guideScreen?.panel === "rooms" ? guideScreen.roomId : "rooms"}
+          {...(guideScreen?.panel === "rooms" ? { initialRoomId: guideScreen.roomId } : {})}
+          floors={data.floors} layouts={data.layouts} currentFloorId={guideScreen?.panel === "rooms" ? guideScreen.floorId : floorId} currentUser={currentUser}
           members={data.members} organisation={data.organisation} publicEconomy={data.publicEconomy} settings={data.gameSettings} pending={publicCommand.pending || connection !== "online"}
           error={publicCommand.error}
           equalTeam={equalTeam}

@@ -123,7 +123,7 @@ export function PlayerBuildPanel({
     )}
   </>;
   const dailyBonus = (
-    <section className="economy-summary" aria-label="Daily bonus">
+    <section className="economy-summary" aria-label="Daily bonus" data-guide="daily">
       <div className="daily-reward">
         <div>
           <strong>Daily bonus</strong>
@@ -145,12 +145,12 @@ export function PlayerBuildPanel({
   return (
     <aside className="side-panel build-panel player-build-panel" aria-label="Build">
       <SurfaceHeader className="panel-header" title="Build" closeLabel="Close build tools" onClose={onClose}
-        description={<span className="coin-balance" aria-label={`${economy.coinBalance.toLocaleString()} coins`}>
+        description={<span className="coin-balance" data-guide="wallet" aria-label={`${economy.coinBalance.toLocaleString()} coins`}>
           <Coins size={15} aria-hidden="true" /><strong>{economy.coinBalance.toLocaleString()}</strong>
         </span>}
         actions={<button className="secondary-button build-access-button" onClick={onOpenRooms}>Room settings</button>} />
       {accountControls}
-      <div className="asset-view-tabs" role="tablist" aria-label="Assets">
+      <div className="asset-view-tabs" role="tablist" aria-label="Assets" data-guide="assets">
         {tabs.map((tab) => <button key={tab} id={`${panelId}-${tab}-tab`} role="tab"
           aria-selected={view === tab} aria-controls={`${panelId}-${tab}`} tabIndex={view === tab ? 0 : -1}
           className={view === tab ? "active" : ""} onClick={() => setView(tab)} onKeyDown={(event) => {

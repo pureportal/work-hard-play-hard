@@ -5,6 +5,7 @@ import { act, cleanup, fireEvent, render, screen, within } from "@testing-librar
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BootstrapData, BuildProject, ClientCommand, ServerEvent, WorldSnapshot } from "@workhard/shared";
 import { Workspace } from "./App";
+import { getServerOrigin } from "./server-url";
 import type { WorldCanvasProps } from "./components/WorldCanvas";
 import { createTestCorporateIdentity, createTestEconomy, createTestGameSettings, createTestKidnappingConfiguration } from "./test-fixtures";
 
@@ -50,6 +51,7 @@ beforeAll(async () => {
 }, 60_000);
 
 beforeEach(() => {
+  localStorage.setItem(`game-guide:${getServerOrigin()}:player`, "seen");
   Object.defineProperty(window, "innerWidth", { configurable: true, value: 800 });
   realtime.send.mockReset().mockReturnValue(true);
   realtime.snapshot = {
