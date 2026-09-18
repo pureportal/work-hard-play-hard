@@ -1213,19 +1213,20 @@ class OfficeRenderer {
   }
 
   private drawObject(object: WorldObject): void {
+    const definition = requireAssetDefinition(object.assetId);
     const view = createWorldAssetView(this.assetTextures, object, this.layout!, this.colorTheme, this.callbacks.current.onArtworkError);
     this.objectViews.set(object.id, view.container);
     if (view.animate) {
       this.assetAnimations.set(view.container, view.animate);
       view.container.once("destroyed", () => this.assetAnimations.delete(view.container));
     }
-    if (requireAssetDefinition(object.assetId).placement.layer === "ground") {
+    if (definition.placement.layer === "ground" || definition.kind === "portal") {
       this.layoutLayer.addChild(view.container);
     } else {
       const position = getWorldAssetDepth(object);
       this.depth.setPosition(view.container, position.x, position.y);
     }
-    if (requireAssetDefinition(object.assetId).kind === "gong") {
+    if (definition.kind === "gong") {
       this.gongViews.set(object.id, { body: view.body, ringStartedAt: 0, ringUntil: 0 });
     }
   }
