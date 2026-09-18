@@ -50,7 +50,7 @@ async function verifyContextRestoration(page: Page) {
     if (Math.abs(originalPixels[index]! - restoredPixels[index]!) > 10) changed++;
   }
   assert(changed / originalPixels.length < 0.03, "Restored scene differs from the rendered world");
-  assert.equal(await page.getByRole("alert").count(), 0);
+  assert.deepEqual(await page.getByRole("alert").allTextContents(), []);
   checks.push("WebGL context and world textures restored without a page reload");
 }
 
@@ -99,7 +99,7 @@ try {
       assert.equal(navigations, 2, `${failure}: expected one recovery reload`);
       assert.equal(updateChecks, 1, `${failure}: expected one update check`);
       assert.equal(failuresInjected, 1, `${failure}: expected the stale asset to fail`);
-      assert.equal(await page.getByRole("alert").count(), 0);
+      assert.deepEqual(await page.getByRole("alert").allTextContents(), [], `${failure}: unexpected alerts after recovery`);
       const unexpected = failure === "chunk" ? errors.filter(error => !error.includes("Failed to fetch dynamically imported module")) : errors;
       assert.deepEqual(unexpected, []);
       checks.push(`${failure}: stale client recovered automatically and loaded the satin avatar`);

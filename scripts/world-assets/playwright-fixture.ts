@@ -23,6 +23,8 @@ export async function installAssetFixture(context: BrowserContext, userId = "use
       await route.fulfill({ json: { user: { id: userId, username: "asset-review", email: "asset-review@example.test" }, setupRequired: false, registration: { enabled: false, invitationRequired: true }, magicLinkEnabled: false, corporateIdentity: store.getCorporateIdentity() }, headers });
     } else if (path === "/v1/bootstrap") {
       await route.fulfill({ json: store.getBootstrap(userId), headers });
+    } else if (path === "/v1/me/game-guide" && route.request().method() === "GET") {
+      await route.fulfill({ json: { status: "completed" }, headers });
     } else {
       await route.fulfill({ status: 404, json: { error: "Unexpected asset review request" }, headers });
     }

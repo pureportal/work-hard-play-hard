@@ -17,10 +17,14 @@ const contentSecurityPolicy = Object.entries(tauriConfig.app.security.csp).map((
 const origins = ["https://first.example.test", "https://second.example.test"];
 const password = "native-client-test-password";
 const servers = new Map(await Promise.all(origins.map(async (origin, index) => {
-  const server = await createApplication({ database: new MemoryDatabase(), clientUrl: origin, spotifyConfig: null, githubConfig: null });
+  const database = new MemoryDatabase();
+  const server = await createApplication({ database, clientUrl: origin, spotifyConfig: null, githubConfig: null });
   const response = await server.app.inject({ method: "POST", url: "/v1/auth/register",
     headers: { origin: nativeOrigin }, payload: { username: `player-${index}`, email: `player-${index}@example.test`, password } });
   assert.equal(response.statusCode, 201);
+  const userId = response.json<{ user: { id: string } }>().user.id;
+  await database.saveGameGuideStatus(userId, "completed");
+  server.store.claimDailyReward(userId, `native-client-daily-${index}`);
   const image = await readFile(resolve(root, "apps/client/src-tauri/icons/32x32.png"));
   const cookie = response.cookies.map(item => `${item.name}=${item.value}`).join("; ");
   const logo = await server.app.inject({ method: "PUT", url: "/v1/admin/corporate-identity/logo",
