@@ -88,7 +88,7 @@ describe("PlayerBuildPanel", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Lighting" }));
     fireEvent.change(screen.getByRole("combobox", { name: "Rarity" }), { target: { value: "legendary" } });
     expect(screen.queryByRole("button", { name: "Buy Drum floor lamp" })).toBeNull();
-    const expensive = screen.getByRole("button", { name: "Need 850 more coins for Crystal floor lamp" });
+    const expensive = screen.getByRole("button", { name: "Need 1400 more coins for Crystal floor lamp" });
     expect((expensive as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(expensive);
     expect(onPurchase).not.toHaveBeenCalled();
