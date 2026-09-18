@@ -45,6 +45,7 @@ beforeAll(async () => {
     import("./components/PlayerBuildPanel"),
     import("./components/BuildPanel"),
     import("./components/economy/FundsPanel"),
+    import("./components/economy/DonationPanel"),
   ]);
 }, 60_000);
 
@@ -71,6 +72,31 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("Workspace player assets", () => {
+  it("donates coins from Build and returns to personal inventory", async () => {
+    const data = workspace();
+    render(<Workspace initialData={data} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Build" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Donate" }, { timeout: 5000 }));
+    await screen.findByRole("dialog", { name: "Donate" });
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Donation" }), { target: { value: "25" } });
+    fireEvent.click(screen.getByRole("button", { name: "Review donation" }));
+    expect(realtime.send).not.toHaveBeenCalledWith(expect.objectContaining({ type: "economy.donate" }));
+    const confirmButton = screen.getByRole("button", { name: "Donate coins" });
+    fireEvent.click(confirmButton);
+    fireEvent.click(confirmButton);
+    const commands = realtime.send.mock.calls.map(([command]) => command)
+      .filter((command): command is Extract<ClientCommand, { type: "economy.donate" }> => command.type === "economy.donate");
+    expect(commands).toHaveLength(1);
+    expect(commands[0]).toMatchObject({ amount: 25, fundId: "workspace" });
+    expect((confirmButton as HTMLButtonElement).disabled).toBe(true);
+    act(() => realtime.handler?.({ type: "economy.updated", requestId: commands[0]!.requestId,
+      economy: { ...data.economy, coinBalance: data.economy.coinBalance - 25 } }));
+    expect(screen.queryByRole("dialog", { name: "Donate 25 coins to Workspace?" })).toBeNull();
+    expect(screen.getByText("Donation sent.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Personal" }));
+    expect(await screen.findByRole("complementary", { name: "Build" })).toBeTruthy();
+  });
+
   it("shows placement explanations in the timed notification without sending a command", async () => {
     render(<Workspace initialData={workspace()} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Build" }));
@@ -147,7 +173,7 @@ describe("Workspace player assets", () => {
   ])("confirms $command in the game before sending it", async ({ action, title, confirm, command }) => {
     render(<Workspace initialData={workspace()} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Build" }));
-    const trigger = await screen.findByRole("button", { name: action }, { timeout: 5000 });
+    const trigger = await screen.findByRole("button", { name: action === "Donate" ? "Donate Office chair" : action }, { timeout: 5000 });
     trigger.focus();
     fireEvent.click(trigger);
     expect(screen.getByRole("dialog", { name: title })).toBeTruthy();

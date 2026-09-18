@@ -201,7 +201,7 @@ export function PlayerBuildPanel({
                         aria-label={`Sell ${asset.name} for ${Math.floor(available[0]!.purchasePrice / 3)} coins`} onClick={() => setDisposition({ assetId: available[0]!.id, action: "sell" })}>
                         <Coins size={17} aria-hidden="true" />Sell <span className="inventory-sale-value">{Math.floor(available[0]!.purchasePrice / 3)}</span>
                       </button>}
-                      {onDonate && <button className="inventory-action" disabled={pendingPublicAction || Boolean(pendingEconomyRequest)} onClick={() => setDisposition({ assetId: available[0]!.id, action: "donate" })}>
+                      {onDonate && <button className="inventory-action" aria-label={`Donate ${asset.name}`} disabled={pendingPublicAction || Boolean(pendingEconomyRequest)} onClick={() => setDisposition({ assetId: available[0]!.id, action: "donate" })}>
                         <Gift size={16} aria-hidden="true" />Donate
                       </button>}
                     </div>}

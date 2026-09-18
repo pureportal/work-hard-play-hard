@@ -7,20 +7,10 @@ import { ProjectToolbar } from "./ProjectToolbar";
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe("Approvals", () => {
-  it("requires confirmation for an irreversible personal donation", () => {
-    const onCommand = vi.fn();
-    renderPanel(onCommand);
-    fireEvent.click(screen.getByRole("tab", { name: "Donate" }));
-    fireEvent.change(screen.getByRole("spinbutton", { name: "Donation" }), { target: { value: "25" } });
-    fireEvent.click(screen.getByRole("button", { name: "Review donation" }));
-    expect(onCommand).not.toHaveBeenCalled();
-    expect(screen.getByRole("dialog", { name: "Donate 25 coins to Workspace?" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Edit amount" }));
-    expect(screen.queryByRole("dialog", { name: "Donate 25 coins to Workspace?" })).toBeNull();
-    expect(onCommand).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Review donation" }));
-    fireEvent.click(screen.getByRole("button", { name: "Donate coins" }));
-    expect(onCommand).toHaveBeenCalledWith(expect.objectContaining({ type: "economy.donate", amount: 25, fundId: "workspace" }));
+  it("keeps donation controls out of Approvals", () => {
+    renderPanel();
+    expect(screen.queryByRole("tab", { name: "Donate" })).toBeNull();
+    expect(screen.queryByRole("spinbutton", { name: "Donation" })).toBeNull();
   });
 
   it("shows one vote per member and permits the next eligible vote", () => {

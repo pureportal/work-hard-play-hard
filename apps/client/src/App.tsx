@@ -131,6 +131,7 @@ import { getRotatedAssetPosition, rotateAssetClockwise } from "./asset-orientati
 
 const AvatarDialog = lazy(() => import("./components/AvatarDialog").then((module) => ({ default: module.AvatarDialog })));
 const FundsPanel = lazy(() => import("./components/economy/FundsPanel").then((module) => ({ default: module.FundsPanel })));
+const DonationPanel = lazy(() => import("./components/economy/DonationPanel").then((module) => ({ default: module.DonationPanel })));
 const BuildPanel = lazy(() => import("./components/BuildPanel").then((module) => ({ default: module.BuildPanel })));
 const OrganisationPanel = lazy(() => import("./components/organisation/OrganisationPanel").then((module) => ({ default: module.OrganisationPanel })));
 const RoomPermissionsPanel = lazy(() => import("./components/permissions/RoomPermissionsPanel").then((module) => ({ default: module.RoomPermissionsPanel })));
@@ -2165,7 +2166,7 @@ export function Workspace({
   }), [allRooms, data.members, incomingKnocks]);
 
   const applyBuildEdit = (edit: LayoutEdit, moving = false): boolean => {
-    if (reviewingProject || publicCommand.pending || pendingProjectEdit.current || buildView === "funds") return false;
+    if (reviewingProject || publicCommand.pending || pendingProjectEdit.current || buildView === "funds" || buildView === "donate") return false;
     if (!canBuild && pendingPlayerAssetRequest.current) {
       return false;
     }
@@ -2418,7 +2419,7 @@ export function Workspace({
           currentUserId={data.currentUserId}
           editing={activePanel === "build"}
           roomAccessibility={activePanel === "build" && canBuild && connection === "online" && roomAccessibility?.userId === accessInspectionUserId ? roomAccessibility : undefined}
-          editingTool={reviewingProject || buildView === "funds" ? null : editingTool}
+          editingTool={reviewingProject || buildView === "funds" || buildView === "donate" ? null : editingTool}
           editingAssetId={editingAssetId}
           editingAssetVariantId={editingAssetVariantId}
           editingAssetRotation={editingAssetRotation}
@@ -3052,6 +3053,12 @@ export function Workspace({
           />
         </DeferredContent>
       )}
+
+      {activePanel === "build" && buildView === "donate" && <DeferredContent onClose={() => openPanel(null)}>
+        <DonationPanel economy={data.publicEconomy} organisation={data.organisation} balance={data.economy.coinBalance}
+          initialFundId={publicFundId} pending={publicCommand.pending || connection !== "online"} error={publicCommand.error}
+          onCommand={(command) => publicCommand.run(request, command)} onViewChange={changeBuildView} onClose={() => openPanel(null)} />
+      </DeferredContent>}
 
       {(activePanel === "approvals" || activePanel === "build" && buildView === "funds") && <DeferredContent onClose={() => openPanel(null)}><FundsPanel economy={data.publicEconomy} organisation={data.organisation}
         rooms={allRooms}

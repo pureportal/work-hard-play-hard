@@ -5,14 +5,13 @@ import { WorkspaceDialog } from "../WorkspaceDialog";
 import { DialogTabs } from "../DialogTabs";
 import { AssetShape } from "../AssetShape";
 import type { BuildView } from "./BuildEconomyNavigation";
-import { DonateCoins } from "./DonateCoins";
 import { FundSettings } from "./FundSettings";
 import { SpendingProposals } from "./SpendingProposals";
 import { GameRulesEditor } from "./GameRulesEditor";
 import type { GlobalKidnappingSettings, Room } from "@workhard/shared";
 import "../../public-economy.css";
 
-type FundsView = "votes" | "donate" | "inventory" | "activity" | "settings" | "rules";
+type FundsView = "votes" | "inventory" | "activity" | "settings" | "rules";
 
 export function FundsPanel({ economy, organisation, members, userId, personalBalance, pending, error, initialFundId = "workspace", globalSettings, onOpenRooms, onCommand, onReview, onPlace, onViewChange, onClose, rooms }: {
   economy: PublicEconomy; organisation: OrganisationState; members: Member[]; userId: string; personalBalance: number; pending: boolean; initialFundId?: string;
@@ -25,7 +24,6 @@ export function FundsPanel({ economy, organisation, members, userId, personalBal
   const [fundId, setFundId] = useState(initialFundId);
   const [view, setView] = useState<FundsView>("votes");
   const fund = economy.funds.find((entry) => entry.id === fundId)!;
-  const fundName = fund.unitId ? organisation.units.find((unit) => unit.id === fund.unitId)!.name : "Workspace";
   const canPropose = publicFundMemberIds(fund, organisation, members.map((member) => member.id)).includes(userId) || canManageUnit(organisation, userId, fund.unitId);
   const propose = (title: string, action: Exclude<PublicAction, { kind: "project" }>) => {
     onCommand({ type: "public_economy.propose", requestId: crypto.randomUUID(), title, action });
@@ -38,7 +36,7 @@ export function FundsPanel({ economy, organisation, members, userId, personalBal
   const transactionNames = { donation: "Donation", purchase: "Building purchase", refund: "Refund", transfer: "Transfer", asset_donation: "Item donated", asset_sale: "Item sold" };
   return <WorkspaceDialog title="Approvals" className="funds-dialog" error={error} onBack={() => onViewChange("shared")} onClose={onClose}>
     <DialogTabs label="Funds views" value={view} onChange={setView} tabs={[
-      { id: "votes", label: "Proposals", count: waiting }, { id: "donate", label: "Donate" }, { id: "inventory", label: "Shared items" },
+      { id: "votes", label: "Proposals", count: waiting }, { id: "inventory", label: "Shared items" },
       { id: "activity", label: "Activity" }, ...(canPropose ? [{ id: "settings" as const, label: "Funds" }] : []), { id: "rules", label: "Game rules" },
     ]}>
       {view !== "votes" && view !== "rules" && <div className="fund-overview">
@@ -52,9 +50,6 @@ export function FundsPanel({ economy, organisation, members, userId, personalBal
       {view === "rules" && <GameRulesEditor settings={globalSettings} members={members} pending={pending} onOpenRooms={onOpenRooms}
         onPropose={(settings) => propose("Change carrying rules", { kind: "kidnapping.settings", settings })} />}
       {view === "votes" && <SpendingProposals proposals={proposals} economy={economy} organisation={organisation} members={members} rooms={rooms} userId={userId} pending={pending} onCommand={onCommand} onReview={onReview} />}
-      {view === "donate" && <DonateCoins key={fundId} balance={personalBalance} fundName={fundName} pending={pending}
-        error={error}
-        onDonate={(amount) => onCommand({ type: "economy.donate", requestId: crypto.randomUUID(), fundId, amount })} />}
       {view === "inventory" && <section aria-label="Shared inventory">{inventory.length ? <div className="shared-inventory">{inventory.map((asset) => {
         const definition = getAssetDefinition(asset.assetId)!;
         return <article className="shared-inventory-item" key={asset.id}><AssetShape asset={definition} rotation={0} variantId={getDefaultAssetVariantId(definition)} />

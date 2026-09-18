@@ -84,14 +84,13 @@ try {
   await maya.getByRole("tab", { name: "Plants", exact: true }).click();
   await maya.getByRole("button", { name: "Buy Floor plant", exact: true }).click();
   await maya.getByRole("tab", { name: "Inventory", exact: true }).click();
-  await maya.locator(".inventory-asset").getByRole("button", { name: "Donate", exact: true }).click();
+  await maya.locator(".inventory-asset").getByRole("button", { name: "Donate Floor plant", exact: true }).click();
   await maya.getByRole("dialog", { name: "Donate Floor plant?" }).getByRole("button", { name: "Donate item", exact: true }).click();
   await maya.getByRole("dialog", { name: "Donate Floor plant?" }).waitFor({ state: "hidden" });
   assert.equal(store.getPlayerEconomy("user-maya").coinBalance, 190);
   assert.equal(store.getPublicEconomy().inventory.length, 1);
   checks.push("Private purchase and asset donation preserve wallet and public ownership.");
-  await maya.getByRole("navigation", { name: "Workspace", exact: true }).getByRole("button", { name: "Approvals", exact: true }).click();
-  await maya.getByRole("tab", { name: "Donate", exact: true }).click();
+  await maya.getByRole("navigation", { name: "Build accounts", exact: true }).getByRole("button", { name: "Donate", exact: true }).click();
   await maya.getByRole("spinbutton", { name: "Donation", exact: true }).fill("150");
   await maya.getByRole("button", { name: "Review donation", exact: true }).click();
   await maya.screenshot({ path: `${output}/donation-review.png` });
@@ -100,7 +99,7 @@ try {
   assert.equal(store.getPublicEconomy().funds[0]!.balance, 150);
   assert.equal(store.getPlayerEconomy("user-maya").coinBalance, 40);
   checks.push("Donation funds the shared balance and project reserve.");
-  await maya.getByRole("button", { name: "Back to build", exact: true }).click();
+  await maya.getByRole("button", { name: "Shared", exact: true }).click();
   await maya.getByRole("button", { name: "Wall", exact: true }).click();
   const start = await worldPoint(maya, 384, 416);
   const end = await worldPoint(maya, 512, 416);
