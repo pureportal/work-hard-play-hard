@@ -1,5 +1,6 @@
 import { createPublicEconomy } from "@workhard/shared";
 import { createOrganisation } from "@workhard/shared";
+import { StrictMode } from "react";
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BootstrapData, ClientCommand, ServerEvent } from "@workhard/shared";
@@ -114,9 +115,42 @@ afterEach(() => {
 });
 
 describe("useRealtime", () => {
+  it("opens only one connection during Strict Mode effect replay", () => {
+    const { result, unmount } = renderHook(() => useRealtime({ floorId: "floor-one", onEvent: vi.fn() }), {
+      wrapper: StrictMode,
+    });
+
+    expect(MockWebSocket.instances).toHaveLength(0);
+    act(() => vi.advanceTimersByTime(0));
+    expect(MockWebSocket.instances).toHaveLength(1);
+    const socket = MockWebSocket.instances[0]!;
+    expect(socket.readyState).toBe(MockWebSocket.CONNECTING);
+
+    act(() => {
+      socket.open();
+      synchronize(socket);
+    });
+    expect(result.current.connection).toBe("online");
+
+    unmount();
+    expect(socket.readyState).toBe(MockWebSocket.CLOSED);
+    act(() => vi.advanceTimersByTime(30_000));
+    expect(MockWebSocket.instances).toHaveLength(1);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("does not open a connection after unmounting before startup", () => {
+    const { unmount } = renderHook(() => useRealtime({ floorId: "floor-one", onEvent: vi.fn() }));
+    unmount();
+    act(() => vi.advanceTimersByTime(30_000));
+    expect(MockWebSocket.instances).toHaveLength(0);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it("waits for authoritative synchronization before enabling commands", () => {
     const onEvent = vi.fn();
     const { result, unmount } = renderHook(() => useRealtime({ floorId: "floor-one", onEvent }));
+    act(() => vi.advanceTimersByTime(0));
     const socket = MockWebSocket.instances[0]!;
     const command: ClientCommand = {
       type: "presence.set_availability",
@@ -153,6 +187,7 @@ describe("useRealtime", () => {
 
   it("recovers from a dropped connection and keeps commands blocked during recovery", () => {
     const { result, unmount } = renderHook(() => useRealtime({ floorId: "floor-one", onEvent: vi.fn() }));
+    act(() => vi.advanceTimersByTime(0));
     const firstSocket = MockWebSocket.instances[0]!;
 
     act(() => {
@@ -181,6 +216,7 @@ describe("useRealtime", () => {
   it("uses browser offline and online signals for immediate recovery", () => {
     online = false;
     const { result, unmount } = renderHook(() => useRealtime({ floorId: "floor-one", onEvent: vi.fn() }));
+    act(() => vi.advanceTimersByTime(0));
 
     expect(result.current.connection).toBe("offline");
     expect(MockWebSocket.instances).toHaveLength(1);
@@ -210,6 +246,7 @@ describe("useRealtime", () => {
   it("probes occasionally when the browser remains incorrectly marked offline", () => {
     online = false;
     const { unmount } = renderHook(() => useRealtime({ floorId: "floor-one", onEvent: vi.fn() }));
+    act(() => vi.advanceTimersByTime(0));
     act(() => MockWebSocket.instances[0]!.close(1006));
 
     act(() => vi.advanceTimersByTime(29_999));
@@ -227,6 +264,7 @@ describe("useRealtime", () => {
       onEvent: vi.fn(),
       onUnauthorized,
     }));
+    act(() => vi.advanceTimersByTime(0));
     const socket = MockWebSocket.instances[0]!;
 
     act(() => {
@@ -243,6 +281,7 @@ describe("useRealtime", () => {
 
   it("replaces a socket that remains stuck while closing", () => {
     const { result, unmount } = renderHook(() => useRealtime({ floorId: "floor-one", onEvent: vi.fn() }));
+    act(() => vi.advanceTimersByTime(0));
     const socket = MockWebSocket.instances[0]!;
 
     act(() => {
@@ -259,6 +298,7 @@ describe("useRealtime", () => {
 
   it("reconnects instead of enabling commands after an incomplete synchronization", () => {
     const { result, unmount } = renderHook(() => useRealtime({ floorId: "floor-one", onEvent: vi.fn() }));
+    act(() => vi.advanceTimersByTime(0));
     const socket = MockWebSocket.instances[0]!;
 
     act(() => {
@@ -283,6 +323,7 @@ describe("useRealtime", () => {
 
   it("rejects commands when the browser send buffer is saturated", () => {
     const { result, unmount } = renderHook(() => useRealtime({ floorId: "floor-one", onEvent: vi.fn() }));
+    act(() => vi.advanceTimersByTime(0));
     const socket = MockWebSocket.instances[0]!;
     act(() => {
       socket.open();

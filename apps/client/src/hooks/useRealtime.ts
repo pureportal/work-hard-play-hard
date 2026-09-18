@@ -261,7 +261,10 @@ export function useRealtime({ floorId, onEvent, onUnauthorized }: UseRealtimeOpt
     window.addEventListener("pageshow", ensureActiveConnection);
     document.addEventListener("visibilitychange", handleVisibilityChange);
     watchTimer = window.setInterval(ensureActiveConnection, CONNECTION_WATCH_INTERVAL_MS);
-    connect(true);
+    reconnectTimer = window.setTimeout(() => {
+      reconnectTimer = undefined;
+      connect(true);
+    }, 0);
 
     return () => {
       active = false;
