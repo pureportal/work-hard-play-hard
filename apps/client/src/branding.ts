@@ -8,6 +8,20 @@ export function applyCorporateIdentity(identity: CorporateIdentity): void {
   root.style.setProperty("--brand-on-primary", contrastingTextColor(identity.primaryColor));
   document.title = identity.applicationName;
 
+  const metadata = {
+    "application-name": identity.applicationName,
+    "apple-mobile-web-app-title": identity.applicationName,
+    description: `${identity.applicationName} virtual office`,
+    "theme-color": identity.primaryColor,
+  };
+  for (const [name, content] of Object.entries(metadata)) {
+    const element = document.head.querySelector<HTMLMetaElement>(`meta[name="${name}"]`)
+      ?? document.createElement("meta");
+    element.name = name;
+    element.content = content;
+    if (!element.isConnected) document.head.append(element);
+  }
+
   const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
   if (!favicon) {
     return;

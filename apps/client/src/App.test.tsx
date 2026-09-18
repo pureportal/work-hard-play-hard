@@ -104,6 +104,10 @@ describe("App startup recovery", () => {
     expect(screen.getByRole("button", { name: "Email sign-in link" })).toBeDefined();
     expect(container.querySelector(".auth-shell.centered .corporate-logo")).not.toBeNull();
     expect(document.documentElement.style.getPropertyValue("--brand-primary")).toBe("#123abc");
+    expect(document.title).toBe("Acme Spaces");
+    expect(document.querySelector('meta[name="application-name"]')?.getAttribute("content")).toBe("Acme Spaces");
+    expect(document.querySelector('meta[name="description"]')?.getAttribute("content")).toBe("Acme Spaces virtual office");
+    expect(document.querySelector('meta[name="theme-color"]')?.getAttribute("content")).toBe("#123abc");
   });
 
   it("shows first-user setup when the server is unconfigured", async () => {
