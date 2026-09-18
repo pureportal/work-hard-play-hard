@@ -6,7 +6,7 @@ const createdAt = new Date("2026-09-17T12:00:00.000Z");
 const nextDay = new Date("2026-09-18T12:00:00.000Z");
 
 describe("starter inventory", () => {
-  it("grants a table and laptop once per new player without spending welcome coins", () => {
+  it("grants one complete workstation per new player without spending welcome coins", () => {
     const store = new EconomyStore(["alice", "alice", "bob"], createdAt);
     const initial = store.exportState();
     store.createAccount("alice", nextDay);
@@ -18,6 +18,9 @@ describe("starter inventory", () => {
       expect(economy).toMatchObject({ coinBalance: 250, lifetimeEarned: 250, lifetimeSpent: 0 });
       expect(economy.inventory).toEqual([
         { id: expect.any(String), assetId: "table-cafe", acquiredAt: createdAt.toISOString(), purchasePrice: 0 },
+        { id: expect.any(String), assetId: "chair-office", acquiredAt: createdAt.toISOString(), purchasePrice: 0 },
+        { id: expect.any(String), assetId: "decor-monitor", acquiredAt: createdAt.toISOString(), purchasePrice: 0 },
+        { id: expect.any(String), assetId: "decor-coffee", acquiredAt: createdAt.toISOString(), purchasePrice: 0 },
         { id: expect.any(String), assetId: "decor-laptop", acquiredAt: createdAt.toISOString(), purchasePrice: 0 },
       ]);
       for (const item of economy.inventory) {
@@ -25,7 +28,7 @@ describe("starter inventory", () => {
         expect(isPermanentAsset(item.assetId)).toBe(false);
       }
     }
-    expect(new Set(initial.accounts.flatMap((account) => account.inventory.map((item) => item.id))).size).toBe(4);
+    expect(new Set(initial.accounts.flatMap((account) => account.inventory.map((item) => item.id))).size).toBe(10);
     const restored = new EconomyStore([]);
     restored.restoreState(initial);
     restored.createAccount("alice", nextDay);
@@ -44,7 +47,7 @@ describe("starter inventory", () => {
 
     restored.createAccount("new-player", nextDay);
     expect(restored.getPlayerEconomy("existing").inventory).toEqual([]);
-    expect(restored.getPlayerEconomy("new-player").inventory.map((item) => item.assetId)).toEqual(["table-cafe", "decor-laptop"]);
+    expect(restored.getPlayerEconomy("new-player").inventory.map((item) => item.assetId)).toEqual(["table-cafe", "chair-office", "decor-monitor", "decor-coffee", "decor-laptop"]);
   });
 
   it.each(["asset_sale", "asset_donation"] as const)("does not pay or replenish starter items after %s, retries, and restoration", (kind) => {
@@ -66,7 +69,7 @@ describe("starter inventory", () => {
     expect(restored.disposeAsset("alice", items[0]!.id, kind, `dispose:${items[0]!.id}`, fundId, nextDay).replayed).toBe(true);
   });
 
-  it.each(["table-cafe", "decor-laptop"])("charges catalog price for another %s and resells that copy at one third", (assetId) => {
+  it.each(["table-cafe", "chair-office", "decor-monitor", "decor-coffee", "decor-laptop"])("charges catalog price for another %s and resells that copy at one third", (assetId) => {
     const store = new EconomyStore(["alice"], createdAt);
     const price = getAssetDefinition(assetId)!.shop!.price;
     const purchase = store.purchaseAsset("alice", assetId, "buy-another", createdAt);
@@ -74,7 +77,7 @@ describe("starter inventory", () => {
     expect(purchase.transaction.amount).toBe(-price);
     expect(purchase.economy.inventory.filter((item) => item.assetId === assetId)).toHaveLength(2);
     expect(store.disposeAsset("alice", ownedId, "asset_sale", "sell-purchased", undefined, createdAt).transaction.amount).toBe(Math.floor(price / 3));
-    expect(store.getPlayerEconomy("alice").inventory).toHaveLength(2);
+    expect(store.getPlayerEconomy("alice").inventory).toHaveLength(5);
     expect(() => new EconomyStore([]).restoreState(store.exportState())).not.toThrow();
   });
 

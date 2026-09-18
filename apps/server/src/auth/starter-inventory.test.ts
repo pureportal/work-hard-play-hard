@@ -35,7 +35,7 @@ describe("new player starter inventory", () => {
     expect(response.statusCode).toBe(201);
     const userId = response.json().user.id as string;
     const originalEconomy = context.store.getPlayerEconomy(userId);
-    expect(originalEconomy.inventory.map((item) => item.assetId)).toEqual(["table-cafe", "decor-laptop"]);
+    expect(originalEconomy.inventory.map((item) => item.assetId)).toEqual(["table-cafe", "chair-office", "decor-monitor", "decor-coffee", "decor-laptop"]);
     expect(originalEconomy).toMatchObject({ coinBalance: 250, lifetimeEarned: 250, lifetimeSpent: 0 });
     const retry = await context.app.inject({
       method: "POST", url: token ? "/v1/auth/register/verify" : "/v1/auth/register",
@@ -83,7 +83,7 @@ describe("new player starter inventory", () => {
     expect(failed.statusCode).toBe(500);
     const member = context.store.getMembers().find((candidate) => candidate.email === payload.email)!;
     const inventory = context.store.getPlayerEconomy(member.id).inventory;
-    expect(inventory.map((item) => item.assetId)).toEqual(["table-cafe", "decor-laptop"]);
+    expect(inventory.map((item) => item.assetId)).toEqual(["table-cafe", "chair-office", "decor-monitor", "decor-coffee", "decor-laptop"]);
     const retry = await context.app.inject({ method: "POST", url: "/v1/auth/register", payload: { ...payload, invitationToken } });
     expect(retry.statusCode).toBe(409);
     await context.app.close();

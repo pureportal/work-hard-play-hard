@@ -53,7 +53,7 @@ describe("EconomyStore", () => {
 
     expect(purchase.transaction.amount).toBe(-70);
     expect(purchase.economy).toMatchObject({ coinBalance: 180, lifetimeSpent: 70 });
-    expect(purchase.economy.inventory).toHaveLength(3);
+    expect(purchase.economy.inventory).toHaveLength(6);
     expect(replay.replayed).toBe(true);
     expect(replay.economy.inventory).toEqual(purchase.economy.inventory);
     expect(() => economy.purchaseAsset("player", "plant-floor", "purchase-chair", firstDay)).toThrow(

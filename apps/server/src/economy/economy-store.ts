@@ -21,7 +21,7 @@ import {
   type WorldObject,
 } from "@workhard/shared";
 
-const STARTER_ASSET_IDS = ["table-cafe", "decor-laptop"];
+const STARTER_ASSET_IDS = ["table-cafe", "chair-office", "decor-monitor", "decor-coffee", "decor-laptop"];
 
 interface EconomyAccountRecord {
   userId: string;

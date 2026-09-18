@@ -72,7 +72,7 @@ describe("WorldRuntime player-owned assets", () => {
           ownedAssetId: laptop.id, position: { x: 32, y: 32 }, variantId: "coral", rotation: 0,
         });
         expect(restoredEvents.filter((event) => event.type === "command.error")).toEqual([]);
-        expect(restored.getPlayerEconomy("user-jonas").inventory).toHaveLength(2);
+        expect(restored.getPlayerEconomy("user-jonas").inventory).toHaveLength(5);
         expect(restored.getPlayerEconomy("user-jonas").coinBalance).toBe(250);
       } finally {
         restoredRuntime.stop();
@@ -185,7 +185,7 @@ describe("WorldRuntime player-owned assets", () => {
       economy: { coinBalance: 190, inventory: expect.arrayContaining([expect.objectContaining({ assetId: "chair-office" })]) },
       transaction: { id: purchases[0]!.transaction?.id },
     });
-    expect(purchases[0]!.economy.inventory).toHaveLength(3);
+    expect(purchases[0]!.economy.inventory).toHaveLength(6);
     expect(purchases[1]!.economy.inventory).toEqual(purchases[0]!.economy.inventory);
     runtime.stop();
   });
