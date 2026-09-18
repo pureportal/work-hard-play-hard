@@ -21,6 +21,7 @@ interface Draft {
 
 export class ProjectRuntime {
   private readonly drafts = new Map<string, Draft>();
+  private publishedResolutionRevision = 0;
 
   constructor(private readonly store: WorkspaceStore, private readonly callbacks: {
     edit: (peer: ProjectPeer, layout: FloorLayout, edit: ProjectEdit, fundId: string) => FloorLayout;
@@ -123,6 +124,11 @@ export class ProjectRuntime {
 
   publish(requestId?: string): void {
     this.callbacks.broadcast({ type: "public_economy.updated", economy: this.store.getPublicEconomy(), ...(requestId ? { requestId } : {}) });
+    this.publishedResolutionRevision = this.store.publicEconomy.resolutionRevision;
+  }
+
+  tick(): void {
+    if (this.store.publicEconomy.hasDueProposals() || this.publishedResolutionRevision !== this.store.publicEconomy.resolutionRevision) this.publish();
   }
 
   private assertFundMember(userId: string, fundId: string): void {

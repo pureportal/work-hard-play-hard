@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import {
-  PROJECT_EXPIRY_MS, WORKSPACE_FUND_ID, availablePublicMoney, canManageUnit, createPublicEconomy,
+  WORKSPACE_FUND_ID, availablePublicMoney, canManageUnit, createPublicEconomy,
   publicFundMemberIds, projectRequiredMoney, type ConstructionReceipt, type FloorLayout, type OrganisationState, type PublicAction,
   type PublicEconomy, type PublicFund, type PublicTransaction, type SpendingProposal,
 } from "@workhard/shared";
@@ -12,6 +12,8 @@ export interface PublicEconomyState extends PublicEconomy {
 
 export class PublicEconomyStore {
   private state: PublicEconomyState;
+  private readonly approvalDeadlineMs = process.env.NODE_ENV === "production" ? 7 * 86_400_000 : 10_000;
+  resolutionRevision = 0;
 
   constructor(initial: PublicEconomy = createPublicEconomy()) {
     this.state = { ...structuredClone(initial), receipts: [], operations: [] };
@@ -43,10 +45,24 @@ export class PublicEconomyStore {
   refresh(organisation: OrganisationState, memberIds: string[], now = new Date()): void {
     for (const proposal of this.state.proposals) {
       if (!["open", "approved"].includes(proposal.status)) continue;
-      if (Date.parse(proposal.expiresAt) <= now.getTime()) proposal.status = "expired";
-      else if (proposal.organisationRevision !== organisation.revision || proposal.policyRevision !== this.state.revision
-        || proposal.electorate.some((id) => !memberIds.includes(id))) proposal.status = "cancelled";
+      if (proposal.organisationRevision !== organisation.revision || proposal.policyRevision !== this.state.revision
+        || proposal.electorate.some((id) => !memberIds.includes(id))) {
+        proposal.status = "cancelled";
+        this.resolutionRevision += 1;
+      } else this.closeVoting(proposal, now);
     }
+  }
+
+  hasDueProposals(now = new Date()): boolean {
+    return this.state.proposals.some((proposal) => proposal.status === "open" && Date.parse(proposal.expiresAt) <= now.getTime());
+  }
+
+  private closeVoting(proposal: SpendingProposal, now: Date): void {
+    if (proposal.status !== "open" || Date.parse(proposal.expiresAt) > now.getTime()) return;
+    proposal.required = Math.floor(proposal.ballots.length / 2) + 1;
+    const approvals = proposal.ballots.filter((ballot) => ballot.approve).length;
+    proposal.status = !proposal.ballots.length ? "expired" : approvals >= proposal.required ? "approved" : "rejected";
+    this.resolutionRevision += 1;
   }
 
   invalidateLayoutProposals(layouts: readonly FloorLayout[]): boolean {
@@ -56,7 +72,7 @@ export class PublicEconomyStore {
       const action = proposal.action;
       const stale = action.kind === "project" && layouts.find((layout) => layout.floorId === action.project.floorId)?.revision !== action.project.baseRevision
         || action.kind === "room.settings" && layouts.find((layout) => layout.rooms.some((room) => room.id === action.roomId))?.revision !== action.baseRevision;
-      if (stale) { proposal.status = "cancelled"; changed = true; }
+      if (stale) { proposal.status = "cancelled"; this.resolutionRevision += 1; changed = true; }
     }
     return changed;
   }
@@ -94,7 +110,7 @@ export class PublicEconomyStore {
     const proposal: SpendingProposal = {
       id: randomUUID(), title, proposedBy: userId, fundId, action: structuredClone(action), electorate, required, ballots,
       status: ballots.length >= required ? "approved" : "open", reserved,
-      createdAt: now.toISOString(), expiresAt: new Date(now.getTime() + PROJECT_EXPIRY_MS).toISOString(),
+      createdAt: now.toISOString(), expiresAt: new Date(now.getTime() + this.approvalDeadlineMs).toISOString(),
       organisationRevision: organisation.revision, policyRevision: this.state.revision,
     };
     this.state.proposals.push(proposal);
@@ -107,8 +123,9 @@ export class PublicEconomyStore {
     return proposal;
   }
 
-  vote(userId: string, id: string, approve: boolean): void {
+  vote(userId: string, id: string, approve: boolean, now = new Date()): void {
     const proposal = this.proposal(id);
+    this.closeVoting(proposal, now);
     if (proposal.status !== "open") throw new Error("PROPOSAL_CLOSED");
     if (!proposal.electorate.includes(userId)) throw new Error("PROPOSAL_VOTE_FORBIDDEN");
     if (proposal.ballots.some((ballot) => ballot.userId === userId)) throw new Error("PROPOSAL_ALREADY_VOTED");

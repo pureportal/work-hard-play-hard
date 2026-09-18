@@ -6,7 +6,6 @@ import type { GlobalKidnappingSettings } from "./kidnapping.js";
 import { isUnitWithin, type OrganisationEdit, type OrganisationState } from "./organisation.js";
 
 export const WORKSPACE_FUND_ID = "workspace";
-export const PROJECT_EXPIRY_MS = 7 * 86_400_000;
 export const BUILD_PRICES = { wall: 12, door: 40, window: 60 } as const;
 
 export type DecisionMode = "equal" | "hierarchical";

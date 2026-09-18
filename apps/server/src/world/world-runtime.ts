@@ -787,6 +787,7 @@ export class WorldRuntime {
 
   private tick(deltaMs = TICK_MS): void {
     this.tickNumber += 1;
+    this.projects.tick();
     const changedFloorIds = new Set<string>();
     for (const userId of this.activeMovementUserIds) {
       const movement = this.movements.get(userId);

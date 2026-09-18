@@ -1,12 +1,12 @@
 import { clientCommandSchema } from "../protocol.js";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createPublicEconomy, createOrganisation, type ClientCommand, type ServerEvent } from "@workhard/shared";
 import { createTestData } from "../testing/workspace-data.js";
 import { WorkspaceStore } from "../store.js";
 import { WorldRuntime } from "./world-runtime.js";
 
 const runtimes: WorldRuntime[] = [];
-afterEach(() => { for (const runtime of runtimes.splice(0)) runtime.stop(); });
+afterEach(() => { for (const runtime of runtimes.splice(0)) runtime.stop(); vi.useRealTimers(); });
 
 function setup() {
   const data = createTestData();
@@ -26,6 +26,46 @@ function setup() {
 }
 
 describe("Shared building protocol", () => {
+  it.each([false, true])("broadcasts the deadline result without another command (read first: %s)", (readFirst) => {
+    vi.useFakeTimers();
+    const { store, runtime, events, send } = setup();
+    send({ type: "public_economy.propose", requestId: "rules", title: "Open rooms", action: {
+      kind: "game.settings", settings: store.getGameSettings(),
+    } });
+    const proposal = store.getPublicEconomy().proposals[0]!;
+    expect(Date.parse(proposal.expiresAt) - Date.parse(proposal.createdAt)).toBe(10_000);
+    runtime.start();
+    vi.advanceTimersByTime(9_999);
+    expect(store.publicEconomy.proposal(proposal.id).status).toBe("open");
+    events.length = 0;
+    if (readFirst) {
+      vi.setSystemTime(new Date(proposal.expiresAt));
+      expect(store.getPublicEconomy().proposals[0]!.status).toBe("approved");
+    }
+    vi.advanceTimersByTime(100);
+    expect(events).toContainEqual(expect.objectContaining({ type: "public_economy.updated", economy: expect.objectContaining({
+      proposals: [expect.objectContaining({ id: proposal.id, status: "approved", required: 1 })],
+    }) }));
+    send({ type: "public_economy.execute", requestId: "apply", proposalId: proposal.id });
+    expect(store.getPublicEconomy().proposals[0]!.status).toBe("applied");
+  });
+
+  it("restores an overdue vote and resolves it on the next tick", () => {
+    vi.useFakeTimers();
+    const { store, send } = setup();
+    send({ type: "public_economy.propose", requestId: "rules", title: "Open rooms", action: {
+      kind: "game.settings", settings: store.getGameSettings(),
+    } });
+    const saved = store.exportMutableState();
+    vi.advanceTimersByTime(10_000);
+    const restored = new WorkspaceStore(createTestData());
+    restored.restoreMutableState(saved);
+    const runtime = new WorldRuntime(restored);
+    runtimes.push(runtime);
+    runtime.runTickForTest();
+    expect(restored.getPublicEconomy().proposals[0]).toMatchObject({ status: "approved", required: 1 });
+  });
+
   it.each(["fund", "room", "permission"])("rejects deleting a unit used by a %s before requesting votes", (use) => {
     const { store, send, events } = setup();
     const organisation = store.getOrganisation();

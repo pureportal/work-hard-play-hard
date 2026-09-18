@@ -1,12 +1,37 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createOrganisation, createPublicEconomy, type Member, type SpendingProposal } from "@workhard/shared";
 import { FundsPanel } from "./FundsPanel";
 import { ProjectToolbar } from "./ProjectToolbar";
 
-afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.useRealTimers(); });
 
 describe("Approvals", () => {
+  it("counts down to the voting deadline and stops offering votes when it closes", () => {
+    vi.useFakeTimers();
+    const economy = createPublicEconomy();
+    economy.proposals.push({ ...proposal(), expiresAt: new Date(Date.now() + 10_000).toISOString() });
+    renderPanel(vi.fn(), economy, "bob");
+    expect(screen.getByText("10s left")).toBeTruthy();
+    act(() => vi.advanceTimersByTime(9_000));
+    expect(screen.getByText("1s left")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Approve" })).toBeTruthy();
+    act(() => vi.advanceTimersByTime(1_000));
+    expect(screen.queryByRole("button", { name: "Approve" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Reject" })).toBeNull();
+    expect(screen.getByText("Counting votes…")).toBeTruthy();
+    expect(screen.queryByText("Expired")).toBeNull();
+  });
+
+  it("keeps an approved proposal available after its voting deadline", () => {
+    const economy = createPublicEconomy();
+    economy.proposals.push({ ...proposal(), status: "approved", required: 1, expiresAt: new Date(Date.now() - 1_000).toISOString() });
+    renderPanel(vi.fn(), economy);
+    expect(screen.getByRole("button", { name: "Apply proposal" })).toBeTruthy();
+    expect(screen.getByText("Ready to apply")).toBeTruthy();
+    expect(screen.queryByText("Expired")).toBeNull();
+  });
+
   it("keeps donation controls out of Approvals", () => {
     renderPanel();
     expect(screen.queryByRole("tab", { name: "Donate" })).toBeNull();
