@@ -1,5 +1,5 @@
 import {
-  BUILD_GRID_SIZE, BUILD_PRICES, WORKSPACE_FUND_ID, assetResaleValue, getAssetDefinition,
+  BUILD_GRID_SIZE, BUILD_PRICES, WORKSPACE_FUND_ID, assetResaleValue, getAssetDefinition, getTeleporterPrice,
   getPlacedAssetBounds, getOpeningRect, getWallLength, getWallRect, isInPersonalSpace, isPermanentAsset, isUnitWithin, normalizeWall, roomBuildAllows, roomAccessAllows,
   type ConstructionReceipt, type FloorLayout, type GameSettings, type OrganisationState,
   type ProjectQuote, type PublicAsset, type PublicFund, type Rect,
@@ -34,9 +34,15 @@ function openingPlacements(layout: FloorLayout) {
   })).sort((left, right) => left.id.localeCompare(right.id));
 }
 
-export function quoteProject(previous: FloorLayout, next: FloorLayout, fundId: string, receipts: ConstructionReceipt[], inventory: PublicAsset[] = [], donatedObjects: Map<string, string> = new Map()): ProjectQuote {
+export function quoteProject(previous: FloorLayout, next: FloorLayout, fundId: string, receipts: ConstructionReceipt[], inventory: PublicAsset[] = [], donatedObjects: Map<string, string> = new Map(), floorCount = 1): ProjectQuote {
   const before = constructionItems(previous);
   const after = constructionItems(next);
+  let expansionCount = 0;
+  for (const object of next.objects) {
+    if (getAssetDefinition(object.assetId)?.kind === "portal" && !before.has(`asset:${object.id}`)) {
+      after.set(`asset:${object.id}`, getTeleporterPrice(floorCount + expansionCount++));
+    }
+  }
   const paid = new Map(receipts.filter((receipt) => receipt.floorId === previous.floorId).map((receipt) => [receipt.key, receipt]));
   const refunds = new Map<string, number>();
   const purchases: ConstructionReceipt[] = [];

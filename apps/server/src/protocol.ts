@@ -143,6 +143,7 @@ export const clientCommandSchema = z.discriminatedUnion("type", [
     x: z.number().finite(),
     y: z.number().finite(),
   }).strict(),
+  z.object({ type: z.literal("player.rescue"), requestId }).strict(),
   z.object({ type: z.literal("movement.stop"), requestId }).strict(),
   z.object({ type: z.literal("movement.approach_user"), requestId, targetUserId: z.string().min(1).max(100) }),
   z.object({ type: z.literal("kidnapping.start"), requestId, targetUserId: z.string().min(1).max(100) }).strict(),

@@ -3199,11 +3199,15 @@
     },
     {
       "id": "infrastructure-portal",
-      "name": "Floor portal",
+      "name": "Teleporter",
       "category": "infrastructure",
       "kind": "portal",
       "themeSetId": "infrastructure",
-      "buildable": false,
+      "buildable": true,
+      "shop": {
+        "price": 10000,
+        "available": false
+      },
       "placement": {
         "layer": "floor",
         "requires": "floor"

@@ -955,12 +955,16 @@ export function Workspace({
       setPlacingPublicAssetId(undefined);
       setBuildSelection(undefined);
       if (event.proposalId) setActivePanel("approvals");
+    } else if (event.type === "player.rescued") {
+      setFloorId(event.floorId);
+      setSelection(undefined);
+      setFocusTarget({ userId: data.currentUserId, requestId: event.requestId });
     } else if (event.type === "floor.updated") {
-      setData((current) => ({ ...current, floors: current.floors.map((item) => item.id === event.floor.id ? event.floor : item) }));
+      setData((current) => ({ ...current, floors: [...current.floors.filter((item) => item.id !== event.floor.id), event.floor].sort((left, right) => left.level - right.level) }));
     } else if (event.type === "room.accessibility") {
       setRoomAccessibility(event.accessibility);
     } else if (event.type === "layout.updated") {
-      setData((current) => ({ ...current, layouts: current.layouts.map((item) => item.floorId === event.layout.floorId ? event.layout : item) }));
+      setData((current) => ({ ...current, layouts: [...current.layouts.filter((item) => item.floorId !== event.layout.floorId), event.layout] }));
       if (
         pendingLayoutMove.current
         && event.requestId === pendingLayoutMove.current
@@ -2968,6 +2972,8 @@ export function Workspace({
       {activePanel === "settings" && (
         <DeferredContent sidebar onClose={() => setActivePanel(null)}>
           <SettingsPanel
+            onRescue={() => { request({ type: "player.rescue", requestId: requestId() }); setActivePanel(null); }}
+            connected={connection === "online"}
             members={data.members}
             currentUserId={data.currentUserId}
             playerSettings={data.kidnapping.player}
@@ -3000,12 +3006,13 @@ export function Workspace({
       {activePanel === "build" && canBuild && !accessInspectionUserId && (
         <DeferredContent sidebar onClose={() => openPanel(null)}>
           <BuildPanel
+            floorCount={data.floors.length + (preview?.quote.assetChanges.filter(({ object, change }) => change === "place" && getAssetDefinition(object.assetId)?.kind === "portal").length ?? 0)}
             reviewing={Boolean(reviewingProject)}
             accountControls={<BuildEconomyNavigation view={buildView} onChange={changeBuildView} />}
             projectControls={<ProjectToolbar economy={data.publicEconomy} organisation={data.organisation} userId={data.currentUserId}
               title={projectTitle} onTitleChange={setProjectTitle}
               fundId={preview?.fundId ?? publicFundId} project={preview} pending={publicCommand.pending || connection !== "online"}
-              stale={Boolean(preview && preview.baseRevision !== savedLayout.revision)}
+              stale={Boolean(preview && (preview.baseRevision !== savedLayout.revision || preview.floorCount !== undefined && preview.floorCount !== data.floors.length))}
               reviewing={Boolean(reviewingProject)} onFundChange={setPublicFundId}
               onSubmit={(title) => { if (projectDraft) publicCommand.run(request, { type: "project.submit", requestId: requestId(), draftId: projectDraft.id, title }); }}
               onDiscard={() => {
@@ -3048,7 +3055,7 @@ export function Workspace({
             projectControls={projectDraft && <ProjectToolbar economy={data.publicEconomy} organisation={data.organisation} userId={data.currentUserId}
               title={projectTitle} onTitleChange={setProjectTitle}
               fundId={projectDraft.fundId} project={projectDraft} pending={publicCommand.pending || connection !== "online"}
-              stale={projectDraft.baseRevision !== savedLayout.revision} reviewing={false} onFundChange={setPublicFundId}
+              stale={projectDraft.baseRevision !== savedLayout.revision || projectDraft.floorCount !== undefined && projectDraft.floorCount !== data.floors.length} reviewing={false} onFundChange={setPublicFundId}
               onSubmit={(title) => publicCommand.run(request, { type: "project.submit", requestId: requestId(), draftId: projectDraft.id, title })}
               onDiscard={() => { setProjectDraft(undefined); setEditingTool(null); }} />}
             pendingPublicAction={publicCommand.pending || connection !== "online"}

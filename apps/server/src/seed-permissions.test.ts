@@ -96,6 +96,7 @@ describe("seeded organisation and permissions", () => {
 
   it("places Jonas's purchased desk and enforces room grants for both demo build modes", () => {
     const store = new WorkspaceStore(createTestData());
+    store.updateFloorSpawn("floor-studio", { x: -64, y: -64 });
     store.getRoom("room-product")!.ownerUserId = "user-jonas";
     const ownedAssetId = store.purchaseAsset("user-jonas", "desk-straight", "seed-test:desk").transaction.ownedAssetId!;
     const runtime = new WorldRuntime(store);

@@ -1,3 +1,4 @@
+import { assertPublicReachability } from "./world/public-reachability.js";
 import { applyOrganisationEdit, validateOrganisation, validateRoomPermission } from "./organisation/organisation-store.js";
 import { gameSettingsSchema } from "./organisation/organisation-schema.js";
 import { PublicEconomyStore, validatePublicEconomy, type PublicEconomyState } from "./economy/public-economy-store.js";
@@ -220,11 +221,22 @@ export class WorkspaceStore {
     return this.data.floors;
   }
 
+  addFloor(floor: Floor, layout: FloorLayout): void {
+    if (this.getFloor(floor.id) || layout.floorId !== floor.id
+      || this.data.floors.some((candidate) => candidate.officeId === floor.officeId && candidate.level === floor.level)) throw new Error("FLOOR_INVALID");
+    assertLayoutIntegrity(layout);
+    assertPublicReachability(floor, layout, this.getGameSettings());
+    this.data.floors.push(structuredClone(floor));
+    this.data.layouts.push(structuredClone(layout));
+    this.dirty = true;
+  }
+
   updateFloorSpawn(floorId: string, spawn: Floor["spawn"]): Floor {
     const floor = this.getFloor(floorId);
     if (!floor) {
       throw new Error("FLOOR_NOT_FOUND");
     }
+    assertPublicReachability({ ...floor, spawn }, this.getLayout(floorId)!, this.getGameSettings());
     floor.spawn = structuredClone(spawn);
     this.dirty = true;
     return structuredClone(floor);
@@ -861,6 +873,7 @@ export class WorkspaceStore {
     else delete nextRoom.ownerUserId;
     nextRoom.personalAreas = structuredClone(settings.personalAreas ?? []);
     next.revision += 1;
+    assertPublicReachability(this.getFloor(layout.floorId)!, next, this.getGameSettings());
     return this.replaceLayout(next).layout;
   }
 
@@ -1063,6 +1076,7 @@ export class WorkspaceStore {
     const memberIds = this.data.members.map((member) => member.id);
     validateRoomPermission(settings.roomAccess, this.data.organisation, memberIds);
     validateRoomPermission(settings.roomBuild, this.data.organisation, memberIds);
+    for (const floor of this.getFloors()) assertPublicReachability(floor, this.getLayout(floor.id)!, settings);
     const updated = this.economy.updateGameSettings(settings);
     this.dirty = true;
     return updated;

@@ -54,6 +54,7 @@ export interface BuildProject {
   quote: ProjectQuote;
   edits: number;
   spawn?: { x: number; y: number };
+  floorCount?: number;
 }
 
 export type PublicAction =

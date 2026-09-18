@@ -1,6 +1,7 @@
+import { assertPublicReachability, assertTeleportersRetained } from "../world/public-reachability.js";
 import { randomUUID } from "node:crypto";
 import {
-  WORKSPACE_FUND_ID, canManageUnit, publicFundForUnit, publicFundMemberIds, validatePersonalSpaces, type BuildProject, type FloorLayout,
+  WORKSPACE_FUND_ID, getAssetDefinition, canManageUnit, publicFundForUnit, publicFundMemberIds, validatePersonalSpaces, type BuildProject, type FloorLayout,
   type ProjectEdit, type PublicAction, type ServerEvent,
 } from "@workhard/shared";
 import type { WorkspaceStore } from "../store.js";
@@ -35,6 +36,7 @@ export class ProjectRuntime {
     const existing = draftId ? this.drafts.get(peer.userId) : undefined;
     if (draftId && (!existing || existing.project.id !== draftId || existing.submitted)) throw new Error("PROJECT_STALE");
     if (existing && (existing.project.baseRevision !== baseRevision || existing.project.floorId !== peer.floorId || existing.project.fundId !== fundId)) throw new Error("PROJECT_STALE");
+    if (existing?.project.floorCount !== undefined && existing.project.floorCount !== this.store.getFloors().length) throw new Error("PROJECT_STALE");
     if ((existing?.project.edits ?? 0) >= 200) throw new Error("PROJECT_LIMIT");
     const fund = this.store.publicEconomy.fund(fundId);
     this.assertFundMember(peer.userId, fundId);
@@ -45,11 +47,15 @@ export class ProjectRuntime {
       donatedObjects.set(`asset:${object.id}`, edit.publicAssetId);
     }
     assertProjectScope(original, layout, fund, peer.userId, this.store.getGameSettings(), this.store.getOrganisation());
-    const quote = quoteProject(original, layout, fundId, this.store.publicEconomy.receipts, this.store.publicEconomy.inventory, donatedObjects);
+    const quote = quoteProject(original, layout, fundId, this.store.publicEconomy.receipts, this.store.publicEconomy.inventory, donatedObjects, this.store.getFloors().length);
     const spawn = edit.tool === "spawn" ? { x: Math.round(edit.position.x / 32) * 32, y: Math.round(edit.position.y / 32) * 32 } : existing?.project.spawn;
     if (spawn && fundId !== WORKSPACE_FUND_ID) throw new Error("PUBLIC_FUND_SCOPE");
     const project: BuildProject = { id: existing?.project.id ?? randomUUID(), fundId, floorId: peer.floorId, baseRevision,
-      layout: { ...layout, revision: baseRevision + 1 }, quote, edits: (existing?.project.edits ?? 0) + 1, ...(spawn ? { spawn } : {}) };
+      layout: { ...layout, revision: baseRevision + 1 }, quote,
+      ...(quote.assetChanges.some(({ object, change }) => change === "place" && getAssetDefinition(object.assetId)?.kind === "portal")
+        ? { floorCount: this.store.getFloors().length } : {}), edits: (existing?.project.edits ?? 0) + 1, ...(spawn ? { spawn } : {}) };
+    assertTeleportersRetained(original, layout);
+    assertPublicReachability({ ...this.store.getFloor(peer.floorId)!, ...(spawn ? { spawn } : {}) }, layout, this.store.getGameSettings());
     this.drafts.set(peer.userId, { project, donatedObjects, submitted: false });
     peer.send({ type: "project.preview", requestId, project: structuredClone(project) });
   }
@@ -100,7 +106,8 @@ export class ProjectRuntime {
     this.store.getPublicEconomy();
     const proposal = this.store.publicEconomy.proposal(proposalId);
     if (proposal.status === "applied") { this.publish(requestId); return; }
-    if (proposal.action.kind === "project" && this.store.getLayout(proposal.action.project.floorId)?.revision !== proposal.action.project.baseRevision) throw new Error("PROJECT_STALE");
+    if (proposal.action.kind === "project" && (this.store.getLayout(proposal.action.project.floorId)?.revision !== proposal.action.project.baseRevision
+      || proposal.action.project.floorCount !== undefined && proposal.action.project.floorCount !== this.store.getFloors().length)) throw new Error("PROJECT_STALE");
     if (proposal.status !== "approved") throw new Error("PROJECT_APPROVAL_REQUIRED");
     if (proposal.proposedBy !== peer.userId && !proposal.electorate.includes(peer.userId)) throw new Error("PROPOSAL_VOTE_FORBIDDEN");
     if (proposal.action.kind === "project") this.validateProject(proposal.proposedBy, proposal.action.project);
@@ -143,6 +150,9 @@ export class ProjectRuntime {
     if (!layout || layout.revision !== project.baseRevision) throw new Error("PROJECT_STALE");
     if (JSON.stringify({ ...project.layout, revision: layout.revision }) === JSON.stringify(layout)
       && (!project.spawn || JSON.stringify(project.spawn) === JSON.stringify(this.store.getFloor(project.floorId)!.spawn))) throw new Error("PROJECT_EMPTY");
+    if (project.floorCount !== undefined && project.floorCount !== this.store.getFloors().length) throw new Error("PROJECT_STALE");
+    assertTeleportersRetained(layout, project.layout);
+    assertPublicReachability({ ...this.store.getFloor(project.floorId)!, ...(project.spawn ? { spawn: project.spawn } : {}) }, project.layout, this.store.getGameSettings());
     this.assertFundMember(userId, project.fundId);
     assertProjectScope(layout, project.layout, this.store.publicEconomy.fund(project.fundId), userId,
       this.store.getGameSettings(), this.store.getOrganisation());
@@ -186,12 +196,20 @@ export class ProjectRuntime {
       validatePersonalSpaces(room, action.settings, memberIds);
       if (action.settings.build) validateRoomPermission(action.settings.build, organisation, memberIds);
       if (action.settings.organisationUnitId && !organisation.units.some((unit) => unit.id === action.settings.organisationUnitId)) throw new Error("ORGANISATION_UNIT_NOT_FOUND");
+      const layout = structuredClone(this.store.getLayout(room.floorId)!);
+      const nextRoom = layout.rooms.find((candidate) => candidate.id === room.id)!;
+      nextRoom.access = action.settings.access;
+      nextRoom.personalAreas = action.settings.personalAreas ?? [];
+      if (action.settings.ownerUserId) nextRoom.ownerUserId = action.settings.ownerUserId;
+      else delete nextRoom.ownerUserId;
+      assertPublicReachability(this.store.getFloor(room.floorId)!, layout, this.store.getGameSettings());
       if (room.organisationUnitId === action.settings.organisationUnitId) {
         return publicFundForUnit(this.store.publicEconomy.view(), organisation, room.organisationUnitId).id;
       }
     } else if (action.kind === "game.settings") {
       validateRoomPermission(action.settings.roomAccess, organisation, memberIds);
       validateRoomPermission(action.settings.roomBuild, organisation, memberIds);
+      for (const floor of this.store.getFloors()) assertPublicReachability(floor, this.store.getLayout(floor.id)!, action.settings);
     } else if (action.kind === "kidnapping.settings") {
       if (action.settings.targetPolicy.userIds.some((id) => !memberIds.includes(id))) throw new Error("USER_NOT_FOUND");
     } else if (action.kind === "asset.sell") {

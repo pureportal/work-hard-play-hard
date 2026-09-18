@@ -80,6 +80,30 @@ afterEach(() => {
 });
 
 describe("Workspace floor navigation", () => {
+  it("adds newly created floors and their layouts from live updates", () => {
+    renderWorkspace();
+    const floor: Floor = { ...workspace().floors[0]!, id: "floor-new", level: 4, name: "Floor 4" };
+    const layout: FloorLayout = { floorId: floor.id, revision: 0, walls: [], openings: [], tiles: [], rooms: [], objects: [] };
+    act(() => {
+      realtime.handler?.({ type: "floor.updated", floor });
+      realtime.handler?.({ type: "layout.updated", layout });
+    });
+    fireEvent.change(screen.getByLabelText("Floor"), { target: { value: floor.id } });
+    expect(screen.getByTestId("world").getAttribute("data-floor")).toBe(floor.id);
+    fireEvent.click(screen.getByRole("button", { name: "Choose destination" }));
+    expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({ type: "movement.set_destination", floorId: floor.id }));
+  });
+
+  it("offers rescue in settings and sends only the current player's rescue command", async () => {
+    renderWorkspace();
+    fireEvent.change(screen.getByLabelText("Floor"), { target: { value: "floor-2" } });
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Rescue Me" }, { timeout: 10000 }));
+    expect(realtime.send).toHaveBeenCalledWith({ type: "player.rescue", requestId: expect.any(String) });
+    act(() => realtime.handler?.({ type: "player.rescued", requestId: "rescue", floorId: "floor-1" }));
+    expect(screen.getByTestId("world").getAttribute("data-floor")).toBe("floor-1");
+  });
+
   it("keeps same-floor destinations on the normal click-to-move path", () => {
     renderWorkspace();
 

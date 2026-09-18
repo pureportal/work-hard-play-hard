@@ -93,7 +93,7 @@ describe("expanded world catalog", () => {
       expect(asset.buildable).toBe(true);
       expect(asset.radius).toBe(124);
     }
-    expect(requireAssetDefinition("infrastructure-portal").buildable).toBe(false);
+    expect(requireAssetDefinition("infrastructure-portal")).toMatchObject({ buildable: true, shop: { price: 10_000, available: false } });
   });
 });
 

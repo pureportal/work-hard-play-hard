@@ -24,7 +24,7 @@ import {
   Utensils,
 } from "lucide-react";
 import { useId, useRef, useState, type ReactNode } from "react";
-import { ASSET_CATALOG, ASSET_RARITIES, getDefaultAssetVariantId } from "@workhard/shared";
+import { ASSET_CATALOG, ASSET_RARITIES, getAssetDefinition, getTeleporterPrice, getDefaultAssetVariantId } from "@workhard/shared";
 import type { AssetRarity, AssetRotation, FloorLayout, LayoutItemReference, LayoutTool } from "@workhard/shared";
 import type { LucideIcon } from "lucide-react";
 import { getAssetOrientationLabel, rotateAssetClockwise } from "../asset-orientation";
@@ -38,6 +38,7 @@ import { AssetRarityFilter } from "./AssetRarityFilter";
 import "../build-panel.css";
 
 interface BuildPanelProps {
+  floorCount?: number;
   accountControls?: ReactNode;
   projectControls?: ReactNode;
   reviewing?: boolean;
@@ -89,6 +90,7 @@ const categoryIcons: Record<string, LucideIcon> = {
 const buildableCategories = ASSET_CATALOG.categories.filter((category) => category.buildable);
 
 export function BuildPanel({
+  floorCount = 1,
   accountControls,
   projectControls,
   reviewing = false,
@@ -168,13 +170,15 @@ export function BuildPanel({
             {selectedItem.type !== "opening" && (
               <button onClick={onRotateSelected}><RotateCw size={16} aria-hidden="true" />Rotate</button>
             )}
-            <button className={selectedObject?.ownerUserId ? "" : "danger"} onClick={onRemoveSelected}>
+            {getAssetDefinition(selectedObject?.assetId ?? "")?.kind !== "portal" && <button className={selectedObject?.ownerUserId ? "" : "danger"} onClick={onRemoveSelected}>
               {selectedObject?.ownerUserId ? <Archive size={16} aria-hidden="true" /> : <Trash2 size={16} aria-hidden="true" />}
               {selectedObject?.ownerUserId ? "Store" : "Remove"}
-            </button>
+            </button>}
           </div>
         </section>
       )}
+
+      {tool === "asset" && selectedDefinition?.kind === "portal" && <p>Creates a new floor. Cannot be removed.</p>}
 
       <div className="build-workspace" inert={disabled}>
         <section className="build-section asset-library" aria-labelledby={`${panelId}-assets`}>
@@ -224,7 +228,7 @@ export function BuildPanel({
                   aria-label={asset.name}
                   className={tool === "asset" && asset.id === assetId ? "active" : ""}
                   aria-pressed={tool === "asset" && asset.id === assetId}
-                  aria-description={`${asset.rarity[0]!.toUpperCase() + asset.rarity.slice(1)} · ${asset.shop?.price} coins`}
+                  aria-description={`${asset.rarity[0]!.toUpperCase() + asset.rarity.slice(1)} · ${asset.kind === "portal" ? getTeleporterPrice(floorCount) : asset.shop?.price} coins`}
                   data-rarity={asset.rarity}
                   onClick={() => {
                     onAssetChange(asset.id);
@@ -233,7 +237,7 @@ export function BuildPanel({
                 >
                   <AssetShape asset={asset} rotation={asset.id === assetId ? assetRotation : 0} variantId={asset.id === assetId ? assetVariantId : getDefaultAssetVariantId(asset)} />
                   <span>{asset.name}</span>
-                  <span className="asset-price">{asset.shop?.price} coins</span>
+                  <span className="asset-price">{asset.kind === "portal" ? getTeleporterPrice(floorCount) : asset.shop?.price} coins</span>
                 </button>
               ))}
             </div>

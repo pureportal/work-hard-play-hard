@@ -422,6 +422,7 @@ export type ServerEvent =
   | { type: "chat.ack"; requestId: string; messageId: string }
   | { type: "layout.updated"; layout: FloorLayout; requestId?: string }
   | { type: "floor.updated"; floor: Floor }
+  | { type: "player.rescued"; requestId: string; floorId: string }
   | { type: "room.accessibility"; accessibility: PlayerRoomAccessibility }
   | { type: "workspace.access_updated"; access: WorkspaceAccessData }
   | { type: "layout.conflict"; requestId: string; revision: number }
@@ -476,6 +477,7 @@ export type ClientCommand =
   | { type: "organisation.edit"; requestId: string; baseRevision: number; edit: OrganisationEdit }
   | { type: "movement.input"; sequence: number; dx: number; dy: number }
   | { type: "movement.set_destination"; requestId: string; floorId: string; x: number; y: number }
+  | { type: "player.rescue"; requestId: string }
   | { type: "movement.stop"; requestId: string }
   | { type: "movement.approach_user"; requestId: string; targetUserId: string }
   | { type: "kidnapping.start"; requestId: string; targetUserId: string }

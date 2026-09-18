@@ -1,3 +1,5 @@
+import { createFloorExpansion } from "./floor-expansion.js";
+import { assertPublicReachability, assertTeleportersRetained, findRescuePosition } from "./public-reachability.js";
 import { ProjectRuntime, type ProjectPeer } from "../economy/project-runtime.js";
 import { isPermanentAsset, isInPersonalSpace, type ProjectEdit, type PublicAction } from "@workhard/shared";
 import { roomAccessAllows } from "@workhard/shared";
@@ -15,6 +17,7 @@ import {
   GONG_INTERACTION_RANGE,
   MAX_LAYOUT_OBJECTS_PER_FLOOR,
   detectLayoutRooms,
+  getAssetDefinition,
   getAssetPlacementError,
   getAssetsSupportedBy,
   getCorrespondingFloorPortals,
@@ -437,6 +440,9 @@ export class WorldRuntime {
           break;
         case "movement.set_destination":
           this.handleDestination(peer, command.requestId, command.floorId, command.x, command.y);
+          break;
+        case "player.rescue":
+          this.rescuePlayer(peer, command.requestId);
           break;
         case "movement.stop":
           this.stopMovement(peer.userId);
@@ -1861,6 +1867,23 @@ export class WorldRuntime {
     peer.send({ type: "chat.ack", requestId, messageId: message.id });
   }
 
+  private rescuePlayer(peer: Peer, requestId: string): void {
+    const player = this.players.get(peer.userId);
+    if (!player) throw new Error("WORLD_NOT_READY");
+    const floors = [...this.store.getFloors()].sort((left, right) => left.level - right.level);
+    const destination = floors.map((floor) => ({ floor, position: findRescuePosition(floor, this.store.getLayout(floor.id)!, this.store.getGameSettings()) }))
+      .find((candidate) => candidate.position);
+    if (!destination?.position) throw new Error("RESCUE_UNAVAILABLE");
+    this.endKidnappingForUser(peer.userId, "cancelled");
+    this.stopMovement(peer.userId);
+    this.leaveSeat(peer.userId);
+    this.dispatchGameEvents(this.gameRuntime.leave(peer.userId));
+    this.chessRuntime.disconnect(peer.userId);
+    this.syncGameLobbies();
+    this.transferPlayersThroughPortal([player], destination.floor.id, destination.position);
+    this.sendToUser(peer.userId, { type: "player.rescued", requestId, floorId: destination.floor.id });
+  }
+
   private prepareProjectEdit(peer: ProjectPeer, layout: FloorLayout, edit: ProjectEdit, fundId: string): FloorLayout {
     const floor = this.store.getFloor(peer.floorId);
     if (!floor) throw new Error("FLOOR_NOT_FOUND");
@@ -1905,6 +1928,13 @@ export class WorldRuntime {
         object.ownedAssetId = owned.id;
         this.assertPlayerAssetRoom(next, object, peer.userId);
       } else object.publicFundId = fundId;
+      if (getAssetDefinition(object.assetId)?.kind === "portal") {
+        if (edit.tool !== "asset" || fundId !== "workspace") throw new Error("TELEPORTER_PUBLIC_ONLY");
+        const levels = this.store.getFloors().filter((candidate) => candidate.officeId === floor.officeId).map((candidate) => candidate.level);
+        const pendingLevels = next.objects.filter((candidate) => getAssetDefinition(candidate.assetId)?.kind === "portal")
+          .map((candidate) => Number(candidate.label)).filter(Number.isInteger);
+        object.label = String(Math.max(...levels, ...pendingLevels) + 1);
+      }
       next.objects.push(object);
     } else if (edit.tool === "asset.move") {
       this.moveAsset(peer.floorId, next, floor, edit.objectId, edit.position, edit.variantId, edit.rotation);
@@ -1947,6 +1977,13 @@ export class WorldRuntime {
       }
       this.store.publicEconomy.applyProject(peer.userId, project);
       const replacement = this.store.replaceLayout(next);
+      const expansions = next.objects.filter((object) => getAssetDefinition(object.assetId)?.kind === "portal"
+        && !before.objects.some((candidate) => candidate.id === object.id)).map((object) => createFloorExpansion(floor, object));
+      for (const expansion of expansions) this.store.addFloor(expansion.floor, expansion.layout);
+      for (const expansion of expansions) {
+        this.broadcast({ type: "floor.updated", floor: expansion.floor });
+        this.broadcastLayout(expansion.layout);
+      }
       for (const userId of replacement.economyUserIds) this.publishEconomy(userId, requestId);
       for (const object of before.objects) {
         if (JSON.stringify(object) !== JSON.stringify(next.objects.find((item) => item.id === object.id))) this.releaseSeatsForObject(object.id);
@@ -2029,6 +2066,7 @@ export class WorldRuntime {
     if (!isInPersonalSpace(next, object, peer.userId)) throw new Error("PROJECT_APPROVAL_REQUIRED");
     next.objects.push(object);
     next.revision += 1;
+    assertPublicReachability(floor, next, this.store.getGameSettings());
     const replacement = this.store.replaceLayout(next);
     this.broadcastLayout(replacement.layout, { userId: peer.userId, requestId });
     this.publishEconomy(peer.userId, requestId);
@@ -2068,6 +2106,7 @@ export class WorldRuntime {
       if (!isInPersonalSpace(next, candidate, peer.userId)) throw new Error("PROJECT_APPROVAL_REQUIRED");
     });
     next.revision += 1;
+    assertPublicReachability(floor, next, this.store.getGameSettings());
     const replacement = this.store.replaceLayout(next);
     this.releaseSeatsForObject(objectId);
     this.broadcastLayout(replacement.layout, { userId: peer.userId, requestId });
@@ -2096,6 +2135,7 @@ export class WorldRuntime {
     const removedIds = new Set([objectId, ...supported.map((item) => item.id)]);
     next.objects = next.objects.filter((item) => !removedIds.has(item.id));
     next.revision += 1;
+    assertTeleportersRetained(layout, next);
     const checkpoint = this.store.exportMutableState();
     let replacement: ReturnType<WorkspaceStore["replaceLayout"]>;
     try {
@@ -2319,6 +2359,7 @@ export class WorldRuntime {
       if (!object) {
         throw new Error("NOTHING_TO_ERASE");
       }
+      if (getAssetDefinition(object.assetId)?.kind === "portal") throw new Error("TELEPORTER_PERMANENT");
       if (getAssetsSupportedBy(layout, object).length > 0) {
         throw new Error("ASSET_SUPPORT_OCCUPIED");
       }
@@ -3850,6 +3891,11 @@ export class WorldRuntime {
       PERSONAL_AREA_INVALID: "Keep personal areas inside their room, without overlaps.",
       ROOM_PRIVACY_PROTECTED: "This change would expose or divide a private room. Open its access in Room settings before changing its boundary or removing its last door.",
       PERMANENT_ASSET_PUBLIC: "Buy permanent flooring with a shared fund.",
+      TELEPORTER_PERMANENT: "Teleporters cannot be removed. Move it instead.",
+      TELEPORTER_PUBLIC_ONLY: "Place teleporters in a public area using the workspace fund.",
+      TELEPORTER_UNREACHABLE: "Keep a clear public path between the start point and every teleporter.",
+      SPAWN_UNREACHABLE: "Keep a clear public path to the start point.",
+      RESCUE_UNAVAILABLE: "No safe start point is available. Ask a builder to clear one.",
       PROJECT_STALE: "The layout changed. Discard this draft and prepare a new project.",
       PROJECT_LIMIT: "This project is full. Submit it before starting another.",
       PROJECT_EMPTY: "This draft has no changes. Place or remove something before submitting it.",

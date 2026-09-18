@@ -70,7 +70,8 @@ export class PublicEconomyStore {
     for (const proposal of this.state.proposals) {
       if (!["open", "approved"].includes(proposal.status)) continue;
       const action = proposal.action;
-      const stale = action.kind === "project" && layouts.find((layout) => layout.floorId === action.project.floorId)?.revision !== action.project.baseRevision
+      const stale = action.kind === "project" && (layouts.find((layout) => layout.floorId === action.project.floorId)?.revision !== action.project.baseRevision
+        || action.project.floorCount !== undefined && action.project.floorCount !== layouts.length)
         || action.kind === "room.settings" && layouts.find((layout) => layout.rooms.some((room) => room.id === action.roomId))?.revision !== action.baseRevision;
       if (stale) { proposal.status = "cancelled"; this.resolutionRevision += 1; changed = true; }
     }

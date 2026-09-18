@@ -6,6 +6,21 @@ import { BuildPanel } from "./BuildPanel";
 afterEach(cleanup);
 
 describe("BuildPanel", () => {
+  it("shows the expanding teleporter price, warns about permanence, and only offers movement for a placed teleporter", () => {
+    const next = layout([]);
+    next.objects.push({ id: "portal", floorId: next.floorId, assetId: "infrastructure-portal", variantId: "violet", rotation: 0, x: 0, y: 0, label: "2" });
+    const onMoveSelected = vi.fn();
+    render(<BuildPanel floorCount={3} layout={next} tool="asset" assetId="infrastructure-portal" assetVariantId="violet" assetRotation={0}
+      selectedItem={{ type: "asset", id: "portal" }} onToolChange={vi.fn()} onAssetChange={vi.fn()} onAssetVariantChange={vi.fn()}
+      onAssetRotationChange={vi.fn()} onMoveSelected={onMoveSelected} onRotateSelected={vi.fn()} onRemoveSelected={vi.fn()}
+      onOpenRooms={vi.fn()} onClose={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Teleporter" }).getAttribute("aria-description")).toContain("90000 coins");
+    expect(screen.getByText("Creates a new floor. Cannot be removed.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Remove" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Move" }));
+    expect(onMoveSelected).toHaveBeenCalledOnce();
+  });
+
   it("groups JSON assets by category and selects rotation", () => {
     const onToolChange = vi.fn();
     const onAssetChange = vi.fn();

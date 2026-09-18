@@ -18,7 +18,7 @@ export function ProposalDetails({ action, economy, organisation, members, rooms 
       {quote.assetChanges.length > 0 && <ul className="proposal-assets">{quote.assetChanges.map(({ object, change }) => {
         const asset = getAssetDefinition(object.assetId)!;
         return <li key={object.id}><AssetShape asset={asset} rotation={object.rotation} variantId={object.variantId} />
-          <span><strong>{asset.name}</strong><small>{change === "place" ? "Place" : change === "move" ? "Move" : "Remove"} · {object.ownerUserId ? `Personal · ${personName(object.ownerUserId)}` : "Shared"}</small></span>
+          <span><strong>{asset.name}</strong>{asset.kind === "portal" && change === "place" ? <small>Creates Floor {object.label}. Cannot be removed.</small> : <small>{change === "place" ? "Place" : change === "move" ? "Move" : "Remove"} · {object.ownerUserId ? `Personal · ${personName(object.ownerUserId)}` : "Shared"}</small>}</span>
         </li>;
       })}</ul>}
     </div>;

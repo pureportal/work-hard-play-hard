@@ -7,7 +7,8 @@ import { PolicyEditor } from "./PolicyEditor";
 import { ServerConnectionForm } from "./ServerConnectionForm";
 import { getServerOrigin } from "../server-url";
 
-export function SettingsPanel({ members, currentUserId, playerSettings, onPlayerChange, onServerSettings, onServerChanged, onClose }: {
+export function SettingsPanel({ onRescue, connected, members, currentUserId, playerSettings, onPlayerChange, onServerSettings, onServerChanged, onClose }: {
+  onRescue: () => void; connected: boolean;
   members: Member[]; currentUserId: string; playerSettings: PlayerKidnappingSettings;
   onPlayerChange: (settings: PlayerKidnappingSettings) => void; onServerSettings?: (() => void) | undefined; onClose: () => void;
   onServerChanged?: (() => void) | undefined;
@@ -20,6 +21,7 @@ export function SettingsPanel({ members, currentUserId, playerSettings, onPlayer
         <ServerConnectionForm onConnected={onServerChanged} />
       </details>}
       {onServerSettings && <button className="secondary-button server-settings-entry" onClick={onServerSettings}><ServerCog size={18} />Server settings</button>}
+      <button className="secondary-button" disabled={!connected} onClick={onRescue}>Rescue Me</button>
       <SpotifySettings />
       <GitHubConnection />
       <section className="settings-section"><h3>Interactions</h3><PolicyEditor label="Who can carry you" policy={playerSettings.carrierPolicy}

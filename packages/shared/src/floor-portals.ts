@@ -8,6 +8,10 @@ export interface FloorReference {
   level: number;
 }
 
+export function getTeleporterPrice(existingFloorCount: number): number {
+  return getAssetDefinition("infrastructure-portal")!.shop!.price * Math.max(1, existingFloorCount) ** 2;
+}
+
 export interface FloorPortal {
   object: WorldObject;
   floorId: string;

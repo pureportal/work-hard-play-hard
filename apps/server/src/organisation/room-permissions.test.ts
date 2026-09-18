@@ -7,6 +7,7 @@ import { clientCommandSchema } from "../protocol.js";
 
 function fixture() {
   const store = new WorkspaceStore(createTestData());
+  store.updateFloorSpawn("floor-studio", { x: -64, y: -64 });
   const change = (edit: OrganisationEdit) => store.editOrganisation("user-maya", store.getOrganisation().revision, edit, true);
   change({ type: "unit.create", name: "Engineering", kind: "department", parentId: null });
   const unitId = store.getOrganisation().units.at(-1)!.id;
@@ -48,6 +49,9 @@ describe("independent room permissions", () => {
   it("applies global defaults without overriding explicit room choices", () => {
     const { store, room } = fixture();
     const defaults: GameSettings = { roomAccess: { mode: "assigned", assignedPersonIds: ["user-priya"] }, roomBuild: { mode: "none", assignedPersonIds: [] } };
+    for (const layout of store.getLayouts()) {
+      for (const room of layout.rooms) room.access = { mode: "open", assignedPersonIds: [], knockable: false };
+    }
     store.updateGameSettings(defaults);
     expect(roomBuildAllows(room, "user-jonas", defaults, store.getOrganisation())).toBe(true);
     room.build = { mode: "default", assignedPersonIds: [] };
