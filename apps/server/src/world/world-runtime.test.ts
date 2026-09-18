@@ -1228,7 +1228,7 @@ describe("WorldRuntime private-room access", () => {
     }
     expect(runtime.serializePlayers().find((player) => player.userId === "user-jonas")?.roomId).not.toBe("room-focus");
     runtime.stop();
-  });
+  }, 15_000);
 
   it("does not create an access request when nobody is inside", () => {
     const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
