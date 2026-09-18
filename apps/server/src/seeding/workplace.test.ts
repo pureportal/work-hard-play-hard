@@ -46,7 +46,7 @@ describe("workplace seeds", () => {
     expect(layout.objects.filter((object) => {
       const bounds = getPlacedAssetBounds(object);
       return !layout.rooms.some((room) => isPointInRoom(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2, room));
-    }).map((object) => object.assetId)).toEqual(expect.arrayContaining(["floor-decking", "outdoor-bench", "plant-floor"]));
+    }).map((object) => object.assetId)).toEqual(expect.arrayContaining(["floor-decking", "outdoor-bench", "plant-sakura"]));
   });
 
   it("restores valid relationships, real inventory instances and score-derived rewards", () => {
