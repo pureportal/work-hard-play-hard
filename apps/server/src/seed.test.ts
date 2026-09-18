@@ -26,7 +26,7 @@ describe("development seed", () => {
     expect(data.members).toEqual([]);
     expect(data.invitations).toEqual([]);
     expect(data.messages).toEqual([]);
-    expect(data.meetings).toEqual([]);
+    expect(data.meetings).toEqual([expect.objectContaining({ status: "idle", participantIds: [], location: { type: "room", roomId: "room-meeting" } })]);
     expect(data.scores).toEqual([]);
     expect(data.organisation).toEqual({ revision: 0, ceoIds: [], units: [], assignments: [] });
     expect(data.gameSettings).toEqual(DEFAULT_GAME_SETTINGS);

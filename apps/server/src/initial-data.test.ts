@@ -10,13 +10,17 @@ describe("workspace initialization", () => {
     const state = store.exportMutableState();
     expect(store.needsSetup()).toBe(true);
     expect(state.floors).toHaveLength(1);
-    expect(state.layouts[0]!.rooms.map((room) => room.name)).toEqual(["Lounge", "Studio", "Kitchen"]);
+    expect(state.layouts[0]!.rooms.map((room) => room.name).sort()).toEqual(["Kitchen", "Lounge", "Meeting room", "Studio"]);
     for (const room of state.layouts[0]!.rooms) {
       expect(room.access).toEqual({ mode: "open", assignedPersonIds: [], knockable: false });
     }
-    for (const records of [state.members, state.messages, state.meetings, state.invitations, state.scores, state.gameStatistics,
+    for (const records of [state.members, state.messages, state.invitations, state.scores, state.gameStatistics,
       state.organisation.units, state.organisation.assignments, state.economy.accounts, state.economy.transactions]) expect(records).toEqual([]);
-    expect(state.conversations).toEqual([{ id: "conversation-team", name: "Team", type: "team", unread: 0 }]);
+    expect(state.meetings).toEqual([expect.objectContaining({ title: "Meeting room", status: "idle", participantIds: [], location: { type: "room", roomId: "room-meeting" } })]);
+    expect(state.conversations).toEqual([
+      { id: "conversation-team", name: "Team", type: "team", unread: 0 },
+      expect.objectContaining({ name: "Meeting room", type: "meeting", meetingId: state.meetings[0]!.id, unread: 0 }),
+    ]);
   });
 
   it("restores saved floors without rebuilding a preset office", () => {

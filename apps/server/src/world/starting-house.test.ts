@@ -1,7 +1,7 @@
 import {
-  ASSET_RASTER_SIZE, getAssetPlacementError, getOutdoorBounds, getPlacedAssetCells,
+  ASSET_RASTER_SIZE, canUseWorkObject, getAssetPlacementError, getGameArea, getOutdoorBounds, getPlacedAssetCells,
   getPlacedAssetInteractions, getRoomDoorPosition, getSpawnPlacementError, isPointInRoom,
-  requireAssetDefinition,
+  requireAssetDefinition, SPECIAL_PROP_RANGE,
 } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
 import { canOccupy } from "./collision.js";
@@ -14,7 +14,7 @@ describe("starting house", () => {
     const { floor, layout } = createStartingHouse();
     const bounds = getOutdoorBounds(floor);
     expect(getSpawnPlacementError(layout, bounds, floor.spawn)).toBeUndefined();
-    const destinations = [{ x: floor.spawn.x, y: 896 }];
+    const destinations = [{ x: floor.spawn.x, y: 896 }, { x: 960, y: 960 }];
     for (const room of layout.rooms) {
       for (const opening of layout.openings) {
         if (opening.type !== "door" || !room.doorIds.includes(opening.id)) continue;
@@ -27,14 +27,20 @@ describe("starting house", () => {
     }
   });
 
-  it("furnishes and floors the rooms while leaving the outdoors empty", () => {
+  it("floors every room and keeps the outdoor furnishings on a small patio", () => {
     const { floor, layout } = createStartingHouse();
     const flooringCells = new Set<string>();
     for (const object of layout.objects) {
       expect(getAssetPlacementError(layout, getOutdoorBounds(floor), object), object.id).toBeUndefined();
       const cells = getPlacedAssetCells(object);
       for (const cell of cells) {
-        expect(layout.rooms.some((room) => isPointInRoom(cell.worldX + 8, cell.worldY + 8, room)), object.id).toBe(true);
+        const indoors = layout.rooms.some((room) => isPointInRoom(cell.worldX + 8, cell.worldY + 8, room));
+        if (!indoors) {
+          expect(cell.worldX, object.id).toBeGreaterThanOrEqual(768);
+          expect(cell.worldX, object.id).toBeLessThan(1152);
+          expect(cell.worldY, object.id).toBeGreaterThanOrEqual(832);
+          expect(cell.worldY, object.id).toBeLessThan(1024);
+        }
         if (requireAssetDefinition(object.assetId).kind === "floor-tile") {
           flooringCells.add(`${cell.worldX}:${cell.worldY}`);
         }
@@ -50,6 +56,21 @@ describe("starting house", () => {
         }
       }
     }
+  });
+
+  it("provides a furnished meeting room and a studio without desks or chairs", () => {
+    const { layout } = createStartingHouse();
+    const meetingRoom = layout.rooms.find((room) => room.meetingRoom)!;
+    expect(meetingRoom.name).toBe("Meeting room");
+    expect(meetingRoom.doorIds.length).toBeGreaterThan(0);
+    expect(layout.objects.some((object) => object.assetId === "table-round" && isPointInRoom(object.x, object.y, meetingRoom))).toBe(true);
+    const studio = layout.rooms.find((room) => room.name === "Studio")!;
+    const studioFurniture = layout.objects.filter((object) => isPointInRoom(object.x, object.y, studio))
+      .map((object) => requireAssetDefinition(object.assetId).kind);
+    expect(studioFurniture).not.toContain("desk");
+    expect(studioFurniture).not.toContain("table");
+    expect(studioFurniture).not.toContain("chair");
+    expect(layout.objects.some((object) => object.assetId === "outdoor-bench")).toBe(true);
   });
 
   it("leaves a walkable approach to every seat", () => {
@@ -70,6 +91,34 @@ describe("starting house", () => {
           return endpoint?.x === point.x && endpoint.y === point.y;
         });
         expect(reachable, `${object.id}: ${seat.id}`).toBe(true);
+      }
+    }
+  });
+
+  it("keeps the starter games, whiteboard, and fortune dispenser reachable in their rooms", () => {
+    const { floor, layout } = createStartingHouse();
+    const bounds = getOutdoorBounds(floor);
+    const activities = [
+      { assetId: "equipment-falling-blocks", roomId: "room-main", approach: { x: 816, y: 752 } },
+      { assetId: "equipment-chess", roomId: "room-main", approach: { x: 688, y: 768 } },
+      { assetId: "equipment-whiteboard", roomId: "room-meeting", approach: { x: 592, y: 368 } },
+      { assetId: "special-fortune", roomId: "room-kitchen", approach: { x: 1072, y: 640 } },
+    ];
+    for (const { assetId, roomId, approach } of activities) {
+      const objects = layout.objects.filter((object) => object.assetId === assetId);
+      expect(objects, assetId).toHaveLength(1);
+      const object = objects[0]!;
+      const room = layout.rooms.find((candidate) => candidate.id === roomId)!;
+      expect(isPointInRoom(object.x, object.y, room), assetId).toBe(true);
+      expect(isPointInRoom(approach.x, approach.y, room), assetId).toBe(true);
+      expect(findPath(layout, bounds, "player", floor.spawn, approach).at(-1), assetId).toEqual(approach);
+      if (requireAssetDefinition(assetId).kind === "game") {
+        const area = getGameArea(object);
+        expect(Math.hypot(approach.x - area.x, approach.y - area.y), assetId).toBeLessThan(area.radius);
+      } else if (assetId === "equipment-whiteboard") {
+        expect(canUseWorkObject(object, layout, { ...approach, floorId: floor.id })).toBe(true);
+      } else {
+        expect(Math.hypot(approach.x - object.x, approach.y - object.y)).toBeLessThan(SPECIAL_PROP_RANGE);
       }
     }
   });

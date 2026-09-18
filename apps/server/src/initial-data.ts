@@ -12,10 +12,11 @@ import {
   type BootstrapData,
 } from "@workhard/shared";
 import { createStartingHouse } from "./world/starting-house.js";
+import { synchronizeRoomMeetings } from "./meetings/room-meetings.js";
 
 export function createInitialData(now = new Date()): BootstrapData {
   const house = createStartingHouse();
-  return structuredClone({
+  const data: BootstrapData = structuredClone({
     currentUserId: "",
     corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
     team: { id: "team", name: "Team", slug: "team", accent: DEFAULT_CORPORATE_IDENTITY.primaryColor },
@@ -43,4 +44,6 @@ export function createInitialData(now = new Date()): BootstrapData {
     gameSettings: DEFAULT_GAME_SETTINGS,
     kidnapping: { global: DEFAULT_GLOBAL_KIDNAPPING_SETTINGS, player: DEFAULT_PLAYER_KIDNAPPING_SETTINGS },
   });
+  synchronizeRoomMeetings([], house.layout.rooms, data.meetings, data.conversations);
+  return data;
 }

@@ -29,23 +29,24 @@ describe("workplace seeds", () => {
     expect(new Set(getFloorPortals(floors, layouts).map((portal) => portal.destinationFloorId))).toEqual(new Set(floors.map((floor) => floor.id)));
   }, 30_000);
 
-  it("furnishes the three open starter rooms and leaves the surrounding land empty", () => {
+  it("provides four open starter rooms and a small outdoor patio", () => {
     const data = createInitialData();
     const layout = data.layouts[0]!;
     verifyLayout(data.floors[0]!, layout);
-    expect(layout.rooms.map((room) => room.name)).toEqual(["Lounge", "Studio", "Kitchen"]);
+    expect(layout.rooms.map((room) => room.name).sort()).toEqual(["Kitchen", "Lounge", "Meeting room", "Studio"]);
     for (const room of layout.rooms) expect(layout.objects.some((object) => {
       const bounds = getPlacedAssetBounds(object);
       return requireAssetDefinition(object.assetId).kind !== "floor-tile" && isPointInRoom(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2, room);
     })).toBe(true);
     expect(layout.rooms.every((room) => room.access.mode === "open" && !room.organisationUnitId && !room.access.knockable)).toBe(true);
-    for (const records of [data.members, data.messages, data.meetings, data.invitations, data.scores, data.organisation.units, data.organisation.assignments]) {
+    for (const records of [data.members, data.messages, data.invitations, data.scores, data.organisation.units, data.organisation.assignments]) {
       expect(records).toEqual([]);
     }
-    expect(layout.objects.every((object) => {
+    expect(data.meetings).toEqual([expect.objectContaining({ status: "idle", participantIds: [], location: { type: "room", roomId: "room-meeting" } })]);
+    expect(layout.objects.filter((object) => {
       const bounds = getPlacedAssetBounds(object);
-      return layout.rooms.some((room) => isPointInRoom(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2, room));
-    })).toBe(true);
+      return !layout.rooms.some((room) => isPointInRoom(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2, room));
+    }).map((object) => object.assetId)).toEqual(expect.arrayContaining(["floor-decking", "outdoor-bench", "plant-floor"]));
   });
 
   it("restores valid relationships, real inventory instances and score-derived rewards", () => {
