@@ -200,7 +200,7 @@ try {
   await page.click('button[aria-label="People"]');
   await page.click('button[aria-label="Jonas Berg"]');
   await page.click('button[aria-label="Message Jonas Berg"]');
-  await page.waitForSelector('input[aria-label="Message Jonas Berg"]', { visible: true });
+  await page.waitForSelector('textarea[aria-label="Message Jonas Berg"]', { visible: true });
   await assertViewport(page, [".nav-rail", ".chat-panel", ".message-composer"]);
   await assertContained(page, ".conversation-tabs", ['button[aria-selected="true"]']);
   await assertTouchUi(page);
