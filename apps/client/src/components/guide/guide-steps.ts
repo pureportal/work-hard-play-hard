@@ -8,8 +8,8 @@ export type GuideStep = Step & { screen: GuideScreen; target: string };
 
 export function dailyGuideContent(reward: DailyRewardStatus): string {
   return reward.claimable
-    ? `Claim your daily bonus here. Consecutive days grow it up to ${DAILY_REWARD_AMOUNTS.at(-1)} coins; miss a day and the streak resets. The next day starts at midnight UTC.`
-    : `Today’s bonus is already claimed. Come back after midnight UTC to keep your streak growing, up to ${DAILY_REWARD_AMOUNTS.at(-1)} coins a day.`;
+    ? `Claim your daily bonus from the gift button. Keep your streak going to earn up to ${DAILY_REWARD_AMOUNTS.at(-1)} coins a day; miss a day and it resets.`
+    : "Today’s bonus is already claimed. The gift button reopens your rewards. Come back after midnight UTC to keep your streak going.";
 }
 
 export type GuideData = Pick<BootstrapData, "currentUserId" | "layouts" | "gameSettings" | "organisation" | "economy">;
@@ -30,7 +30,7 @@ export function createGuideSteps(data: GuideData, floorId: string, grantedRoomId
     {
       id: "daily", target: '[data-guide="daily"]', title: "A little payday",
       content: dailyGuideContent(data.economy.dailyReward),
-      screen: { panel: "build" }, placement: "left", blockTargetInteraction: false,
+      screen: { panel: null }, placement: "bottom",
     },
     {
       id: "items", target: '[data-guide="assets"]', title: "Make yourself at home",

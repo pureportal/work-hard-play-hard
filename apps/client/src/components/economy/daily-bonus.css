@@ -1,0 +1,140 @@
+.daily-bonus-button {
+  position: relative;
+  color: var(--ink);
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.daily-bonus-button.has-reward svg { color: #b86c18; }
+.daily-bonus-button.has-reward::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #edaa38;
+  box-shadow: 0 0 0 3px rgb(237 170 56 / 16%);
+}
+
+.daily-bonus-dialog {
+  padding: 0;
+  width: min(520px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  border: 1px solid #f6d897;
+  border-radius: 28px;
+  color: #38274b;
+  background: #fff8ec;
+  box-shadow: 0 26px 100px #18102666, 0 0 0 6px #ffffff12;
+  overflow: auto;
+  animation: daily-bonus-enter 420ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+.daily-bonus-dialog::backdrop { background: #211732a6; backdrop-filter: blur(7px); }
+.daily-bonus-content {
+  position: relative;
+  padding: 24px 28px 26px;
+  text-align: center;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 10%, #ffe6a9 0, transparent 52%), radial-gradient(ellipse at 100% 75%, #f4ddff80, transparent 65%);
+}
+.daily-bonus-close {
+  position: absolute;
+  z-index: 2;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #5134571a;
+  border-radius: 50%;
+  color: #644f71;
+  background: #ffffff9c;
+}
+.daily-bonus-close:hover { background: white; transform: rotate(8deg); }
+.daily-bonus-dialog button:focus-visible { outline: 3px solid #8952ce; outline-offset: 4px; }
+.daily-bonus-art { position: relative; width: 230px; height: 156px; margin: 0 auto 6px; }
+.daily-bonus-orbit {
+  position: absolute;
+  inset: 0 34px;
+  border: 1px dashed #bc813e55;
+  border-radius: 50%;
+  transform: rotate(-20deg);
+}
+.daily-bonus-gift {
+  position: absolute;
+  inset: 24px 62px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #ffffffaa;
+  border-radius: 27px;
+  color: #fff4d3;
+  background: linear-gradient(145deg, #b47bdf, #8250b6 58%, #643d9b);
+  box-shadow: 0 9px 0 #593383, 0 18px 30px #80539a38, inset 0 2px 0 #ffffff88;
+  animation: daily-bonus-float 3.5s ease-in-out infinite;
+}
+.daily-bonus-spark { position: absolute; color: #bd791d; animation: daily-bonus-twinkle 2.6s ease-in-out infinite alternate; }
+.daily-bonus-spark-one { left: 24px; top: 16px; }
+.daily-bonus-spark-two { right: 26px; bottom: 18px; animation-delay: 800ms; }
+.daily-bonus-coin {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  color: #996019;
+  background: linear-gradient(140deg, #fff1aa, #f4bc49);
+  border: 2px solid #ffdf83;
+  border-radius: 50%;
+  box-shadow: 0 3px 0 #ce8d2f;
+}
+.daily-bonus-coin-one { right: 19px; top: 21px; transform: rotate(18deg); }
+.daily-bonus-coin-two { left: 23px; bottom: 15px; transform: rotate(-18deg) scale(.85); }
+.daily-bonus-content h2 { margin: 0 0 8px; font-size: 24px; font-weight: 850; letter-spacing: -.7px; }
+.daily-bonus-reward { display: grid; gap: 6px; }
+.daily-bonus-reward > strong { font-size: 54px; line-height: 1; letter-spacing: -2px; font-weight: 900; }
+.daily-bonus-reward strong span { margin-left: 8px; font-size: 20px; letter-spacing: -.5px; }
+.daily-bonus-reward > span { color: #76617e; font-size: 14px; }
+.daily-bonus-streak { display: flex; align-items: center; justify-content: center; gap: 5px; margin: 21px 0 12px; font-size: 13px; font-weight: 750; color: #a15b23; }
+.daily-bonus-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; padding: 0; margin: 0 0 22px; list-style: none; }
+.daily-bonus-days li { display: grid; justify-items: center; gap: 9px; padding: 11px 0; border: 1px solid #e8dccd; border-radius: 13px; color: #897788; background: #ffffff70; }
+.daily-bonus-days li > span { font-size: 10px; font-weight: 750; white-space: nowrap; }
+.daily-bonus-days li > strong { font-size: 15px; }
+.daily-bonus-days li.is-complete { color: #56816c; background: #eaf2e5; border-color: #c9dcc5; }
+.daily-bonus-days li.is-current { color: #754aa3; border: 2px solid #a37bc7; padding: 10px 0; background: #f3e8fc; box-shadow: 0 3px 0 #b89ace; transform: translateY(-3px); }
+.daily-bonus-days li:last-child:not(.is-current):not(.is-complete) { color: #a06b24; background: #fff0cb; border-color: #efd59a; }
+.daily-bonus-claim { display: flex; justify-content: center; align-items: center; gap: 9px; width: 100%; min-height: 50px; border: 1px solid #72419d; border-radius: 15px; color: white; background: linear-gradient(#a470cd, #8551b5); box-shadow: 0 4px 0 #613b88, inset 0 1px 0 #ffffff55; font-size: 16px; font-weight: 800; transition: transform 160ms, box-shadow 160ms; }
+.daily-bonus-claim:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 0 #613b88, 0 9px 24px #8953b333; }
+.daily-bonus-claim:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 #613b88; }
+.daily-bonus-claim:disabled { opacity: .65; cursor: wait; }
+.daily-bonus-next { margin: 17px 0 0; color: #76617e; font-size: 12px; }
+.daily-bonus-error { color: #a23048; font-size: 13px; margin: 0 0 12px; }
+.is-celebrating .daily-bonus-gift { animation: daily-bonus-pop 600ms ease both; }
+.is-celebrating .daily-bonus-reward > strong { animation: daily-bonus-pop 500ms 100ms ease both; }
+.daily-bonus-confetti { position: absolute; inset: 0; pointer-events: none; }
+.daily-bonus-confetti i { position: absolute; left: 50%; top: 50%; width: 7px; height: 12px; border-radius: 2px; background: #d59a30; transform: rotate(calc(var(--piece) * 22.5deg)); animation: daily-bonus-confetti 1.2s ease-out both; }
+.daily-bonus-confetti i:nth-child(3n) { background: #a67ed4; }
+.daily-bonus-confetti i:nth-child(3n + 1) { background: #86baa0; }
+@keyframes daily-bonus-enter { from { opacity: 0; transform: translateY(18px) scale(.94); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes daily-bonus-float { 0%, 100% { transform: translateY(0) rotate(-7deg); } 50% { transform: translateY(-7px) rotate(3deg); } }
+@keyframes daily-bonus-twinkle { from { opacity: .4; transform: scale(.8); } to { opacity: 1; transform: scale(1.1); } }
+@keyframes daily-bonus-pop { 0%, 100% { transform: scale(1); } 45% { transform: scale(1.16) rotate(-6deg); } }
+@keyframes daily-bonus-confetti { from { opacity: 1; transform: rotate(calc(var(--piece) * 22.5deg)) translateY(20px) rotate(0); } to { opacity: 0; transform: rotate(calc(var(--piece) * 22.5deg)) translateY(145px) rotate(180deg); } }
+@media (max-width: 700px) { .daily-bonus-button span { display: none; } .daily-bonus-button { min-width: 36px; padding: 7px; } }
+@media (max-width: 400px) { .daily-bonus-content { padding: 18px 16px 23px; } .daily-bonus-days { gap: 4px; } .daily-bonus-days li { border-radius: 10px; } }
+@media (max-height: 600px) { .daily-bonus-art { height: 104px; transform: scale(.7); margin-top: -15px; margin-bottom: -6px; } .daily-bonus-gift { inset: 0 62px; } .daily-bonus-content { padding-top: 18px; } .daily-bonus-reward > strong { font-size: 38px; } .daily-bonus-streak { margin-top: 14px; } }
+@media (max-height: 450px) and (min-width: 540px) {
+  .daily-bonus-content { padding: 16px 22px 20px; }
+  .daily-bonus-art { position: absolute; top: 22px; left: 12px; margin: 0; transform: scale(.48); transform-origin: top left; }
+  .daily-bonus-content h2 { font-size: 20px; }
+  .daily-bonus-reward > strong { font-size: 32px; }
+  .daily-bonus-streak { margin: 12px 0 10px; }
+  .daily-bonus-days { margin-bottom: 14px; }
+  .daily-bonus-days li { gap: 6px; padding: 8px 0; }
+  .daily-bonus-days li.is-current { padding: 7px 0; }
+  .daily-bonus-claim { min-height: 44px; }
+  .daily-bonus-next { margin-top: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { .daily-bonus-dialog, .daily-bonus-dialog *, .daily-bonus-dialog *::before { animation: none !important; transition: none !important; } .daily-bonus-confetti { display: none; } }

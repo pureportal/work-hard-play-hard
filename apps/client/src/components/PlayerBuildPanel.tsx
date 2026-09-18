@@ -40,7 +40,7 @@ interface PlayerBuildPanelProps {
   pendingEconomyRequest?: EconomyRequest | undefined;
   pendingPublicAction?: boolean;
   publicActionError?: string | undefined;
-  onClaimDaily: () => void;
+  onOpenDaily: () => void;
   onPurchase: (assetId: string) => void;
   onPlace: (ownedAssetId: string, assetId: string) => void;
   onFocus: (floorId: string, objectId: string) => void;
@@ -77,7 +77,7 @@ export function PlayerBuildPanel({
   pendingEconomyRequest,
   pendingPublicAction = false,
   publicActionError,
-  onClaimDaily,
+  onOpenDaily,
   onPurchase,
   onPlace,
   onFocus,
@@ -123,7 +123,7 @@ export function PlayerBuildPanel({
     )}
   </>;
   const dailyBonus = (
-    <section className="economy-summary" aria-label="Daily bonus" data-guide="daily">
+    <section className="economy-summary" aria-label="Daily bonus">
       <div className="daily-reward">
         <div>
           <strong>Daily bonus</strong>
@@ -131,12 +131,9 @@ export function PlayerBuildPanel({
         </div>
         <button
           className="primary-button"
-          disabled={!economy.dailyReward.claimable || Boolean(pendingEconomyRequest)}
-          onClick={onClaimDaily}
+          onClick={onOpenDaily}
         >
-          {pendingEconomyRequest?.type === "daily"
-            ? "Claiming…"
-            : economy.dailyReward.claimable ? `Claim ${economy.dailyReward.amount}` : "Claimed"}
+          <Gift size={16} aria-hidden="true" />Open bonus
         </button>
       </div>
     </section>

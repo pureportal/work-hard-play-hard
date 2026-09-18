@@ -8,6 +8,7 @@ import {
   ArrowRight,
   BellRing,
   DoorOpen,
+  Gift,
   Hand,
   LockKeyhole,
   Minimize2,
@@ -83,6 +84,7 @@ import { acceptInvitation, ApiError, changeMemberAccess, createDirectConversatio
 import { applyCorporateIdentity } from "./branding";
 import { Avatar } from "./components/Avatar";
 import { GameGuide } from "./components/guide/GameGuide";
+import { DailyBonusDialog } from "./components/economy/DailyBonusDialog";
 import type { GuideScreen } from "./components/guide/guide-steps";
 import { DeferredContent } from "./components/DeferredContent";
 import { RoomKnockNotice } from "./components/RoomKnockNotice";
@@ -624,6 +626,8 @@ export function Workspace({
   const [movingBuildItem, setMovingBuildItem] = useState<LayoutItemReference>();
   const [placingOwnedAssetId, setPlacingOwnedAssetId] = useState<string>();
   const [pendingEconomyRequest, setPendingEconomyRequest] = useState<PendingEconomyRequest>();
+  const [dailyBonusOpen, setDailyBonusOpen] = useState(initialData.economy.dailyReward.claimable);
+  const [dailyBonusError, setDailyBonusError] = useState<string>();
   const [meetingId, setMeetingId] = useState<string>();
   const [meetingConnection, setMeetingConnection] = useState<MediaConnection>();
   const meetingMediaRef = useRef<MediaConnection | undefined>(undefined);
@@ -1319,6 +1323,7 @@ export function Workspace({
         pendingLayoutMove.current = undefined;
       }
       if (event.requestId && pendingEconomyRequestRef.current?.id === event.requestId) {
+        if (pendingEconomyRequestRef.current.type === "daily") setDailyBonusError(event.message);
         pendingEconomyRequestRef.current = undefined;
         setPendingEconomyRequest(undefined);
       }
@@ -1549,6 +1554,7 @@ export function Workspace({
       return;
     }
     const pending: PendingEconomyRequest = { id: requestId(), type: "daily" };
+    setDailyBonusError(undefined);
     if (request({ type: "economy.claim_daily", requestId: pending.id })) {
       pendingEconomyRequestRef.current = pending;
       setPendingEconomyRequest(pending);
@@ -2381,6 +2387,9 @@ export function Workspace({
 
   return (
     <main className="workspace-shell">
+      {dailyBonusOpen && <DailyBonusDialog reward={data.economy.dailyReward}
+        pending={Boolean(pendingEconomyRequest)} online={connection === "online"} error={dailyBonusError}
+        onClaim={claimDailyReward} onClose={() => setDailyBonusOpen(false)} />}
       <NavRail
         activePanel={activePanel}
         corporateIdentity={data.corporateIdentity}
@@ -2400,8 +2409,14 @@ export function Workspace({
       />
       <section className="workspace-main">
         <TopBar
-          guide={<GameGuide data={data} floorId={floorId} grantedRoomIds={grantedRoomIds}
-            unavailable={connection !== "online" ? "Reconnect to start the guide."
+          guide={<>
+            <button type="button" className={`secondary-button daily-bonus-button${data.economy.dailyReward.claimable ? " has-reward" : ""}`}
+              data-guide="daily" aria-label="Daily bonus" disabled={Boolean(guideScreen)}
+              onClick={() => { setDailyBonusError(undefined); setDailyBonusOpen(true); }}>
+              <Gift size={18} aria-hidden="true" /><span>Daily bonus</span>
+            </button>
+            <GameGuide data={data} floorId={floorId} grantedRoomIds={grantedRoomIds}
+            unavailable={dailyBonusOpen ? "Close the daily bonus to start the guide." : connection !== "online" ? "Reconnect to start the guide."
               : projectDraft || reviewingProject || editingTool || movingBuildItem || (!guideScreen && pendingEconomyRequest) || publicCommand.pending
                 ? "Finish building before starting the guide."
                 : gameOpen || gameRound?.status === "playing" || chessOpen || currentMeeting || activeCall || proximityCallParticipants.length > 0 || workObject || avatarDialogOpen || openingMeeting || meetingSwitch
@@ -2420,7 +2435,7 @@ export function Workspace({
               if (previous) { setActivePanel(previous.panel); setBuildView(previous.buildView); }
               guidePreviousScreen.current = undefined;
               requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('[data-guide="help"]')?.focus());
-            }} />}
+            }} /></>}
           officeName={data.office.name}
           floors={data.floors}
           floorId={floorId}
@@ -3058,7 +3073,7 @@ export function Workspace({
             selectedItem={buildSelection}
             movingItem={movingBuildItem}
             pendingEconomyRequest={pendingEconomyRequest}
-            onClaimDaily={claimDailyReward}
+            onOpenDaily={() => { setDailyBonusError(undefined); setDailyBonusOpen(true); }}
             onPurchase={purchaseAsset}
             onFocus={focusPersonalAsset}
             onPlace={(ownedAssetId, selectedAssetId) => {

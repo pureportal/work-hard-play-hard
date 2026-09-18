@@ -266,7 +266,7 @@ describe("Workspace player assets", () => {
     render(<Workspace initialData={workspace()} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Build" }));
 
-    fireEvent.click(await screen.findByRole("button", { name: "Claim 50" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Claim 50 coins" }));
     expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({ type: "economy.claim_daily" }));
 
     const claim = realtime.send.mock.calls.map(([command]) => command).find((command) => command.type === "economy.claim_daily")!;
@@ -287,6 +287,7 @@ describe("Workspace player assets", () => {
       transaction: updatedEconomy.recentTransactions[0]!,
     }));
     expect(screen.getByText("Daily bonus: +50 coins.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Close daily bonus" }));
     fireEvent.click(screen.getByRole("tab", { name: "Shop" }));
     fireEvent.click(screen.getByRole("tab", { name: "Seating" }));
     fireEvent.click(screen.getByRole("button", { name: "Buy Office chair" }));

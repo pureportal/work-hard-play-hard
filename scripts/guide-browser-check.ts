@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 import { chromium, type Page } from "playwright-core";
-import { createOrganisation, createPublicEconomy } from "../packages/shared/src/index.js";
+import { createOrganisation, createPublicEconomy, type GameGuideStatus } from "../packages/shared/src/index.js";
 import { WorkspaceStore } from "../apps/server/src/store.js";
 import { WorldRuntime } from "../apps/server/src/world/world-runtime.js";
 import { createTestData } from "../apps/server/src/testing/workspace-data.js";
@@ -83,12 +83,17 @@ async function connect(scenario: Scenario) {
       };
     }
   }, { dark: scenario.dark, blockedGuideStorage: scenario.blockedGuideStorage });
+  let guideStatus: GameGuideStatus | null = null;
   await context.route("**/v1/**", async route => {
     const path = new URL(route.request().url()).pathname;
     const headers = { "access-control-allow-origin": route.request().headers().origin ?? "*", "access-control-allow-credentials": "true" };
     if (route.request().method() === "OPTIONS") await route.fulfill({ status: 204, headers: { ...headers, "access-control-allow-headers": "content-type", "access-control-allow-methods": "GET, POST" } });
     else if (path === "/v1/auth/session") await route.fulfill({ headers, json: { user: { id: userId, username: userId, email: `${userId}@example.test` }, setupRequired: false, registration: { enabled: false, invitationRequired: true }, magicLinkEnabled: false, corporateIdentity: store.getCorporateIdentity() } });
     else if (path === "/v1/bootstrap") await route.fulfill({ headers, json: store.getBootstrap(userId) });
+    else if (path === "/v1/me/game-guide") {
+      if (route.request().method() === "PUT") guideStatus = route.request().postDataJSON().status;
+      await route.fulfill({ headers, json: { status: guideStatus } });
+    }
     else await route.fulfill({ headers, status: 404, json: { error: "Unexpected guide check request" } });
   });
   let releaseConnection: () => void = () => undefined;
@@ -113,7 +118,25 @@ async function connect(scenario: Scenario) {
   if (scenario.hiddenWallet) await page.addStyleTag({ content: '[data-guide="wallet"] { display: none !important; }' });
   if (!scenario.delayedConnection) await page.getByRole("status").filter({ hasText: /^Connected$/ }).waitFor();
   await page.locator(".world-canvas canvas").waitFor();
+  if (!scenario.claimed) {
+    const bonus = page.getByRole("dialog", { name: "Daily bonus", exact: true });
+    await bonus.waitFor();
+    if (scenario.claim) {
+      const balance = store.getPlayerEconomy(userId).coinBalance;
+      const claim = bonus.getByRole("button", { name: /^Claim \d+/ });
+      if (scenario.claim === "keyboard") { await claim.focus(); await page.keyboard.press("Enter"); }
+      else await claim.tap();
+      await bonus.getByText("In your pocket!", { exact: true }).waitFor();
+      assert.equal(store.getPlayerEconomy(userId).coinBalance, balance + 10);
+    }
+    await bonus.getByRole("button", { name: "Close daily bonus" }).click();
+  }
   return { page, commands, store, userId, releaseConnection, disconnect: () => disconnect() };
+}
+
+async function closeBonusAfterRejoin(page: Page) {
+  const bonus = page.getByRole("dialog", { name: "Daily bonus", exact: true });
+  if (await bonus.isVisible()) await bonus.getByRole("button", { name: "Close daily bonus" }).click();
 }
 
 async function verifyStep(page: Page, id: string) {
@@ -161,6 +184,27 @@ async function verifyStep(page: Page, id: string) {
   assert(await tooltip.getByRole("button", { name: id === "explore" ? "Let’s play" : "Next", exact: true }).evaluate(element => element === document.activeElement), `${id}: reverse tab returns to Next`);
 }
 
+async function waitForGuideStatus(page: Page, status: GameGuideStatus) {
+  await page.waitForFunction(async expected => {
+    const response = await fetch("/v1/me/game-guide");
+    return (await response.json()).status === expected;
+  }, status);
+}
+
+async function verifyGuideButton(page: Page) {
+  const button = page.getByRole("button", { name: "How to play", exact: true });
+  const rect = await button.boundingBox();
+  const viewport = page.viewportSize()!;
+  assert(rect && rect.x >= 0 && rect.y >= 0 && rect.x + rect.width <= viewport.width && rect.y + rect.height <= viewport.height, "Guide button fits viewport");
+  if (viewport.width > 700) assert.equal(await button.innerText(), "How to play");
+  await button.click({ trial: true });
+  assert(await page.locator(".top-bar-actions").evaluate(element => {
+    const toolbar = element.closest(".top-bar")!.getBoundingClientRect();
+    const actions = element.getBoundingClientRect();
+    return actions.left >= toolbar.left && actions.right <= toolbar.right;
+  }), "Guide button and toolbar actions fit the header");
+}
+
 async function completeTour(page: Page, scenario: Scenario, backwards = false) {
   const ids: string[] = [];
   for (let index = 0; index < 12; index++) {
@@ -175,18 +219,7 @@ async function completeTour(page: Page, scenario: Scenario, backwards = false) {
       await verifyStep(page, id);
     }
     ids.push(id);
-    if (id === "daily" && scenario.claim) {
-      const claimButton = page.getByRole("region", { name: "Daily bonus", exact: true }).getByRole("button", { name: /^Claim \d+/ });
-      if (scenario.claim === "keyboard") {
-        await tooltip.getByRole("button", { name: "Next", exact: true }).focus();
-        await page.keyboard.press("Tab");
-        assert(await claimButton.evaluate(element => element === document.activeElement), "Daily bonus is reachable by keyboard during the guide");
-        await page.keyboard.press("Enter");
-      } else await claimButton.tap();
-      await tooltip.getByText(/Today’s bonus is already claimed/).waitFor();
-      assert(await page.getByRole("button", { name: "Claimed", exact: true }).isDisabled());
-      await verifyStep(page, id);
-    }
+    if (id === "daily" && scenario.claim) await tooltip.getByText(/Today’s bonus is already claimed/).waitFor();
     await page.screenshot({ path: `${output}/${scenario.name}-${id}.png` });
     const finish = tooltip.getByRole("button", { name: "Let’s play", exact: true });
     if (await finish.isVisible()) { if (scenario.touch) await finish.tap(); else await finish.click(); break; }
@@ -220,16 +253,20 @@ try {
     const initialBalance = store.getPlayerEconomy(userId).coinBalance;
     await verifyStep(page, "coins");
     const ids = await completeTour(page, scenario, scenario.name === "desktop");
-    assert.equal(store.getPlayerEconomy(userId).coinBalance, initialBalance + (scenario.claim ? 10 : 0));
+    assert.equal(store.getPlayerEconomy(userId).coinBalance, initialBalance);
     assert(!commands.some(command => /public_economy|project\.|layout\.|player_asset\.|movement\.move|meeting\.open/.test(command)), "Tour does not change gameplay");
     if (scenario.restricted || scenario.empty) assert(!ids.includes("meeting-room") && !ids.includes("meetings"));
     if (scenario.restricted) assert(ids.includes("room-access"));
     if (scenario.empty) assert.equal(ids.length, 5);
     if (!scenario.restricted && !scenario.empty) assert.deepEqual(ids, ["coins", "daily", "items", "approvals", "shared-rooms", "meetings", "explore"]);
-    assert.equal(await page.locator('[data-guide="daily"]').count(), 0, "Completion restores the original map");
+    assert.equal(await page.locator('[data-guide="assets"]').count(), 0, "Completion restores the original map");
+    await waitForGuideStatus(page, "completed");
+    await page.evaluate(() => localStorage.clear());
     await page.reload();
     await page.getByRole("status").filter({ hasText: /^Connected$/ }).waitFor();
+    await closeBonusAfterRejoin(page);
     assert.equal(await page.locator(".game-guide-tooltip").count(), 0);
+    await verifyGuideButton(page);
     await page.getByRole("button", { name: "How to play", exact: true }).click();
     await verifyStep(page, "coins");
     await page.keyboard.press("Escape");
@@ -256,8 +293,10 @@ try {
     currentPage = page;
     await verifyStep(page, "coins");
     await page.getByRole("button", { name: "Skip guide", exact: true }).click();
+    await waitForGuideStatus(page, "skipped");
     await page.reload();
     await page.getByRole("status").filter({ hasText: /^Connected$/ }).waitFor();
+    await closeBonusAfterRejoin(page);
     assert.equal(await page.locator(".game-guide-tooltip").count(), 0);
     await page.getByRole("button", { name: "Build", exact: true }).click();
     await page.getByRole("button", { name: "Shared", exact: true }).click();
@@ -299,7 +338,7 @@ try {
     await verifyStep(page, "daily");
     await page.setViewportSize({ width: 844, height: 390 });
     await verifyStep(page, "daily");
-    await page.getByRole("button", { name: /^Claim \d+/ }).click({ trial: true });
+    assert(await page.getByRole("button", { name: "Daily bonus", exact: true }).isVisible());
     await page.setViewportSize({ width: 390, height: 844 });
     await verifyStep(page, "daily");
     await page.keyboard.press("Escape");
@@ -340,6 +379,7 @@ try {
     assert(await loading.page.getByRole("button", { name: "How to play", exact: true }).isEnabled());
     await loading.page.reload();
     await loading.page.getByRole("status").filter({ hasText: /^Connected$/ }).waitFor();
+    await closeBonusAfterRejoin(loading.page);
     await loading.page.getByRole("button", { name: "How to play", exact: true }).click();
     await verifyStep(loading.page, "coins");
     await loading.page.keyboard.press("Escape");

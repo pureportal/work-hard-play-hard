@@ -97,16 +97,16 @@ describe("PlayerBuildPanel", () => {
     expect(onPurchase).toHaveBeenCalledWith("light-floor");
   });
 
-  it("shows the wallet and claims the daily bonus", () => {
-    const onClaimDaily = vi.fn();
+  it("shows the wallet and opens the daily bonus", () => {
+    const onOpenDaily = vi.fn();
     const economy = createTestEconomy();
     economy.dailyReward = getDailyRewardStatus({ streak: 0 }, new Date("2026-09-01T12:00:00.000Z"));
-    renderPanel({ onClaimDaily, economy });
+    renderPanel({ onOpenDaily, economy });
 
     expect(screen.getByLabelText("250 coins")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Claim 10" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open bonus" }));
 
-    expect(onClaimDaily).toHaveBeenCalledOnce();
+    expect(onOpenDaily).toHaveBeenCalledOnce();
   });
 
   it("buys affordable catalog assets and disables unaffordable or unavailable assets", () => {
@@ -229,7 +229,7 @@ function renderPanel(overrides: Partial<React.ComponentProps<typeof PlayerBuildP
     assetId: "chair-office",
     assetVariantId: "white",
     assetRotation: 0,
-    onClaimDaily: vi.fn(),
+    onOpenDaily: vi.fn(),
     onPurchase: vi.fn(),
     onPlace: vi.fn(),
     onFocus: vi.fn(),
