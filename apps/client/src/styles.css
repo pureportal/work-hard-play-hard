@@ -1875,6 +1875,10 @@ button:disabled {
   align-self: flex-end;
 }
 
+.chat-message.mine .message-meta {
+  justify-content: flex-end;
+}
+
 .chat-message.has-image {
   width: min(230px, 90%);
 }
@@ -1924,21 +1928,30 @@ button:disabled {
   white-space: nowrap;
 }
 
-.chat-message p {
+.chat-message .message-bubble {
+  min-width: 0;
   margin: 0;
   padding: 10px 12px;
-  font-size: 14px;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-  background: #eeebe7;
-  border-radius: 6px 13px 13px 13px;
+  color: var(--ink);
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 4px 15px 15px 15px;
+  box-shadow: 0 1px 2px #00000005;
 }
 
-.chat-message.mine p {
-  color: white;
-  background: linear-gradient(135deg, #7464ef, var(--accent));
-  border-radius: 13px 6px 13px 13px;
-  box-shadow: 0 5px 13px #6757e822;
+.chat-message.mine .message-bubble {
+  background: color-mix(in srgb, var(--ink) 9%, var(--panel));
+  border-color: color-mix(in srgb, var(--ink) 15%, var(--panel));
+  border-radius: 15px 4px 15px 15px;
+}
+
+.chat-message.grouped .message-bubble {
+  border-top-left-radius: 8px;
+}
+
+.chat-message.mine.grouped .message-bubble {
+  border-top-left-radius: 15px;
+  border-top-right-radius: 8px;
 }
 
 .chat-image {
@@ -1964,7 +1977,7 @@ button:disabled {
 
 .message-composer {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 7px;
   margin: 0;
   padding: 5px 5px 5px 13px;
@@ -1972,16 +1985,6 @@ button:disabled {
   border: 1px solid #dad4ce;
   border-radius: 13px;
   box-shadow: 0 5px 16px #30293b0d;
-}
-
-.message-composer input {
-  min-width: 0;
-  height: 38px;
-  flex: 1;
-  font-size: 14px;
-  background: transparent;
-  border: 0;
-  outline: 0;
 }
 
 .message-composer button,
@@ -3579,7 +3582,7 @@ button:disabled {
   font-size: 7px;
 }
 
-.meeting-message-list p {
+.meeting-message-content {
   display: grid;
   gap: 3px;
   margin: 0;
@@ -3589,7 +3592,7 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
-.meeting-message-list p strong {
+.meeting-message-content > strong {
   font-size: 12px;
 }
 
@@ -3609,21 +3612,13 @@ button:disabled {
 
 .meeting-chat form {
   display: flex;
+  align-items: flex-end;
   gap: 6px;
   margin: 10px;
   padding: 5px 5px 5px 10px;
   background: white;
   border: 1px solid #ded9d3;
   border-radius: 10px;
-}
-
-.meeting-chat form input {
-  min-width: 0;
-  flex: 1;
-  font-size: 13px;
-  background: transparent;
-  border: 0;
-  outline: 0;
 }
 
 .meeting-controls {
@@ -3861,7 +3856,6 @@ button:disabled {
 :root[data-theme="dark"] .room-control,
 :root[data-theme="dark"] .build-toggle,
 :root[data-theme="dark"] .conversation-tabs button,
-:root[data-theme="dark"] .chat-message p,
 :root[data-theme="dark"] .meeting-card {
   background: var(--panel-strong);
   border-color: var(--line);
@@ -3971,13 +3965,6 @@ button:disabled {
   border-color: #45414e;
 }
 
-:root[data-theme="dark"] .chat-message.mine p {
-  color: white;
-  background: linear-gradient(135deg, #7464ef, var(--accent));
-}
-
-:root[data-theme="dark"] .message-composer input,
-:root[data-theme="dark"] .meeting-chat form input,
 :root[data-theme="dark"] .panel-search input {
   color: var(--ink);
 }
@@ -4196,10 +4183,6 @@ button:disabled {
     height: 40px;
   }
 
-  .message-composer input {
-    height: 40px;
-  }
-
   .person-actions .icon-button {
     width: 40px;
     height: 40px;
@@ -4277,8 +4260,7 @@ button:disabled {
   .registration-role select,
   .registration-domain-input input,
   .kidnapping-policy select,
-  .message-composer input,
-  .meeting-chat form input {
+  .message-input {
     font-size: 16px;
   }
 
@@ -4299,12 +4281,8 @@ button:disabled {
     font-size: 16px;
   }
 
-  .chat-message p {
-    font-size: 14px;
-  }
-
   .message-meta strong,
-  .meeting-message-list p strong {
+  .meeting-message-content > strong {
     font-size: 12px;
   }
 
@@ -4312,7 +4290,7 @@ button:disabled {
     font-size: 11px;
   }
 
-  .meeting-message-list p {
+  .meeting-message-content {
     font-size: 13px;
   }
 }

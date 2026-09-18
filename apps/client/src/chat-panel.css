@@ -56,11 +56,6 @@
   .chat-panel .conversation-tabs button {
     min-height: 44px;
   }
-
-  .chat-panel .message-composer input {
-    height: 44px;
-    font-size: 16px;
-  }
 }
 
 @media (max-height: 520px) and (orientation: landscape) {

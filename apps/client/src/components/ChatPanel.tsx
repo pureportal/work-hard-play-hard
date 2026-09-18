@@ -4,7 +4,8 @@ import type { ChatMessage, Conversation, Member } from "@workhard/shared";
 import { resolveServerUrl } from "../server-url";
 import { useHorizontalWheelScroll } from "../hooks/useHorizontalWheelScroll";
 import { Avatar } from "./Avatar";
-import { LinkedText } from "./LinkedText";
+import { MessageInput } from "./MessageInput";
+import { MessageMarkdown } from "./MessageMarkdown";
 import { SurfaceHeader } from "./SurfaceHeader";
 import "../chat-panel.css";
 
@@ -43,7 +44,6 @@ export function ChatPanel({
   const [uploading, setUploading] = useState(false);
   const [imageError, setImageError] = useState<string>();
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
@@ -149,7 +149,7 @@ export function ChatPanel({
     }
     jumpToLatest();
     setBody("");
-    inputRef.current?.focus();
+    event.currentTarget.querySelector("textarea")?.focus();
   };
 
   const sendImages = async (source: FileList | File[]) => {
@@ -291,7 +291,7 @@ export function ChatPanel({
                       <img src={resolveServerUrl(attachment.url)} alt={attachment.name} loading="lazy" crossOrigin="use-credentials" />
                     </a>
                   ))}
-                  {message.body && <p><LinkedText text={message.body} /></p>}
+                  {message.body && <div className="message-bubble"><MessageMarkdown text={message.body} /></div>}
                 </div>
               </div>
             );
@@ -307,13 +307,11 @@ export function ChatPanel({
 
       <div className="message-composer-shell">
         <form className="message-composer" onSubmit={submit}>
-          <input
-            ref={inputRef}
+          <MessageInput
             value={body}
-            maxLength={500}
-            aria-label={`Message ${selectedName}`}
+            label={`Message ${selectedName}`}
             placeholder={`Message ${selected.type === "team" || selected.type === "room" ? "#" : ""}${selectedName}`}
-            onChange={(event) => setBody(event.target.value)}
+            onChange={setBody}
           />
           <input
             ref={imageInputRef}

@@ -9,6 +9,16 @@ const message: ChatMessage = { id: "message", conversationId: "meeting-chat", us
 const props = { members: [], currentUserId: "maya", disabled: false };
 
 describe("meeting chat", () => {
+  it("renders Markdown and sends multiline messages with Enter", () => {
+    const onSend = vi.fn(() => true);
+    const view = render(<MeetingChat {...props} messages={[{ ...message, body: "**Ready**" }]} onSend={onSend} />);
+    expect(view.getByText("Ready").tagName).toBe("STRONG");
+    const input = view.getByRole("textbox");
+    fireEvent.change(input, { target: { value: "> Quote\nReply" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onSend).toHaveBeenCalledWith("> Quote\nReply");
+  });
+
   it("follows a newer message when a refreshed history has the same length", () => {
     const view = render(<MeetingChat {...props} messages={[message]} onSend={vi.fn()} />);
     const list = view.getByRole("log");

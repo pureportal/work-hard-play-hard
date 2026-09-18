@@ -39,6 +39,22 @@ afterEach(() => {
 });
 
 describe("ChatPanel", () => {
+  it("renders Markdown and submits multiline drafts with Enter while preserving Shift+Enter and composition", () => {
+    const onSend = vi.fn(() => true);
+    render(<ChatPanel conversations={[conversation]} messages={[{ ...message, body: "**Ready** for `review`" }]} members={[member]} currentUserId={member.id}
+      onConversationChange={vi.fn()} onSend={onSend} onSendImage={vi.fn()} onClose={vi.fn()} />);
+    expect(screen.getByText("Ready").tagName).toBe("STRONG");
+    const input = screen.getByRole("textbox") as HTMLTextAreaElement;
+    expect(input.tagName).toBe("TEXTAREA");
+    fireEvent.change(input, { target: { value: "- First\n- Second" } });
+    expect(fireEvent.keyDown(input, { key: "Enter", shiftKey: true })).toBe(true);
+    fireEvent.keyDown(input, { key: "Enter", isComposing: true });
+    expect(onSend).not.toHaveBeenCalled();
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onSend).toHaveBeenCalledWith(conversation.id, "- First\n- Second");
+    expect(input.value).toBe("");
+  });
+
   it("follows the visible viewport while the keyboard opens, scrolls, and closes", () => {
     const viewport = Object.assign(new EventTarget(), { height: window.innerHeight, offsetTop: 0, scale: 1 });
     vi.stubGlobal("visualViewport", viewport);
