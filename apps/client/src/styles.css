@@ -798,6 +798,7 @@ button:disabled {
 
 .connection-state {
   position: relative;
+  flex-shrink: 0;
   justify-content: center;
   width: 36px;
   height: 36px;
@@ -4072,7 +4073,7 @@ button:disabled {
   }
 
   .top-bar .floor-picker {
-    min-width: 0;
+    min-width: 44px;
     flex-shrink: 1;
   }
 
@@ -4082,6 +4083,7 @@ button:disabled {
   }
 
   .top-bar .theme-toggle {
+    flex-shrink: 0;
     width: 40px;
     height: 40px;
   }
@@ -4383,8 +4385,20 @@ button:disabled {
 }
 
 @media (max-width: 360px) {
+  .top-bar {
+    height: auto;
+    min-height: 54px;
+  }
+
   .top-bar-actions {
-    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+
+  .top-bar .floor-picker {
+    min-width: 80px;
+    flex-shrink: 0;
   }
 
   .top-bar-coins {
