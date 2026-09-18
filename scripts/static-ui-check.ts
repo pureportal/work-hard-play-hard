@@ -11,7 +11,9 @@ import { getAssetPreviewPath } from "../apps/client/src/optimized-images.js";
 const workspaceDirectory = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distributionDirectory = resolve(workspaceDirectory, "apps/client/dist");
 const artifactDirectory = resolve(workspaceDirectory, "artifacts");
-const bootstrap = new WorkspaceStore(createTestData()).getBootstrap("user-maya");
+const store = new WorkspaceStore(createTestData());
+store.claimDailyReward("user-maya", "ui-check-daily-bonus");
+const bootstrap = store.getBootstrap("user-maya");
 bootstrap.conversations = bootstrap.conversations.filter((conversation) => conversation.id !== "conversation-jonas");
 bootstrap.messages = bootstrap.messages.filter((message) => message.conversationId !== "conversation-jonas");
 await mkdir(artifactDirectory, { recursive: true });
@@ -796,6 +798,10 @@ async function respondToRequest(request: HTTPRequest): Promise<void> {
   }
   if (url.pathname === "/v1/bootstrap") {
     await jsonResponse(request, bootstrap);
+    return;
+  }
+  if (url.pathname === "/v1/me/game-guide") {
+    await jsonResponse(request, { status: "completed" });
     return;
   }
   if (url.pathname === "/v1/conversations/direct") {
