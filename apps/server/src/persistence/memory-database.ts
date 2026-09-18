@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { GameGuideStatus } from "@workhard/shared";
 import { WHITEBOARD_IMAGE_RECOVERY_MS, whiteboardImageReferences, type WhiteboardImageWrite } from "../work/whiteboard-image-record.js";
 import type { SpotifyConnectionRecord } from "../spotify/spotify-record.js";
 import type { GitHubConnectionRecord } from "../github/github-record.js";
@@ -14,6 +15,16 @@ import type {
 } from "./application-database.js";
 
 export class MemoryDatabase implements ApplicationDatabase {
+  private readonly gameGuideStatuses = new Map<string, GameGuideStatus>();
+
+  async loadGameGuideStatus(userId: string): Promise<GameGuideStatus | null> {
+    return this.gameGuideStatuses.get(userId) ?? null;
+  }
+
+  async saveGameGuideStatus(userId: string, status: GameGuideStatus): Promise<void> {
+    this.gameGuideStatuses.set(userId, status);
+  }
+
   private readonly chatImages = new Map<string, Buffer>();
 
   async saveChatImage(id: string, image: Buffer): Promise<void> {
@@ -148,6 +159,7 @@ export class MemoryDatabase implements ApplicationDatabase {
   }
 
   async clear(): Promise<void> {
+    this.gameGuideStatuses.clear();
     this.chatImages.clear();
     this.githubConnections.clear();
     this.whiteboardImages.clear();

@@ -1,12 +1,14 @@
-import { CircleHelp, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CircleHelp, Compass, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Joyride, EVENTS, type TooltipRenderProps } from "react-joyride";
+import type { GameGuideStatus } from "@workhard/shared";
 import { getServerOrigin } from "../../server-url";
 import { useModalFocus } from "../../hooks/useModalFocus";
 import { IconButton } from "../IconButton";
 import { createGuideSteps, dailyGuideContent, type GuideData, type GuideScreen, type GuideStep } from "./guide-steps";
 import { waitForGuideTarget } from "./wait-for-guide-target";
+import { useGuideProgress } from "./useGuideProgress";
 import "./game-guide.css";
 
 interface GameGuideProps {
@@ -21,10 +23,11 @@ interface GameGuideProps {
 
 export function GameGuide(props: GameGuideProps) {
   const key = `game-guide:${getServerOrigin()}:${props.data.currentUserId}`;
-  return <PlayerGameGuide key={key} {...props} storageKey={key} />;
+  return <PlayerGameGuide key={key} {...props} />;
 }
 
-function PlayerGameGuide(props: GameGuideProps & { storageKey: string }) {
+function PlayerGameGuide(props: GameGuideProps) {
+  const progress = useGuideProgress();
   const attempted = useRef(false);
   const [steps, setSteps] = useState<GuideStep[]>();
   const active = steps !== undefined;
@@ -37,17 +40,10 @@ function PlayerGameGuide(props: GameGuideProps & { storageKey: string }) {
     running.current = false;
     transition.current?.abort();
   }, []);
-  const remember = () => {
-    attempted.current = true;
-    try {
-      localStorage.setItem(props.storageKey, "seen");
-    } catch (error) {
-      console.warn("Could not save game guide progress.", error);
-    }
-  };
-  const finish = () => {
+  const finish = (status: GameGuideStatus = "skipped") => {
     if (!running.current) return;
     running.current = false;
+    progress.save(status);
     transition.current?.abort();
     setSteps(undefined);
     callbacks.current.onFinish();
@@ -67,11 +63,12 @@ function PlayerGameGuide(props: GameGuideProps & { storageKey: string }) {
     return () => document.removeEventListener("keydown", dismiss, true);
   }, [active]);
   useEffect(() => {
-    if (props.unavailable) finishRef.current();
+    if (props.unavailable) finishRef.current("started");
   }, [props.unavailable]);
   const start = () => {
-    if (props.unavailable || running.current) return;
-    remember();
+    if (props.unavailable || progress.loading || running.current) return;
+    attempted.current = true;
+    progress.save("started");
     setError(undefined);
     props.onStart();
     running.current = true;
@@ -89,26 +86,21 @@ function PlayerGameGuide(props: GameGuideProps & { storageKey: string }) {
   const startRef = useRef(start);
   startRef.current = start;
   useEffect(() => {
-    if (props.unavailable || attempted.current) return;
+    if (props.unavailable || progress.loading || progress.status !== null || attempted.current) return;
     const frame = requestAnimationFrame(() => {
       if (attempted.current) return;
-      try {
-        if (localStorage.getItem(props.storageKey) !== null) {
-          attempted.current = true;
-          return;
-        }
-      } catch (error) {
-        console.warn("Could not read game guide progress.", error);
-      }
       startRef.current();
     });
     return () => cancelAnimationFrame(frame);
-  }, [props.unavailable, props.storageKey]);
+  }, [props.unavailable, progress.loading, progress.status]);
   return <>
-    <IconButton label="How to play" icon={CircleHelp} data-guide="help" onClick={start}
-      disabled={Boolean(props.unavailable) || Boolean(steps)} title={props.unavailable ?? "How to play"} />
-    {error && createPortal(<div className="guide-notice" role="alert"><span>{error}</span>
-      <IconButton label="Dismiss guide error" icon={X} onClick={() => setError(undefined)} /></div>, document.body)}
+    <button type="button" className="secondary-button game-guide-button" data-guide="help" aria-label="How to play" onClick={start}
+      disabled={Boolean(props.unavailable) || progress.loading || active} title={props.unavailable ?? "How to play"}>
+      <CircleHelp size={18} aria-hidden="true" /><span>How to play</span>
+    </button>
+    {(error || progress.error) && createPortal(<div className="guide-notice" role="alert"><span>{error ?? progress.error}</span>
+      {!error && progress.error && <button className="secondary-button" onClick={progress.retry}>Retry</button>}
+      <IconButton label="Dismiss guide error" icon={X} onClick={() => { setError(undefined); progress.dismissError(); }} /></div>, document.body)}
     {steps && <Joyride continuous run steps={steps.map(step => step.id === "daily" ? { ...step, content: dailyGuideContent(props.data.economy.dailyReward) } : step)} tooltipComponent={GuideTooltip} loaderComponent={loading}
       styles={{ floater: { transition: "none" } }}
       floatingOptions={{ strategy: "fixed", shiftOptions: { boundary: [], rootBoundary: "viewport", crossAxis: true, padding: 12 },
@@ -120,10 +112,10 @@ function PlayerGameGuide(props: GameGuideProps & { storageKey: string }) {
       locale={{ back: "Back", next: "Next", last: "Let’s play", close: "Skip guide", skip: "Skip guide" }}
       onEvent={event => {
         if (!running.current) return;
-        if (event.type === EVENTS.TOUR_END || event.action === "close") finish();
+        if (event.type === EVENTS.TOUR_END || event.action === "close") finish(event.status === "finished" ? "completed" : "skipped");
         if (event.type === EVENTS.TARGET_NOT_FOUND || event.type === EVENTS.ERROR) {
           setError("The guide could not open this screen. Try How to play again.");
-          finish();
+          finish("started");
         }
       }} />}
   </>;
@@ -162,11 +154,23 @@ function GuideTooltip({ backProps, closeProps, controls, index, isLastStep, prim
   }, [interactive, ref, step.target]);
   return <div {...tooltipProps} ref={ref} tabIndex={-1} className="game-guide-tooltip" data-guide-step={step.id}
     aria-modal={!interactive} aria-labelledby="game-guide-title" aria-describedby="game-guide-content">
-    <header><h2 id="game-guide-title">{step.title}</h2>
-      <button {...closeProps} className="secondary-button">Skip</button></header>
-    <div id="game-guide-content">{step.content}</div>
-    <footer><span className="guide-progress">{index + 1} / {size}</span>
-      {index > 0 && <button {...backProps} className="secondary-button">Back</button>}
-      <button {...primaryProps} className="primary-button">{isLastStep ? "Let’s play" : "Next"}</button></footer>
+    <header className="guide-heading">
+      <span className="guide-icon" aria-hidden="true"><Compass size={22} strokeWidth={1.8} /></span>
+      <h2 id="game-guide-title">{step.title}</h2>
+      <button {...closeProps} className="guide-skip">Skip</button>
+    </header>
+    <div id="game-guide-content" className="guide-content">{step.content}</div>
+    <footer className="guide-footer">
+      <div className="guide-progress" role="progressbar" aria-label="Guide progress" aria-valuemin={1} aria-valuemax={size} aria-valuenow={index + 1} aria-valuetext={`Step ${index + 1} of ${size}`}>
+        <span aria-hidden="true"><strong>{index + 1}</strong> / {size}</span>
+        <div className="guide-progress-track" aria-hidden="true">
+          {Array.from({ length: size }, (_, position) => <span key={position} className={position <= index ? "is-reached" : undefined} />)}
+        </div>
+      </div>
+      {index > 0 && <button {...backProps} className="guide-back"><ArrowLeft size={16} aria-hidden="true" />Back</button>}
+      <button {...primaryProps} className="guide-next">{isLastStep ? "Let’s play" : "Next"}
+        {isLastStep ? <Check size={17} aria-hidden="true" /> : <ArrowRight size={17} aria-hidden="true" />}
+      </button>
+    </footer>
   </div>;
 }

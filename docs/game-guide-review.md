@@ -1,5 +1,19 @@
 ﻿# Game guide review — September 18, 2026
 
+## Bubble design follow-up
+
+The guide bubbles now have a rounded, accent-edged surface, a raised lower edge, a compass icon, clearer heading spacing, and tactile Next/finish buttons. Back and Skip remain labeled. The footer shows compact segmented progress with an accessible step count. Colors follow the existing theme and brand tokens; touch targets remain at least 44px, short landscape screens use tighter spacing, and reduced-motion preferences disable button transitions.
+
+This pass changes only bubble presentation. It preserves the existing guide copy, database-backed progress, automatic startup, dismissal, replay, access-aware steps, and screen restoration. The browser-storage description in the older review below predates the database implementation.
+
+Verification:
+
+- All 21 existing guide lifecycle and step-selection tests pass. Client typecheck, scoped lint, whitespace checks, and the production build pass. The build retains large-chunk and plugin-timing warnings.
+- The complete Playwright run passes all nine desktop/mobile/theme/access scenarios listed below, plus recovery and startup checks, with no browser errors. It checks placement, highlights, keyboard focus, touch navigation, persistence through the fixture API, replay, screen restoration, and unchanged gameplay state.
+- Fresh desktop, dark-theme, mobile portrait, and light/dark landscape screenshots were visually inspected. Results and screenshots are in `artifacts/guide/`.
+
+Browser checks used the existing running client and isolated server fixtures. This presentation pass did not reverify actual PostgreSQL persistence, native webviews, physical devices, or other browser engines.
+
 ## Automatic startup follow-up
 
 The guide now starts automatically the first time a player is ready to play. The invitation was removed. Every tooltip has a visible Skip button, and the loading state also offers Skip guide. Escape and overlay dismissal still work, and How to play replays the guide.

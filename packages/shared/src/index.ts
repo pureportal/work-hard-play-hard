@@ -540,3 +540,4 @@ export type ClientCommand =
 
 export type KidnappingEndReason = "cancelled" | "interrupted" | "access_revoked";
 export * from "./media.js";
+export * from "./game-guide.js";

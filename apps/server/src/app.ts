@@ -47,6 +47,7 @@ import { readGitHubConfig, readGitHubEncryptionKey, resolveGitHubConfig, storeGi
 import { registerGitHubAdminRoutes } from "./github/github-admin-routes.js";
 import { GitHubService } from "./github/github-service.js";
 import { registerGitHubRoutes } from "./github/github-routes.js";
+import { registerGameGuideRoutes } from "./guide/game-guide-routes.js";
 import { GITHUB_TRAY_ASSET_ID, canUseWorkObject } from "@workhard/shared";
 
 const AUTH_WINDOW_MS = 15 * 60 * 1_000;
@@ -360,6 +361,8 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
       return sendInvitationError(reply, error instanceof Error ? error.message : "INVITATION_INVALID");
     }
   });
+
+  registerGameGuideRoutes(app, database, request => getAuthenticatedUser(auth, request));
 
   app.get("/v1/bootstrap", async (request, reply) => {
     const user = getAuthenticatedUser(auth, request);

@@ -1,5 +1,7 @@
 import type {
   AuthUser,
+  GameGuideState,
+  GameGuideStatus,
   BootstrapData,
   ChatMessage,
   CharacterAppearance,
@@ -174,6 +176,16 @@ export async function logout(): Promise<void> {
 export async function fetchBootstrap(): Promise<BootstrapData> {
   const response = await fetchWithTimeout("/v1/bootstrap", { cache: "no-store" });
   return readResponse<BootstrapData>(response, "Office could not be loaded.");
+}
+
+export async function fetchGameGuideState(): Promise<GameGuideState> {
+  return readResponse<GameGuideState>(await fetchWithTimeout("/v1/me/game-guide", { cache: "no-store" }));
+}
+
+export async function saveGameGuideStatus(status: GameGuideStatus): Promise<GameGuideState> {
+  return readResponse<GameGuideState>(await fetchWithTimeout("/v1/me/game-guide", {
+    method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ status }), keepalive: true,
+  }));
 }
 
 export async function fetchSpotifyStatus(): Promise<SpotifyStatus> {

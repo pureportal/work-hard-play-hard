@@ -1,4 +1,4 @@
-import type { AuthUser, WorldPlayer } from "@workhard/shared";
+import type { AuthUser, GameGuideStatus, WorldPlayer } from "@workhard/shared";
 import type { SpotifyConnectionRecord } from "../spotify/spotify-record.js";
 import type { GitHubConnectionRecord } from "../github/github-record.js";
 import type {
@@ -42,6 +42,8 @@ export interface WorkspacePersistenceState {
 }
 
 export interface ApplicationDatabase {
+  loadGameGuideStatus(userId: string): Promise<GameGuideStatus | null>;
+  saveGameGuideStatus(userId: string, status: GameGuideStatus): Promise<void>;
   saveChatImage(id: string, image: Buffer): Promise<void>;
   readChatImage(id: string): Promise<Buffer | undefined>;
   removeChatImage(id: string): Promise<void>;

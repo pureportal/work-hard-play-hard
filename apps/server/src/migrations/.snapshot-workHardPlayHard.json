@@ -2070,6 +2070,87 @@
       "comment": null
     },
     {
+      "name": "game_guide_states",
+      "schema": "public",
+      "columns": {
+        "status": {
+          "name": "status",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [
+            "started",
+            "skipped",
+            "completed"
+          ],
+          "mappedType": "enum"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        }
+      },
+      "indexes": [
+        {
+          "columnNames": [
+            "user_id"
+          ],
+          "composite": false,
+          "constraint": true,
+          "keyName": "game_guide_states_pkey",
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [
+        {
+          "name": "game_guide_states_status_check",
+          "expression": "\"status\" in ('started', 'skipped', 'completed')",
+          "definition": "check (\"status\" in ('started', 'skipped', 'completed'))",
+          "columnName": "status"
+        }
+      ],
+      "triggers": [],
+      "foreignKeys": {
+        "game_guide_states_user_id_foreign": {
+          "columnNames": [
+            "user_id"
+          ],
+          "constraintName": "game_guide_states_user_id_foreign",
+          "localTableName": "public.game_guide_states",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "public.auth_accounts",
+          "updateRule": "cascade",
+          "deleteRule": "cascade"
+        }
+      },
+      "comment": null
+    },
+    {
       "name": "game_scores",
       "schema": "public",
       "columns": {

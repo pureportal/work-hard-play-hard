@@ -3,6 +3,7 @@ import { brandingLogoSchema } from "./branding-logo-entity.js";
 import { chatImageSchema } from "./chat-image-entity.js";
 import { spotifyConnectionSchema } from "./spotify-entity.js";
 import { githubConnectionSchema } from "./github-entity.js";
+import { gameGuideSchema } from "./game-guide-entity.js";
 import { whiteboardImageSchema, whiteboardImageReferenceSchema } from "./whiteboard-image-entity.js";
 import {
   chatMessageSchema,
@@ -35,6 +36,7 @@ export const databaseEntities = [
   whiteboardImageReferenceSchema,
   spotifyConnectionSchema,
   githubConnectionSchema,
+  gameGuideSchema,
   memberSchema,
   floorLayoutSchema,
   conversationSchema,

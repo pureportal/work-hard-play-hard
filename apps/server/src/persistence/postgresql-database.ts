@@ -1,4 +1,6 @@
 import { MikroORM } from "@mikro-orm/postgresql";
+import type { GameGuideStatus } from "@workhard/shared";
+import { GameGuideEntity } from "./entities/game-guide-entity.js";
 import type { SpotifyConnectionRecord } from "../spotify/spotify-record.js";
 import { SpotifyConnectionEntity } from "./entities/spotify-entity.js";
 import type { GitHubConnectionRecord } from "../github/github-record.js";
@@ -23,6 +25,15 @@ import { ChatImageEntity } from "./entities/chat-image-entity.js";
 import type { WhiteboardImageWrite } from "../work/whiteboard-image-record.js";
 
 export class PostgreSqlDatabase implements ApplicationDatabase {
+  async loadGameGuideStatus(userId: string): Promise<GameGuideStatus | null> {
+    const record = await this.orm.em.fork().findOne(GameGuideEntity, { userId });
+    return record?.status ?? null;
+  }
+
+  async saveGameGuideStatus(userId: string, status: GameGuideStatus): Promise<void> {
+    await this.orm.em.fork().upsert(GameGuideEntity, { userId, status });
+  }
+
   async saveChatImage(id: string, image: Buffer): Promise<void> {
     await this.orm.em.fork().insert(ChatImageEntity, { id, image });
   }
@@ -135,6 +146,7 @@ export class PostgreSqlDatabase implements ApplicationDatabase {
 
   async clear(): Promise<void> {
     await this.orm.em.fork().transactional(async (entityManager) => {
+      await entityManager.nativeDelete(GameGuideEntity, {});
       await entityManager.nativeDelete(ChatImageEntity, {});
       await entityManager.nativeDelete(GitHubConnectionEntity, {});
       await entityManager.nativeDelete(WhiteboardImageEntity, {});
