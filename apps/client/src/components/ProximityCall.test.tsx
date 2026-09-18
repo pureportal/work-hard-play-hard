@@ -43,10 +43,10 @@ describe("open call", () => {
       ? Promise.resolve(microphone) : Promise.reject(new DOMException("Missing camera", "NotFoundError"))) } });
     render(<ProximityCall {...props} muted={false} cameraOn />);
     await waitFor(() => expect(props.onCameraChange).toHaveBeenCalledWith(false));
+    await waitFor(() => expect(send).toHaveBeenLastCalledWith(expect.objectContaining({ type: "proximity.set_media", microphone: true, camera: false })));
     expect(props.onMutedChange).not.toHaveBeenCalled();
     expect(props.onLeave).not.toHaveBeenCalled();
     expect(microphone.getTracks()[0]!.stop).not.toHaveBeenCalled();
-    expect(send).toHaveBeenLastCalledWith(expect.objectContaining({ type: "proximity.set_media", microphone: true, camera: false }));
   });
 
   it("waits for capture, keeps the microphone when enabling camera, and stops both devices on leaving", async () => {
