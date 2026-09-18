@@ -48,6 +48,9 @@ const mediaSession: MeetingMediaSession = { sessionId: "meeting-session", meetin
 
 beforeEach(() => { vi.stubGlobal("RTCPeerConnection", vi.fn()); });
 
+const economy = createTestEconomy();
+economy.dailyReward.claimable = false;
+
 const workspace: BootstrapData = {
   currentUserId: "user-maya",
   corporateIdentity: DEFAULT_CORPORATE_IDENTITY,
@@ -115,7 +118,7 @@ const workspace: BootstrapData = {
   miniGames: [],
   scores: [],
   gameStatistics: [],
-  economy: createTestEconomy(),
+  economy,
   gameSettings: createTestGameSettings(),
   kidnapping: createTestKidnappingConfiguration(),
   invitations: [],

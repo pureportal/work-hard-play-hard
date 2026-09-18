@@ -273,8 +273,10 @@ try {
     await page.locator(".game-guide-tooltip").waitFor({ state: "hidden" });
     await page.getByRole("button", { name: "How to play", exact: true }).click();
     await verifyStep(page, "coins");
-    for (let index = 0; index < 3; index++) await page.locator(".game-guide-tooltip").getByRole("button", { name: "Next", exact: true }).click();
-    await verifyStep(page, "approvals");
+    for (const id of ["daily", "items", "approvals"]) {
+      await page.locator(".game-guide-tooltip").getByRole("button", { name: "Next", exact: true }).click();
+      await verifyStep(page, id);
+    }
     await page.keyboard.press("Escape");
     await page.getByRole("dialog", { name: "Approvals", exact: true }).waitFor({ state: "hidden" });
     await page.getByRole("button", { name: "How to play", exact: true }).click();
