@@ -14,7 +14,7 @@ describe("starting house", () => {
     const { floor, layout } = createStartingHouse();
     const bounds = getOutdoorBounds(floor);
     expect(getSpawnPlacementError(layout, bounds, floor.spawn)).toBeUndefined();
-    const destinations = [{ x: floor.spawn.x, y: 896 }, { x: 960, y: 960 }];
+    const destinations = [{ x: floor.spawn.x, y: 896 }, { x: 976, y: 944 }];
     for (const room of layout.rooms) {
       for (const opening of layout.openings) {
         if (opening.type !== "door" || !room.doorIds.includes(opening.id)) continue;
@@ -39,7 +39,7 @@ describe("starting house", () => {
           expect(cell.worldX, object.id).toBeGreaterThanOrEqual(768);
           expect(cell.worldX, object.id).toBeLessThan(1152);
           expect(cell.worldY, object.id).toBeGreaterThanOrEqual(832);
-          expect(cell.worldY, object.id).toBeLessThan(1024);
+          expect(cell.worldY, object.id).toBeLessThan(960);
         }
         if (requireAssetDefinition(object.assetId).kind === "floor-tile") {
           flooringCells.add(`${cell.worldX}:${cell.worldY}`);
@@ -99,10 +99,10 @@ describe("starting house", () => {
     const { floor, layout } = createStartingHouse();
     const bounds = getOutdoorBounds(floor);
     const activities = [
-      { assetId: "equipment-falling-blocks", roomId: "room-main", approach: { x: 816, y: 752 } },
+      { assetId: "equipment-falling-blocks", roomId: "room-main", approach: { x: 832, y: 752 } },
       { assetId: "equipment-chess", roomId: "room-main", approach: { x: 688, y: 768 } },
-      { assetId: "equipment-whiteboard", roomId: "room-meeting", approach: { x: 592, y: 368 } },
-      { assetId: "special-fortune", roomId: "room-kitchen", approach: { x: 1072, y: 640 } },
+      { assetId: "equipment-whiteboard", roomId: "room-meeting", approach: { x: 688, y: 352 } },
+      { assetId: "special-fortune", roomId: "room-kitchen", approach: { x: 1104, y: 640 } },
     ];
     for (const { assetId, roomId, approach } of activities) {
       const objects = layout.objects.filter((object) => object.assetId === assetId);
@@ -114,6 +114,7 @@ describe("starting house", () => {
       expect(findPath(layout, bounds, "player", floor.spawn, approach).at(-1), assetId).toEqual(approach);
       if (requireAssetDefinition(assetId).kind === "game") {
         const area = getGameArea(object);
+        expect(Math.hypot(floor.spawn.x - area.x, floor.spawn.y - area.y), assetId).toBeGreaterThan(area.radius);
         expect(Math.hypot(approach.x - area.x, approach.y - area.y), assetId).toBeLessThan(area.radius);
       } else if (assetId === "equipment-whiteboard") {
         expect(canUseWorkObject(object, layout, { ...approach, floorId: floor.id })).toBe(true);
