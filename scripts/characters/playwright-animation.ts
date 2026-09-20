@@ -4,6 +4,7 @@ import { CHARACTER_ATLAS_SIZE, CHARACTER_CANVAS_SIZE, CHARACTER_WORLD_SIZE } fro
 
 interface DisplayNode {
   label?: string;
+  visible: boolean;
   children?: DisplayNode[];
   parent?: DisplayNode;
   text?: string;

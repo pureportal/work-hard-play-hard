@@ -28,7 +28,27 @@ const checks: string[] = [];
 
 async function verifyContextRestoration(page: Page) {
   const canvas = page.locator(".world-canvas canvas");
-  const before = await canvas.screenshot();
+  await page.waitForFunction(() => {
+    const queue = [globalThis.avatarWorld!.stage];
+    for (const node of queue) queue.push(...node.children ?? []);
+    const artwork = queue.filter(node => node.label?.startsWith("/world-"));
+    return artwork.length > 0 && artwork.every(node => node.visible);
+  });
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    const avatar = globalThis.findAvatar("You")!;
+    let position = avatar.toGlobal({ x: 0, y: 0 });
+    let stableFrames = 0;
+    const deadline = performance.now() + 10_000;
+    while (stableFrames < 5) {
+      await new Promise(requestAnimationFrame);
+      const next = avatar.toGlobal({ x: 0, y: 0 });
+      stableFrames = Math.hypot(next.x - position.x, next.y - position.y) <= 0.01 ? stableFrames + 1 : 0;
+      position = next;
+      if (performance.now() > deadline) throw new Error("World camera did not settle before context loss");
+    }
+  });
+  const before = await canvas.screenshot({ path: fileURLToPath(new URL("context-before.png", output)) });
   await page.evaluate(() => new Promise<void>((resolve, reject) => {
     const element = document.querySelector<HTMLCanvasElement>(".world-canvas canvas")!;
     const gl = element.getContext("webgl2")!;
@@ -49,16 +69,18 @@ async function verifyContextRestoration(page: Page) {
   for (let index = 0; index < originalPixels.length; index++) {
     if (Math.abs(originalPixels[index]! - restoredPixels[index]!) > 10) changed++;
   }
-  assert(changed / originalPixels.length < 0.03, "Restored scene differs from the rendered world");
+  const changedRatio = changed / originalPixels.length;
+  assert(changedRatio < 0.03, `Restored scene differs from the rendered world (${(changedRatio * 100).toFixed(2)}% of channels changed; expected <3%)`);
   assert.deepEqual(await page.getByRole("alert").allTextContents(), []);
   checks.push("WebGL context and world textures restored without a page reload");
 }
 
 try {
   for (const failure of ["artwork", "chunk"] as const) {
-    const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: "reduce" });
     await installBuiltAssetClient(context);
     const fixture = await installAssetFixture(context, "user-jonas", { x: 640, y: 480 }, { currentPlayerOnly: true });
+    fixture.store.claimDailyReward("user-jonas", "client-loading-daily-bonus");
     fixture.store.updateMemberCharacter("user-jonas", { ...DEFAULT_CHARACTER_APPEARANCE, upperBody: "satin" });
     let navigations = 0;
     let updateChecks = 0;
