@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createOrganisation, getDailyRewardStatus, MAX_LAYOUT_OBJECTS_PER_FLOOR, MAX_OWNED_ASSETS, type FloorLayout, type Room } from "@workhard/shared";
 import { createTestEconomy, createTestGameSettings } from "../test-fixtures";
@@ -158,6 +158,39 @@ describe("PlayerBuildPanel", () => {
 
     expect(screen.getByText("1 available · 0 placed")).toBeTruthy();
     expect(onPlace).toHaveBeenCalledWith("owned-chair", "chair-office");
+  });
+
+  it("shows feature icons in the shop and filters matching assets", () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole("tab", { name: "Shop" }));
+    const shop = screen.getByRole("tabpanel", { name: "Shop" });
+    expect(within(shop).getByText("Wind chimes").closest(".catalog-asset")?.querySelector('[title="Animated"]')).toBeTruthy();
+    expect(within(shop).getByText("Fortune dispenser").closest(".catalog-asset")?.querySelector('[title="Interactive"]')).toBeTruthy();
+    expect(within(shop).getByText("Straight desk").closest(".catalog-asset")?.querySelector(".asset-feature-indicators")).toBeNull();
+
+    fireEvent.click(within(shop).getByRole("button", { name: "Animated" }));
+    expect(within(shop).getAllByTitle("Animated")).toHaveLength(9);
+    expect(within(shop).queryByText("Fortune dispenser")).toBeNull();
+
+    fireEvent.click(within(shop).getByRole("button", { name: "Interactive" }));
+    expect(within(shop).getAllByTitle("Interactive")).toHaveLength(43);
+    expect(within(shop).getByText("Fortune dispenser")).toBeTruthy();
+    expect(within(shop).getByText("Celebration gong")).toBeTruthy();
+    expect(within(shop).getByText("PR tray")).toBeTruthy();
+    expect(within(shop).queryByText("Wind chimes")).toBeNull();
+  });
+
+  it("searches the personal shop and inventory with the same controls", () => {
+    const economy = createTestEconomy();
+    economy.inventory = [{ id: "owned-chair", assetId: "chair-office", purchasePrice: 90, acquiredAt: "2026-09-01" }];
+    renderPanel({ economy });
+    fireEvent.change(screen.getByRole("textbox", { name: "Search assets" }), { target: { value: "chair" } });
+    expect(screen.getByRole("button", { name: "Place" })).toBeTruthy();
+    fireEvent.change(screen.getByRole("textbox", { name: "Search assets" }), { target: { value: "lamp" } });
+    expect(screen.getByRole("status").textContent).toBe("No assets match.");
+    fireEvent.click(screen.getByRole("tab", { name: "Shop" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Search assets" }), { target: { value: "lamp" } });
+    expect(screen.getByRole("button", { name: "Buy Drum floor lamp" })).toBeTruthy();
   });
 
   it("explains when no room on the floor permits placement", () => {

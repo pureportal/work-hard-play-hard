@@ -73,34 +73,8 @@
 
   .build-panel .asset-library {
     min-width: 0;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 8px;
     padding: 8px 12px;
   }
-
-  .build-panel .asset-category-tabs {
-    display: flex;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scrollbar-width: thin;
-    padding: 5px 5px var(--horizontal-scroll-clearance);
-    margin: -5px;
-  }
-
-  .build-panel .asset-category-tabs button {
-    flex: 0 0 auto;
-    grid-auto-flow: column;
-    min-width: 72px;
-    min-height: 40px;
-    gap: 6px;
-    padding: 8px 12px;
-    font-size: 11px;
-  }
-
-  .build-panel .asset-rarity-filter { margin: 0; }
-  .build-panel .asset-grid { grid-template-columns: 1fr; }
-  .build-panel .asset-grid > button { font-size: 12px; }
-
   .build-panel .shop-asset strong,
   .build-panel .inventory-asset strong {
     font-size: 12px;

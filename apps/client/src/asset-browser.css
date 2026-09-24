@@ -1,0 +1,289 @@
+.asset-browser {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.asset-browser-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.asset-browser-search {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding-left: 12px;
+  color: var(--muted);
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.asset-browser-search:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.asset-browser-search input {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+
+.asset-browser-search > svg,
+.asset-browser-search button {
+  flex-shrink: 0;
+}
+
+.asset-browser-search button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 40px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+}
+
+.asset-browser-filters .asset-rarity-filter {
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.asset-browser-filters .asset-rarity-filter select {
+  width: 112px;
+  min-height: 42px;
+  padding-inline: 10px;
+  background: var(--panel-strong);
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.asset-browser-filters .asset-rarity-filter > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.asset-feature-filters {
+  display: flex;
+  gap: 6px;
+}
+
+.asset-feature-filters button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 5px 9px;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 650;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.asset-feature-filters button.active {
+  color: var(--accent-text);
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+}
+
+.asset-feature-filters button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.asset-browser .asset-category-tabs {
+  display: flex;
+  flex-shrink: 0;
+  min-width: 0;
+  gap: 6px;
+  margin: 0 -2px;
+  padding: 2px 2px 9px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: 5px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+.asset-browser .asset-category-tabs button {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  min-height: 36px;
+  gap: 6px;
+  padding: 7px 11px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.asset-browser-results {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 2px 3px 10px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+.asset-browser-results:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.asset-browser-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.asset-browser-empty {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.asset-browser .catalog-asset {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  min-height: 68px;
+  padding: 9px 10px;
+  color: var(--ink);
+  text-align: left;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-inline-start: 3px solid var(--asset-rarity-color, var(--line));
+  border-radius: 12px;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 5%, transparent);
+  transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+}
+
+.asset-browser .catalog-asset > .asset-shape,
+.placed-asset > .asset-shape {
+  width: 48px;
+  height: 48px;
+  padding: 5px;
+  background: color-mix(in srgb, var(--panel) 76%, var(--accent-soft));
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+
+.catalog-asset[data-rarity="common"] { --asset-rarity-color: #a39b92; }
+.catalog-asset[data-rarity="uncommon"] { --asset-rarity-color: #559875; }
+.catalog-asset[data-rarity="rare"] { --asset-rarity-color: #5c90c6; }
+.catalog-asset[data-rarity="epic"] { --asset-rarity-color: #a27ac4; }
+.catalog-asset[data-rarity="legendary"] { --asset-rarity-color: #bd943d; }
+
+.asset-browser .catalog-selectable {
+  width: 100%;
+  font: inherit;
+}
+
+.asset-browser .catalog-selectable:hover,
+.asset-browser .catalog-selectable.active,
+.asset-browser .inventory-asset.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.asset-browser .catalog-selectable:hover {
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.catalog-asset-details {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.catalog-asset-name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  gap: 6px;
+}
+
+.asset-feature-indicators {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.asset-feature-indicators > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--ink);
+  background: var(--accent-soft);
+  border-radius: 5px;
+}
+
+.catalog-asset-details strong {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.3;
+  white-space: normal;
+}
+
+.catalog-asset-details > span {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.asset-browser > .asset-placement-options {
+  flex-shrink: 0;
+  padding: 8px;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+}
+
+@media (max-width: 700px) {
+  .asset-browser-filters .asset-rarity-filter select {
+    width: 114px;
+    font-size: 12px;
+  }
+
+  .asset-browser-search input {
+    font-size: 16px;
+  }
+
+  .asset-browser .asset-category-tabs button {
+    min-height: 38px;
+  }
+}

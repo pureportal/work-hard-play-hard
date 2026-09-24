@@ -1,11 +1,94 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import type { FloorLayout, Room } from "@workhard/shared";
+import { getAssetDefinition, getDefaultAssetVariantId } from "@workhard/shared";
+import { useState } from "react";
+import type { FloorLayout, LayoutTool, Room } from "@workhard/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BuildPanel } from "./BuildPanel";
 
 afterEach(cleanup);
 
 describe("BuildPanel", () => {
+  it("keeps placement active when switching directly between assets", () => {
+    function Panel() {
+      const [tool, setTool] = useState<LayoutTool | null>(null);
+      const [assetId, setAssetId] = useState("desk-straight");
+      const [variantId, setVariantId] = useState("sage");
+
+      return <BuildPanel layout={layout([])} tool={tool} assetId={assetId} assetVariantId={variantId} assetRotation={0}
+        onToolChange={(nextTool) => setTool((current) => nextTool === current ? null : nextTool)}
+        onAssetChange={(nextAssetId) => {
+          setAssetId(nextAssetId);
+          setVariantId(getDefaultAssetVariantId(getAssetDefinition(nextAssetId)!));
+        }} onAssetVariantChange={setVariantId} onAssetRotationChange={vi.fn()}
+        onMoveSelected={vi.fn()} onRotateSelected={vi.fn()} onRemoveSelected={vi.fn()}
+        onOpenRooms={vi.fn()} onClose={vi.fn()} />;
+    }
+
+    render(<Panel />);
+    fireEvent.click(screen.getByRole("tab", { name: "Seating" }));
+    fireEvent.click(screen.getByRole("button", { name: "Office chair" }));
+    expect(screen.getByRole("button", { name: "Office chair" }).getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Lounge chair" }));
+    expect(screen.getByRole("button", { name: "Lounge chair" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Select" }).getAttribute("aria-pressed")).toBe("false");
+
+    fireEvent.click(screen.getByRole("button", { name: "Lounge chair" }));
+    expect(screen.getByRole("button", { name: "Select" }).getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("marks animated and interactive assets and filters each feature", () => {
+    const { container } = render(<BuildPanel layout={layout([])} tool={null} assetId="desk-straight" assetVariantId="sage" assetRotation={0}
+      onToolChange={vi.fn()} onAssetChange={vi.fn()} onAssetVariantChange={vi.fn()}
+      onAssetRotationChange={vi.fn()} onMoveSelected={vi.fn()} onRotateSelected={vi.fn()} onRemoveSelected={vi.fn()}
+      onOpenRooms={vi.fn()} onClose={vi.fn()} />);
+
+    const cards = () => [...container.querySelectorAll<HTMLButtonElement>(".asset-browser-results button[data-rarity]")];
+    const card = (name: string) => cards().find((button) => button.getAttribute("aria-label") === name);
+    expect(card("Wind chimes")?.querySelector('[title="Animated"]')).toBeTruthy();
+    expect(card("Wind chimes")?.querySelector('[title="Interactive"]')).toBeNull();
+    expect(card("Celebration gong")?.querySelector('[title="Interactive"]')).toBeTruthy();
+    expect(card("Fortune dispenser")?.querySelector('[title="Interactive"]')).toBeTruthy();
+    expect(card("Straight desk")?.querySelector(".asset-feature-indicators")).toBeNull();
+    expect(container.querySelectorAll('[title="Animated"]')).toHaveLength(9);
+    expect(container.querySelectorAll('[title="Interactive"]')).toHaveLength(43);
+
+    fireEvent.click(screen.getByRole("button", { name: "Animated" }));
+    expect(screen.getByRole("button", { name: "Animated" }).getAttribute("aria-pressed")).toBe("true");
+    expect(cards().map((button) => button.getAttribute("aria-label"))).toEqual([
+      "Pool", "Garden fountain", "Koi pond", "Wind chimes", "Desk pinwheel", "Kinetic mobile", "Jellyfish lamp", "Balancing bird", "Garden windmill",
+    ]);
+    expect(card("Celebration gong")).toBeUndefined();
+
+    fireEvent.click(screen.getByRole("button", { name: "Interactive" }));
+    expect(screen.getByRole("button", { name: "Interactive" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Animated" }).getAttribute("aria-pressed")).toBe("false");
+    const interactiveCards = cards();
+    expect(interactiveCards).toHaveLength(43);
+    expect(interactiveCards.every((button) => button.querySelector('[title="Interactive"]'))).toBe(true);
+    for (const name of ["Office chair", "Whiteboard", "Checklist", "PR tray", "Celebration gong", "Falling Blocks table", "Teleporter", "Fortune dispenser"]) {
+      expect(card(name)).toBeTruthy();
+    }
+    expect(card("Straight desk")).toBeUndefined();
+    expect(card("Wind chimes")).toBeUndefined();
+  });
+
+  it("searches across categories and restores the catalog after clearing filters", () => {
+    render(<BuildPanel layout={layout([])} tool={null} assetId="chair-office" assetVariantId="white" assetRotation={0}
+      onToolChange={vi.fn()} onAssetChange={vi.fn()} onAssetVariantChange={vi.fn()}
+      onAssetRotationChange={vi.fn()} onMoveSelected={vi.fn()} onRotateSelected={vi.fn()} onRemoveSelected={vi.fn()}
+      onOpenRooms={vi.fn()} onClose={vi.fn()} />);
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Search assets" }), { target: { value: "crystal" } });
+    expect(screen.getByRole("tab", { name: "All" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("button", { name: "Crystal floor lamp" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Office chair" })).toBeNull();
+    fireEvent.change(screen.getByRole("combobox", { name: "Rarity" }), { target: { value: "common" } });
+    expect(screen.getByRole("status").textContent).toBe("No assets match.");
+    fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+    expect(screen.getByRole("button", { name: "Office chair" })).toBeTruthy();
+  });
+
   it("shows the expanding teleporter price, warns about permanence, and only offers movement for a placed teleporter", () => {
     const next = layout([]);
     next.objects.push({ id: "portal", floorId: next.floorId, assetId: "infrastructure-portal", variantId: "violet", rotation: 0, x: 0, y: 0, label: "2" });
@@ -74,11 +157,11 @@ describe("BuildPanel", () => {
     expect(lastTab.getAttribute("aria-selected")).toBe("true");
     expect(document.activeElement).toBe(lastTab);
     fireEvent.keyDown(lastTab, { key: "ArrowRight" });
-    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Desks" }));
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "All" }));
     fireEvent.keyDown(document.activeElement!, { key: "ArrowLeft" });
     expect(document.activeElement).toBe(lastTab);
     fireEvent.keyDown(lastTab, { key: "Home" });
-    expect(screen.getByRole("tab", { name: "Desks" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("tab", { name: "All" }).getAttribute("aria-selected")).toBe("true");
   });
 
   it("offers separate flooring materials and parquet layouts", () => {

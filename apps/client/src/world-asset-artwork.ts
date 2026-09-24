@@ -22,6 +22,10 @@ export interface WorldAssetArtwork {
 
 const artwork: Record<string, AssetArtwork> = artworkSource;
 
+export function isAssetAnimated(assetId: string): boolean {
+  return Boolean(artwork[assetId]?.animation);
+}
+
 export function getWorldAssetSurfaceHeight(assetId: string): number {
   const height = artwork[assetId]?.surfaceHeight;
   if (height === undefined) throw new Error(`Missing surface height for ${assetId}`);

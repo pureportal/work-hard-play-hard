@@ -4,6 +4,8 @@ import { ASSET_CATALOG, MAX_LAYOUT_OBJECTS_PER_FLOOR, getDefaultAssetVariantId, 
 import type { AssetRotation, Floor, FloorLayout, GameSettings, LayoutItemReference, LayoutTool, OrganisationState, PlayerEconomy } from "@workhard/shared";
 import { getAssetOrientationLabel, rotateAssetClockwise } from "../asset-orientation";
 import { AssetShape } from "./AssetShape";
+import { AssetBrowser } from "./AssetBrowser";
+import { AssetFeatureIndicators } from "./AssetFeatureIndicators";
 import { AssetVariantPicker } from "./AssetVariantPicker";
 import { SurfaceHeader } from "./SurfaceHeader";
 import { PlayerAssetShop } from "./PlayerAssetShop";
@@ -105,6 +107,7 @@ export function PlayerBuildPanel({
     const instances = economy.inventory.filter((ownedAsset) => ownedAsset.assetId === asset.id);
     return instances.length > 0 ? [{ asset, instances }] : [];
   }), [economy.inventory]);
+  const inventoryByAssetId = useMemo(() => new Map(inventoryGroups.map((group) => [group.asset.id, group.instances])), [inventoryGroups]);
   const floorFull = layout.objects.length >= MAX_LAYOUT_OBJECTS_PER_FLOOR;
   const viewingPlayerFloor = layout.floorId === playerFloorId;
   const selectionControls = <>
@@ -114,7 +117,7 @@ export function PlayerBuildPanel({
         <strong>{selectedObject.label ?? selectedAsset.name}</strong>
         <div>
           <button className={`inventory-action${selectedItemMatches(selectedItem, movingItem) ? " active" : ""}`} disabled={!viewingPlayerFloor} onClick={onMoveSelected}>
-            <Move size={16} aria-hidden="true" />Move
+            <Move size={16} aria-hidden="true" />{selectedItemMatches(selectedItem, movingItem) ? "Cancel move" : "Move"}
           </button>
           <button className="inventory-action" disabled={!viewingPlayerFloor} onClick={onRotateSelected}><RotateCw size={16} aria-hidden="true" />Rotate</button>
           <button className="inventory-action inventory-action-store" onClick={onRemoveSelected}><Archive size={16} aria-hidden="true" />Store</button>
@@ -168,25 +171,24 @@ export function PlayerBuildPanel({
         <PersonalPlacedAssets currentUserId={currentUserId} layouts={layouts} floors={floors}
           activeFloorId={layout.floorId} selectedItem={selectedItem} onFocus={onFocus} />
       </div>
-      <div className="panel-scroll build-panel-scroll" id={`${panelId}-inventory`} role="tabpanel" aria-labelledby={`${panelId}-inventory-tab`} hidden={view !== "inventory"}>
+      <div className="player-inventory-view" id={`${panelId}-inventory`} role="tabpanel" aria-labelledby={`${panelId}-inventory-tab`} hidden={view !== "inventory"}>
         {view === "inventory" && selectionControls}
         <section className="build-section asset-library" aria-label="Inventory">
-          {inventoryGroups.length === 0 ? (
+          <AssetBrowser assets={inventoryGroups.map(({ asset }) => asset)} categoryLabel="Inventory categories" empty={
             <div className="inventory-empty">
               <ShoppingBag size={22} />
               <span>No assets yet.</span>
               <button onClick={() => setView("shop")}>Open shop</button>
             </div>
-          ) : (
-            <div className="inventory-grid">
-              {inventoryGroups.map(({ asset, instances }) => {
+          } renderAsset={(asset) => {
+                const instances = inventoryByAssetId.get(asset.id)!;
                 const available = instances.filter((instance) => !instance.placement && !draftAssetIds.includes(instance.id));
                 const drafted = instances.filter((instance) => !instance.placement && draftAssetIds.includes(instance.id)).length;
                 const placing = instances.some((instance) => instance.id === placingOwnedAssetId);
                 return (
-                  <article className={placing ? "inventory-asset active" : "inventory-asset"} key={asset.id}>
+                  <article className={`catalog-asset inventory-asset${placing ? " active" : ""}`} key={asset.id} data-rarity={asset.rarity}>
                     <AssetShape asset={asset} rotation={asset.id === assetId ? assetRotation : 0} variantId={asset.id === assetId ? assetVariantId : getDefaultAssetVariantId(asset)} />
-                    <div><strong>{asset.name}</strong><span>{available.length} available · {instances.length - available.length - drafted} placed{drafted ? ` · ${drafted} in draft` : ""}</span></div>
+                    <div className="catalog-asset-details"><span className="catalog-asset-name"><strong>{asset.name}</strong><AssetFeatureIndicators asset={asset} /></span><span>{available.length} available · {instances.length - available.length - drafted} placed{drafted ? ` · ${drafted} in draft` : ""}</span></div>
                     <button
                       disabled={pendingPublicAction || Boolean(pendingEconomyRequest) || available.length === 0 || !viewingPlayerFloor || !canPlaceOnFloor || floorFull}
                       onClick={() => onPlace(available[0]!.id, asset.id)}
@@ -204,25 +206,20 @@ export function PlayerBuildPanel({
                     </div>}
                   </article>
                 );
-              })}
-            </div>
-          )}
+              }} footer={((tool === "asset" && placingOwnedAssetId) || movingItem?.type === "asset") && editingAsset && (
+              <div className="asset-placement-options">
+                <AssetVariantPicker asset={editingAsset} rotation={assetRotation} value={assetVariantId} onChange={onAssetVariantChange} />
+                <button className="asset-rotate"
+                  aria-label={`Rotate asset clockwise, currently facing ${getAssetOrientationLabel(assetRotation)}`}
+                  onClick={() => onAssetRotationChange(rotateAssetClockwise(assetRotation))}>
+                  <RotateCw size={16} /><span>Rotate · {getAssetOrientationLabel(assetRotation)}</span><kbd>R</kbd>
+                </button>
+              </div>
+            )} />
           {!canPlaceOnFloor && inventoryGroups.length > 0 && (
             <span className="room-validation">No rooms on this floor allow placement.</span>
           )}
         </section>
-        {((tool === "asset" && placingOwnedAssetId) || movingItem?.type === "asset") && editingAsset && (
-          <section className="build-section asset-placement-options">
-            <AssetVariantPicker asset={editingAsset} rotation={assetRotation} value={assetVariantId} onChange={onAssetVariantChange} />
-            <button
-              className="asset-rotate"
-              aria-label={`Rotate asset clockwise, currently facing ${getAssetOrientationLabel(assetRotation)}`}
-              onClick={() => onAssetRotationChange(rotateAssetClockwise(assetRotation))}
-            >
-              <RotateCw size={16} /><span>Rotate · {getAssetOrientationLabel(assetRotation)}</span><kbd>R</kbd>
-            </button>
-          </section>
-        )}
       </div>
       {projectControls ?? dailyBonus}
       {disposition && disposingAsset && <AssetDispositionDialog asset={disposingAsset} action={disposition.action} pending={pendingPublicAction}
