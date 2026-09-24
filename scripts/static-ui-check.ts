@@ -222,7 +222,7 @@ try {
   await page.setViewport({ width: 844, height: 390, deviceScaleFactor: 1 });
   await assertViewport(page, [".meeting-overlay", ".meeting-overlay-header", ".meeting-controls"]);
   await assertFullyContained(page, ".meeting-chat", [".meeting-chat > header", ".meeting-message-list", ".meeting-chat form"]);
-  const participantScroll = await page.$eval(".meeting-stage", (element) => ({
+  const participantScroll = await page.$eval(".meeting-stage .video-grid", (element) => ({
     clientHeight: element.clientHeight,
     scrollHeight: element.scrollHeight,
     overflowY: getComputedStyle(element).overflowY,
@@ -464,7 +464,7 @@ async function verifyDesktopBuildSidebar(page: Page): Promise<void> {
     const panel = document.querySelector<HTMLElement>(".build-panel")!;
     const tools = [...document.querySelectorAll<HTMLElement>(".build-tools button")];
     const categories = [...document.querySelectorAll<HTMLElement>(".asset-category-tabs button")];
-    const assets = [...document.querySelectorAll<HTMLElement>(".asset-grid > button")];
+    const assets = [...document.querySelectorAll<HTMLElement>(".asset-browser-grid > button")];
     const activeTool = document.querySelector<HTMLElement>('.build-tools button[aria-pressed="true"]')!;
     return {
       panelWidth: panel.getBoundingClientRect().width,
@@ -483,7 +483,7 @@ async function verifyDesktopBuildSidebar(page: Page): Promise<void> {
   assert(metrics.toolLabels.join(",") === "Select,Wall,Door,Window,Start point,Erase", "Build is missing layout tools.");
   assert(metrics.toolRows === 1, "Build tools are not arranged in one row.");
   assert(metrics.toolHeight >= 44, "Build tool targets are undersized.");
-  const categoryCount = ASSET_CATALOG.categories.filter((category) => category.buildable).length;
+  const categoryCount = 1 + ASSET_CATALOG.categories.filter((category) => category.buildable).length;
   assert(metrics.categoryCount === categoryCount, "Build is missing catalog categories.");
   assert(metrics.categoryRows === 1, "Asset categories are not arranged in one row.");
   assert(metrics.categoryHeight >= 40, "Asset category targets are undersized.");
@@ -510,20 +510,20 @@ async function verifyDesktopBuildSidebar(page: Page): Promise<void> {
   await clickButtonWithText(page, "Credenza");
   await clickButtonWithText(page, "Ink");
   const frontPreview = getAssetPreviewPath("/world-assets/storage-credenza/ink.png", 0);
-  await page.waitForSelector(`.asset-grid > button.active image[href="${frontPreview}"]`);
+  await page.waitForSelector(`.asset-browser-grid > button.active image[href="${frontPreview}"]`);
   await page.click(".asset-rotate");
   const rotatedPreview = getAssetPreviewPath("/world-assets/storage-credenza/ink.png", 90);
-  await page.waitForSelector(`.asset-grid > button.active image[href="${rotatedPreview}"]`);
+  await page.waitForSelector(`.asset-browser-grid > button.active image[href="${rotatedPreview}"]`);
   await page.screenshot({ path: resolve(artifactDirectory, "build-sidebar-world-assets.png") });
   await page.select(".asset-rarity-filter select", "legendary");
   await clickButtonWithText(page, "Lighting");
-  assert(await page.$$eval(".asset-grid > button", (buttons) => buttons.length === 1 && buttons[0]?.getAttribute("aria-label") === "Crystal floor lamp"), "Rarity filter did not select the legendary lamp.");
+  assert(await page.$$eval(".asset-browser-grid > button", (buttons) => buttons.length === 1 && buttons[0]?.getAttribute("aria-label") === "Crystal floor lamp"), "Rarity filter did not select the legendary lamp.");
   await page.select(".asset-rarity-filter select", "all");
 
   await clickButtonWithText(page, "Seating");
   await clickButtonWithText(page, "Office chair");
   assert(await page.$eval('.asset-category-tabs button[aria-selected="true"]', (button) => button.textContent?.trim() === "Seating"), "Seating did not receive the selected tab state.");
-  assert(await page.$eval('.asset-grid > button[aria-pressed="true"]', (button) => button.getAttribute("aria-label") === "Office chair"), "Office chair did not receive the selected asset state.");
+  assert(await page.$eval('.asset-browser-grid > button[aria-pressed="true"]', (button) => button.getAttribute("aria-label") === "Office chair"), "Office chair did not receive the selected asset state.");
   await page.click('button[aria-label="Use dark mode"]');
   await page.waitForFunction(() => document.documentElement.dataset.theme === "dark");
   await page.screenshot({ path: resolve(artifactDirectory, "build-sidebar-dark-selection.png") });
