@@ -1,6 +1,6 @@
 import type { AddressInfo } from "node:net";
 import { randomUUID } from "node:crypto";
-import type { ClientCommand, ServerEvent } from "@workhard/shared";
+import { FALLING_BLOCKS_DEFINITION_ID, type ClientCommand, type ServerEvent } from "@workhard/shared";
 import WebSocket from "ws";
 import type { ApplicationContext } from "../app.js";
 import { createTestApplication } from "./application.js";
@@ -53,14 +53,23 @@ export class RealtimeClient {
   }
 
   async drop(roundId: string): Promise<ServerEvent> {
-    const response = this.waitFor((event) => event.type === "game.state" && event.roundId === roundId, this.events.length);
-    this.socket.send(JSON.stringify({ type: "game.command", requestId: randomUUID(), roundId, command: "drop", sequence: ++this.sequence, inputSessionId: this.inputSessionId }));
-    return response;
+    const requestId = randomUUID();
+    const sequence = ++this.sequence;
+    const response = this.waitFor((event) => (event.type === "game.state"
+      && event.definitionId === FALLING_BLOCKS_DEFINITION_ID
+      && event.roundId === roundId
+      && event.acknowledgedSequences[this.inputSessionId] === sequence)
+      || (event.type === "command.error" && event.requestId === requestId), this.events.length);
+    this.socket.send(JSON.stringify({ type: "game.command", requestId, roundId, command: "drop", sequence, inputSessionId: this.inputSessionId }));
+    const event = await response;
+    if (event.type === "command.error") throw new Error(`Drop failed: ${event.code}`);
+    return event;
   }
 
   waitFor(predicate: (event: ServerEvent) => boolean, after = 0): Promise<ServerEvent> {
     const existing = this.events.slice(after).find(predicate);
     if (existing) return Promise.resolve(existing);
+    const timeoutError = new Error("Timed out waiting for multiplayer event");
     return new Promise((resolve, reject) => {
       const finish = (error?: Error, event?: ServerEvent) => {
         clearTimeout(timer);
@@ -76,7 +85,7 @@ export class RealtimeClient {
       };
       const onClose = () => finish(new Error("Socket closed before response"));
       const onError = (error: Error) => finish(error);
-      const timer = setTimeout(() => finish(new Error("Timed out waiting for multiplayer event")), 5000);
+      const timer = setTimeout(() => finish(timeoutError), 5000);
       this.socket.on("message", onMessage);
       this.socket.once("close", onClose);
       this.socket.once("error", onError);
