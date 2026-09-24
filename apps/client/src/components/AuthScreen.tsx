@@ -2,8 +2,8 @@ import { ArrowLeft, Mail, ServerCog } from "lucide-react";
 import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import type { CorporateIdentity } from "@workhard/shared";
 import { login, registerAccount, requestMagicLink } from "../api";
-import officePreview from "../assets/blockbench-office.webp";
 import { getDefaultServerOrigin, getServerOrigin } from "../server-url";
+import { AuthWorldPreview } from "./AuthWorldPreview";
 import { ServerConnectionForm } from "./ServerConnectionForm";
 import { BrandMark } from "./BrandMark";
 import { PasswordField } from "./PasswordField";
@@ -137,8 +137,8 @@ export function AuthScreen({
   return (
     <main className={`auth-shell ${corporateIdentity.authenticationLayout}`}>
       <div className="auth-layout">
-        <div className="auth-visual" aria-hidden="true">
-          <img src={officePreview} alt="" />
+        <div className="auth-visual">
+          <AuthWorldPreview />
         </div>
         <section className="auth-card" aria-labelledby="auth-title">
           <header className="auth-brand">
