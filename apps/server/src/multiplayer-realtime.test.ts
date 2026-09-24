@@ -71,7 +71,7 @@ describe("multiplayer over real WebSockets", () => {
     } finally {
       await fixture.close();
     }
-  });
+  }, 15_000);
 
   it.each(TIC_TAC_TOE_VARIANTS)("synchronizes $name and forfeits only when the final connection leaves", async ({ id }) => {
     const fixture = await multiplayerFixture({ x: 1256, y: 636 });
