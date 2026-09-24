@@ -12,6 +12,9 @@
 .admin-settings-form { max-width: 580px; }
 .admin-settings-form p { font-size: 13px; color: var(--muted); line-height: 1.5; }
 .admin-settings-form button { justify-self: start; }
+.approval-rates-form { max-width: 420px; }
+.approval-rate-input { display: flex; align-items: center; gap: 10px; }
+.server-admin-content .approval-rate-input input[type="number"] { width: 110px; }
 .admin-integration-setup { display: grid; gap: 14px; margin-bottom: 22px; font-size: 13px; line-height: 1.5; }
 .admin-integration-setup a { color: var(--accent); justify-self: start; text-underline-offset: 3px; }
 .admin-integration-setup summary { cursor: pointer; }

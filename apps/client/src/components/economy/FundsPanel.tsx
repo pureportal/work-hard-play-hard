@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Archive, Coins } from "lucide-react";
-import { availablePublicMoney, canManageUnit, getAssetDefinition, getDefaultAssetVariantId, publicFundMemberIds, type BuildProject, type ClientCommand, type Member, type OrganisationState, type PublicAction, type PublicEconomy } from "@workhard/shared";
+import { availablePublicMoney, canManageUnit, getAssetDefinition, getDefaultAssetVariantId, publicFundMemberIds, type BuildProject, type ClientCommand, type Floor, type FloorLayout, type Member, type OrganisationState, type PublicAction, type PublicEconomy, type SpendingProposal } from "@workhard/shared";
 import { WorkspaceDialog } from "../WorkspaceDialog";
 import { DialogTabs } from "../DialogTabs";
 import { AssetShape } from "../AssetShape";
@@ -13,12 +13,12 @@ import "../../public-economy.css";
 
 type FundsView = "votes" | "inventory" | "activity" | "settings" | "rules";
 
-export function FundsPanel({ economy, organisation, members, userId, personalBalance, pending, error, initialFundId = "workspace", globalSettings, onOpenRooms, onCommand, onReview, onPlace, onViewChange, onClose, rooms }: {
+export function FundsPanel({ economy, organisation, members, userId, personalBalance, pending, error, initialFundId = "workspace", globalSettings, onOpenRooms, onCommand, onReview, onEdit, onPlace, onViewChange, onClose, rooms, layouts, floors }: {
   economy: PublicEconomy; organisation: OrganisationState; members: Member[]; userId: string; personalBalance: number; pending: boolean; initialFundId?: string;
   error?: string | undefined;
   globalSettings: GlobalKidnappingSettings; onOpenRooms: () => void;
-  rooms: Room[];
-  onCommand: (command: ClientCommand) => void; onReview: (project: BuildProject) => void;
+  rooms: Room[]; layouts: FloorLayout[]; floors: Floor[];
+  onCommand: (command: ClientCommand) => void; onReview: (project: BuildProject) => void; onEdit: (proposal: SpendingProposal) => void;
   onPlace: (publicAssetId: string, assetId: string, fundId: string) => void; onViewChange: (view: BuildView) => void; onClose: () => void;
 }) {
   const [fundId, setFundId] = useState(initialFundId);
@@ -49,7 +49,7 @@ export function FundsPanel({ economy, organisation, members, userId, personalBal
       </div>}
       {view === "rules" && <GameRulesEditor settings={globalSettings} members={members} pending={pending} onOpenRooms={onOpenRooms}
         onPropose={(settings) => propose("Change carrying rules", { kind: "kidnapping.settings", settings })} />}
-      {view === "votes" && <SpendingProposals proposals={proposals} economy={economy} organisation={organisation} members={members} rooms={rooms} userId={userId} pending={pending} onCommand={onCommand} onReview={onReview} />}
+      {view === "votes" && <SpendingProposals proposals={proposals} economy={economy} organisation={organisation} members={members} rooms={rooms} layouts={layouts} floors={floors} userId={userId} pending={pending} onCommand={onCommand} onReview={onReview} onEdit={onEdit} />}
       {view === "inventory" && <section aria-label="Shared inventory">{inventory.length ? <div className="shared-inventory">{inventory.map((asset) => {
         const definition = getAssetDefinition(asset.assetId)!;
         return <article className="shared-inventory-item" key={asset.id}><AssetShape asset={definition} rotation={0} variantId={getDefaultAssetVariantId(definition)} />

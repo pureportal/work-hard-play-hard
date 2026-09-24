@@ -51,6 +51,7 @@ export * from "./floor-portals.js";
 export * from "./room-detection.js";
 export * from "./economy.js";
 export * from "./public-economy.js";
+export * from "./project-layout.js";
 export * from "./player-asset-placement.js";
 export * from "./kidnapping.js";
 export * from "./falling-blocks.js";
@@ -480,8 +481,8 @@ export type ClientCommand =
   | { type: "economy.donate"; requestId: string; fundId: string; amount: number }
   | { type: "economy.sell_asset"; requestId: string; ownedAssetId: string }
   | { type: "economy.donate_asset"; requestId: string; ownedAssetId: string; fundId: string }
-  | { type: "project.edit"; requestId: string; baseRevision: number; fundId: string; draftId?: string; edit: import("./public-economy.js").ProjectEdit }
-  | { type: "project.submit"; requestId: string; draftId: string; title: string }
+  | { type: "project.edit"; requestId: string; baseRevision: number; fundId: string; draftId?: string; proposalId?: string; edit: import("./public-economy.js").ProjectEdit }
+  | { type: "project.submit"; requestId: string; draftId: string; title: string; proposalId?: string }
   | { type: "public_economy.propose"; requestId: string; title: string; action: Exclude<import("./public-economy.js").PublicAction, { kind: "project" }> }
   | { type: "public_economy.vote"; requestId: string; proposalId: string; approve: boolean }
   | { type: "public_economy.execute"; requestId: string; proposalId: string }

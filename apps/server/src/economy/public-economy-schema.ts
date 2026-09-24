@@ -4,6 +4,13 @@ import { gameSettingsSchema, organisationEditSchema, roomSettingsSchema } from "
 const id = z.string().min(1).max(100);
 const money = z.number().int().min(0).max(2_000_000_000);
 const mode = z.enum(["equal", "hierarchical"]);
+const approvalRate = z.number().int().min(0).max(100);
+export const approvalRatesSchema = z.object({
+  serverSettings: approvalRate,
+  building: approvalRate,
+  organisation: approvalRate,
+  funds: approvalRate,
+}).strict();
 export const publicActionSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("fund.create"), unitId: id, mode }).strict(),
   z.object({ kind: z.literal("fund.transfer"), fromFundId: id, toFundId: id, amount: money.positive() }).strict(),
@@ -25,8 +32,8 @@ export function publicEconomyCommands(projectEdit: z.ZodType) {
     z.object({ type: z.literal("economy.donate"), requestId, fundId: id, amount: money.positive() }).strict(),
     z.object({ type: z.literal("economy.sell_asset"), requestId, ownedAssetId: z.string().uuid() }).strict(),
     z.object({ type: z.literal("economy.donate_asset"), requestId, ownedAssetId: z.string().uuid(), fundId: id }).strict(),
-    z.object({ type: z.literal("project.edit"), requestId, baseRevision: z.number().int().nonnegative(), fundId: id, draftId: z.string().uuid().optional(), edit: projectEdit }).strict(),
-    z.object({ type: z.literal("project.submit"), requestId, draftId: z.string().uuid(), title }).strict(),
+    z.object({ type: z.literal("project.edit"), requestId, baseRevision: z.number().int().nonnegative(), fundId: id, draftId: z.string().uuid().optional(), proposalId: z.string().uuid().optional(), edit: projectEdit }).strict(),
+    z.object({ type: z.literal("project.submit"), requestId, draftId: z.string().uuid(), title, proposalId: z.string().uuid().optional() }).strict(),
     z.object({ type: z.literal("public_economy.propose"), requestId, title, action: publicActionSchema }).strict(),
     z.object({ type: z.literal("public_economy.vote"), requestId, proposalId: z.string().uuid(), approve: z.boolean() }).strict(),
     z.object({ type: z.literal("public_economy.execute"), requestId, proposalId: z.string().uuid() }).strict(),

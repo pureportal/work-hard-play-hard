@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import {
-  WORKSPACE_FUND_ID, availablePublicMoney, canManageUnit, createPublicEconomy,
+  WORKSPACE_FUND_ID, approvalRateForAction, availablePublicMoney, canManageUnit, createPublicEconomy,
   publicFundMemberIds, projectRequiredMoney, type ConstructionReceipt, type FloorLayout, type OrganisationState, type PublicAction,
-  type PublicEconomy, type PublicFund, type PublicTransaction, type SpendingProposal,
+  type ApprovalRates, type PublicEconomy, type PublicFund, type PublicTransaction, type SpendingProposal,
 } from "@workhard/shared";
 
 export interface PublicEconomyState extends PublicEconomy {
@@ -36,6 +36,14 @@ export class PublicEconomyStore {
   get receipts(): ConstructionReceipt[] { return this.state.receipts; }
   get inventory() { return this.state.inventory; }
 
+  getApprovalRates(): ApprovalRates { return structuredClone(this.state.approvalRates); }
+
+  updateApprovalRates(rates: ApprovalRates): ApprovalRates {
+    validateApprovalRates(rates);
+    this.state.approvalRates = structuredClone(rates);
+    return this.getApprovalRates();
+  }
+
   fund(id: string): PublicFund {
     const fund = this.state.funds.find((candidate) => candidate.id === id);
     if (!fund) throw new Error("PUBLIC_FUND_NOT_FOUND");
@@ -59,9 +67,9 @@ export class PublicEconomyStore {
 
   private closeVoting(proposal: SpendingProposal, now: Date): void {
     if (proposal.status !== "open" || Date.parse(proposal.expiresAt) > now.getTime()) return;
-    proposal.required = Math.floor(proposal.ballots.length / 2) + 1;
+    proposal.required = Math.max(1, Math.ceil(proposal.ballots.length * proposal.approvalRate / 100));
     const approvals = proposal.ballots.filter((ballot) => ballot.approve).length;
-    proposal.status = !proposal.ballots.length ? "expired" : approvals >= proposal.required ? "approved" : "rejected";
+    proposal.status = !proposal.ballots.length ? "expired" : approvals >= proposal.required && approvals > proposal.ballots.length - approvals ? "approved" : "rejected";
     this.resolutionRevision += 1;
   }
 
@@ -70,9 +78,7 @@ export class PublicEconomyStore {
     for (const proposal of this.state.proposals) {
       if (!["open", "approved"].includes(proposal.status)) continue;
       const action = proposal.action;
-      const stale = action.kind === "project" && (layouts.find((layout) => layout.floorId === action.project.floorId)?.revision !== action.project.baseRevision
-        || action.project.floorCount !== undefined && action.project.floorCount !== layouts.length)
-        || action.kind === "room.settings" && layouts.find((layout) => layout.rooms.some((room) => room.id === action.roomId))?.revision !== action.baseRevision;
+      const stale = action.kind === "room.settings" && layouts.find((layout) => layout.rooms.some((room) => room.id === action.roomId))?.revision !== action.baseRevision;
       if (stale) { proposal.status = "cancelled"; this.resolutionRevision += 1; changed = true; }
     }
     return changed;
@@ -102,15 +108,16 @@ export class PublicEconomyStore {
     const members = publicFundMemberIds(fund, organisation, memberIds);
     if (!memberIds.includes(userId) || (!members.includes(userId) && !canManageUnit(organisation, userId, fund.unitId))) throw new Error("PUBLIC_FUND_FORBIDDEN");
     const electorate = members;
-    if (!electorate.length) throw new Error("PROPOSAL_NO_APPROVERS");
+    const approvalRate = approvalRateForAction(this.state.approvalRates, action);
+    if (!electorate.length && approvalRate > 0) throw new Error("PROPOSAL_NO_APPROVERS");
     if (this.state.proposals.filter((entry) => entry.proposedBy === userId && ["open", "approved"].includes(entry.status)).length >= 20) throw new Error("PROPOSAL_LIMIT");
-    const reserved = action.kind === "project" ? projectRequiredMoney(action.project) : action.kind === "fund.transfer" ? action.amount : 0;
+    const reserved = action.kind === "fund.transfer" ? action.amount : 0;
     if (reserved > availablePublicMoney(this.state, fundId)) throw new Error("PUBLIC_FUNDS_INSUFFICIENT");
-    const required = Math.floor(electorate.length / 2) + 1;
-    const ballots = electorate.includes(userId) ? [{ userId, approve: true }] : [];
+    const required = Math.ceil(electorate.length * approvalRate / 100);
+    const ballots = approvalRate > 0 && electorate.includes(userId) ? [{ userId, approve: true }] : [];
     const proposal: SpendingProposal = {
-      id: randomUUID(), title, proposedBy: userId, fundId, action: structuredClone(action), electorate, required, ballots,
-      status: ballots.length >= required ? "approved" : "open", reserved,
+      id: randomUUID(), title, proposedBy: userId, fundId, action: structuredClone(action), electorate, approvalRate, required, ballots,
+      status: required === 0 || ballots.length >= required ? "approved" : "open", reserved,
       createdAt: now.toISOString(), expiresAt: new Date(now.getTime() + this.approvalDeadlineMs).toISOString(),
       organisationRevision: organisation.revision, policyRevision: this.state.revision,
     };
@@ -145,6 +152,7 @@ export class PublicEconomyStore {
 
   applyProject(userId: string, project: Extract<PublicAction, { kind: "project" }>["project"]): void {
     const { quote } = project;
+    if (projectRequiredMoney(project) > availablePublicMoney(this.state, project.fundId)) throw new Error("PUBLIC_FUNDS_INSUFFICIENT");
     for (const id of quote.inventoryIds) {
       if (!this.state.inventory.some((asset) => asset.id === id && asset.fundId === project.fundId)) throw new Error("PUBLIC_ASSET_UNAVAILABLE");
     }
@@ -192,6 +200,7 @@ export function validatePublicEconomy(state: PublicEconomyState): void {
   if (!state || !Array.isArray(state.funds) || !Array.isArray(state.receipts) || !Array.isArray(state.operations)
     || !Array.isArray(state.inventory) || !Array.isArray(state.transactions) || !Array.isArray(state.proposals)
     || !Number.isSafeInteger(state.revision) || state.revision < 0) throw new Error("PUBLIC_ECONOMY_INVALID");
+  validateApprovalRates(state.approvalRates);
   const ids = new Set(state.funds.map((fund) => fund.id));
   if (!ids.has(WORKSPACE_FUND_ID) || ids.size !== state.funds.length) throw new Error("PUBLIC_ECONOMY_INVALID");
   for (const fund of state.funds) {
@@ -209,11 +218,22 @@ export function validatePublicEconomy(state: PublicEconomyState): void {
     || state.inventory.some((asset) => !ids.has(asset.fundId) || !validMoney(asset.paid))
     || state.transactions.some((transaction) => !ids.has(transaction.fundId))) throw new Error("PUBLIC_ECONOMY_INVALID");
   for (const proposal of state.proposals) {
-    if (!ids.has(proposal.fundId) || !validMoney(proposal.reserved) || !proposal.electorate.length
+    if (!ids.has(proposal.fundId) || !validMoney(proposal.reserved)
+      || !Number.isInteger(proposal.approvalRate) || proposal.approvalRate < 0 || proposal.approvalRate > 100
+      || (!proposal.electorate.length && proposal.approvalRate !== 0)
       || new Set(proposal.electorate).size !== proposal.electorate.length
       || new Set(proposal.ballots.map((ballot) => ballot.userId)).size !== proposal.ballots.length
       || proposal.ballots.some((ballot) => !proposal.electorate.includes(ballot.userId))
-      || !Number.isSafeInteger(proposal.required) || proposal.required < 1 || proposal.required > proposal.electorate.length
+      || !Number.isSafeInteger(proposal.required) || proposal.required < 0 || proposal.required > proposal.electorate.length
+      || proposal.required === 0 && proposal.approvalRate > 0
+      || proposal.approvalRate === 0 && proposal.required > 1
       || !Number.isFinite(Date.parse(proposal.expiresAt))) throw new Error("PUBLIC_ECONOMY_INVALID");
+  }
+}
+
+export function validateApprovalRates(rates: ApprovalRates): void {
+  if (!rates || Object.keys(rates).length !== 4 || Object.values(rates).some((rate) => !Number.isInteger(rate) || rate < 0 || rate > 100)
+    || !["serverSettings", "building", "organisation", "funds"].every((key) => Object.hasOwn(rates, key))) {
+    throw new Error("APPROVAL_RATES_INVALID");
   }
 }

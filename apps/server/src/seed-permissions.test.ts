@@ -114,7 +114,7 @@ describe("seeded organisation and permissions", () => {
         edit: { tool: "asset", assetId: "chair-office", variantId: "white", rotation: 0, position: { x: 560, y: 768 } } });
       const unfunded = events.filter((event) => event.type === "project.preview").at(-1)!;
       runtime.handleCommand(jonas, { type: "project.submit", requestId: "unfunded", draftId: unfunded.project.id, title: "Chair" });
-      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "PUBLIC_FUNDS_INSUFFICIENT" });
+      expect(events.at(-1)).toMatchObject({ type: "project.submitted" });
       store.donateMoney("user-maya", "workspace", 250, "fund-build");
       runtime.handleCommand(maya, { type: "project.edit", fundId: "workspace", requestId: "office-chair", baseRevision: revision(),
         edit: { tool: "asset", assetId: "chair-office", variantId: "white", rotation: 0, position: { x: 560, y: 768 } } });

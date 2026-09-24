@@ -3,7 +3,7 @@ import { ASSET_ROTATIONS, DEFAULT_CHARACTER_APPEARANCE, getDefaultAssetVariantId
 import type { Container, Sprite } from "pixi.js";
 import { Application, Graphics } from "pixi.js";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { getOutdoorBounds, type Floor, type FloorLayout, type Member, type WorldPlayer } from "@workhard/shared";
+import { getOutdoorBounds, getWallRect, WALL_THICKNESS, type Floor, type FloorLayout, type Member, type WorldPlayer } from "@workhard/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WorldCanvas, type WorldCanvasProps } from "./WorldCanvas";
 import { ConfirmationDialog } from "./ConfirmationDialog";
@@ -804,6 +804,81 @@ describe("WorldCanvas raised asset outlines", () => {
     const point = getScreenPoint(getApplication(), footprint.x + footprint.width / 2, footprint.y + footprint.height / 2 + offset);
     dispatchPointer(canvas, "pointermove", point.x, point.y);
     expect(rectangle.mock.calls).toContainEqual(outline);
+  });
+});
+
+describe("WorldCanvas build targets", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it.each(["wall", "door", "window", "erase"] as const)("can cancel the %s action without editing", async (editingTool) => {
+    const props = { ...createProps(), editing: true, editingTool };
+    const { container } = render(<WorldCanvas {...props} />);
+    await findCanvas(container);
+    fireEvent.click(screen.getByRole("button", { name: "Cancel action" }));
+    expect(props.onPlacementCancel).toHaveBeenCalledOnce();
+    expect(props.onEdit).not.toHaveBeenCalled();
+  });
+
+  it.each([null, "erase"] as const)("outlines the same overlapping asset that %s will affect", async (editingTool) => {
+    const desk = { id: "desk", floorId: "floor", assetId: "desk-straight", variantId: "sage", rotation: 0 as const, x: 256, y: 256 };
+    const chair = { id: "chair", floorId: "floor", assetId: "chair-office", variantId: "white", rotation: 0 as const, x: 272, y: 272 };
+    const bounds = [getPlacedAssetBounds(desk), getPlacedAssetBounds(chair)];
+    const overlap = {
+      x: Math.max(bounds[0]!.x, bounds[1]!.x),
+      y: Math.max(bounds[0]!.y, bounds[1]!.y),
+      right: Math.min(bounds[0]!.x + bounds[0]!.width, bounds[1]!.x + bounds[1]!.width),
+      bottom: Math.min(bounds[0]!.y + bounds[0]!.height, bounds[1]!.y + bounds[1]!.height),
+    };
+    expect(overlap.right).toBeGreaterThan(overlap.x);
+    expect(overlap.bottom).toBeGreaterThan(overlap.y);
+    const props = { ...createProps(), editing: true, editingTool, players: [], members: [], layout: { ...layout, objects: [desk, chair] } };
+    const { container } = render(<WorldCanvas {...props} />);
+    const canvas = await findCanvas(container);
+    const rectangle = vi.spyOn(Graphics.prototype, "rect");
+    const point = getScreenPoint(getApplication(), (overlap.x + overlap.right) / 2, (overlap.y + overlap.bottom) / 2);
+    dispatchPointer(canvas, "pointermove", point.x, point.y);
+    const hoverRects = [...rectangle.mock.calls];
+    dispatchPointer(canvas, "pointerdown", point.x, point.y);
+    dispatchPointer(canvas, "pointerup", point.x, point.y);
+    const targetId = editingTool === "erase"
+      ? (props.onEdit as ReturnType<typeof vi.fn>).mock.lastCall?.[0].item.id
+      : (props.onBuildItemSelect as ReturnType<typeof vi.fn>).mock.lastCall?.[0].id;
+    const target = [desk, chair].find((object) => object.id === targetId)!;
+    expect(target).toBeDefined();
+    const artwork = getPlacedWorldAssetBounds(props.layout, target);
+    expect(hoverRects).toContainEqual([artwork.x - 1, artwork.y - 1, artwork.width + 2, artwork.height + 2]);
+    if (editingTool === "erase") expect(props.onEdit).toHaveBeenCalledWith({ tool: "item.remove", item: { type: "asset", id: targetId } });
+  });
+
+  it("does not erase when the cursor leaves an item before clicking", async () => {
+    const object = { id: "chair", floorId: "floor", assetId: "chair-office", variantId: "white", rotation: 0 as const, x: 256, y: 256 };
+    const onEdit = vi.fn();
+    const { container } = render(<WorldCanvas {...createProps()} editing editingTool="erase" players={[]} members={[]}
+      layout={{ ...layout, objects: [object] }} onEdit={onEdit} />);
+    const canvas = await findCanvas(container);
+    const onItem = getScreenPoint(getApplication(), 272, 272);
+    dispatchPointer(canvas, "pointermove", onItem.x, onItem.y);
+    dispatchPointer(canvas, "pointerleave", onItem.x, onItem.y);
+    dispatchPointer(canvas, "pointerdown", 5, 5);
+    dispatchPointer(canvas, "pointerup", 5, 5);
+    expect(onEdit).not.toHaveBeenCalled();
+  });
+
+  it("outlines only the wall section that Erase will remove", async () => {
+    const horizontal = { id: "horizontal", start: { x: 128, y: 256 }, end: { x: 384, y: 256 } };
+    const vertical = { id: "vertical", start: { x: 256, y: 128 }, end: { x: 256, y: 384 } };
+    const onEdit = vi.fn();
+    const { container } = render(<WorldCanvas {...createProps()} editing editingTool="erase" players={[]} members={[]}
+      layout={{ ...layout, walls: [horizontal, vertical] }} onEdit={onEdit} />);
+    const canvas = await findCanvas(container);
+    const rectangle = vi.spyOn(Graphics.prototype, "rect");
+    const point = getScreenPoint(getApplication(), 192, 256);
+    dispatchPointer(canvas, "pointermove", point.x, point.y);
+    const removedSection = getWallRect({ ...horizontal, end: { x: 256, y: 256 } }, WALL_THICKNESS + 8);
+    expect(rectangle.mock.calls).toContainEqual([removedSection.x, removedSection.y, removedSection.width, removedSection.height]);
+    dispatchPointer(canvas, "pointerdown", point.x, point.y);
+    dispatchPointer(canvas, "pointerup", point.x, point.y);
+    expect(onEdit).toHaveBeenCalledWith({ tool: "erase", position: { x: expect.closeTo(192), y: expect.closeTo(256) } });
   });
 });
 

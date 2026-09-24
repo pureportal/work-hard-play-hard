@@ -13,6 +13,7 @@ import type {
   MemberRole,
   RegistrationAvailability,
   RegistrationSettings,
+  ApprovalRates,
   SpotifyStatus,
   SpotifyAdminSettings,
   SpotifyAppSettings,
@@ -315,6 +316,19 @@ export async function changeMemberAccess(
 
 export async function fetchRegistrationSettings(): Promise<RegistrationSettings> {
   return readResponse<RegistrationSettings>(await fetchWithTimeout("/v1/admin/registration-settings"), "Registration settings could not load.");
+}
+
+export async function fetchApprovalRates(): Promise<ApprovalRates> {
+  return readResponse<ApprovalRates>(await fetchWithTimeout("/v1/admin/approval-rates"), "Approval rates could not load.");
+}
+
+export async function updateApprovalRates(rates: ApprovalRates): Promise<ApprovalRates> {
+  const response = await fetchWithTimeout("/v1/admin/approval-rates", {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(rates),
+  });
+  return readResponse<ApprovalRates>(response, "Approval rates could not be saved.");
 }
 
 export async function updateRegistrationSettings(settings: RegistrationSettings): Promise<RegistrationSettings> {

@@ -1,12 +1,12 @@
 import { CheckCircle2, Clock3, Vote } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { BuildProject, ClientCommand, Member, OrganisationState, PublicEconomy, Room, SpendingProposal } from "@workhard/shared";
+import { availablePublicMoney, getAssetDefinition, projectRequiredMoney, rebaseProjectLayout, type BuildProject, type ClientCommand, type Floor, type FloorLayout, type Member, type OrganisationState, type PublicEconomy, type Room, type SpendingProposal } from "@workhard/shared";
 import { ProposalDetails } from "./ProposalDetails";
 
-export function SpendingProposals({ proposals, economy, organisation, members, userId, pending, onCommand, onReview, rooms }: {
+export function SpendingProposals({ proposals, economy, organisation, members, userId, pending, onCommand, onReview, onEdit, rooms, layouts, floors }: {
   proposals: SpendingProposal[]; economy: PublicEconomy; organisation: OrganisationState; members: Member[]; userId: string; pending: boolean;
-  onCommand: (command: ClientCommand) => void; onReview: (project: BuildProject) => void;
-  rooms: Room[];
+  onCommand: (command: ClientCommand) => void; onReview: (project: BuildProject) => void; onEdit: (proposal: SpendingProposal) => void;
+  rooms: Room[]; layouts: FloorLayout[]; floors: Floor[];
 }) {
   const [now, setNow] = useState(Date.now);
   const votingOpen = proposals.some((proposal) => proposal.status === "open");
@@ -24,23 +24,38 @@ export function SpendingProposals({ proposals, economy, organisation, members, u
     const ballot = proposal.ballots.find((entry) => entry.userId === userId);
     const votingClosed = Date.parse(proposal.expiresAt) <= now;
     const canVote = proposal.status === "open" && !votingClosed && proposal.electorate.includes(userId) && !ballot;
+    const project = proposal.action.kind === "project" ? proposal.action.project : undefined;
+    const shortfall = project ? Math.max(0, projectRequiredMoney(project) - availablePublicMoney(economy, proposal.fundId)) : 0;
+    const currentLayout = project && layouts.find((layout) => layout.floorId === project.floorId);
+    const floor = project && floors.find((item) => item.id === project.floorId);
+    const conflicts = project && currentLayout && floor ? rebaseProjectLayout(project, currentLayout, floor).conflicts : [];
+    const conflictNames = conflicts.map((conflict) => {
+      if (conflict.kind === "object") {
+        const object = project?.layout.objects.find((item) => item.id === conflict.id);
+        return getAssetDefinition(object?.assetId ?? "")?.name ?? "Object";
+      }
+      return conflict.kind === "layout" ? "Floor" : conflict.kind === "wall" ? "Wall" : "Opening";
+    });
     const status = proposal.status === "open" && votingClosed ? "Counting votes…" : {
-      open: "Needs votes", approved: "Ready to apply", applied: "Applied", rejected: "Rejected", expired: "Expired", cancelled: "Cancelled",
+      open: conflicts.length ? "Layout conflict" : "Needs votes", approved: conflicts.length ? "Layout conflict" : shortfall > 0 ? "Waiting for funds" : "Ready to apply", applied: "Applied", rejected: "Rejected", expired: "Expired", cancelled: "Cancelled",
     }[proposal.status];
     return <article className={`spending-proposal proposal-${proposal.status}`} key={proposal.id} aria-label={proposal.title}>
       <header><h3>{proposal.title}</h3><span className="proposal-status">{current ? proposal.status === "approved" ? <CheckCircle2 size={15} /> : <Clock3 size={15} /> : null}{status}</span></header>
       <ProposalDetails action={proposal.action} economy={economy} organisation={organisation} members={members} rooms={rooms} />
-      {current && <div className="proposal-progress"><progress value={approvals} max={proposal.required} aria-label={`${approvals} of ${proposal.required} approvals`} />
+      {current && proposal.required > 0 && <div className="proposal-progress"><progress value={approvals} max={proposal.required} aria-label={`${approvals} of ${proposal.required} approvals`} />
         <span>{approvals} / {proposal.required} approvals</span>{ballot && <span>{ballot.approve ? "You approved" : "You rejected"}</span>}</div>}
+      {proposal.status === "approved" && shortfall > 0 && <p role="status">Needs {shortfall.toLocaleString()} more coins in this fund.</p>}
+      {current && conflicts.length > 0 && <p role="status">{conflicts.some((conflict) => conflict.reason === "overlap") ? "Overlaps" : "Conflicts"}: {conflictNames.join(", ")}. {proposal.proposedBy === userId ? "Edit the draft to apply it." : "The creator must edit the draft."}</p>}
       <footer><span>{members.find((member) => member.id === proposal.proposedBy)?.name} · {proposal.fundId === "workspace" ? "Workspace" : organisation.units.find((unit) => unit.id === proposal.fundId)?.name}</span>
         {proposal.status === "open" && !votingClosed && <time dateTime={proposal.expiresAt} title={new Date(proposal.expiresAt).toLocaleString()}>
           {Date.parse(proposal.expiresAt) - now < 60_000 ? `${Math.ceil((Date.parse(proposal.expiresAt) - now) / 1_000)}s left` : `Until ${new Date(proposal.expiresAt).toLocaleString()}`}
         </time>}</footer>
       <div className="economy-actions">
         {current && proposal.action.kind === "project" && <button className="secondary-button" onClick={() => { if (proposal.action.kind === "project") onReview(proposal.action.project); }}>View layout</button>}
-        {canVote && <><button className="primary-button" disabled={pending} onClick={() => onCommand({ type: "public_economy.vote", requestId: crypto.randomUUID(), proposalId: proposal.id, approve: true })}>Approve</button>
+        {current && project && proposal.proposedBy === userId && <button className="secondary-button" disabled={pending} onClick={() => onEdit(proposal)}>Edit draft</button>}
+        {canVote && !conflicts.length && <><button className="primary-button" disabled={pending} onClick={() => onCommand({ type: "public_economy.vote", requestId: crypto.randomUUID(), proposalId: proposal.id, approve: true })}>Approve</button>
           <button className="secondary-button" disabled={pending} onClick={() => onCommand({ type: "public_economy.vote", requestId: crypto.randomUUID(), proposalId: proposal.id, approve: false })}>Reject</button></>}
-        {current && proposal.status === "approved" && (proposal.proposedBy === userId || proposal.electorate.includes(userId)) && <button className="primary-button" disabled={pending} onClick={() => onCommand({ type: "public_economy.execute", requestId: crypto.randomUUID(), proposalId: proposal.id })}>Apply proposal</button>}
+        {current && proposal.status === "approved" && (proposal.proposedBy === userId || proposal.electorate.includes(userId)) && <button className="primary-button" disabled={pending || shortfall > 0 || conflicts.length > 0} onClick={() => onCommand({ type: "public_economy.execute", requestId: crypto.randomUUID(), proposalId: proposal.id })}>Apply proposal</button>}
         {current && (proposal.status === "approved" || !votingClosed) && proposal.proposedBy === userId && <button className="secondary-button" disabled={pending} onClick={() => onCommand({ type: "public_economy.cancel", requestId: crypto.randomUUID(), proposalId: proposal.id })}>Cancel proposal</button>}
       </div>
     </article>;

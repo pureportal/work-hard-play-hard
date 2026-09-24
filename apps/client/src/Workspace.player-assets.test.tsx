@@ -27,8 +27,10 @@ vi.mock("./components/CharacterPreview", () => ({ CharacterPreview: () => null }
 vi.mock("./components/WorldCanvasLoader", () => ({
   preloadWorldCanvas: vi.fn(),
   WorldCanvas: ({ editing, editingTool, editingAssetVariantId, editingAssetRotation, onEdit, onPlacementBlocked, floor, focusTarget, selectedBuildItem, layout, onBuildItemSelect }: WorldCanvasProps) => (
-    <div data-testid="world" data-floor={floor.id} data-focus={JSON.stringify(focusTarget)} data-selected={selectedBuildItem?.id}>
+    <div data-testid="world" data-floor={floor.id} data-focus={JSON.stringify(focusTarget)} data-selected={selectedBuildItem?.id} data-tool={editingTool ?? ""}>
       {editing && layout.objects.map((object) => <button key={object.id} onClick={() => onBuildItemSelect({ type: "asset", id: object.id })}>Select {object.id}</button>)}
+      {editing && editingTool === "erase" && layout.objects.map((object) =>
+        <button key={`erase-${object.id}`} onClick={() => onEdit({ tool: "item.remove", item: { type: "asset", id: object.id } })}>Erase {object.id}</button>)}
       {editing && editingTool === "asset" && (
         <>
           <button onClick={() => onEdit({ tool: "asset", assetId: "chair-office", variantId: editingAssetVariantId, rotation: editingAssetRotation, position: { x: 32, y: 32 } })}>
@@ -141,12 +143,12 @@ describe("Workspace player assets", () => {
     delete room.ownerUserId;
     room.access = { mode: "open", assignedPersonIds: [], knockable: false };
     room.build = { mode: "open", assignedPersonIds: [] };
-    const project: BuildProject = { id: "working-draft", fundId: "workspace", floorId: "floor", baseRevision: 1, edits: 1,
+    const project: BuildProject = { id: "working-draft", fundId: "workspace", floorId: "floor", baseRevision: 1, baseLayout: data.layouts[0]!, edits: 1,
       layout: { ...data.layouts[0]!, revision: 2, objects: [{ id: "draft-chair", floorId: "floor", assetId: "chair-office", x: 32, y: 32,
         variantId: "white", rotation: 0, ownedAssetId: "owned-chair", ownerUserId: "player" }] },
       quote: { assetChanges: [], cost: 0, refund: 0, refunds: [], structural: false, destructive: false, requiresApproval: true, purchases: [], removedKeys: [], inventoryIds: [] } };
     data.publicEconomy.proposals = [{ id: "proposal", title: "Team proposal", proposedBy: "teammate", fundId: "workspace", action: { kind: "project", project: { ...project, id: "another-project" } },
-      status: "open", electorate: ["player", "teammate"], required: 2, ballots: [{ userId: "teammate", approve: true }], reserved: 0,
+      status: "open", electorate: ["player", "teammate"], approvalRate: 51, required: 2, ballots: [{ userId: "teammate", approve: true }], reserved: 0,
       createdAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 86_400_000).toISOString(), organisationRevision: 0, policyRevision: 0 }];
     render(<Workspace initialData={data} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Build" }));
@@ -163,7 +165,7 @@ describe("Workspace player assets", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Back to approvals" }, { timeout: 5000 }));
     fireEvent.click(await screen.findByRole("button", { name: "Close approvals" }, { timeout: 5000 }));
     fireEvent.click(screen.getByRole("button", { name: "Build" }));
-    expect(await screen.findByText("Draft · not placed", { exact: true })).toBeTruthy();
+    expect(await screen.findByText("Draft", { exact: true })).toBeTruthy();
     expect((screen.getByRole("textbox", { name: "Project name" }) as HTMLInputElement).value).toBe("My workspace");
     fireEvent.click(screen.getByRole("button", { name: "Propose project" }));
     expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({ type: "project.submit", draftId: "working-draft", title: "My workspace" }));
@@ -227,16 +229,74 @@ describe("Workspace player assets", () => {
     expect(realtime.send).not.toHaveBeenCalledWith(expect.objectContaining({ type: "movement.set_destination" }));
   });
 
-  it("stores the focused item on the player's floor", async () => {
+  it("can cancel storage and movement, then store the focused item", async () => {
     const data = workspace();
     data.layouts[0]!.objects = [{ id: "chair", floorId: "floor", assetId: "chair-office", x: 32, y: 32, variantId: "white", rotation: 0, ownerUserId: "player" }];
     render(<Workspace initialData={data} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Build" }));
-    fireEvent.click(await screen.findByRole("tab", { name: "Placed" }));
+    fireEvent.click(await screen.findByRole("tab", { name: "Placed" }, { timeout: 10_000 }));
     fireEvent.click(screen.getByRole("button", { name: "Focus Office chair in Room, Floor" }));
+    fireEvent.click(screen.getByRole("button", { name: "Move" }));
+    expect(screen.getByRole("button", { name: "Cancel move" })).toBeTruthy();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.getByRole("button", { name: "Move" })).toBeTruthy();
+    expect(screen.getByTestId("world").getAttribute("data-selected")).toBe("chair");
     fireEvent.click(screen.getByRole("button", { name: "Store" }));
+    expect(screen.getByRole("dialog", { name: "Store item?" })).toBeTruthy();
+    expect(realtime.send).not.toHaveBeenCalledWith(expect.objectContaining({ type: "player_asset.remove" }));
+    fireEvent.keyDown(document.activeElement!, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Store item?" })).toBeNull();
+    expect(screen.getByTestId("world").getAttribute("data-selected")).toBe("chair");
+    fireEvent.click(screen.getByRole("button", { name: "Store" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Store item?" })).getByRole("button", { name: "Store" }));
     expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({ type: "player_asset.remove", objectId: "chair", baseRevision: 1 }));
     expect(screen.getByTestId("world").getAttribute("data-selected")).toBeNull();
+  });
+
+  it("exits placement and deselects without sending an edit", async () => {
+    const data = workspace();
+    data.layouts[0]!.objects = [{ id: "chair", floorId: "floor", assetId: "chair-office", x: 32, y: 32, variantId: "white", rotation: 0, ownerUserId: "player" }];
+    render(<Workspace initialData={data} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Build" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Place" }));
+    expect(screen.getByTestId("world").getAttribute("data-tool")).toBe("asset");
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.getByTestId("world").getAttribute("data-tool")).toBe("");
+    fireEvent.click(screen.getByRole("button", { name: "Select chair" }));
+    expect(screen.getByTestId("world").getAttribute("data-selected")).toBe("chair");
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.getByTestId("world").getAttribute("data-selected")).toBeNull();
+    expect(screen.getByRole("complementary", { name: "Build" })).toBeTruthy();
+    expect(realtime.send).not.toHaveBeenCalledWith(expect.objectContaining({ type: "player_asset.place" }));
+    expect(realtime.send).not.toHaveBeenCalledWith(expect.objectContaining({ type: "player_asset.remove" }));
+  });
+
+  it("cancels erase and requires confirmation before removing an item", async () => {
+    const data = workspace();
+    data.economy.dailyReward.claimable = false;
+    data.members[0]!.role = "admin";
+    data.members[0]!.permissions = ["manage_members"];
+    data.layouts[0]!.objects = [{ id: "shared-chair", floorId: "floor", assetId: "chair-office", x: 32, y: 32, variantId: "white", rotation: 0 }];
+    render(<Workspace initialData={data} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Build" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Shared" }, { timeout: 10_000 }));
+    fireEvent.click(await screen.findByRole("button", { name: "Erase" }, { timeout: 10_000 }));
+    expect(screen.getByTestId("world").getAttribute("data-tool")).toBe("erase");
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.getByTestId("world").getAttribute("data-tool")).toBe("");
+    fireEvent.click(screen.getByRole("button", { name: "Erase" }));
+    fireEvent.click(screen.getByRole("button", { name: "Erase" }));
+    expect(screen.getByTestId("world").getAttribute("data-tool")).toBe("");
+    expect(screen.getByRole("complementary", { name: "Build" })).toBeTruthy();
+    expect(realtime.send).not.toHaveBeenCalledWith(expect.objectContaining({ type: "project.edit" }));
+    fireEvent.click(screen.getByRole("button", { name: "Erase" }));
+    fireEvent.click(screen.getByRole("button", { name: "Erase shared-chair" }));
+    expect(screen.getByRole("dialog", { name: "Remove item?" })).toBeTruthy();
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Remove item?" })).getByRole("button", { name: "Cancel" }));
+    expect(realtime.send).not.toHaveBeenCalledWith(expect.objectContaining({ type: "project.edit" }));
+    fireEvent.click(screen.getByRole("button", { name: "Erase shared-chair" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Remove item?" })).getByRole("button", { name: "Remove" }));
+    expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({ type: "project.edit", edit: { tool: "item.remove", item: { type: "asset", id: "shared-chair" } } }));
   });
 
   it("opens Build for a non-builder and sends owned placement commands", async () => {
@@ -268,6 +328,7 @@ describe("Workspace player assets", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "Claim 50 coins" }));
     expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({ type: "economy.claim_daily" }));
+    expect(screen.queryByRole("dialog", { name: "Daily bonus" })).toBeNull();
 
     const claim = realtime.send.mock.calls.map(([command]) => command).find((command) => command.type === "economy.claim_daily")!;
     const updatedEconomy = createTestEconomy();
@@ -287,7 +348,6 @@ describe("Workspace player assets", () => {
       transaction: updatedEconomy.recentTransactions[0]!,
     }));
     expect(screen.getByText("Daily bonus: +50 coins.")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Close daily bonus" }));
     fireEvent.click(screen.getByRole("tab", { name: "Shop" }));
     fireEvent.click(screen.getByRole("tab", { name: "Seating" }));
     fireEvent.click(screen.getByRole("button", { name: "Buy Office chair" }));

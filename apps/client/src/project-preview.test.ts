@@ -3,7 +3,7 @@ import type { BuildProject, FloorLayout } from "@workhard/shared";
 import { projectPreviewBounds } from "./project-preview";
 
 const layout: FloorLayout = { floorId: "floor", revision: 0, walls: [], openings: [], tiles: [], objects: [], rooms: [] };
-const project: BuildProject = { id: "proposal", floorId: "floor", fundId: "workspace", baseRevision: 0, edits: 1, layout,
+const project: BuildProject = { id: "proposal", floorId: "floor", fundId: "workspace", baseRevision: 0, baseLayout: layout, edits: 1, layout,
   quote: { assetChanges: [], cost: 0, refund: 0, refunds: [], structural: true, destructive: true,
     requiresApproval: true, purchases: [], removedKeys: [], inventoryIds: [] } };
 

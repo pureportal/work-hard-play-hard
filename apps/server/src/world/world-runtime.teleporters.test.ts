@@ -113,7 +113,7 @@ describe("teleporter construction", () => {
     if (proposal.action.kind !== "project") throw new Error("Missing project");
     proposal.action.project.layout.rooms.push(roomAroundPortal("default"));
     execute(id);
-    expect(events.at(-1)).toMatchObject({ type: "command.error", code: "TELEPORTER_PUBLIC_ONLY" });
+    expect(events.at(-1)).toMatchObject({ type: "command.error", code: "PROJECT_CONFLICT" });
     expect(store.getFloors()).toHaveLength(1);
     expect(store.publicEconomy.fund("workspace").balance).toBe(1_000_000);
   });
@@ -151,8 +151,8 @@ describe("teleporter construction", () => {
     const floor = { ...store.getFloors()[0]!, id: "concurrent", level: 2 };
     store.addFloor(floor, { ...store.getLayouts()[0]!, floorId: floor.id, objects: [] });
     execute(id);
-    expect(events.at(-1)).toMatchObject({ type: "command.error", code: "PROJECT_STALE" });
-    expect(store.publicEconomy.proposal(id).status).toBe("cancelled");
+    expect(events.at(-1)).toMatchObject({ type: "command.error", code: "PROJECT_CONFLICT" });
+    expect(store.publicEconomy.proposal(id).status).toBe("approved");
     expect(store.publicEconomy.fund("workspace").balance).toBe(1_000_000);
   });
 

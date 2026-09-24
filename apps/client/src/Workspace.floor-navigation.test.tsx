@@ -1,7 +1,7 @@
 import { createPublicEconomy } from "@workhard/shared";
 import { createOrganisation } from "@workhard/shared";
 import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_CORPORATE_IDENTITY } from "@workhard/shared";
 import type { BootstrapData, ClientCommand, Floor, FloorLayout, LayoutEdit, LayoutItemReference, ServerEvent, WorldObject, WorldSnapshot } from "@workhard/shared";
@@ -173,8 +173,8 @@ describe("Workspace floor navigation", () => {
   it("rotates the active placement with R even while its catalog button has focus", async () => {
     renderWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "Build" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Shared" }));
-    fireEvent.click(await screen.findByRole("tab", { name: "Seating" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Shared" }, { timeout: 5_000 }));
+    fireEvent.click(await screen.findByRole("tab", { name: "Seating" }, { timeout: 5_000 }));
     const chairButton = screen.getByRole("button", { name: "Office chair" });
     fireEvent.click(chairButton);
 
@@ -325,7 +325,7 @@ describe("Workspace floor navigation", () => {
   it("moves, rotates, and removes an item selected on the build canvas", async () => {
     renderWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "Build" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Shared" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Shared" }, { timeout: 5_000 }));
     fireEvent.click(screen.getByRole("button", { name: "Select build item" }));
 
     fireEvent.keyDown(window, { key: "r" });
@@ -335,6 +335,7 @@ describe("Workspace floor navigation", () => {
     fireEvent.click(screen.getByRole("button", { name: "Place selected item" }));
     acknowledgeProjectEdit();
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Remove item?" })).getByRole("button", { name: "Remove" }));
 
     const edits = realtime.send.mock.calls.flatMap(([command]) => command.type === "project.edit" ? [command.edit] : []);
     expect(edits).toContainEqual({ tool: "asset.move", objectId: "chair", position: { x: 160, y: 160 }, variantId: "white", rotation: 0 });
@@ -464,6 +465,6 @@ function acknowledgeProjectEdit(): void {
   const command = realtime.send.mock.calls.map(([entry]) => entry).filter((entry) => entry.type === "project.edit").at(-1)!;
   const layout = workspace().layouts[0]!;
   act(() => realtime.handler?.({ type: "project.preview", requestId: command.requestId,
-    project: { id: "draft", fundId: "workspace", floorId: layout.floorId, baseRevision: layout.revision, edits: 1,
+    project: { id: "draft", fundId: "workspace", floorId: layout.floorId, baseRevision: layout.revision, baseLayout: layout, edits: 1,
       layout, quote: { assetChanges: [], cost: 0, refund: 0, refunds: [], structural: false, destructive: false, requiresApproval: true, purchases: [], removedKeys: [], inventoryIds: [] } } }));
 }

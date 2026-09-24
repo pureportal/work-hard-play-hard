@@ -1,7 +1,7 @@
 import { assertPublicReachability, assertTeleportersRetained } from "../world/public-reachability.js";
 import { randomUUID } from "node:crypto";
 import {
-  WORKSPACE_FUND_ID, getAssetDefinition, canManageUnit, publicFundForUnit, publicFundMemberIds, validatePersonalSpaces, type BuildProject, type FloorLayout,
+  WORKSPACE_FUND_ID, approvalRateForAction, availablePublicMoney, detectLayoutRooms, getAssetDefinition, canManageUnit, projectRequiredMoney, publicFundForUnit, publicFundMemberIds, rebaseProjectLayout, validatePersonalSpaces, type BuildProject, type FloorLayout,
   type ProjectEdit, type PublicAction, type ServerEvent,
 } from "@workhard/shared";
 import type { WorkspaceStore } from "../store.js";
@@ -18,6 +18,7 @@ interface Draft {
   project: BuildProject;
   donatedObjects: Map<string, string>;
   submitted: boolean;
+  proposalId?: string;
 }
 
 export class ProjectRuntime {
@@ -30,13 +31,29 @@ export class ProjectRuntime {
     broadcast: (event: ServerEvent) => void;
   }) {}
 
-  edit(peer: ProjectPeer, requestId: string, baseRevision: number, fundId: string, edit: ProjectEdit, draftId?: string): void {
+  edit(peer: ProjectPeer, requestId: string, baseRevision: number, fundId: string, edit: ProjectEdit, draftId?: string, proposalId?: string): void {
     const original = this.store.getLayout(peer.floorId);
     if (!original || original.revision !== baseRevision) throw new Error("PROJECT_STALE");
-    const existing = draftId ? this.drafts.get(peer.userId) : undefined;
+    let existing = draftId ? this.drafts.get(peer.userId) : undefined;
+    if (proposalId && (!existing || existing.project.id !== draftId || existing.proposalId !== proposalId)) {
+      const proposal = this.store.publicEconomy.proposal(proposalId);
+      if (proposal.proposedBy !== peer.userId || !["open", "approved"].includes(proposal.status)
+        || proposal.action.kind !== "project" || proposal.action.project.id !== draftId) throw new Error("PROJECT_STALE");
+      const current = this.store.getLayout(proposal.action.project.floorId);
+      const floor = this.store.getFloor(proposal.action.project.floorId);
+      if (!current || !floor) throw new Error("PROJECT_STALE");
+      const rebased = rebaseProjectLayout(proposal.action.project, current, floor);
+      existing = { project: { ...proposal.action.project, baseRevision: current.revision, baseLayout: structuredClone(current), layout: rebased.layout,
+        quote: quoteProject(current, rebased.layout, fundId, this.store.publicEconomy.receipts, this.store.publicEconomy.inventory,
+          new Map(proposal.action.project.donatedAssets?.map(({ key, id }) => [key, id])), this.store.getFloors().length) },
+        donatedObjects: new Map(proposal.action.project.donatedAssets?.map(({ key, id }) => [key, id])), submitted: false, proposalId };
+    }
     if (draftId && (!existing || existing.project.id !== draftId || existing.submitted)) throw new Error("PROJECT_STALE");
-    if (existing && (existing.project.baseRevision !== baseRevision || existing.project.floorId !== peer.floorId || existing.project.fundId !== fundId)) throw new Error("PROJECT_STALE");
-    if (existing?.project.floorCount !== undefined && existing.project.floorCount !== this.store.getFloors().length) throw new Error("PROJECT_STALE");
+    if (existing && (existing.project.floorId !== peer.floorId || existing.project.fundId !== fundId)) throw new Error("PROJECT_STALE");
+    if (existing && existing.project.baseRevision !== baseRevision) {
+      const rebased = rebaseProjectLayout(existing.project, original, this.store.getFloor(peer.floorId)!);
+      existing.project = { ...existing.project, baseRevision, baseLayout: structuredClone(original), layout: rebased.layout };
+    }
     if ((existing?.project.edits ?? 0) >= 200) throw new Error("PROJECT_LIMIT");
     const fund = this.store.publicEconomy.fund(fundId);
     this.assertFundMember(peer.userId, fundId);
@@ -50,17 +67,18 @@ export class ProjectRuntime {
     const quote = quoteProject(original, layout, fundId, this.store.publicEconomy.receipts, this.store.publicEconomy.inventory, donatedObjects, this.store.getFloors().length);
     const spawn = edit.tool === "spawn" ? { x: Math.round(edit.position.x / 32) * 32, y: Math.round(edit.position.y / 32) * 32 } : existing?.project.spawn;
     if (spawn && fundId !== WORKSPACE_FUND_ID) throw new Error("PUBLIC_FUND_SCOPE");
-    const project: BuildProject = { id: existing?.project.id ?? randomUUID(), fundId, floorId: peer.floorId, baseRevision,
+    const project: BuildProject = { id: existing?.project.id ?? randomUUID(), fundId, floorId: peer.floorId, baseRevision, baseLayout: structuredClone(existing?.project.baseLayout ?? original),
       layout: { ...layout, revision: baseRevision + 1 }, quote,
+      donatedAssets: [...donatedObjects].map(([key, id]) => ({ key, id })),
       ...(quote.assetChanges.some(({ object, change }) => change === "place" && getAssetDefinition(object.assetId)?.kind === "portal")
         ? { floorCount: this.store.getFloors().length } : {}), edits: (existing?.project.edits ?? 0) + 1, ...(spawn ? { spawn } : {}) };
     assertTeleportersRetained(original, layout);
     assertPublicReachability({ ...this.store.getFloor(peer.floorId)!, ...(spawn ? { spawn } : {}) }, layout, this.store.getGameSettings());
-    this.drafts.set(peer.userId, { project, donatedObjects, submitted: false });
+    this.drafts.set(peer.userId, { project, donatedObjects, submitted: false, ...(existing?.proposalId ? { proposalId: existing.proposalId } : {}) });
     peer.send({ type: "project.preview", requestId, project: structuredClone(project) });
   }
 
-  submit(peer: ProjectPeer, requestId: string, draftId: string, title: string): void {
+  submit(peer: ProjectPeer, requestId: string, draftId: string, title: string, proposalId?: string): void {
     const fingerprint = `project:${draftId}:${title}`;
     const replay = this.store.publicEconomy.findOperation(peer.userId, requestId, fingerprint);
     if (replay !== undefined) {
@@ -70,14 +88,26 @@ export class ProjectRuntime {
     const draft = this.drafts.get(peer.userId);
     if (!draft || draft.project.id !== draftId || draft.submitted) throw new Error("PROJECT_STALE");
     this.store.getPublicEconomy();
-    this.validateProject(peer.userId, draft.project);
-    const action: PublicAction = { kind: "project", project: draft.project };
-    const proposalId = this.store.publicEconomy.propose(peer.userId, title, action, draft.project.fundId,
-      this.store.getOrganisation(), this.store.getMembers().map((member) => member.id)).id;
+    const project = this.validateProject(peer.userId, draft.project);
+    const action: PublicAction = { kind: "project", project };
+    let submittedProposalId: string;
+    if (proposalId) {
+      if (draft.proposalId !== proposalId) throw new Error("PROJECT_STALE");
+      const proposal = this.store.publicEconomy.proposal(proposalId);
+      if (proposal.proposedBy !== peer.userId || !["open", "approved"].includes(proposal.status)) throw new Error("PROJECT_STALE");
+      if (!proposal.electorate.length) throw new Error("PROPOSAL_NO_APPROVERS");
+      proposal.title = title;
+      proposal.action = structuredClone(action);
+      proposal.ballots = [];
+      proposal.required = Math.max(1, Math.ceil(proposal.electorate.length * proposal.approvalRate / 100));
+      proposal.status = "open";
+      proposal.expiresAt = new Date(Date.now() + (process.env.NODE_ENV === "production" ? 7 * 86_400_000 : 10_000)).toISOString();
+      this.publish(requestId);
+      submittedProposalId = proposal.id;
+    } else submittedProposalId = this.submitProposal(peer, requestId, title, action, project.fundId);
     draft.submitted = true;
-    this.store.publicEconomy.recordOperation(peer.userId, requestId, fingerprint, proposalId);
-    this.publish(requestId);
-    peer.send({ type: "project.submitted", requestId, ...(proposalId ? { proposalId } : {}) });
+    this.store.publicEconomy.recordOperation(peer.userId, requestId, fingerprint, submittedProposalId);
+    peer.send({ type: "project.submitted", requestId, proposalId: submittedProposalId });
   }
 
   propose(peer: ProjectPeer, requestId: string, title: string, action: Exclude<PublicAction, { kind: "project" }>): void {
@@ -86,10 +116,8 @@ export class ProjectRuntime {
     if (replay !== undefined) { this.publish(requestId); return; }
     this.store.getPublicEconomy();
     const fundId = this.validateAction(peer.userId, action);
-    const proposal = this.store.publicEconomy.propose(peer.userId, title, action, fundId,
-      this.store.getOrganisation(), this.store.getMembers().map((member) => member.id));
-    this.store.publicEconomy.recordOperation(peer.userId, requestId, fingerprint, proposal.id);
-    this.publish(requestId);
+    const proposalId = this.submitProposal(peer, requestId, title, action, fundId);
+    this.store.publicEconomy.recordOperation(peer.userId, requestId, fingerprint, proposalId);
   }
 
   vote(peer: ProjectPeer, requestId: string, proposalId: string, approve: boolean): void {
@@ -106,16 +134,16 @@ export class ProjectRuntime {
     this.store.getPublicEconomy();
     const proposal = this.store.publicEconomy.proposal(proposalId);
     if (proposal.status === "applied") { this.publish(requestId); return; }
-    if (proposal.action.kind === "project" && (this.store.getLayout(proposal.action.project.floorId)?.revision !== proposal.action.project.baseRevision
-      || proposal.action.project.floorCount !== undefined && proposal.action.project.floorCount !== this.store.getFloors().length)) throw new Error("PROJECT_STALE");
     if (proposal.status !== "approved") throw new Error("PROJECT_APPROVAL_REQUIRED");
     if (proposal.proposedBy !== peer.userId && !proposal.electorate.includes(peer.userId)) throw new Error("PROPOSAL_VOTE_FORBIDDEN");
-    if (proposal.action.kind === "project") this.validateProject(proposal.proposedBy, proposal.action.project);
-    else this.validateAction(proposal.proposedBy, proposal.action);
+    const action: PublicAction = proposal.action.kind === "project"
+      ? { kind: "project", project: this.validateProject(proposal.proposedBy, proposal.action.project) }
+      : proposal.action;
+    if (action.kind !== "project") this.validateAction(proposal.proposedBy, action);
     const checkpoint = this.store.exportMutableState();
     try {
       proposal.status = "applied";
-      this.callbacks.apply({ ...peer, userId: proposal.proposedBy }, proposal.action, requestId);
+      this.callbacks.apply({ ...peer, userId: proposal.proposedBy }, action, requestId);
     } catch (error) {
       this.store.restoreMutableState(checkpoint);
       throw error;
@@ -138,6 +166,27 @@ export class ProjectRuntime {
     if (this.store.publicEconomy.hasDueProposals() || this.publishedResolutionRevision !== this.store.publicEconomy.resolutionRevision) this.publish();
   }
 
+  private submitProposal(peer: ProjectPeer, requestId: string, title: string, action: PublicAction, fundId: string): string {
+    const automatic = approvalRateForAction(this.store.publicEconomy.getApprovalRates(), action) === 0;
+    const checkpoint = automatic ? this.store.exportMutableState() : undefined;
+    const wasDirty = this.store.dirty;
+    try {
+      const proposal = this.store.publicEconomy.propose(peer.userId, title, action, fundId,
+        this.store.getOrganisation(), this.store.getMembers().map((member) => member.id));
+      if (automatic && (action.kind !== "project" || projectRequiredMoney(action.project) <= availablePublicMoney(this.store.publicEconomy.view(), fundId))) {
+        this.execute(peer, requestId, proposal.id);
+      }
+      else this.publish(requestId);
+      return proposal.id;
+    } catch (error) {
+      if (checkpoint) {
+        this.store.restoreMutableState(checkpoint);
+        if (wasDirty) this.store.markDirty();
+      }
+      throw error;
+    }
+  }
+
   private assertFundMember(userId: string, fundId: string): void {
     const organisation = this.store.getOrganisation();
     const fund = this.store.publicEconomy.fund(fundId);
@@ -145,18 +194,23 @@ export class ProjectRuntime {
       && !canManageUnit(organisation, userId, fund.unitId))) throw new Error("PUBLIC_FUND_FORBIDDEN");
   }
 
-  private validateProject(userId: string, project: BuildProject): void {
+  private validateProject(userId: string, project: BuildProject): BuildProject {
     const layout = this.store.getLayout(project.floorId);
-    if (!layout || layout.revision !== project.baseRevision) throw new Error("PROJECT_STALE");
-    if (JSON.stringify({ ...project.layout, revision: layout.revision }) === JSON.stringify(layout)
+    const floor = this.store.getFloor(project.floorId);
+    if (!layout || !floor) throw new Error("PROJECT_STALE");
+    if (JSON.stringify(detectLayoutRooms(project.layout, floor).rooms) !== JSON.stringify(project.layout.rooms)) throw new Error("PROJECT_CONFLICT");
+    const rebased = rebaseProjectLayout(project, layout, floor);
+    if (rebased.conflicts.length) throw new Error("PROJECT_CONFLICT");
+    const next = rebased.layout;
+    if (JSON.stringify({ ...next, revision: layout.revision }) === JSON.stringify(layout)
       && (!project.spawn || JSON.stringify(project.spawn) === JSON.stringify(this.store.getFloor(project.floorId)!.spawn))) throw new Error("PROJECT_EMPTY");
-    if (project.floorCount !== undefined && project.floorCount !== this.store.getFloors().length) throw new Error("PROJECT_STALE");
-    assertTeleportersRetained(layout, project.layout);
-    assertPublicReachability({ ...this.store.getFloor(project.floorId)!, ...(project.spawn ? { spawn: project.spawn } : {}) }, project.layout, this.store.getGameSettings());
+    if (project.floorCount !== undefined && project.floorCount !== this.store.getFloors().length) throw new Error("PROJECT_CONFLICT");
+    assertTeleportersRetained(layout, next);
+    assertPublicReachability({ ...floor, ...(project.spawn ? { spawn: project.spawn } : {}) }, next, this.store.getGameSettings());
     this.assertFundMember(userId, project.fundId);
-    assertProjectScope(layout, project.layout, this.store.publicEconomy.fund(project.fundId), userId,
+    assertProjectScope(layout, next, this.store.publicEconomy.fund(project.fundId), userId,
       this.store.getGameSettings(), this.store.getOrganisation());
-    for (const object of project.layout.objects) {
+    for (const object of next.objects) {
       if (!object.ownedAssetId || !object.ownerUserId) continue;
       const original = layout.objects.find((candidate) => candidate.id === object.id);
       if (JSON.stringify(original) === JSON.stringify(object)) continue;
@@ -164,6 +218,9 @@ export class ProjectRuntime {
       const owned = this.store.getOwnedAsset(userId, object.ownedAssetId);
       if (owned.assetId !== object.assetId || owned.placement && owned.placement.objectId !== object.id) throw new Error("ASSET_ALREADY_PLACED");
     }
+    return { ...project, baseRevision: layout.revision, baseLayout: structuredClone(layout), layout: next,
+      quote: quoteProject(layout, next, project.fundId, this.store.publicEconomy.receipts, this.store.publicEconomy.inventory,
+        new Map(project.donatedAssets?.map(({ key, id }) => [key, id])), this.store.getFloors().length) };
   }
 
   private validateAction(userId: string, action: Exclude<PublicAction, { kind: "project" }>): string {

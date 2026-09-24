@@ -45,6 +45,7 @@ import { SpotifyService } from "./spotify/spotify-service.js";
 import { registerSpotifyRoutes } from "./spotify/spotify-routes.js";
 import { readGitHubConfig, readGitHubEncryptionKey, resolveGitHubConfig, storeGitHubConfig, type GitHubConfig } from "./github/github-config.js";
 import { registerGitHubAdminRoutes } from "./github/github-admin-routes.js";
+import { approvalRatesSchema } from "./economy/public-economy-schema.js";
 import { GitHubService } from "./github/github-service.js";
 import { registerGitHubRoutes } from "./github/github-routes.js";
 import { registerGameGuideRoutes } from "./guide/game-guide-routes.js";
@@ -186,6 +187,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
       request.url.startsWith("/v1/auth/")
       || request.url === "/v1/bootstrap"
       || request.url === "/v1/admin/registration-settings"
+      || request.url === "/v1/admin/approval-rates"
       || request.url.startsWith("/v1/admin/corporate-identity")
     ) {
       reply.header("cache-control", "no-store");
@@ -411,6 +413,25 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
       return reply.code(403).send({ code: "FORBIDDEN", message: "Only the server owner can make Administrator the default role." });
     }
     return store.updateRegistrationSettings(parsed.data);
+  });
+
+  app.get("/v1/admin/approval-rates", async (request, reply) => {
+    const user = getAuthenticatedUser(auth, request);
+    if (!user) return reply.code(401).send({ code: "AUTH_REQUIRED", message: "Sign in to continue." });
+    if (!store.canManageGlobalSettings(user.id)) return reply.code(403).send({ code: "FORBIDDEN", message: "You cannot view approval rates." });
+    return store.publicEconomy.getApprovalRates();
+  });
+
+  app.put("/v1/admin/approval-rates", async (request, reply) => {
+    const user = getAuthenticatedUser(auth, request);
+    if (!user) return reply.code(401).send({ code: "AUTH_REQUIRED", message: "Sign in to continue." });
+    if (!store.canManageGlobalSettings(user.id)) return reply.code(403).send({ code: "FORBIDDEN", message: "You cannot change approval rates." });
+    const parsed = approvalRatesSchema.safeParse(request.body);
+    if (!parsed.success) return reply.code(400).send({ code: "APPROVAL_RATES_INVALID", message: "Enter percentages from 0 to 100." });
+    const rates = store.publicEconomy.updateApprovalRates(parsed.data);
+    store.markDirty();
+    await persist();
+    return rates;
   });
 
   app.put("/v1/admin/corporate-identity", async (request, reply) => {

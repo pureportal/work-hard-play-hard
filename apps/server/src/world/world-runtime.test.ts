@@ -997,18 +997,18 @@ describe("WorldRuntime layout safety", () => {
     runtime.stop();
   });
 
-  it("requires public funding for members and server administrators", () => {
+  it("allows members and server administrators to submit before public funding", () => {
     const store = new WorkspaceStore(createTestData());
     const runtime = new WorldRuntime(store);
     const events: ServerEvent[] = [];
     const peer = connect(runtime, "user-jonas", events);
     for (const role of ["member", "admin"] as const) {
       store.updateMemberAccess("user-jonas", role);
-      runtime.handleCommand(peer, { type: "project.edit", requestId: "preview", fundId: "workspace", baseRevision: store.getLayout("floor-studio")!.revision,
+      runtime.handleCommand(peer, { type: "project.edit", requestId: `preview-${role}`, fundId: "workspace", baseRevision: store.getLayout("floor-studio")!.revision,
         edit: { tool: "wall", start: { x: -256, y: -256 }, end: { x: -128, y: -256 } } });
       const preview = events.filter((event) => event.type === "project.preview").at(-1)!;
-      runtime.handleCommand(peer, { type: "project.submit", requestId: "submit", draftId: preview.project.id, title: "Wall" });
-      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "PUBLIC_FUNDS_INSUFFICIENT" });
+      runtime.handleCommand(peer, { type: "project.submit", requestId: `submit-${role}`, draftId: preview.project.id, title: "Wall" });
+      expect(events.at(-1)).toMatchObject({ type: "project.submitted" });
     }
     runtime.stop();
   });

@@ -8,6 +8,20 @@ import { isUnitWithin, type OrganisationEdit, type OrganisationState } from "./o
 export const WORKSPACE_FUND_ID = "workspace";
 export const BUILD_PRICES = { wall: 12, door: 40, window: 60 } as const;
 
+export interface ApprovalRates {
+  serverSettings: number;
+  building: number;
+  organisation: number;
+  funds: number;
+}
+
+export const DEFAULT_APPROVAL_RATES: ApprovalRates = {
+  serverSettings: 51,
+  building: 51,
+  organisation: 51,
+  funds: 51,
+};
+
 export type DecisionMode = "equal" | "hierarchical";
 
 export interface PublicFund {
@@ -50,8 +64,10 @@ export interface BuildProject {
   fundId: string;
   floorId: string;
   baseRevision: number;
+  baseLayout: FloorLayout;
   layout: FloorLayout;
   quote: ProjectQuote;
+  donatedAssets?: { key: string; id: string }[];
   edits: number;
   spawn?: { x: number; y: number };
   floorCount?: number;
@@ -69,6 +85,25 @@ export type PublicAction =
   | { kind: "kidnapping.settings"; settings: GlobalKidnappingSettings }
   | { kind: "asset.sell"; publicAssetId: string };
 
+export function approvalRateForAction(rates: ApprovalRates, action: PublicAction): number {
+  switch (action.kind) {
+    case "game.settings":
+    case "kidnapping.settings":
+      return rates.serverSettings;
+    case "project":
+    case "room.settings":
+      return rates.building;
+    case "organisation":
+    case "governance":
+      return rates.organisation;
+    case "fund.create":
+    case "fund.transfer":
+    case "asset.sell":
+    case "record":
+      return rates.funds;
+  }
+}
+
 export interface SpendingProposal {
   id: string;
   title: string;
@@ -76,6 +111,7 @@ export interface SpendingProposal {
   fundId: string;
   action: PublicAction;
   electorate: string[];
+  approvalRate: number;
   required: number;
   ballots: { userId: string; approve: boolean }[];
   status: "open" | "approved" | "applied" | "rejected" | "expired" | "cancelled";
@@ -99,6 +135,7 @@ export interface PublicTransaction {
 
 export interface PublicEconomy {
   revision: number;
+  approvalRates: ApprovalRates;
   funds: PublicFund[];
   inventory: PublicAsset[];
   proposals: SpendingProposal[];
@@ -108,6 +145,7 @@ export interface PublicEconomy {
 export function createPublicEconomy(mode: DecisionMode = "equal"): PublicEconomy {
   return {
     revision: 0,
+    approvalRates: { ...DEFAULT_APPROVAL_RATES },
     funds: [{ id: WORKSPACE_FUND_ID, unitId: null, balance: 0, mode }],
     inventory: [], proposals: [], transactions: [],
   };

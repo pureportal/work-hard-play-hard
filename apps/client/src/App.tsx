@@ -2,7 +2,7 @@ import { BuildEconomyNavigation, type BuildView } from "./components/economy/Bui
 import { ProjectToolbar } from "./components/economy/ProjectToolbar";
 import { projectPreviewBounds } from "./project-preview";
 import type { BuildProject } from "@workhard/shared";
-import { isInPersonalSpace, publicFundForUnit, roomAccessAllows, snapToAssetRaster, type ProjectEdit } from "@workhard/shared";
+import { isInPersonalSpace, publicFundForUnit, rebaseProjectLayout, roomAccessAllows, snapToAssetRaster, type ProjectEdit } from "@workhard/shared";
 import { useWorkspaceCommand } from "./hooks/useWorkspaceCommand";
 import {
   ArrowRight,
@@ -600,6 +600,8 @@ export function Workspace({
   const [buildView, setBuildView] = useState<BuildView>("personal");
   const [publicFundId, setPublicFundId] = useState("workspace");
   const [projectDraft, setProjectDraft] = useState<BuildProject>();
+  const [editingProposalId, setEditingProposalId] = useState<string>();
+  const [editingReady, setEditingReady] = useState(false);
   const [projectTitle, setProjectTitle] = useState("");
   const [reviewingProject, setReviewingProject] = useState<BuildProject>();
   const [placingPublicAssetId, setPlacingPublicAssetId] = useState<string>();
@@ -621,6 +623,7 @@ export function Workspace({
   const [githubRepository, setGitHubRepository] = useState("");
   const { update: updateWorkObject, handleEvent: handleWorkEvent, disconnect: disconnectWorkUpdates } = useWorkObjectUpdates();
   const [buildSelection, setBuildSelection] = useState<LayoutItemReference>();
+  const [pendingBuildRemoval, setPendingBuildRemoval] = useState<LayoutEdit>();
   const [accessInspectionUserId, setAccessInspectionUserId] = useState<string | null>(null);
   const [roomAccessibility, setRoomAccessibility] = useState<PlayerRoomAccessibility>();
   const [movingBuildItem, setMovingBuildItem] = useState<LayoutItemReference>();
@@ -701,7 +704,12 @@ export function Workspace({
   const floor = data.floors.find((item) => item.id === floorId) ?? data.floors[0]!;
   const savedLayout = data.layouts.find((item) => item.floorId === floor.id) ?? data.layouts[0]!;
   const preview = reviewingProject ?? projectDraft;
-  const layout = activePanel === "build" && preview?.floorId === floor.id ? preview.layout : savedLayout;
+  const previewState = useMemo(() => preview?.floorId === floor.id ? rebaseProjectLayout(preview, savedLayout, floor) : undefined,
+    [preview, savedLayout, floor]);
+  const layout = activePanel === "build" && previewState ? previewState.layout : savedLayout;
+  const previewConflicts = previewState?.conflicts.map((conflict) => conflict.kind === "object"
+    ? getAssetDefinition(preview?.layout.objects.find((object) => object.id === conflict.id)?.assetId ?? "")?.name ?? "Object"
+    : conflict.kind === "layout" ? "Floor" : conflict.kind === "wall" ? "Wall" : "Opening") ?? [];
   const allRooms = useMemo(() => data.layouts.flatMap((item) => item.rooms), [data.layouts]);
   const floorPortals = useMemo(() => getFloorPortals(data.floors, data.layouts), [data.floors, data.layouts]);
   const playerAssetPlacement = useMemo(() => ({
@@ -950,6 +958,7 @@ export function Workspace({
         pendingProjectEdit.current = undefined;
         if (event.project.id !== projectDraft?.id) setProjectTitle("");
         setProjectDraft(event.project);
+        if (editingProposalId) setEditingReady(true);
         setMovingBuildItem(undefined);
         if (placingOwnedAssetId || placingPublicAssetId) setEditingTool(null);
         setPlacingOwnedAssetId(undefined);
@@ -957,6 +966,8 @@ export function Workspace({
       }
     } else if (event.type === "project.submitted") {
       setProjectDraft(undefined);
+      setEditingProposalId(undefined);
+      setEditingReady(false);
       setEditingTool(null);
       setPlacingPublicAssetId(undefined);
       setBuildSelection(undefined);
@@ -1492,6 +1503,10 @@ export function Workspace({
   }, [layout.objects]);
 
   useEffect(() => {
+    if (activePanel !== "build") setPendingBuildRemoval(undefined);
+  }, [activePanel]);
+
+  useEffect(() => {
     if (!placingOwnedAssetId) {
       return;
     }
@@ -1636,22 +1651,30 @@ export function Workspace({
     const closePanel = (event: KeyboardEvent) => {
       if (
         event.key !== "Escape"
-        || event.defaultPrevented
         || avatarDialogOpen
-        || workObject
         || gameOpen
         || chessOpen
-        || Boolean(currentMeeting)
         || Boolean(meetingSwitch)
       ) {
         return;
       }
+      if (activePanel === "build" && (movingBuildItem || editingTool || buildSelection)) {
+        event.preventDefault();
+        if (movingBuildItem) setMovingBuildItem(undefined);
+        else if (editingTool) {
+          setEditingTool(null);
+          setPlacingOwnedAssetId(undefined);
+          setPlacingPublicAssetId(undefined);
+        } else setBuildSelection(undefined);
+        return;
+      }
+      if (event.defaultPrevented || workObject || currentMeeting) return;
       event.preventDefault();
       setActivePanel(null);
     };
     document.addEventListener("keydown", closePanel);
     return () => document.removeEventListener("keydown", closePanel);
-  }, [activePanel, avatarDialogOpen, chessOpen, currentMeeting, gameOpen, meetingSwitch, workObject]);
+  }, [activePanel, avatarDialogOpen, buildSelection, chessOpen, currentMeeting, editingTool, gameOpen, meetingSwitch, movingBuildItem, workObject]);
 
   const visiblePlayers = snapshot?.floorId === floorId ? snapshot.players : [];
   const currentPlayer = visiblePlayers.find((player) => player.userId === data.currentUserId);
@@ -2213,7 +2236,8 @@ export function Workspace({
         : edit;
       pendingProjectEdit.current = editRequestId;
       sent = publicCommand.run(request, { type: "project.edit", requestId: editRequestId, baseRevision: savedLayout.revision,
-        fundId: projectDraft?.fundId ?? publicFundId, ...(projectDraft ? { draftId: projectDraft.id } : {}), edit: projectEdit });
+        fundId: projectDraft?.fundId ?? publicFundId, ...(projectDraft ? { draftId: projectDraft.id } : {}),
+        ...(editingProposalId ? { proposalId: editingProposalId } : {}), edit: projectEdit });
       if (!sent) pendingProjectEdit.current = undefined;
     } else if (edit.tool === "asset" && placingOwnedAssetId) {
       playerEditType = "place";
@@ -2290,10 +2314,12 @@ export function Workspace({
   };
 
   const changeEditingTool = (tool: LayoutTool | null) => {
+    if (tool === null && editingTool === null) setBuildSelection(undefined);
     setEditingTool(tool);
     setMovingBuildItem(undefined);
     if (tool !== "asset") {
       setPlacingOwnedAssetId(undefined);
+      setPlacingPublicAssetId(undefined);
     }
     if (tool) {
       setBuildSelection(undefined);
@@ -2313,14 +2339,17 @@ export function Workspace({
 
   const cancelBuildPlacement = () => {
     setMovingBuildItem(undefined);
-    if (editingTool === "asset" || editingTool === "spawn") {
-      setEditingTool(null);
-      setPlacingOwnedAssetId(undefined);
-    }
+    setEditingTool(null);
+    setPlacingOwnedAssetId(undefined);
+    setPlacingPublicAssetId(undefined);
   };
 
   const moveSelectedBuildItem = () => {
     if (!buildSelection || (!canBuild && floorId !== activeFloorIdRef.current)) {
+      return;
+    }
+    if (movingBuildItem?.type === buildSelection.type && movingBuildItem.id === buildSelection.id) {
+      setMovingBuildItem(undefined);
       return;
     }
     if (buildSelection.type === "asset") {
@@ -2367,11 +2396,7 @@ export function Workspace({
   };
 
   const removeSelectedBuildItem = () => {
-    if (!buildSelection || !applyBuildEdit({ tool: "item.remove", item: buildSelection })) {
-      return;
-    }
-    setBuildSelection(undefined);
-    setMovingBuildItem(undefined);
+    if (buildSelection) setPendingBuildRemoval({ tool: "item.remove", item: buildSelection });
   };
 
   useEffect(() => {
@@ -2394,6 +2419,16 @@ export function Workspace({
     window.addEventListener("keydown", rotate);
     return () => window.removeEventListener("keydown", rotate);
   }, [activePanel, buildSelection, editingTool, layout.objects, layout.openings, layout.revision, layout.walls, movingBuildItem]);
+
+  const storingPendingRemoval = pendingBuildRemoval?.tool === "item.remove" && pendingBuildRemoval.item.type === "asset"
+    && layout.objects.some((object) => object.id === pendingBuildRemoval.item.id && object.ownerUserId === data.currentUserId);
+  const pendingRemovalTitle = pendingBuildRemoval?.tool === "erase" ? "Remove wall section?"
+    : storingPendingRemoval ? "Store item?"
+      : pendingBuildRemoval?.tool === "item.remove" && pendingBuildRemoval.item.type === "wall"
+        ? layout.openings.some((opening) => opening.wallId === pendingBuildRemoval.item.id)
+          ? "Remove wall and openings?" : "Remove wall?"
+        : pendingBuildRemoval?.tool === "item.remove" && pendingBuildRemoval.item.type === "opening"
+          ? "Remove opening?" : "Remove item?";
 
   return (
     <main className="workspace-shell">
@@ -2488,7 +2523,10 @@ export function Workspace({
           }}
           onPlayerSelect={(userId, anchor) => { setSelection({ type: "player", userId, anchor }); setSongUserId(undefined); }}
           listeningActivities={connection === "online" ? spotifyActivities : {}}
-          onEdit={(edit) => applyBuildEdit(edit, edit.tool === "asset.move" || edit.tool === "wall.move" || edit.tool === "opening.move")}
+          onEdit={(edit) => {
+            if (edit.tool === "erase" || edit.tool === "item.remove") setPendingBuildRemoval(edit);
+            else applyBuildEdit(edit, edit.tool === "asset.move" || edit.tool === "wall.move" || edit.tool === "opening.move");
+          }}
           onObjectSelect={(object, interactionId, anchor) => {
             const game = data.miniGames.find((candidate) => candidate.assetId === object.assetId);
             if (game && interactionAreas.some((area) => area.id === object.id)) {
@@ -3017,17 +3055,20 @@ export function Workspace({
             accountControls={<BuildEconomyNavigation view={buildView} onChange={changeBuildView} />}
             projectControls={<ProjectToolbar economy={data.publicEconomy} organisation={data.organisation} userId={data.currentUserId}
               title={projectTitle} onTitleChange={setProjectTitle}
-              fundId={preview?.fundId ?? publicFundId} project={preview} pending={publicCommand.pending || connection !== "online"}
-              stale={Boolean(preview && (preview.baseRevision !== savedLayout.revision || preview.floorCount !== undefined && preview.floorCount !== data.floors.length))}
+              fundId={preview?.fundId ?? publicFundId} project={preview} pending={publicCommand.pending || connection !== "online"} error={publicCommand.error}
+              stale={Boolean(preview?.floorCount !== undefined && preview.floorCount !== data.floors.length || editingProposalId && !editingReady)} conflicts={previewConflicts}
+              overlap={Boolean(previewState?.conflicts.some((conflict) => conflict.reason === "overlap"))}
+              editing={Boolean(editingProposalId)}
               reviewing={Boolean(reviewingProject)} onFundChange={setPublicFundId}
-              onSubmit={(title) => { if (projectDraft) publicCommand.run(request, { type: "project.submit", requestId: requestId(), draftId: projectDraft.id, title }); }}
+              onSubmit={(title) => { if (projectDraft) publicCommand.run(request, { type: "project.submit", requestId: requestId(), draftId: projectDraft.id, title,
+                ...(editingProposalId ? { proposalId: editingProposalId } : {}) }); }}
               onDiscard={() => {
                 setEditingTool(null);
                 setBuildSelection(undefined);
                 setMovingBuildItem(undefined);
                 if (reviewingProject) {
                   closeProjectReview();
-                } else setProjectDraft(undefined);
+                } else { setProjectDraft(undefined); setEditingProposalId(undefined); setEditingReady(false); }
               }} />}
             disabled={Boolean(reviewingProject) || publicCommand.pending}
             layout={layout}
@@ -3042,7 +3083,7 @@ export function Workspace({
               setBuildSelection(undefined);
               setAccessInspectionUserId(data.currentUserId);
             } : undefined}
-            onToolChange={changeEditingTool}
+            onToolChange={(tool) => changeEditingTool(tool === editingTool ? null : tool)}
             onAssetChange={(assetId) => { setPlacingPublicAssetId(undefined); changeEditingAsset(assetId); }}
             onAssetVariantChange={setEditingAssetVariantId}
             onAssetRotationChange={setEditingAssetRotation}
@@ -3060,10 +3101,13 @@ export function Workspace({
             accountControls={<BuildEconomyNavigation view={buildView} onChange={changeBuildView} />}
             projectControls={projectDraft && <ProjectToolbar economy={data.publicEconomy} organisation={data.organisation} userId={data.currentUserId}
               title={projectTitle} onTitleChange={setProjectTitle}
-              fundId={projectDraft.fundId} project={projectDraft} pending={publicCommand.pending || connection !== "online"}
-              stale={projectDraft.baseRevision !== savedLayout.revision || projectDraft.floorCount !== undefined && projectDraft.floorCount !== data.floors.length} reviewing={false} onFundChange={setPublicFundId}
-              onSubmit={(title) => publicCommand.run(request, { type: "project.submit", requestId: requestId(), draftId: projectDraft.id, title })}
-              onDiscard={() => { setProjectDraft(undefined); setEditingTool(null); }} />}
+              fundId={projectDraft.fundId} project={projectDraft} pending={publicCommand.pending || connection !== "online"} error={publicCommand.error}
+              stale={projectDraft.floorCount !== undefined && projectDraft.floorCount !== data.floors.length || Boolean(editingProposalId && !editingReady)} conflicts={previewConflicts}
+              overlap={Boolean(previewState?.conflicts.some((conflict) => conflict.reason === "overlap"))}
+              editing={Boolean(editingProposalId)} reviewing={false} onFundChange={setPublicFundId}
+              onSubmit={(title) => publicCommand.run(request, { type: "project.submit", requestId: requestId(), draftId: projectDraft.id, title,
+                ...(editingProposalId ? { proposalId: editingProposalId } : {}) })}
+              onDiscard={() => { setProjectDraft(undefined); setEditingProposalId(undefined); setEditingReady(false); setEditingTool(null); }} />}
             pendingPublicAction={publicCommand.pending || connection !== "online"}
             publicActionError={publicCommand.error}
             onSell={(ownedAssetId) => publicCommand.run(request, { type: "economy.sell_asset", requestId: requestId(), ownedAssetId })}
@@ -3118,7 +3162,7 @@ export function Workspace({
       </DeferredContent>}
 
       {(activePanel === "approvals" || activePanel === "build" && buildView === "funds") && <DeferredContent onClose={() => openPanel(null)}><FundsPanel economy={data.publicEconomy} organisation={data.organisation}
-        rooms={allRooms}
+        rooms={allRooms} layouts={data.layouts} floors={data.floors}
         globalSettings={data.kidnapping.global} onOpenRooms={() => openPanel("rooms")}
         initialFundId={publicFundId}
         error={publicCommand.error}
@@ -3129,6 +3173,22 @@ export function Workspace({
           changeBuildView("shared");
           setReviewingProject(project);
           setFloorId(project.floorId);
+          const saved = data.layouts.find((candidate) => candidate.floorId === project.floorId)!;
+          const bounds = projectPreviewBounds(saved, project);
+          setFocusTarget(bounds ? { floorId: project.floorId, bounds, requestId: requestId() } : undefined);
+        }}
+        onEdit={(proposal) => {
+          if (proposal.action.kind !== "project") return;
+          const project = proposal.action.project;
+          setProjectDraft(project);
+          setEditingProposalId(proposal.id);
+          setEditingReady(false);
+          setProjectTitle(proposal.title);
+          setReviewingProject(undefined);
+          setPublicFundId(project.fundId);
+          setFloorId(project.floorId);
+          changeBuildView("shared");
+          openPanel("build");
           const saved = data.layouts.find((candidate) => candidate.floorId === project.floorId)!;
           const bounds = projectPreviewBounds(saved, project);
           setFocusTarget(bounds ? { floorId: project.floorId, bounds, requestId: requestId() } : undefined);
@@ -3147,6 +3207,22 @@ export function Workspace({
           onOpen={(small) => openMeeting(meeting, small ? "small" : "full", invitation)} />;
       })}
 
+      {activePanel === "build" && pendingBuildRemoval && (
+        <ConfirmationDialog
+          title={pendingRemovalTitle}
+          confirmLabel={storingPendingRemoval ? "Store" : "Remove"}
+          onCancel={() => setPendingBuildRemoval(undefined)}
+          onConfirm={() => {
+            if (!applyBuildEdit(pendingBuildRemoval)) {
+              showToast(storingPendingRemoval ? "Could not store item. Try again." : "Could not remove item. Try again.");
+            } else {
+              setBuildSelection(undefined);
+              setMovingBuildItem(undefined);
+            }
+            setPendingBuildRemoval(undefined);
+          }}
+        />
+      )}
       {activePanel !== "build" && meetingSwitch && (
         <ConfirmationDialog
           title={`Open ${meetingSwitch.meeting.title}?`}

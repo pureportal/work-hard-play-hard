@@ -77,16 +77,17 @@ describe("project safety", () => {
     expect(quoteProject(previous, next, "workspace", []).refund).toBe(0);
   });
 
-  it("releases money reserved by a project when another edit makes it stale", () => {
+  it("keeps a project active after a floor revision without reserving money", () => {
     const economy = new PublicEconomyStore();
     economy.record("workspace", "alice", "donation", 100, "donation");
     const layout = privateRoom();
     const proposal = economy.propose("alice", "Wall", { kind: "project", project: {
-      id: "draft", floorId: "floor", fundId: "workspace", baseRevision: 0, layout, edits: 1,
+      id: "draft", floorId: "floor", fundId: "workspace", baseRevision: 0, baseLayout: layout, layout, edits: 1,
       quote: { assetChanges: [], cost: 40, refund: 0, refunds: [], structural: true, destructive: false, requiresApproval: true, purchases: [], removedKeys: [], inventoryIds: [] },
     } }, "workspace", createOrganisation(), ["alice", "bob"]);
-    expect(economy.invalidateLayoutProposals([{ ...layout, revision: 1 }])).toBe(true);
-    expect(economy.proposal(proposal.id).status).toBe("cancelled");
+    expect(proposal.reserved).toBe(0);
+    expect(economy.invalidateLayoutProposals([{ ...layout, revision: 1 }])).toBe(false);
+    expect(economy.proposal(proposal.id).status).toBe("open");
     expect(economy.fund("workspace").balance).toBe(100);
     expect(economy.invalidateLayoutProposals([{ ...layout, revision: 1 }])).toBe(false);
   });

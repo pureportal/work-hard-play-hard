@@ -230,6 +230,25 @@ export function getPerpendicularIntersectionOffset(hostInput: Wall, otherInput: 
   return other.start.y - host.start.y;
 }
 
+export function getWallSectionRange(wallInput: Wall, walls: Wall[], x: number, y: number): { start: number; end: number } {
+  const wall = normalizeWall(wallInput);
+  const orientation = getWallOrientation(wall);
+  const wallLength = getWallLength(wall);
+  const positionOffset = orientation === "horizontal" ? x - wall.start.x : y - wall.start.y;
+  const intersectionOffsets = [...new Set(walls.flatMap((candidate) => {
+    if (candidate.id === wall.id) return [];
+    const offset = getPerpendicularIntersectionOffset(wall, candidate);
+    return offset !== undefined && offset > 0 && offset < wallLength ? [offset] : [];
+  }))].sort((left, right) => left - right);
+
+  let start = 0;
+  for (const intersectionOffset of intersectionOffsets) {
+    if (positionOffset <= intersectionOffset) return { start, end: intersectionOffset };
+    start = intersectionOffset;
+  }
+  return { start, end: wallLength };
+}
+
 export function snapToBuildGrid(value: number): number {
   return Math.round(value / BUILD_GRID_SIZE) * BUILD_GRID_SIZE;
 }

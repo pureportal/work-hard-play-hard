@@ -25,7 +25,6 @@ import {
   getOutdoorBounds,
   getOpeningCenter,
   getOpeningRect,
-  getPerpendicularIntersectionOffset,
   getPlacedAssetCellRects,
   getPlacedAssetBounds,
   getPlacedAssetInteraction,
@@ -38,6 +37,7 @@ import {
   getWallOrientation,
   getWallPlacementError,
   getWallRect,
+  getWallSectionRange,
   getWallSolidRects,
   isPointInPlacedAsset,
   isPointInRoom,
@@ -157,7 +157,6 @@ interface Peer {
   floorId: string;
   send: (event: ServerEvent, options?: { droppable?: boolean }) => void;
 }
-
 interface MovementState {
   dx: number;
   dy: number;
@@ -490,10 +489,10 @@ export class WorldRuntime {
           this.sendChat(peer, command.requestId, command.conversationId, command.body);
           break;
         case "project.edit":
-          this.projects.edit(peer, command.requestId, command.baseRevision, command.fundId, command.edit, command.draftId);
+          this.projects.edit(peer, command.requestId, command.baseRevision, command.fundId, command.edit, command.draftId, command.proposalId);
           break;
         case "project.submit":
-          this.projects.submit(peer, command.requestId, command.draftId, command.title);
+          this.projects.submit(peer, command.requestId, command.draftId, command.title, command.proposalId);
           break;
         case "public_economy.propose":
           this.projects.propose(peer, command.requestId, command.title, command.action);
@@ -1911,9 +1910,19 @@ export class WorldRuntime {
     const floor = this.store.getFloor(peer.floorId);
     if (!floor) throw new Error("FLOOR_NOT_FOUND");
     const next = structuredClone(layout);
-    const normalizedSegments = mergeWallSegments(next.walls, next.openings);
-    next.walls = normalizedSegments.walls;
-    next.openings = normalizedSegments.openings;
+    const overlappingWalls = next.walls.some((wall, index) => next.walls.slice(index + 1).some((other) => {
+      const first = normalizeWall(wall);
+      const second = normalizeWall(other);
+      if (getWallOrientation(first) !== getWallOrientation(second)) return false;
+      if (getWallOrientation(first) === "horizontal") return first.start.y === second.start.y
+        && first.start.x < second.end.x && second.start.x < first.end.x;
+      return first.start.x === second.start.x && first.start.y < second.end.y && second.start.y < first.end.y;
+    }));
+    if (!overlappingWalls) {
+      const normalizedSegments = mergeWallSegments(next.walls, next.openings);
+      next.walls = normalizedSegments.walls;
+      next.openings = normalizedSegments.openings;
+    }
     if (edit.tool === "spawn") return next;
     if (edit.tool === "wall") {
       const wall = this.createWall(edit.start, edit.end);
@@ -3907,7 +3916,7 @@ export class WorldRuntime {
       ASSET_NOT_BUILDABLE: "That asset cannot be placed.",
       ASSET_UNAVAILABLE: "That asset is unavailable.",
       PROJECT_APPROVAL_REQUIRED: "Submit a project for approval before applying this change.",
-      PUBLIC_FUNDS_INSUFFICIENT: "The project reserve is too low. Donate coins or reduce the cost.",
+      PUBLIC_FUNDS_INSUFFICIENT: "This fund needs more coins. Donate coins or reduce the cost.",
       PUBLIC_FUND_FORBIDDEN: "Choose a fund for your team.",
       PUBLIC_FUND_SCOPE: "These changes affect another area. Use the workspace fund.",
       PRIVATE_ASSET_PROTECTED: "This project changes a personal asset. Its owner must move or store it first.",
@@ -3919,7 +3928,8 @@ export class WorldRuntime {
       TELEPORTER_UNREACHABLE: "Keep a clear public path between the start point and every teleporter.",
       SPAWN_UNREACHABLE: "Keep a clear public path to the start point.",
       RESCUE_UNAVAILABLE: "No safe start point is available. Ask a builder to clear one.",
-      PROJECT_STALE: "The layout changed. Discard this draft and prepare a new project.",
+      PROJECT_STALE: "The draft changed. Open it again and retry.",
+      PROJECT_CONFLICT: "Objects overlap the current layout. Edit the draft to resolve them.",
       PROJECT_LIMIT: "This project is full. Submit it before starting another.",
       PROJECT_EMPTY: "This draft has no changes. Place or remove something before submitting it.",
       PROPOSAL_CLOSED: "This proposal is closed. Create a new proposal.",
@@ -4081,31 +4091,4 @@ function getAssetRemovalCandidates(objects: WorldObject[]): WorldObject[] {
       || right.index - left.index
     ))
     .map(({ object }) => object);
-}
-
-function getWallSectionRange(
-  wall: Wall,
-  walls: Wall[],
-  x: number,
-  y: number,
-): { start: number; end: number } {
-  const orientation = getWallOrientation(wall);
-  const wallLength = getWallLength(wall);
-  const positionOffset = orientation === "horizontal" ? x - wall.start.x : y - wall.start.y;
-  const intersectionOffsets = [...new Set(walls.flatMap((candidate) => {
-    if (candidate.id === wall.id) {
-      return [];
-    }
-    const offset = getPerpendicularIntersectionOffset(wall, candidate);
-    return offset !== undefined && offset > 0 && offset < wallLength ? [offset] : [];
-  }))].sort((left, right) => left - right);
-
-  let start = 0;
-  for (const intersectionOffset of intersectionOffsets) {
-    if (positionOffset <= intersectionOffset) {
-      return { start, end: intersectionOffset };
-    }
-    start = intersectionOffset;
-  }
-  return { start, end: wallLength };
 }

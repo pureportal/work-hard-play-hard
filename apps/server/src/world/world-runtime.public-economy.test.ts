@@ -26,6 +26,160 @@ function setup() {
 }
 
 describe("Shared building protocol", () => {
+  it("applies server settings immediately when their approval rate is 0%", () => {
+    const { store, send, events } = setup();
+    store.publicEconomy.updateApprovalRates({ ...store.publicEconomy.getApprovalRates(), serverSettings: 0 });
+    const settings = { ...store.getGameSettings(), roomBuild: { mode: "open" as const, assignedPersonIds: [] } };
+    send({ type: "public_economy.propose", requestId: "auto-settings", title: "Open building", action: { kind: "game.settings", settings } });
+    expect(events).not.toContainEqual(expect.objectContaining({ type: "command.error", requestId: "auto-settings" }));
+    expect(store.getPublicEconomy().proposals[0]).toMatchObject({ status: "applied", approvalRate: 0, required: 0, ballots: [] });
+    expect(store.getGameSettings().roomBuild).toEqual(settings.roomBuild);
+    send({ type: "public_economy.propose", requestId: "auto-settings", title: "Open building", action: { kind: "game.settings", settings } });
+    expect(store.getPublicEconomy().proposals).toHaveLength(1);
+  });
+
+  it("builds and charges immediately when building approvals are 0%", () => {
+    const { store, send, events } = setup();
+    store.publicEconomy.updateApprovalRates({ ...store.publicEconomy.getApprovalRates(), building: 0 });
+    send({ type: "economy.donate", requestId: "auto-fund", fundId: "workspace", amount: 100 });
+    send({ type: "project.edit", requestId: "auto-preview", baseRevision: 0, fundId: "workspace",
+      edit: { tool: "wall", start: { x: -256, y: -256 }, end: { x: -128, y: -256 } } });
+    const preview = events.findLast((event) => event.type === "project.preview");
+    expect(preview?.type).toBe("project.preview");
+    if (preview?.type !== "project.preview") return;
+    send({ type: "project.submit", requestId: "auto-build", draftId: preview.project.id, title: "Wall" });
+    expect(events).not.toContainEqual(expect.objectContaining({ type: "command.error", requestId: "auto-build" }));
+    expect(store.getPublicEconomy().proposals[0]).toMatchObject({ status: "applied", approvalRate: 0, required: 0 });
+    expect(store.getLayout("floor-studio")!.walls).toHaveLength(1);
+    expect(store.getPublicEconomy().funds[0]!.balance).toBe(52);
+  });
+
+  it("keeps a 0% project approved until its fund can pay", () => {
+    const { store, send, events } = setup();
+    store.publicEconomy.updateApprovalRates({ ...store.publicEconomy.getApprovalRates(), building: 0 });
+    send({ type: "project.edit", requestId: "preview", baseRevision: 0, fundId: "workspace",
+      edit: { tool: "wall", start: { x: -256, y: -256 }, end: { x: -128, y: -256 } } });
+    const preview = events.findLast((event) => event.type === "project.preview")!;
+    send({ type: "project.submit", requestId: "submit", draftId: preview.project.id, title: "Future wall" });
+    const proposal = store.getPublicEconomy().proposals[0]!;
+    expect(proposal).toMatchObject({ status: "approved", approvalRate: 0, required: 0, reserved: 0 });
+    expect(store.getLayout("floor-studio")!.walls).toHaveLength(0);
+    expect(events).not.toContainEqual(expect.objectContaining({ type: "command.error", requestId: "submit" }));
+    send({ type: "public_economy.execute", requestId: "early", proposalId: proposal.id });
+    expect(events).toContainEqual(expect.objectContaining({ type: "command.error", requestId: "early", code: "PUBLIC_FUNDS_INSUFFICIENT" }));
+    expect(store.getPublicEconomy().proposals[0]!.status).toBe("approved");
+    const restored = new WorkspaceStore(createTestData());
+    restored.restoreMutableState(store.exportMutableState());
+    expect(restored.getPublicEconomy().proposals[0]).toMatchObject({ status: "approved", reserved: 0 });
+    send({ type: "economy.donate", requestId: "fund", fundId: "workspace", amount: 48 });
+    send({ type: "public_economy.execute", requestId: "apply", proposalId: proposal.id });
+    expect(store.getPublicEconomy().proposals[0]!.status).toBe("applied");
+    expect(store.getPublicEconomy().funds[0]!.balance).toBe(0);
+    expect(store.getLayout("floor-studio")!.walls).toHaveLength(1);
+  });
+
+  it("requires a new vote when an approved 0% draft is revised", () => {
+    const { store, send, events, jonas } = setup();
+    store.publicEconomy.updateApprovalRates({ ...store.publicEconomy.getApprovalRates(), building: 0 });
+    send({ type: "project.edit", requestId: "zero-preview", baseRevision: 0, fundId: "workspace",
+      edit: { tool: "wall", start: { x: -256, y: -256 }, end: { x: -128, y: -256 } } });
+    const preview = events.findLast((event) => event.type === "project.preview")!;
+    send({ type: "project.submit", requestId: "zero-submit", draftId: preview.project.id, title: "Future wall" });
+    const proposal = store.getPublicEconomy().proposals[0]!;
+    expect(proposal).toMatchObject({ status: "approved", required: 0 });
+    send({ type: "project.edit", requestId: "zero-revise", baseRevision: 0, fundId: "workspace", draftId: preview.project.id,
+      proposalId: proposal.id, edit: { tool: "wall.move", wallId: preview.project.layout.walls[0]!.id,
+        start: { x: -256, y: -192 }, end: { x: -128, y: -192 } } });
+    const revised = events.findLast((event) => event.type === "project.preview")!;
+    send({ type: "project.submit", requestId: "zero-resubmit", draftId: revised.project.id, proposalId: proposal.id, title: "Revised wall" });
+    expect(store.getPublicEconomy().proposals[0]).toMatchObject({ status: "open", approvalRate: 0, required: 1, ballots: [] });
+    const restored = new WorkspaceStore(createTestData());
+    restored.restoreMutableState(store.exportMutableState());
+    expect(restored.getPublicEconomy().proposals[0]).toMatchObject({ status: "open", required: 1 });
+    send({ type: "economy.donate", requestId: "zero-fund", fundId: "workspace", amount: 48 });
+    send({ type: "public_economy.execute", requestId: "zero-before-vote", proposalId: proposal.id });
+    expect(events).toContainEqual(expect.objectContaining({ type: "command.error", requestId: "zero-before-vote", code: "PROJECT_APPROVAL_REQUIRED" }));
+    send({ type: "public_economy.vote", requestId: "zero-vote", proposalId: proposal.id, approve: true }, jonas);
+    send({ type: "public_economy.execute", requestId: "zero-apply", proposalId: proposal.id });
+    expect(store.getPublicEconomy().proposals[0]!.status).toBe("applied");
+    expect(store.getLayout("floor-studio")!.walls[0]!.start.y).toBe(-192);
+  });
+
+  it("accepts an expensive project before funding and applies it after approval and donation", () => {
+    const { store, send, events, jonas } = setup();
+    send({ type: "project.edit", requestId: "preview", baseRevision: 0, fundId: "workspace",
+      edit: { tool: "wall", start: { x: -256, y: -256 }, end: { x: -128, y: -256 } } });
+    const preview = events.findLast((event) => event.type === "project.preview")!;
+    send({ type: "project.submit", requestId: "submit", draftId: preview.project.id, title: "Future wall" });
+    const proposal = store.getPublicEconomy().proposals[0]!;
+    expect(proposal).toMatchObject({ status: "open", reserved: 0 });
+    send({ type: "public_economy.vote", requestId: "vote", proposalId: proposal.id, approve: true }, jonas);
+    send({ type: "public_economy.execute", requestId: "early", proposalId: proposal.id });
+    expect(events).toContainEqual(expect.objectContaining({ type: "command.error", requestId: "early", code: "PUBLIC_FUNDS_INSUFFICIENT" }));
+    expect(store.getPublicEconomy().proposals[0]!.status).toBe("approved");
+    send({ type: "economy.donate", requestId: "fund", fundId: "workspace", amount: 48 });
+    send({ type: "public_economy.execute", requestId: "apply", proposalId: proposal.id });
+    expect(store.getLayout("floor-studio")!.walls).toHaveLength(1);
+    expect(store.getPublicEconomy().funds[0]!.balance).toBe(0);
+  });
+
+  it("keeps a conflicting draft for revision after the first project changes its floor", () => {
+    const { store, send, events, maya, jonas } = setup();
+    send({ type: "economy.donate", requestId: "fund", fundId: "workspace", amount: 100 });
+    const proposals = [maya, jonas].map((peer, index) => {
+      send({ type: "project.edit", requestId: `preview-${index}`, baseRevision: 0, fundId: "workspace",
+        edit: { tool: "wall", start: { x: -256, y: -256 }, end: { x: -128, y: -256 } } }, peer);
+      const preview = events.findLast((event) => event.type === "project.preview")!;
+      send({ type: "project.submit", requestId: `submit-${index}`, draftId: preview.project.id, title: `Wall ${index}` }, peer);
+      return store.getPublicEconomy().proposals.at(-1)!;
+    });
+    expect(proposals.map((proposal) => proposal.reserved)).toEqual([0, 0]);
+    send({ type: "public_economy.vote", requestId: "vote-first", proposalId: proposals[0]!.id, approve: true }, jonas);
+    send({ type: "public_economy.vote", requestId: "vote-second", proposalId: proposals[1]!.id, approve: true }, maya);
+    send({ type: "public_economy.execute", requestId: "apply-first", proposalId: proposals[0]!.id });
+    expect(store.getPublicEconomy().proposals.map((proposal) => proposal.status)).toEqual(["applied", "approved"]);
+    send({ type: "public_economy.execute", requestId: "apply-second", proposalId: proposals[1]!.id }, jonas);
+    expect(events).toContainEqual(expect.objectContaining({ type: "command.error", requestId: "apply-second", code: "PROJECT_CONFLICT" }));
+    expect(store.getPublicEconomy().funds[0]!.balance).toBe(52);
+    expect(store.getLayout("floor-studio")!.walls).toHaveLength(1);
+    send({ type: "project.edit", requestId: "revise", baseRevision: store.getLayout("floor-studio")!.revision, fundId: "workspace",
+      draftId: proposals[1]!.action.kind === "project" ? proposals[1]!.action.project.id : "", proposalId: proposals[1]!.id,
+      edit: { tool: "wall.move", wallId: proposals[1]!.action.kind === "project" ? proposals[1]!.action.project.layout.walls[0]!.id : "",
+        start: { x: -256, y: -192 }, end: { x: -128, y: -192 } } }, jonas);
+    const revised = events.findLast((event) => event.type === "project.preview");
+    expect(revised?.type).toBe("project.preview");
+    if (revised?.type !== "project.preview") return;
+    send({ type: "project.submit", requestId: "resubmit", draftId: revised.project.id, proposalId: proposals[1]!.id, title: "Revised wall" }, jonas);
+    expect(store.getPublicEconomy().proposals[1]).toMatchObject({ status: "open", ballots: [] });
+    send({ type: "public_economy.execute", requestId: "before-reapproval", proposalId: proposals[1]!.id }, jonas);
+    expect(events).toContainEqual(expect.objectContaining({ type: "command.error", requestId: "before-reapproval", code: "PROJECT_APPROVAL_REQUIRED" }));
+    send({ type: "public_economy.vote", requestId: "reapprove", proposalId: proposals[1]!.id, approve: true }, maya);
+    send({ type: "public_economy.vote", requestId: "creator-reapprove", proposalId: proposals[1]!.id, approve: true }, jonas);
+    send({ type: "public_economy.execute", requestId: "apply-revised", proposalId: proposals[1]!.id }, jonas);
+    expect(store.getPublicEconomy().proposals.map((proposal) => proposal.status)).toEqual(["applied", "applied"]);
+    expect(store.getLayout("floor-studio")!.walls).toHaveLength(2);
+  });
+
+  it("applies separate approved drafts on the same floor independently", () => {
+    const { store, send, events, maya, jonas } = setup();
+    send({ type: "economy.donate", requestId: "fund-separate", fundId: "workspace", amount: 100 });
+    const proposals = [maya, jonas].map((peer, index) => {
+      send({ type: "project.edit", requestId: `separate-preview-${index}`, baseRevision: 0, fundId: "workspace",
+        edit: { tool: "wall", start: { x: -256, y: -256 + index * 64 }, end: { x: -128, y: -256 + index * 64 } } }, peer);
+      const preview = events.findLast((event) => event.type === "project.preview")!;
+      send({ type: "project.submit", requestId: `separate-submit-${index}`, draftId: preview.project.id, title: `Separate ${index}` }, peer);
+      return store.getPublicEconomy().proposals.at(-1)!;
+    });
+    send({ type: "public_economy.vote", requestId: "separate-vote-0", proposalId: proposals[0]!.id, approve: true }, jonas);
+    send({ type: "public_economy.vote", requestId: "separate-vote-1", proposalId: proposals[1]!.id, approve: true }, maya);
+    send({ type: "public_economy.execute", requestId: "separate-apply-0", proposalId: proposals[0]!.id });
+    send({ type: "public_economy.execute", requestId: "separate-apply-1", proposalId: proposals[1]!.id }, jonas);
+    expect(events).not.toContainEqual(expect.objectContaining({ type: "command.error", requestId: "separate-apply-1" }));
+    expect(store.getPublicEconomy().proposals.map((proposal) => proposal.status)).toEqual(["applied", "applied"]);
+    expect(store.getPublicEconomy().funds[0]!.balance).toBe(4);
+    expect(store.getLayout("floor-studio")!.walls).toHaveLength(2);
+  });
+
   it.each([false, true])("broadcasts the deadline result without another command (read first: %s)", (readFirst) => {
     vi.useFakeTimers();
     const { store, runtime, events, send } = setup();
@@ -206,7 +360,7 @@ describe("Shared building protocol", () => {
     send({ type: "public_economy.execute", requestId: "apply-first", proposalId: proposals[0]!.id });
     send({ type: "public_economy.execute", requestId: "apply-second", proposalId: proposals[1]!.id }, jonas);
     send({ type: "public_economy.execute", requestId: "repeat-first", proposalId: proposals[0]!.id });
-    expect(events).toContainEqual(expect.objectContaining({ type: "command.error", requestId: "apply-second", code: "PROJECT_STALE" }));
+    expect(events).toContainEqual(expect.objectContaining({ type: "command.error", requestId: "apply-second", code: "PROJECT_CONFLICT" }));
     expect(store.getPublicEconomy().funds[0]!.balance).toBe(4);
     expect(store.getPublicEconomy().transactions.filter((transaction) => transaction.kind === "refund")).toHaveLength(1);
     expect(store.getLayout("floor-studio")!.walls).toHaveLength(1);
@@ -226,7 +380,7 @@ describe("Shared building protocol", () => {
     expect(restored.getPublicEconomy().inventory).toHaveLength(1);
   });
 
-  it("keeps approvals tied to the layout and does not debit a stale project", () => {
+  it("keeps an approved project available after an unrelated layout revision", () => {
     const { store, events, send, jonas } = setup();
     send({ type: "economy.donate", requestId: "fund", fundId: "workspace", amount: 250 });
     send({ type: "project.edit", requestId: "draft", baseRevision: 0, fundId: "workspace",
@@ -238,12 +392,12 @@ describe("Shared building protocol", () => {
     const saved = store.exportMutableState();
     const restored = new WorkspaceStore(createTestData());
     restored.restoreMutableState(saved);
-    expect(restored.getPublicEconomy().proposals[0]).toMatchObject({ status: "approved", reserved: 48 });
+    expect(restored.getPublicEconomy().proposals[0]).toMatchObject({ status: "approved", reserved: 0 });
     store.replaceLayout({ ...store.getLayout("floor-studio")!, revision: 1 });
-    send({ type: "public_economy.execute", requestId: "stale", proposalId: proposal.id });
-    expect(events).toContainEqual(expect.objectContaining({ type: "command.error", requestId: "stale", code: "PROJECT_STALE" }));
-    expect(store.getPublicEconomy().funds[0]!.balance).toBe(250);
-    expect(store.getLayout("floor-studio")!.walls).toEqual([]);
+    send({ type: "public_economy.execute", requestId: "apply", proposalId: proposal.id });
+    expect(events).not.toContainEqual(expect.objectContaining({ type: "command.error", requestId: "apply" }));
+    expect(store.getPublicEconomy().funds[0]!.balance).toBe(202);
+    expect(store.getLayout("floor-studio")!.walls).toHaveLength(1);
   });
 
   it("sells donated assets into their public fund only after approval", () => {

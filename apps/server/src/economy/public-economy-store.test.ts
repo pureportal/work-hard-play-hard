@@ -12,6 +12,35 @@ const rules: PublicAction = { kind: "governance", mode: "equal", ceoIds: [] };
 afterEach(() => vi.unstubAllEnvs());
 
 describe("Public economy", () => {
+  it("uses the configured rate for each category and keeps it with the proposal", () => {
+    const economy = new PublicEconomyStore();
+    economy.updateApprovalRates({ serverSettings: 75, building: 25, organisation: 100, funds: 0 });
+    const server = economy.propose("alice", "Settings", { kind: "game.settings", settings: new EconomyStore(members).getGameSettings() }, "workspace", organisation, members, now);
+    expect(server).toMatchObject({ approvalRate: 75, required: 3, status: "open" });
+    const building = economy.propose("alice", "Wall", purchase(0), "workspace", organisation, members, now);
+    expect(building).toMatchObject({ approvalRate: 25, required: 1, status: "approved" });
+    const organisationProposal = economy.propose("alice", "Rules", rules, "workspace", organisation, members, now);
+    expect(organisationProposal).toMatchObject({ approvalRate: 100, required: 3, status: "open" });
+    const funds = economy.propose("alice", "Fund", { kind: "fund.create", unitId: "design", mode: "equal" }, "workspace", organisation, members, now);
+    expect(funds).toMatchObject({ approvalRate: 0, required: 0, status: "approved", ballots: [] });
+    economy.updateApprovalRates({ serverSettings: 51, building: 51, organisation: 51, funds: 51 });
+    expect(economy.proposal(server.id)).toMatchObject({ approvalRate: 75, required: 3 });
+    const restored = new PublicEconomyStore();
+    restored.restoreState(economy.exportState());
+    expect(restored.getApprovalRates().serverSettings).toBe(51);
+    expect(restored.proposal(funds.id).approvalRate).toBe(0);
+  });
+
+  it("uses the configured percentage of submitted votes at the deadline", () => {
+    const economy = new PublicEconomyStore();
+    economy.updateApprovalRates({ serverSettings: 51, building: 51, organisation: 75, funds: 51 });
+    const proposal = economy.propose("alice", "Rules", rules, "workspace", organisation, [...members, "dan"], now);
+    economy.vote("bob", proposal.id, true, now);
+    economy.vote("carol", proposal.id, false, now);
+    economy.refresh(organisation, [...members, "dan"], new Date(proposal.expiresAt));
+    expect(economy.proposal(proposal.id)).toMatchObject({ status: "rejected", required: 3 });
+  });
+
   it.each([["development", 10_000], ["production", 7 * 86_400_000]] as const)("sets the %s voting deadline", (environment, duration) => {
     vi.stubEnv("NODE_ENV", environment);
     const economy = new PublicEconomyStore();
@@ -84,27 +113,25 @@ describe("Public economy", () => {
     expect(economy.proposal(proposal.id).status).toBe("cancelled");
   });
 
-  it.each(["equal", "hierarchical"] as const)("requires a team majority in %s mode, including for CEOs", (mode) => {
+  it.each(["equal", "hierarchical"] as const)("accepts unfunded projects and requires a team majority in %s mode, including for CEOs", (mode) => {
     const economy = new PublicEconomyStore(createPublicEconomy(mode));
     const company = createOrganisation("alice");
-    expect(() => economy.propose("alice", "Wall", purchase(60), "workspace", company, members, now)).toThrow("PUBLIC_FUNDS_INSUFFICIENT");
-    economy.record("workspace", "alice", "donation", 100, "donation", now);
     const proposal = economy.propose("alice", "Wall", purchase(60), "workspace", company, members, now);
-    expect(proposal).toMatchObject({ status: "open", required: 2, electorate: members, reserved: 60 });
+    expect(proposal).toMatchObject({ status: "open", required: 2, electorate: members, reserved: 0 });
     expect(() => economy.vote("alice", proposal.id, true, now)).toThrow("PROPOSAL_ALREADY_VOTED");
     economy.vote("bob", proposal.id, true, now);
     expect(economy.proposal(proposal.id).status).toBe("approved");
   });
 
-  it("reserves and charges net project cost using refunds to the paying fund", () => {
+  it("charges net project cost using refunds to the paying fund at application", () => {
     const economy = new PublicEconomyStore();
     economy.record("workspace", "alice", "donation", 40, "donation", now);
     const action = purchase(60);
     action.project.quote.refund = 20;
     action.project.quote.refunds = [{ fundId: "workspace", amount: 20 }];
     const proposal = economy.propose("alice", "Replace furniture", action, "workspace", organisation, members, now);
-    expect(proposal.reserved).toBe(40);
-    expect(availablePublicMoney(economy.view(), "workspace")).toBe(0);
+    expect(proposal.reserved).toBe(0);
+    expect(availablePublicMoney(economy.view(), "workspace")).toBe(40);
     economy.vote("bob", proposal.id, true, now);
     economy.proposal(proposal.id).status = "applied";
     economy.applyProject("alice", action.project);
@@ -119,7 +146,24 @@ describe("Public economy", () => {
     const action = purchase(60);
     action.project.quote.refund = 20;
     action.project.quote.refunds = [{ fundId: "design", amount: 20 }];
-    expect(() => economy.propose("alice", "Replace furniture", action, "workspace", organisation, members, now)).toThrow("PUBLIC_FUNDS_INSUFFICIENT");
+    economy.propose("alice", "Replace furniture", action, "workspace", organisation, members, now);
+    expect(() => economy.applyProject("alice", action.project)).toThrow("PUBLIC_FUNDS_INSUFFICIENT");
+    expect(economy.fund("workspace").balance).toBe(40);
+  });
+
+  it("lets multiple projects seek approval but checks the shared balance for each application", () => {
+    const economy = new PublicEconomyStore();
+    economy.record("workspace", "alice", "donation", 100, "donation", now);
+    const first = purchase(60);
+    const second = purchase(60);
+    second.project.id = "second";
+    economy.propose("alice", "First", first, "workspace", organisation, members, now);
+    economy.propose("bob", "Second", second, "workspace", organisation, members, now);
+    expect(availablePublicMoney(economy.view(), "workspace")).toBe(100);
+    economy.applyProject("alice", first.project);
+    expect(economy.fund("workspace").balance).toBe(40);
+    expect(() => economy.applyProject("bob", second.project)).toThrow("PUBLIC_FUNDS_INSUFFICIENT");
+    expect(economy.fund("workspace").balance).toBe(40);
   });
 
   it("keeps fund electorates scoped to their teams", () => {
@@ -139,7 +183,7 @@ describe("Public economy", () => {
     const economy = new PublicEconomyStore();
     economy.record("workspace", "alice", "donation", 300, "donation", now);
     const proposal = economy.propose("alice", "Wall", purchase(100), "workspace", organisation, members, now);
-    expect(availablePublicMoney(economy.view(), "workspace")).toBe(200);
+    expect(availablePublicMoney(economy.view(), "workspace")).toBe(300);
     economy.vote("bob", proposal.id, false, now);
     economy.vote("carol", proposal.id, false, now);
     expect(economy.proposal(proposal.id).status).toBe("rejected");
@@ -193,6 +237,7 @@ describe("Personal asset disposition", () => {
 
 function purchase(cost: number): Extract<PublicAction, { kind: "project" }> {
   return { kind: "project", project: { id: "draft", fundId: "workspace", floorId: "floor", baseRevision: 0, edits: 1,
+    baseLayout: { floorId: "floor", revision: 0, walls: [], openings: [], objects: [], tiles: [], rooms: [] },
     layout: { floorId: "floor", revision: 1, walls: [], openings: [], objects: [], tiles: [], rooms: [] },
     quote: { assetChanges: [], cost, refund: 0, refunds: [], structural: false, destructive: false, requiresApproval: false, purchases: [], removedKeys: [], inventoryIds: [] } } };
 }

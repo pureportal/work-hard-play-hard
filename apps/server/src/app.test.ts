@@ -522,6 +522,28 @@ describe("registration administration", () => {
     expect(context.store.getRegistrationSettings().defaultRole).toBe("admin");
   });
 
+  it("limits approval rates to administrators and persists valid percentages", async () => {
+    const database = new MemoryDatabase();
+    const context = await createTestApplication({ database, exposeMagicLinks: true, fixture: true });
+    applications.push(context);
+    const ownerCookie = await loginCookie(context);
+    const memberCookie = await loginCookie(context, "jonas");
+    const rates = { serverSettings: 0, building: 75, organisation: 100, funds: 25 };
+    const anonymous = await context.app.inject({ method: "GET", url: "/v1/admin/approval-rates" });
+    const forbidden = await context.app.inject({ method: "PUT", url: "/v1/admin/approval-rates", headers: { cookie: memberCookie }, payload: rates });
+    const invalid = await context.app.inject({ method: "PUT", url: "/v1/admin/approval-rates", headers: { cookie: ownerCookie }, payload: { ...rates, building: 101 } });
+    const saved = await context.app.inject({ method: "PUT", url: "/v1/admin/approval-rates", headers: { cookie: ownerCookie }, payload: rates });
+    const retrieved = await context.app.inject({ method: "GET", url: "/v1/admin/approval-rates", headers: { cookie: ownerCookie } });
+    expect(anonymous.statusCode).toBe(401);
+    expect(forbidden.statusCode).toBe(403);
+    expect(invalid.statusCode).toBe(400);
+    expect(saved.statusCode).toBe(200);
+    expect(saved.json()).toEqual(rates);
+    expect(retrieved.json()).toEqual(rates);
+    expect(retrieved.headers["cache-control"]).toBe("no-store");
+    expect((await database.loadWorkspaceState())?.store.publicEconomy.approvalRates).toEqual(rates);
+  });
+
   it("blocks all new accounts when registration is disabled", async () => {
     const context = await application();
     const ownerCookie = await loginCookie(context);

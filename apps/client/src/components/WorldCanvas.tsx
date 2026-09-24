@@ -45,12 +45,14 @@ import {
   getWallOpeningPlacement,
   getWallPlacementError,
   getWallRect,
+  getWallSectionRange,
   getWallSolidRects,
   isPointInPlacedAsset,
   mergeWallSegments,
   normalizeWall,
   pointInRect,
   requireAssetDefinition,
+  snapToAssetRaster,
   snapToBuildGrid,
 } from "@workhard/shared";
 import type {
@@ -420,6 +422,7 @@ export function WorldCanvas(props: WorldCanvasProps) {
 
   const pointPlacementActive = props.editing
     && (props.editingTool === "asset" || props.editingTool === "spawn" || props.movingBuildItem?.type === "asset");
+  const buildActionActive = props.editing && (props.editingTool !== null || Boolean(props.movingBuildItem));
 
   useEffect(() => {
     rendererRef.current?.setProjectPreview(props.projectPreview?.savedLayout);
@@ -565,9 +568,10 @@ export function WorldCanvas(props: WorldCanvasProps) {
           </button>
         )}
       </div>
-      {pointPlacementActive && (
-        <div className="placement-controls" role="toolbar" aria-label={props.editingTool === "spawn" ? "Start point placement" : "Asset placement"}>
-          {props.editingTool !== "spawn" && <>
+      {buildActionActive && (
+        <div className="placement-controls" role="toolbar" aria-label={pointPlacementActive
+          ? props.editingTool === "spawn" ? "Start point placement" : "Asset placement" : "Build action"}>
+          {pointPlacementActive && props.editingTool !== "spawn" && <>
           <span className="placement-orientation" aria-label={`Facing ${getAssetOrientationLabel(props.editingAssetRotation)}`}>
             <ArrowUp
               size={16}
@@ -582,15 +586,15 @@ export function WorldCanvas(props: WorldCanvasProps) {
             onClick={() => props.onAssetRotationChange(rotateAssetClockwise(props.editingAssetRotation))}
           />
           </>}
-          <button
+          {pointPlacementActive && <button
             className="placement-confirm"
             disabled={!placementPreviewState.hasPoint || !placementPreviewState.canPlace}
             onClick={() => rendererRef.current?.commitPlacement()}
           >
             <Check size={16} aria-hidden="true" />
             {props.movingBuildItem?.type === "asset" || props.editingTool === "spawn" ? "Move here" : "Place"}
-          </button>
-          <IconButton label="Cancel placement" icon={X} onClick={props.onPlacementCancel} />
+          </button>}
+          <IconButton label={pointPlacementActive ? "Cancel placement" : "Cancel action"} icon={X} onClick={props.onPlacementCancel} />
         </div>
       )}
     </div>
@@ -601,6 +605,7 @@ class OfficeRenderer {
   private readonly world = new Container();
   private readonly layoutLayer = new Container();
   private readonly selectionOverlay = new Graphics();
+  private readonly hoverOverlay = new Graphics();
   private readonly projectOverlay = new Graphics();
   private readonly personalSpacesLayer = new Container();
   private readonly assetFocus = new WorldAssetFocus();
@@ -650,6 +655,7 @@ class OfficeRenderer {
   private pinchCenter?: { x: number; y: number };
   private pinchDistance = 0;
   private hoverPoint?: { x: number; y: number };
+  private hoverClientPoint?: { x: number; y: number; pointerType: string };
   private hoverPointIsTouch = false;
   private buildStart?: { x: number; y: number };
   private buildOrientation?: "horizontal" | "vertical";
@@ -663,7 +669,7 @@ class OfficeRenderer {
   ) {
     this.app.stage.addChild(this.world);
     this.world.scale.set(this.zoom);
-    this.world.addChild(this.layoutLayer, this.accessibilityOverlay, this.interactionOverlay, this.depth.container, this.personalSpacesLayer, this.projectOverlay, this.selectionOverlay, this.assetFocus.overlay, this.assetPreviewLayer, this.buildPreview, this.celebrationLayer);
+    this.world.addChild(this.layoutLayer, this.accessibilityOverlay, this.interactionOverlay, this.depth.container, this.personalSpacesLayer, this.projectOverlay, this.selectionOverlay, this.hoverOverlay, this.assetFocus.overlay, this.assetPreviewLayer, this.buildPreview, this.celebrationLayer);
     this.app.canvas.addEventListener("pointerdown", this.handlePointerDown);
     this.app.canvas.addEventListener("pointermove", this.handlePointerMove);
     this.app.canvas.addEventListener("pointerup", this.handlePointerUp);
@@ -739,6 +745,7 @@ class OfficeRenderer {
       this.applyPlayerTheme();
     }
     this.drawBuildSelection();
+    this.drawBuildHover();
     this.drawRoomAccessibility();
     if (this.editing && this.hoverPoint && !this.buildStart && (!this.hoverPointIsTouch || this.touchPlacement)) {
       this.drawPlacementPreview(this.hoverPoint);
@@ -1428,6 +1435,15 @@ class OfficeRenderer {
       this.app.screen.width / 2 - nextCenter.x * this.zoom,
       this.app.screen.height / 2 - nextCenter.y * this.zoom,
     );
+    if (this.editing && this.activePointers.size === 0 && !this.movingBuildItem
+      && (this.editingTool === null || this.editingTool === "erase") && this.hoverClientPoint) {
+      const rawPoint = this.toWorld(this.hoverClientPoint.x, this.hoverClientPoint.y);
+      const point = this.hoverClientPoint.pointerType === "mouse" ? rawPoint : this.resolveTouchBuildPoint(rawPoint);
+      if (point.x !== this.hoverPoint?.x || point.y !== this.hoverPoint?.y) {
+        this.hoverPoint = point;
+        this.drawBuildHover();
+      }
+    }
   };
 
   private isObjectVisible(bounds: Rect): boolean {
@@ -1471,15 +1487,19 @@ class OfficeRenderer {
     this.panning = event.pointerType === "mouse" && (event.button === 1 || event.shiftKey);
     if (this.panning) {
       this.app.canvas.style.cursor = "grabbing";
+      this.hoverOverlay.clear();
       return;
     }
     if (event.pointerType === "mouse") {
       this.touchPlacement = false;
       this.hoverPointIsTouch = false;
+      this.hoverClientPoint = { x: event.clientX, y: event.clientY, pointerType: event.pointerType };
       this.hoverPoint = this.toWorld(event.clientX, event.clientY);
       if (this.editing) {
         this.drawPlacementPreview(this.hoverPoint);
       }
+    } else {
+      delete this.hoverClientPoint;
     }
   };
 
@@ -1489,6 +1509,7 @@ class OfficeRenderer {
       if (this.activePointers.size === 0 && event.pointerType !== "touch") {
         this.touchPlacement = false;
         this.hoverPointIsTouch = false;
+        this.hoverClientPoint = { x: event.clientX, y: event.clientY, pointerType: event.pointerType };
         const point = this.toWorld(event.clientX, event.clientY);
         this.hoverPoint = this.editing && event.pointerType !== "mouse"
           ? this.resolveTouchBuildPoint(point)
@@ -1502,6 +1523,7 @@ class OfficeRenderer {
     event.preventDefault();
     const pointer = this.getPointer(event);
     this.activePointers.set(event.pointerId, pointer);
+    if (event.pointerType !== "touch") this.hoverClientPoint = { x: event.clientX, y: event.clientY, pointerType: event.pointerType };
     if (this.multiPointerGesture && this.activePointers.size > 1) {
       this.updateMultiPointerGesture();
       return;
@@ -1513,6 +1535,7 @@ class OfficeRenderer {
     if (!this.panning && Math.hypot(event.clientX - this.pointerStart.x, event.clientY - this.pointerStart.y) > threshold) {
       this.panning = true;
       this.app.canvas.style.cursor = "grabbing";
+      this.hoverOverlay.clear();
     }
     if (this.panning) {
       const deltaX = pointer.screenX - this.lastPointer.x;
@@ -1528,6 +1551,7 @@ class OfficeRenderer {
       return;
     }
     const point = this.toWorld(event.clientX, event.clientY);
+    this.hoverClientPoint = { x: event.clientX, y: event.clientY, pointerType: event.pointerType };
     this.hoverPoint = this.editing && event.pointerType !== "mouse"
       ? this.resolveTouchBuildPoint(point)
       : point;
@@ -1552,6 +1576,7 @@ class OfficeRenderer {
     event.preventDefault();
     const pointer = this.getPointer(event);
     this.activePointers.set(event.pointerId, pointer);
+    if (event.pointerType !== "touch") this.hoverClientPoint = { x: event.clientX, y: event.clientY, pointerType: event.pointerType };
     if (this.multiPointerGesture && this.activePointers.size > 1) {
       this.updateMultiPointerGesture();
     } else if (this.activePointerId === event.pointerId && this.panning) {
@@ -1604,6 +1629,7 @@ class OfficeRenderer {
     }
     const pointerPoint = this.toWorld(event.clientX, event.clientY);
     if (this.editing) {
+      if (event.pointerType !== "touch") this.hoverClientPoint = { x: event.clientX, y: event.clientY, pointerType: event.pointerType };
       const point = event.pointerType === "mouse" ? pointerPoint : this.resolveTouchBuildPoint(pointerPoint);
       this.hoverPoint = point;
       this.hoverPointIsTouch = event.pointerType === "touch";
@@ -1639,8 +1665,12 @@ class OfficeRenderer {
           this.callbacks.current.onEdit({ tool: this.editingTool, position: point });
         }
       } else if (this.editingTool === "erase") {
-        const object = getBuildSelectionCandidates(this.layout.objects).find(object => this.hitAssetArtwork(object, pointerPoint));
-        this.callbacks.current.onEdit(object ? { tool: "item.remove", item: { type: "asset", id: object.id } } : { tool: this.editingTool, position: point });
+        const target = this.getBuildTarget(point, event.pointerType === "mouse" ? 0 : this.getTouchTargetWorldSize(), true);
+        if (target?.type === "wall") {
+          this.callbacks.current.onEdit({ tool: "erase", position: point });
+        } else if (target) {
+          this.callbacks.current.onEdit({ tool: "item.remove", item: target });
+        }
       } else if (!this.editingTool) {
         this.selectBuildItem(point, event.pointerType === "mouse" ? 0 : this.getTouchTargetWorldSize());
       }
@@ -1688,8 +1718,10 @@ class OfficeRenderer {
   private readonly handlePointerLeave = (): void => {
     if (this.activePointers.size === 0 && !this.touchPlacement) {
       delete this.hoverPoint;
+      delete this.hoverClientPoint;
       this.hoverPointIsTouch = false;
       this.clearBuildPreview();
+      this.hoverOverlay.clear();
       this.updatePlacementPreviewState(false, false);
     }
   };
@@ -1828,8 +1860,10 @@ class OfficeRenderer {
     delete this.buildStart;
     delete this.buildOrientation;
     delete this.hoverPoint;
+    delete this.hoverClientPoint;
     this.hoverPointIsTouch = false;
     this.clearBuildPreview();
+    this.hoverOverlay.clear();
     this.touchPlacement = false;
     this.updatePlacementPreviewState(false, false);
     this.app.canvas.style.removeProperty("cursor");
@@ -1872,6 +1906,10 @@ class OfficeRenderer {
 
   private refreshBuildOverlays(): void {
     this.drawBuildSelection();
+    if (this.hoverClientPoint) {
+      const point = this.toWorld(this.hoverClientPoint.x, this.hoverClientPoint.y);
+      this.hoverPoint = this.hoverClientPoint.pointerType === "mouse" ? point : this.resolveTouchBuildPoint(point);
+    }
     if (this.editing && this.hoverPoint) {
       this.drawPlacementPreview(this.hoverPoint);
     }
@@ -1921,6 +1959,13 @@ class OfficeRenderer {
   }
 
   private drawPlacementPreview(point: { x: number; y: number }): void {
+    if (!this.movingBuildItem && (this.editingTool === null || this.editingTool === "erase")) {
+      this.clearBuildPreview();
+      this.updatePlacementPreviewState(false, false);
+      this.drawBuildHover();
+      return;
+    }
+    this.hoverOverlay.clear();
     if (!this.editing) {
       this.clearBuildPreview();
       this.updatePlacementPreviewState(false, false);
@@ -2328,6 +2373,7 @@ class OfficeRenderer {
     }
     if (this.hitAssetArtwork(object, point)) return true;
     const surface = requireAssetDefinition(object.assetId).placement.layer === "surface";
+    if (surface && this.layout && pointInRect(point.x, point.y, getPlacedWorldAssetBounds(this.layout, object))) return true;
     if (!surface && isPointInPlacedAsset(point.x, point.y, object)) return true;
     if (minimumTargetSize <= 0 || !this.layout) return false;
     const bounds = surface ? getPlacedWorldAssetBounds(this.layout, object) : getPlacedAssetBounds(object);
@@ -2335,85 +2381,102 @@ class OfficeRenderer {
   }
 
   private selectBuildItem(point: { x: number; y: number }, minimumTargetSize: number): void {
-    if (!this.placementLayout) {
-      return;
-    }
-    if (this.playerAssetPlacement && !this.playerAssetPlacement.officeBuilder) {
-      const ownedObject = getBuildSelectionCandidates(this.placementLayout.objects).find((candidate) =>
-        candidate.ownerUserId === this.playerAssetPlacement?.userId
-        && this.hitBuildAsset(candidate, point, minimumTargetSize),
-      );
-      this.callbacks.current.onBuildItemSelect(ownedObject ? { type: "asset", id: ownedObject.id } : undefined);
-      return;
-    }
-    const opening = [...this.placementLayout.openings].reverse().find((candidate) => {
-      const wall = this.placementLayout?.walls.find((item) => item.id === candidate.wallId);
-      return wall && isPointInWorldTarget(
-        point.x,
-        point.y,
-        getOpeningRect(wall, candidate, BUILD_GRID_SIZE),
-        minimumTargetSize,
-      );
-    });
-    if (opening) {
-      this.callbacks.current.onBuildItemSelect({ type: "opening", id: opening.id });
-      return;
+    this.callbacks.current.onBuildItemSelect(this.getBuildTarget(point, minimumTargetSize, false));
+  }
+
+  private getBuildTarget(point: { x: number; y: number }, minimumTargetSize: number, removing: boolean): LayoutItemReference | undefined {
+    if (!this.placementLayout) return undefined;
+    const personalOnly = this.playerAssetPlacement && !this.playerAssetPlacement.officeBuilder;
+    if (!personalOnly) {
+      const opening = [...this.placementLayout.openings].reverse().find((candidate) => {
+        const wall = this.placementLayout?.walls.find((item) => item.id === candidate.wallId);
+        return wall && isPointInWorldTarget(point.x, point.y, getOpeningRect(wall, candidate, BUILD_GRID_SIZE), minimumTargetSize);
+      });
+      if (opening) return { type: "opening", id: opening.id };
     }
     const object = getBuildSelectionCandidates(this.placementLayout.objects)
       .find((candidate) => this.hitBuildAsset(candidate, point, minimumTargetSize));
     if (object) {
-      this.callbacks.current.onBuildItemSelect({ type: "asset", id: object.id });
-      return;
+      if (this.playerAssetPlacement && (
+        personalOnly && object.ownerUserId !== this.playerAssetPlacement.userId
+        || object.ownerUserId && object.ownerUserId !== this.playerAssetPlacement.userId
+      )) return undefined;
+      return removing && requireAssetDefinition(object.assetId).kind === "portal" ? undefined : { type: "asset", id: object.id };
     }
+    if (personalOnly) return undefined;
+    const wallPoint = removing ? { x: snapToAssetRaster(point.x), y: snapToAssetRaster(point.y) } : point;
+    if (removing && (
+      this.placementLayout.openings.some((candidate) => {
+        const wall = this.placementLayout?.walls.find((item) => item.id === candidate.wallId);
+        return wall && pointInRect(wallPoint.x, wallPoint.y, getOpeningRect(wall, candidate, BUILD_GRID_SIZE));
+      }) || this.placementLayout.objects.some((candidate) => isPointInPlacedAsset(wallPoint.x, wallPoint.y, candidate))
+    )) return undefined;
     const wall = [...this.placementLayout.walls].reverse().find((candidate) => isPointInWorldTarget(
-      point.x,
-      point.y,
-      getWallRect(candidate, BUILD_GRID_SIZE),
-      minimumTargetSize,
+      wallPoint.x, wallPoint.y, getWallRect(candidate, BUILD_GRID_SIZE), minimumTargetSize,
     ));
-    this.callbacks.current.onBuildItemSelect(wall ? { type: "wall", id: wall.id } : undefined);
+    return wall ? { type: "wall", id: wall.id } : undefined;
+  }
+
+  private drawBuildHover(): void {
+    this.hoverOverlay.clear();
+    if (!this.editing || !this.hoverPoint || this.movingBuildItem || (this.editingTool !== null && this.editingTool !== "erase")) return;
+    const removing = this.editingTool === "erase";
+    const target = this.getBuildTarget(this.hoverPoint, this.hoverClientPoint?.pointerType === "pen" ? this.getTouchTargetWorldSize() : 0, removing);
+    if (target) this.drawBuildItem(this.hoverOverlay, target, removing ? "#c93636" : "#2986b8", removing ? this.hoverPoint : undefined);
   }
 
   private drawBuildSelection(): void {
     this.selectionOverlay.clear();
-    if (!this.editing || !this.placementLayout || !this.selectedBuildItem) {
-      return;
-    }
-    if (this.selectedBuildItem.type === "asset") {
-      const object = this.placementLayout.objects.find((candidate) => candidate.id === this.selectedBuildItem?.id);
+    if (this.editing && this.selectedBuildItem) this.drawBuildItem(this.selectionOverlay, this.selectedBuildItem, "#5143bd");
+  }
+
+  private drawBuildItem(graphics: Graphics, item: LayoutItemReference, color: string, erasePoint?: { x: number; y: number }): void {
+    if (!this.placementLayout) return;
+    if (item.type === "asset") {
+      const object = this.placementLayout.objects.find((candidate) => candidate.id === item.id);
       if (!object) {
         return;
       }
       const definition = requireAssetDefinition(object.assetId);
       const bounds = getPlacedAssetBounds(object);
       if (definition.radius) {
-        drawAssetRadius(this.selectionOverlay, bounds, definition.radius, "#5143bd", 0.04, 0.5);
+        drawAssetRadius(graphics, bounds, definition.radius, color, 0.04, 0.5);
       }
       const artworkBounds = getPlacedWorldAssetBounds(this.placementLayout, object);
       const flooring = definition.kind === "floor-tile";
       const selectionRects = flooring ? getFlooringVisibleRects(this.placementLayout, [artworkBounds]) : [artworkBounds];
       const inset = flooring ? 1 : -1;
       for (const rect of selectionRects) {
-        this.selectionOverlay
+        graphics
           .rect(rect.x + inset, rect.y + inset, rect.width - inset * 2, rect.height - inset * 2)
-          .stroke({ color: "#5143bd", width: 2, alpha: 0.9 });
+          .stroke({ color, width: 2, alpha: 0.9 });
       }
-      drawAssetDirectionIndicators(this.selectionOverlay, getAssetDirectionIndicators(object, this.placementLayout, this.zoom), "#5143bd");
+      drawAssetDirectionIndicators(graphics, getAssetDirectionIndicators(object, this.placementLayout, this.zoom), color);
       return;
     }
-    if (this.selectedBuildItem.type === "wall") {
-      const wall = this.placementLayout.walls.find((candidate) => candidate.id === this.selectedBuildItem?.id);
+    if (item.type === "wall") {
+      const wall = this.placementLayout.walls.find((candidate) => candidate.id === item.id);
       if (wall) {
-        const rect = getWallRect(wall, WALL_THICKNESS + 8);
-        this.selectionOverlay.rect(rect.x, rect.y, rect.width, rect.height).stroke({ color: "#5143bd", width: 3, alpha: 0.9 });
+        let highlightedWall = wall;
+        if (erasePoint) {
+          const snappedX = snapToAssetRaster(erasePoint.x);
+          const snappedY = snapToAssetRaster(erasePoint.y);
+          const normalized = normalizeWall(wall);
+          const { start, end } = getWallSectionRange(normalized, this.placementLayout.walls, snappedX, snappedY);
+          highlightedWall = normalized.start.y === normalized.end.y
+            ? { ...normalized, start: { x: normalized.start.x + start, y: normalized.start.y }, end: { x: normalized.start.x + end, y: normalized.end.y } }
+            : { ...normalized, start: { x: normalized.start.x, y: normalized.start.y + start }, end: { x: normalized.end.x, y: normalized.start.y + end } };
+        }
+        const rect = getWallRect(highlightedWall, WALL_THICKNESS + 8);
+        graphics.rect(rect.x, rect.y, rect.width, rect.height).stroke({ color, width: 3, alpha: 0.9 });
       }
       return;
     }
-    const opening = this.placementLayout.openings.find((candidate) => candidate.id === this.selectedBuildItem?.id);
+    const opening = this.placementLayout.openings.find((candidate) => candidate.id === item.id);
     const wall = opening ? this.placementLayout.walls.find((candidate) => candidate.id === opening.wallId) : undefined;
     if (opening && wall) {
       const rect = getOpeningRect(wall, opening, BUILD_GRID_SIZE);
-      this.selectionOverlay.rect(rect.x, rect.y, rect.width, rect.height).stroke({ color: "#5143bd", width: 3, alpha: 0.9 });
+      graphics.rect(rect.x, rect.y, rect.width, rect.height).stroke({ color, width: 3, alpha: 0.9 });
     }
   }
 
