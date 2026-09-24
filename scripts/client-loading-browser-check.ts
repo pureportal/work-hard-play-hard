@@ -17,8 +17,8 @@ const html = await readFile(new URL("index.html", distribution), "utf8");
 const entryPath = html.match(/<script\b[^>]*\bsrc="([^"]+)"/)![1]!;
 const entry = entryPath.slice("/assets/".length);
 const assets = await readdir(new URL("assets/", distribution));
-const imageModule = assets.find(name => /^optimized-images-.*\.js$/.test(name))!;
 const worldModule = assets.find(name => /^WorldCanvas-.*\.js$/.test(name))!;
+const staleArtwork = /"\/characters\/blockbench\/upper\/satin\.png":\[[^\]]+\],/;
 const browser = await chromium.launch({
   headless: true,
   executablePath: puppeteer.executablePath({ headless: "shell" }),
@@ -101,10 +101,8 @@ try {
       }
       let source = await readFile(new URL(`assets/${name === "index-stale.js" ? entry : name}`, distribution), "utf8");
       if (stale) source = source.replaceAll(entry, "index-stale.js");
-      if (stale && failure === "artwork" && name === imageModule) {
-        const missing = source.replace(/"\/characters\/blockbench\/upper\/satin\.png":\[[^\]]+\],/, "");
-        assert.notEqual(source, missing, "Stale catalogue fixture did not remove satin artwork");
-        source = missing;
+      if (stale && failure === "artwork" && staleArtwork.test(source)) {
+        source = source.replace(staleArtwork, "");
         failuresInjected++;
       }
       await route.fulfill({ contentType: "text/javascript", body: source });
