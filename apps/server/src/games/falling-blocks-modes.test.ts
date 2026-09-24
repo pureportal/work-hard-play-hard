@@ -129,6 +129,6 @@ describe("Falling Blocks modes", () => {
     const small = new FallingBlocksGame("tick-equivalence", mode);
     large.update(60_000);
     for (let time = 0; time < 60_000; time += 50) small.update(50);
-    expect(large.state).toEqual(small.state);
+    expect(large.state).toEqual({ ...small.state, serverTime: expect.any(Number) });
   });
 });

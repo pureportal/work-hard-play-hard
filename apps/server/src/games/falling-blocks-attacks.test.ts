@@ -119,7 +119,7 @@ describe("Falling Blocks multiplayer attacks", () => {
     expect(expected.attacks[0]?.remainingMs).toBe(2_000);
     for (const userId of games.keys()) {
       expect(snapshot(runtime, userId)).toEqual(expected);
-      expect(gameState(runtime, userId)).toEqual(games.get(userId)!.state);
+      expect(gameState(runtime, userId)).toEqual({ ...games.get(userId)!.state, serverTime: expect.any(Number) });
       const resumed = runtime.start(userId, "object-falling-blocks", true, { mode: "classic", attackTarget: "random" });
       expect(resumed.deliveries.find((delivery) => delivery.event.type === "game.round_started")?.event).toMatchObject({ round: { fallingBlocks: expected } });
     }
