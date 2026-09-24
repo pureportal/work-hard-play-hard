@@ -40,6 +40,7 @@
     "e2e:seating": "pnpm --filter @workhard/server exec tsx ../../scripts/characters/playwright-seating.ts",
     "e2e:work": "pnpm --filter @workhard/server exec tsx ../../scripts/work-objects-playwright-check.ts",
     "e2e:meetings": "pnpm build:client && pnpm --filter @workhard/server exec tsx ../../scripts/meetings-browser-check.ts",
+    "e2e:reactions": "pnpm build:client && pnpm --filter @workhard/server exec tsx ../../scripts/reactions-browser-check.ts",
     "e2e:open-calls": "pnpm --filter @workhard/client typecheck && pnpm --filter @workhard/client exec vite build --outDir ../../artifacts/open-calls/client && pnpm --filter @workhard/server exec tsx ../../scripts/open-calls-browser-check.ts",
     "e2e:whiteboard": "pnpm --filter @workhard/client build && pnpm --filter @workhard/server exec tsx tests/whiteboard-live-check.ts",
     "assets:characters": "node scripts/characters/blockbench/generate.mjs && pnpm assets:characters:seated",

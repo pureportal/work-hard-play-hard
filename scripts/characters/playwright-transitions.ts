@@ -72,7 +72,7 @@ try {
       snapshot(initial.map((player) => player.userId === "user-maya" ? { ...player, wavingUntil: Date.now() + 2500 } : player));
       await samples(page);
       await page.screenshot({ path: `${output}/${viewport.width}-waving.png` });
-      emit({ type: "interaction.high_five", id: "character-high-five", userIds: ["user-maya", "user-elena"], floorId: layout.floorId });
+      emit({ type: "interaction.group_reaction", id: "character-high-five", kind: "high_five", userIds: ["user-maya", "user-elena"], floorId: layout.floorId });
       await samples(page);
       await page.screenshot({ path: `${output}/${viewport.width}-high-five.png` });
       const carried = initial.map((player) => player.userId === "user-maya" ? { ...player, carriedByUserId: "user-elena" }

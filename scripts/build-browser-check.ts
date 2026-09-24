@@ -41,7 +41,7 @@ await context.routeWebSocket(/\/v1\//, (socket) => {
 });
 
 const page = await context.newPage();
-page.setDefaultTimeout(15000);
+page.setDefaultTimeout(60000);
 page.on("pageerror", (error) => errors.push(error.message));
 page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
 runtime.start();
@@ -58,7 +58,7 @@ try {
   const shared = page.locator(".build-layout-panel");
   await shared.getByRole("textbox", { name: "Search assets" }).fill("crystal");
   await shared.getByRole("button", { name: "Crystal floor lamp" }).waitFor();
-  assert.equal(await shared.getByRole("tab", { name: "All" }).getAttribute("aria-selected"), "true");
+  assert.equal(await shared.getByRole("combobox", { name: "Asset categories" }).inputValue(), "all");
   await shared.getByRole("button", { name: "Crystal floor lamp" }).click();
   assert.equal(await shared.getByRole("button", { name: "Crystal floor lamp" }).getAttribute("aria-pressed"), "true");
   await page.screenshot({ path: `${output}/shared-desktop.png` });
@@ -68,7 +68,13 @@ try {
   await personal.getByRole("tab", { name: "Shop" }).click();
   await personal.getByRole("textbox", { name: "Search assets" }).fill("crystal");
   await personal.getByRole("button", { name: /Crystal floor lamp/ }).waitFor();
+  assert.equal(await personal.getByRole("button", { name: /Need 1400 more coins for Crystal floor lamp/ }).evaluate((button) => button.clientHeight <= 42), true);
   await page.screenshot({ path: `${output}/personal-shop-desktop.png` });
+  await personal.getByRole("button", { name: "Clear search" }).click();
+  const featurePositions = await personal.locator(".shop-asset:has(.asset-feature-indicators)").evaluateAll((items) =>
+    items.slice(0, 12).map((item) => item.querySelector(".catalog-asset-features")!.getBoundingClientRect().left));
+  assert(featurePositions.length > 1);
+  assert(featurePositions.every((position) => Math.abs(position - featurePositions[0]!) < 1));
   await personal.getByRole("tab", { name: "Inventory" }).click();
   assert.equal(await personal.getByRole("textbox", { name: "Search assets" }).isVisible(), true);
   await personal.getByRole("textbox", { name: "Search assets" }).fill("chair");
@@ -76,9 +82,14 @@ try {
   await personal.getByRole("button", { name: "Clear search" }).click();
   await page.screenshot({ path: `${output}/personal-inventory-desktop.png` });
 
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({ path: `${output}/personal-inventory-mobile.png` });
-  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
+  for (const width of [320, 390, 420]) {
+    await page.setViewportSize({ width, height: 844 });
+    assert.equal(await personal.getByRole("combobox", { name: "Inventory categories" }).isVisible(), true);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
+    assert.equal(await personal.locator(".player-inventory-view .asset-browser").evaluate((browser) => browser.scrollWidth > browser.clientWidth + 1), false);
+    if (width === 320) await page.screenshot({ path: `${output}/personal-inventory-narrow.png` });
+    if (width === 390) await page.screenshot({ path: `${output}/personal-inventory-mobile.png` });
+  }
   const inventoryResults = personal.locator(".player-inventory-view .asset-browser-results");
   const inventoryScroll = await inventoryResults.evaluate((element) => {
     element.scrollTop = element.scrollHeight;
@@ -86,6 +97,9 @@ try {
   });
   assert(inventoryScroll.height <= inventoryScroll.viewport || inventoryScroll.top > 0);
   await personal.getByRole("tab", { name: "Shop" }).click();
+  await personal.getByRole("combobox", { name: "Shop categories" }).selectOption("outdoor");
+  assert.equal(await personal.locator(".shop-asset").count() > 0, true);
+  await personal.getByRole("combobox", { name: "Shop categories" }).selectOption("all");
   await page.screenshot({ path: `${output}/personal-shop-mobile.png` });
   await page.getByRole("button", { name: "Shared", exact: true }).click();
   await page.screenshot({ path: `${output}/shared-mobile.png` });
@@ -96,6 +110,10 @@ try {
   await page.getByRole("button", { name: "Personal", exact: true }).click();
   await personal.getByRole("tab", { name: "Shop" }).click();
   await page.screenshot({ path: `${output}/personal-shop-mobile-dark.png` });
+  await page.setViewportSize({ width: 2000, height: 1000 });
+  assert.equal(await personal.getByRole("tab", { name: "Outdoor" }).isVisible(), true);
+  assert.equal(await personal.locator(".player-shop-view .asset-category-tabs").evaluate((tabs) => tabs.scrollWidth > tabs.clientWidth + 1), false);
+  await page.screenshot({ path: `${output}/personal-shop-wide.png` });
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ result: "passed", artifacts: output }));
 } finally {

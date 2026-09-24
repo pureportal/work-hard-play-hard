@@ -59,8 +59,9 @@ try {
   await page.evaluate(() => {
     const socket = (globalThis as typeof globalThis & { mockSockets: Array<{ emit: (event: unknown) => void }> }).mockSockets.at(-1);
     socket?.emit({
-      type: "interaction.high_five",
+      type: "interaction.group_reaction",
       id: "high-five-check",
+      kind: "high_five",
       userIds: ["user-maya", "user-elena"],
       floorId: "floor-studio",
     });
