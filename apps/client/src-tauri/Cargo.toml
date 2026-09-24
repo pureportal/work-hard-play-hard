@@ -1,6 +1,6 @@
 [package]
 name = "northstar-client"
-version = "8.0.1"
+version = "8.1.0"
 description = "Northstar web, desktop, and mobile client"
 authors = ["PurePortal"]
 edition = "2024"
