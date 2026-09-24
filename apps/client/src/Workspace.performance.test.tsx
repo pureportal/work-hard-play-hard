@@ -4,7 +4,7 @@ import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BootstrapData, Meeting, WorldPlayer, WorldSnapshot } from "@workhard/shared";
-import type { DisplayHighFive, DisplayReaction } from "./reactions";
+import type { DisplayGroupReaction, DisplayReaction } from "./reactions";
 import type { DisplayGongRing } from "./gong";
 import { Workspace } from "./App";
 import { getServerOrigin } from "./server-url";
@@ -18,7 +18,7 @@ const canvasRenders = vi.hoisted(() => [] as Array<{
   meetings: Meeting[];
   players: WorldPlayer[];
   reactions: DisplayReaction[];
-  highFives: DisplayHighFive[];
+  groupReactions: DisplayGroupReaction[];
   gongRings: DisplayGongRing[];
 }>);
 
@@ -35,7 +35,7 @@ vi.mock("./components/WorldCanvasLoader", () => ({
     meetings: Meeting[];
     players: WorldPlayer[];
     reactions: DisplayReaction[];
-    highFives: DisplayHighFive[];
+    groupReactions: DisplayGroupReaction[];
     gongRings: DisplayGongRing[];
   }) => {
     canvasRenders.push(props);
@@ -146,7 +146,7 @@ describe("Workspace snapshot rendering", () => {
 
     expect(updated.players).not.toBe(initial.players);
     expect(updated.reactions).toBe(initial.reactions);
-    expect(updated.highFives).toBe(initial.highFives);
+    expect(updated.groupReactions).toBe(initial.groupReactions);
     expect(updated.gongRings).toBe(initial.gongRings);
   });
 });

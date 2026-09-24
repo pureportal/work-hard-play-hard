@@ -1,6 +1,6 @@
 import { CHARACTER_ATLAS_HEIGHT, CHARACTER_ATLAS_SIZE, getCharacterLayerPaths, type CharacterAppearance, type CharacterSeatedPose, type Rect } from "@workhard/shared";
 import { ImageCache } from "./image-cache";
-import { getOptimizedImagePath } from "./optimized-images";
+import { getOptimizedCharacterImagePath } from "./optimized-character-images";
 import { decodeImage } from "./image-decoding";
 
 interface CharacterLayer {
@@ -31,7 +31,7 @@ async function loadLayer(path: string): Promise<CharacterLayer> {
         }
       };
       image.onerror = () => reject(new Error("Character could not load. Try again."));
-      image.src = getOptimizedImagePath(path);
+      image.src = getOptimizedCharacterImagePath(path);
     });
   } finally {
     const next = waitingLayers.shift();

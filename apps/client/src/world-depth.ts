@@ -19,6 +19,7 @@ function compareViews(left: DepthView, right: DepthView): number {
 export class WorldDepth {
   readonly container = new Container({ label: "world-depth", sortableChildren: true });
   private readonly views = new Map<Container, DepthView>();
+  private orderedContainers: Container[] = [];
   private dirty = false;
 
   setPosition(container: Container, x: number, y: number): void {
@@ -66,17 +67,22 @@ export class WorldDepth {
       }
       (view.behind ? group.before : group.after).push(view);
     }
-    let index = 0;
+    const order: Container[] = [];
     const orderViews = (views: DepthView[]) => {
       for (const view of views.sort(compareViews)) {
         const group = attachments.get(view.container);
         if (group) orderViews(group.before);
-        view.container.zIndex = index++;
+        order.push(view.container);
         if (group) orderViews(group.after);
       }
     };
     orderViews(roots);
-    this.container.sortChildren();
+    if (order.length !== this.orderedContainers.length
+      || order.some((container, index) => container !== this.orderedContainers[index])) {
+      for (const [index, container] of order.entries()) container.zIndex = index;
+      this.container.sortChildren();
+      this.orderedContainers = order;
+    }
     this.dirty = false;
   }
 }

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile, unlink } from "node:fs/promises";
 import {
-  sharp, publicRoot, generatedRoot, manifestFile, runtimeFile, webpOptions, previewOptions,
+  sharp, publicRoot, generatedRoot, manifestFile, runtimeFile, characterRuntimeFile, worldRuntimeFile, webpOptions, previewOptions,
   digest, recipeHash, readImageSources, assertSamePixels,
 } from "./sources.mjs";
 
@@ -84,13 +84,19 @@ await Promise.all(Array.from({ length: 3 }, async () => {
 }));
 const sortedManifest = Object.fromEntries(sources.map(source => [source.path, { ...manifest[source.path], layoutHash: digest(JSON.stringify(source.frames ?? null)) }]));
 const sortedRuntime = Object.fromEntries(sources.map(source => [source.path, runtime[source.path]]));
+const characterRuntime = Object.fromEntries(sources.filter(source => source.group === "characters").map(source => [source.path, runtime[source.path]]));
+const worldRuntime = Object.fromEntries(sources.filter(source => source.group !== "characters").map(source => [source.path, runtime[source.path]]));
 if (check) {
   assert.deepEqual(Object.keys(previous).sort(), sources.map(source => source.path).sort(), "Optimized inventory differs from source inventory");
   assert.deepEqual(previous, sortedManifest, "Optimized source metadata is stale");
   assert.deepEqual(JSON.parse(await readFile(runtimeFile, "utf8")), sortedRuntime, "Runtime image manifest is stale");
+  assert.deepEqual(JSON.parse(await readFile(characterRuntimeFile, "utf8")), characterRuntime, "Character image manifest is stale");
+  assert.deepEqual(JSON.parse(await readFile(worldRuntimeFile, "utf8")), worldRuntime, "World image manifest is stale");
 } else {
   await writeFile(manifestFile, JSON.stringify(sortedManifest, null, 2) + "\n");
   await writeFile(runtimeFile, JSON.stringify(sortedRuntime) + "\n");
+  await writeFile(characterRuntimeFile, JSON.stringify(characterRuntime) + "\n");
+  await writeFile(worldRuntimeFile, JSON.stringify(worldRuntime) + "\n");
   const retained = new Set(Object.values(runtime).flat());
   const obsolete = new Set(Object.values(previous).flatMap(record => [record.image, ...record.previews ?? []]).map(image => image.id).filter(id => !retained.has(id)));
   for (const id of obsolete) {

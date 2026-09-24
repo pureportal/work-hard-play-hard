@@ -1,7 +1,7 @@
 import { CHARACTER_ATLAS_HEIGHT, CHARACTER_ATLAS_SIZE, DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("./optimized-images", () => ({ getOptimizedImagePath: (path: string) => `/optimized${path}` }));
+vi.mock("./optimized-character-images", () => ({ getOptimizedCharacterImagePath: (path: string) => `/optimized${path}` }));
 
 class TestImage {
   static instances: TestImage[] = [];

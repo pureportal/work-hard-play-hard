@@ -17,7 +17,7 @@ const results = [];
 try {
   for (const delayMs of [0, 40]) {
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
-    await installBuiltAssetClient(context, resolve(output, "client"));
+    await installBuiltAssetClient(context, process.argv[3] ?? resolve(output, "client"));
     const store = new WorkspaceStore(createTestData());
     for (const member of store.getMembers()) {
       member.character = { ...DEFAULT_CHARACTER_APPEARANCE };

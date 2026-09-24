@@ -1,5 +1,5 @@
 import type { AssetRotation } from "@workhard/shared";
-import imageSource from "./optimized-images.json";
+import imageSource from "./optimized-world-images.json";
 
 const images: Record<string, readonly string[]> = imageSource;
 

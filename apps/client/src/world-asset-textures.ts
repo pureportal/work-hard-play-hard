@@ -10,7 +10,7 @@ interface AssetTexture {
   loaded: Promise<Texture>;
   texture?: Texture;
   frames: Map<string, Texture>;
-  alpha?: Uint8Array;
+  alphaFrames: Map<string, Uint8Array>;
 }
 
 export class WorldAssetTextures {
@@ -22,22 +22,48 @@ export class WorldAssetTextures {
     if (x < bounds.x || y < bounds.y || x >= bounds.x + bounds.width || y >= bounds.y + bounds.height) return false;
     const entry = this.textures.get(artwork.path);
     if (!entry?.texture || this.destroyed) return false;
-    if (!entry.alpha) {
-      const canvas = document.createElement("canvas");
-      canvas.width = artwork.atlasWidth;
-      canvas.height = artwork.atlasHeight;
-      const context = canvas.getContext("2d")!;
-      context.drawImage(entry.image, 0, 0);
+    const crops = artwork.animation?.frames ?? [frame];
+    const missing = crops.filter(crop => !entry.alphaFrames.has(frameKey(crop)));
+    if (missing.length) this.readAlphaFrames(entry, missing);
+    return crops.some(crop => {
+      const pixelX = Math.floor((x - bounds.x) / bounds.width * crop.width);
+      const pixelY = Math.floor((y - bounds.y) / bounds.height * crop.height);
+      const pixelIndex = pixelY * crop.width + pixelX;
+      const alpha = entry.alphaFrames.get(frameKey(crop))!;
+      return (alpha[pixelIndex >> 3]! & (1 << (pixelIndex & 7))) !== 0;
+    });
+  }
+
+  private readAlphaFrames(entry: AssetTexture, crops: readonly WorldTextureRegion["frame"][]): void {
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(...crops.map(crop => crop.width));
+    canvas.height = crops.reduce((height, crop) => height + crop.height, 0);
+    try {
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      if (!context) throw new Error("World artwork hit testing is unavailable in this browser.");
+      let top = 0;
+      for (const crop of crops) {
+        context.drawImage(entry.image, crop.x, crop.y, crop.width, crop.height, 0, top, crop.width, crop.height);
+        top += crop.height;
+      }
       const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
-      entry.alpha = new Uint8Array(canvas.width * canvas.height);
-      for (let index = 0; index < entry.alpha.length; index++) entry.alpha[index] = pixels[index * 4 + 3]!;
+      top = 0;
+      for (const crop of crops) {
+        const alpha = new Uint8Array(Math.ceil(crop.width * crop.height / 8));
+        for (let y = 0; y < crop.height; y++) {
+          for (let x = 0; x < crop.width; x++) {
+            const pixelIndex = y * crop.width + x;
+            if (pixels[((top + y) * canvas.width + x) * 4 + 3]! >= 32) {
+              alpha[pixelIndex >> 3] = alpha[pixelIndex >> 3]! | (1 << (pixelIndex & 7));
+            }
+          }
+        }
+        entry.alphaFrames.set(frameKey(crop), alpha);
+        top += crop.height;
+      }
+    } finally {
       canvas.width = canvas.height = 0;
     }
-    return (artwork.animation?.frames ?? [frame]).some(crop => {
-      const pixelX = crop.x + Math.floor((x - bounds.x) / bounds.width * crop.width);
-      const pixelY = crop.y + Math.floor((y - bounds.y) / bounds.height * crop.height);
-      return entry.alpha![pixelY * artwork.atlasWidth + pixelX]! >= 32;
-    });
   }
 
   createSprite(artwork: WorldTextureRegion, onError: (error: Error) => void): Sprite {
@@ -92,7 +118,7 @@ export class WorldAssetTextures {
     if (!entry) {
       const image = new Image();
       image.decoding = "async";
-      const record: AssetTexture = { image, frames: new Map(), loaded: Promise.resolve(Texture.EMPTY) };
+      const record: AssetTexture = { image, frames: new Map(), alphaFrames: new Map(), loaded: Promise.resolve(Texture.EMPTY) };
       record.loaded = new Promise<Texture>((resolve, reject) => {
         image.onload = async () => {
           try {
@@ -132,7 +158,7 @@ export class WorldAssetTextures {
 
   private frame(entry: AssetTexture, artwork: WorldTextureRegion): Texture {
     const { x, y, width, height } = artwork.frame;
-    const key = `${x}:${y}:${width}:${height}`;
+    const key = frameKey(artwork.frame);
     let frame = entry.frames.get(key);
     if (!frame) {
       frame = new Texture({ source: entry.texture!.source, frame: new Rectangle(x, y, width, height) });
@@ -140,4 +166,8 @@ export class WorldAssetTextures {
     }
     return frame;
   }
+}
+
+function frameKey(frame: WorldTextureRegion["frame"]): string {
+  return `${frame.x}:${frame.y}:${frame.width}:${frame.height}`;
 }

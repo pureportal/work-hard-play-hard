@@ -9,6 +9,8 @@ export const publicRoot = new URL("apps/client/public/", root);
 export const generatedRoot = new URL("optimized-images/", publicRoot);
 export const manifestFile = new URL("manifest.json", import.meta.url);
 export const runtimeFile = new URL("apps/client/src/optimized-images.json", root);
+export const characterRuntimeFile = new URL("apps/client/src/optimized-character-images.json", root);
+export const worldRuntimeFile = new URL("apps/client/src/optimized-world-images.json", root);
 export const webpOptions = { lossless: true, effort: 6 };
 export const previewOptions = { width: 128, height: 128, fit: "inside", withoutEnlargement: true, kernel: "lanczos3" };
 

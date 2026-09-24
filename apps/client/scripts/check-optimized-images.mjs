@@ -3,9 +3,11 @@ import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 
 const client = new URL("../", import.meta.url);
-const [manifest, runtime, world, architecture, seating] = await Promise.all([
+const [manifest, runtime, characterRuntime, worldRuntime, world, architecture, seating] = await Promise.all([
   readFile(new URL("../../../scripts/images/manifest.json", import.meta.url), "utf8").then(JSON.parse),
   readFile(new URL("src/optimized-images.json", client), "utf8").then(JSON.parse),
+  readFile(new URL("src/optimized-character-images.json", client), "utf8").then(JSON.parse),
+  readFile(new URL("src/optimized-world-images.json", client), "utf8").then(JSON.parse),
   readFile(new URL("src/world-asset-artwork.json", client), "utf8").then(JSON.parse),
   readFile(new URL("src/world-architecture-artwork.json", client), "utf8").then(JSON.parse),
   readFile(new URL("src/world-seat-occlusion.json", client), "utf8").then(JSON.parse),
@@ -18,6 +20,8 @@ const sources = [
 ];
 assert.deepEqual(Object.keys(manifest).sort(), sources.map(source => source.path).sort(), "Image inventory changed. Run pnpm assets:optimize.");
 assert.deepEqual(Object.keys(runtime).sort(), Object.keys(manifest).sort(), "Runtime image inventory is stale. Run pnpm assets:optimize.");
+assert.deepEqual(characterRuntime, Object.fromEntries(Object.entries(runtime).filter(([path]) => path.startsWith("/characters/"))), "Character image inventory is stale. Run pnpm assets:optimize.");
+assert.deepEqual(worldRuntime, Object.fromEntries(Object.entries(runtime).filter(([path]) => !path.startsWith("/characters/"))), "World image inventory is stale. Run pnpm assets:optimize.");
 const checked = new Set();
 for (const source of sources) {
   const record = manifest[source.path];

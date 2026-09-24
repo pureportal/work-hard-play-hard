@@ -80,11 +80,7 @@ describe("world artwork textures", () => {
   });
 
   it("selects moving artwork even when its first pose has a transparent pixel", async () => {
-    const pixels = new Uint8ClampedArray(1024 * 256 * 4);
-    pixels[(82 * 1024 + 624) * 4 + 3] = 255;
-    const context = vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation((() => ({
-      drawImage: vi.fn(), getImageData: () => ({ data: pixels }),
-    })) as unknown as typeof HTMLCanvasElement.prototype.getContext);
+    const { drawImage, getImageData, context } = mockAtlasPixels([{ x: 624, y: 82 }]);
     const view = artwork(0);
     view.animation = { frames: [view.frame, artwork(512).frame], frameDuration: 100 };
     const sprite = textures.createSprite(view, vi.fn());
@@ -92,17 +88,14 @@ describe("world artwork textures", () => {
     await vi.waitFor(() => expect(sprite.visible).toBe(true));
     expect(textures.isPointVisible(view, 48, 18)).toBe(true);
     expect(textures.isPointVisible(view, 47, 18)).toBe(false);
+    expect(drawImage).toHaveBeenCalledTimes(2);
+    expect(getImageData).toHaveBeenCalledWith(0, 0, 200, 250);
     context.mockRestore();
     sprite.destroy();
   });
 
   it("hit-tests visible pixels in the selected directional crop", async () => {
-    const pixels = new Uint8ClampedArray(1024 * 256 * 4);
-    pixels[(82 * 1024 + 112) * 4 + 3] = 255;
-    const drawImage = vi.fn();
-    const context = vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation((() => ({
-      drawImage, getImageData: () => ({ data: pixels }),
-    })) as unknown as typeof HTMLCanvasElement.prototype.getContext);
+    const { drawImage, getImageData, context } = mockAtlasPixels([{ x: 112, y: 82 }]);
     const sprite = textures.createSprite(artwork(0), vi.fn());
     expect(textures.isPointVisible(artwork(0), 48, 18)).toBe(false);
     images[0]!.dispatchEvent(new Event("load"));
@@ -111,7 +104,23 @@ describe("world artwork textures", () => {
     expect(textures.isPointVisible(artwork(0), 47, 18)).toBe(false);
     expect(textures.isPointVisible(artwork(512), 48, 18)).toBe(false);
     expect(textures.isPointVisible(artwork(0), -1, 18)).toBe(false);
-    expect(drawImage).toHaveBeenCalledOnce();
+    expect(drawImage).toHaveBeenCalledTimes(2);
+    expect(drawImage).toHaveBeenCalledWith(images[0], 12, 20, 200, 125, 0, 0, 200, 125);
+    expect(drawImage).toHaveBeenCalledWith(images[0], 524, 20, 200, 125, 0, 0, 200, 125);
+    expect(getImageData).toHaveBeenCalledTimes(2);
+    expect(getImageData).toHaveBeenCalledWith(0, 0, 200, 125);
+    context.mockRestore();
+    sprite.destroy();
+  });
+
+  it("keeps the original alpha threshold at crop edges", async () => {
+    const { context } = mockAtlasPixels([{ x: 112, y: 82, alpha: 31 }, { x: 113, y: 82, alpha: 32 }]);
+    const view = artwork(0);
+    const sprite = textures.createSprite(view, vi.fn());
+    images[0]!.dispatchEvent(new Event("load"));
+    await vi.waitFor(() => expect(sprite.visible).toBe(true));
+    expect(textures.isPointVisible(view, 48, 18)).toBe(false);
+    expect(textures.isPointVisible(view, 48.5, 18)).toBe(true);
     context.mockRestore();
     sprite.destroy();
   });
@@ -221,4 +230,25 @@ function artwork(x: number): WorldAssetArtwork {
     atlasHeight: 256,
     seatOffset: 0,
   };
+}
+
+function mockAtlasPixels(opaque: readonly { x: number; y: number; alpha?: number }[]) {
+  const draws: Array<{ sourceX: number; sourceY: number; width: number; height: number; targetY: number }> = [];
+  const drawImage = vi.fn((_image: HTMLImageElement, sourceX: number, sourceY: number, width: number, height: number, _targetX: number, targetY: number) => {
+    draws.push({ sourceX, sourceY, width, height, targetY });
+  });
+  const getImageData = vi.fn((_x: number, _y: number, width: number, height: number) => {
+    const data = new Uint8ClampedArray(width * height * 4);
+    for (const draw of draws.splice(0)) {
+      for (const pixel of opaque) {
+        if (pixel.x < draw.sourceX || pixel.x >= draw.sourceX + draw.width || pixel.y < draw.sourceY || pixel.y >= draw.sourceY + draw.height) continue;
+        const targetX = pixel.x - draw.sourceX;
+        const targetY = draw.targetY + pixel.y - draw.sourceY;
+        data[(targetY * width + targetX) * 4 + 3] = pixel.alpha ?? 255;
+      }
+    }
+    return { data };
+  });
+  const context = vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation((() => ({ drawImage, getImageData })) as unknown as typeof HTMLCanvasElement.prototype.getContext);
+  return { drawImage, getImageData, context };
 }

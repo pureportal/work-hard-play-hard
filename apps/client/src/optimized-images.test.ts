@@ -3,7 +3,7 @@ import {
   DEFAULT_CHARACTER_APPEARANCE, getCharacterLayerPaths,
 } from "@workhard/shared";
 import { expect, it } from "vitest";
-import { getOptimizedImagePath } from "./optimized-images";
+import { getOptimizedCharacterImagePath } from "./optimized-character-images";
 
 it("includes optimized artwork for every selectable character style and seated pose", () => {
   const appearances = [
@@ -13,6 +13,6 @@ it("includes optimized artwork for every selectable character style and seated p
   ];
   const paths = new Set(appearances.flatMap(appearance => (["chair", "floor"] as const).flatMap(pose => getCharacterLayerPaths(appearance, pose))));
   for (const path of paths) {
-    expect(getOptimizedImagePath(path), path).toMatch(/^\/optimized-images\/[a-f0-9]{24}\.webp$/);
+    expect(getOptimizedCharacterImagePath(path), path).toMatch(/^\/optimized-images\/[a-f0-9]{24}\.webp$/);
   }
 });
