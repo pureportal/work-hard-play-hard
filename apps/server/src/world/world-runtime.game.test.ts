@@ -46,7 +46,7 @@ describe("WorldRuntime Falling Blocks multiplayer", () => {
     expect(mayaRound?.id).toBe(leoRound?.id);
     expect(mayaRound?.participants.map((participant) => participant.userId)).toEqual(["user-maya", "user-leo"]);
 
-    send(runtime, mayaPeer, { type: "game.command", roundId: mayaRound!.id, requestId: "maya-drop", command: "drop" });
+    send(runtime, mayaPeer, { type: "game.command", roundId: mayaRound!.id, requestId: "maya-drop", command: "drop", sequence: 1, inputSessionId: "11111111-1111-4111-8111-111111111111" });
     send(runtime, leoPeer, { type: "game.end", roundId: mayaRound!.id, requestId: "leo-finish" });
     send(runtime, mayaPeer, { type: "game.end", roundId: mayaRound!.id, requestId: "maya-finish" });
 

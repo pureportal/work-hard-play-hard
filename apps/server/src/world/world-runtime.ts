@@ -201,6 +201,7 @@ export class WorldRuntime {
   private readonly roomAccessInspections = new Map<Peer, { userId: string; serialized: string }>();
   private readonly peersByFloor = new Map<string, Set<Peer>>();
   private readonly movements = new Map<string, MovementState>();
+  private readonly disconnectedFallingBlocks = new Map<string, number>();
   private readonly kidnappingByCarrier = new Map<string, string>();
   private readonly kidnappingByCarried = new Map<string, string>();
   private readonly activeMovementUserIds = new Set<string>();
@@ -257,7 +258,12 @@ export class WorldRuntime {
     if (this.timer) {
       return;
     }
-    this.timer = setInterval(() => this.tick(), TICK_MS);
+    let lastTickAt = performance.now();
+    this.timer = setInterval(() => {
+      const now = performance.now();
+      this.tick(TICK_MS, Math.max(0, now - lastTickAt));
+      lastTickAt = now;
+    }, TICK_MS);
   }
 
   stop(): void {
@@ -281,6 +287,7 @@ export class WorldRuntime {
     this.kidnappingByCarrier.clear();
     this.kidnappingByCarried.clear();
     this.movementSequences.clear();
+    this.disconnectedFallingBlocks.clear();
     this.proximitySessions.clear();
     for (const player of this.players.values()) {
       delete player.proximity;
@@ -308,6 +315,7 @@ export class WorldRuntime {
     }
 
     const peer: Peer = { id: randomUUID(), userId, floorId: floor.id, send };
+    this.disconnectedFallingBlocks.delete(userId);
     this.addPeer(peer);
     peer.send({ type: "public_economy.updated", economy: this.store.getPublicEconomy() });
     this.dirtySnapshotFloorIds.add(peer.floorId);
@@ -412,7 +420,11 @@ export class WorldRuntime {
       this.endCallsForUser(peer.userId);
       this.leaveActiveMeeting(peer.userId);
       this.handleKnockDisconnect(peer.userId);
-      this.dispatchGameEvents(this.gameRuntime.leave(peer.userId));
+      if (this.gameRuntime.isPlayingFallingBlocks(peer.userId)) {
+        this.disconnectedFallingBlocks.set(peer.userId, 15_000);
+      } else {
+        this.dispatchGameEvents(this.gameRuntime.leave(peer.userId));
+      }
       this.chessRuntime.disconnect(peer.userId);
       this.roomGrants.delete(peer.userId);
       this.lastReactionAt.delete(peer.userId);
@@ -615,7 +627,7 @@ export class WorldRuntime {
           this.endGame(peer, command.roundId);
           break;
         case "game.command":
-          this.commandGame(peer, command.roundId, command.command);
+          this.commandGame(peer, command.roundId, command.command, "sequence" in command ? command.sequence : 0, "inputSessionId" in command ? command.inputSessionId : "test");
           break;
         case "chess.match_create":
           if (this.gameRuntime.getRoundId(peer.userId)) throw new Error("GAME_IN_PROGRESS");
@@ -788,12 +800,23 @@ export class WorldRuntime {
   }
 
   runTickForTest(deltaMs = TICK_MS): void {
-    this.tick(deltaMs);
+    this.tick(deltaMs, deltaMs);
   }
 
-  private tick(deltaMs = TICK_MS): void {
+  private tick(deltaMs = TICK_MS, gameDeltaMs = deltaMs): void {
     this.tickNumber += 1;
     this.projects.tick();
+    for (const [userId, remainingMs] of this.disconnectedFallingBlocks) {
+      if (remainingMs > gameDeltaMs) {
+        this.disconnectedFallingBlocks.set(userId, remainingMs - gameDeltaMs);
+        continue;
+      }
+      this.disconnectedFallingBlocks.delete(userId);
+      if (this.gameRuntime.isPlayingFallingBlocks(userId)) {
+        this.dispatchGameEvents(this.gameRuntime.leave(userId));
+        this.syncGameLobbies();
+      }
+    }
     const changedFloorIds = new Set<string>();
     for (const userId of this.activeMovementUserIds) {
       const movement = this.movements.get(userId);
@@ -830,7 +853,7 @@ export class WorldRuntime {
       this.reconcileProximityCalls();
       this.syncGameLobbies();
     }
-    const gameEvents = this.gameRuntime.update(deltaMs);
+    const gameEvents = this.gameRuntime.update(gameDeltaMs);
     this.dispatchGameEvents(gameEvents);
     const chessEvents = this.chessRuntime.update();
     this.dispatchGameEvents(chessEvents);
@@ -3573,8 +3596,8 @@ export class WorldRuntime {
     this.dispatchGameEvents(started.deliveries);
   }
 
-  private commandGame(peer: Peer, roundId: string, command: GameCommand): void {
-    const deliveries = this.gameRuntime.command(peer.userId, roundId, command);
+  private commandGame(peer: Peer, roundId: string, command: GameCommand, sequence: number, inputSessionId: string): void {
+    const deliveries = this.gameRuntime.command(peer.userId, roundId, command, sequence, inputSessionId);
     this.dispatchGameEvents(deliveries);
     if (deliveries.some((delivery) => delivery.event.type === "game.round_completed")) {
       this.syncGameLobbies();

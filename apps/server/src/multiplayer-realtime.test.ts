@@ -4,6 +4,29 @@ import { describe, expect, it } from "vitest";
 import { multiplayerFixture } from "./testing/realtime-clients.js";
 
 describe("multiplayer over real WebSockets", () => {
+  it("coalesces rapid Falling Blocks snapshots while acknowledging every input", async () => {
+    const fixture = await multiplayerFixture({ x: 1248, y: 636 });
+    try {
+      const maya = await fixture.connect("maya");
+      await maya.request({ type: "game.start", requestId: randomUUID(), definitionId: FALLING_BLOCKS_DEFINITION_ID,
+        objectId: "object-falling-blocks", solo: true });
+      const started = await maya.waitFor((event) => event.type === "game.round_started");
+      if (started.type !== "game.round_started") throw new Error("Round not started");
+      await maya.waitFor((event) => event.type === "game.state" && event.roundId === started.round.id);
+      const before = maya.events.length;
+      const inputSessionId = randomUUID();
+      for (let sequence = 1; sequence <= 10; sequence += 1) {
+        maya.socket.send(JSON.stringify({ type: "game.command", requestId: randomUUID(), roundId: started.round.id,
+          command: sequence % 2 === 0 ? "right" : "left", sequence, inputSessionId }));
+      }
+      await maya.waitFor((event) => event.type === "game.state" && event.definitionId === FALLING_BLOCKS_DEFINITION_ID
+        && event.acknowledgedSequences[inputSessionId] === 10, before);
+      expect(maya.events.slice(before).filter((event) => event.type === "game.state").length).toBeLessThan(10);
+    } finally {
+      await fixture.close();
+    }
+  });
+
   it("replays Falling Blocks after a top-out without letting old-round commands or completion affect the replay", async () => {
     const fixture = await multiplayerFixture({ x: 1248, y: 636 });
     try {
@@ -17,8 +40,12 @@ describe("multiplayer over real WebSockets", () => {
       const first = await leo.waitFor((event) => event.type === "game.round_started");
       if (first.type !== "game.round_started") throw new Error("Round not started");
       const roundId = first.round.id;
+      await maya.waitFor((event) => event.type === "game.state" && event.roundId === roundId);
       const secondMaya = await fixture.connect("maya");
-      expect(secondMaya.events.find((event) => event.type === "game.state")).toEqual(maya.events.findLast((event) => event.type === "game.state"));
+      expect(secondMaya.events.find((event) => event.type === "game.state")).toMatchObject({
+        roundId,
+        grid: maya.events.findLast((event) => event.type === "game.state" && event.definitionId === FALLING_BLOCKS_DEFINITION_ID)?.grid,
+      });
       maya.socket.terminate();
       expect(await leo.request({ ...start, requestId: randomUUID() })).toMatchObject({ type: "command.ack" });
       expect(leo.events.findLast((event) => event.type === "game.round_started")).toMatchObject({ round: { id: roundId } });
@@ -33,8 +60,11 @@ describe("multiplayer over real WebSockets", () => {
       if (replay?.type !== "game.round_started") throw new Error("Replay not started");
       expect(replay.round.id).not.toBe(roundId);
       expect(await secondMaya.request({ type: "game.end", requestId: randomUUID(), roundId })).toMatchObject({ code: "GAME_ROUND_CHANGED" });
-      expect(await secondMaya.request({ type: "game.command", requestId: randomUUID(), roundId, command: "drop" })).toMatchObject({ code: "GAME_ROUND_CHANGED" });
+      expect(await secondMaya.request({ type: "game.command", requestId: randomUUID(), roundId, command: "drop", sequence: 1, inputSessionId: randomUUID() })).toMatchObject({ code: "GAME_ROUND_CHANGED" });
+      const leoClosed = new Promise<void>((resolve) => leo.socket.once("close", () => resolve()));
       leo.socket.terminate();
+      await leoClosed;
+      fixture.runtime.runTickForTest(15_000);
       await secondMaya.waitFor((event) => event.type === "game.round_completed" && event.round.id === roundId);
       expect(await secondMaya.drop(replay.round.id)).toMatchObject({ roundId: replay.round.id, running: true });
       expect(fixture.store.getScores().filter((score) => score.roundId === roundId)).toHaveLength(2);

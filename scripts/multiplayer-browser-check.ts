@@ -91,6 +91,14 @@ async function login(identifier: string) {
   await page.locator('button[type="submit"]').click();
   await page.locator(".world-canvas canvas").waitFor();
   await page.waitForFunction(() => document.querySelector('.top-bar [role="status"]')?.textContent === "Connected");
+  const dailyBonus = page.getByRole("button", { name: "Close daily bonus", exact: true });
+  await dailyBonus.waitFor({ timeout: 5_000 });
+  await dailyBonus.click();
+  const tourSkip = page.locator(".guide-skip");
+  await tourSkip.waitFor({ timeout: 5_000 });
+  await tourSkip.click();
+  const build = page.getByRole("button", { name: "Close build", exact: true });
+  if (await build.count()) await build.click();
   const people = page.getByRole("button", { name: "Close people", exact: true });
   if (await people.count()) await people.click();
   console.log(`${identifier}: connected`);
@@ -99,6 +107,8 @@ async function login(identifier: string) {
 
 function position(x: number, y: number, userId?: string) {
   application.runtime.restorePlayers(application.runtime.serializePlayers().map((player) => !userId || player.userId === userId ? { ...player, x, y } : player));
+  application.runtime.runTickForTest();
+  application.runtime.runTickForTest();
 }
 
 async function chooseArea(page: Page, objectId: string, selector: string) {
@@ -145,6 +155,20 @@ try {
   assert.equal(await leo.evaluate(() => globalThis.__multiplayer.events.findLast((event) => event.type === "game.round_started")?.round.id), firstRoundId);
   await maya.screenshot({ path: resolve(artifacts, "falling-blocks-multiplayer.png") });
   await maya.locator(".falling-blocks-game").focus();
+  const predictedMove = await maya.evaluate(async () => {
+    const before = [...document.querySelectorAll(".falling-blocks-cell.is-active")]
+      .map((cell) => [...cell.parentElement!.children].indexOf(cell) % 10);
+    const receivedStates = globalThis.__multiplayer.events.filter((event) => event.type === "game.state").length;
+    window.dispatchEvent(new KeyboardEvent("keydown", { code: "ArrowLeft", key: "ArrowLeft", bubbles: true }));
+    window.dispatchEvent(new KeyboardEvent("keyup", { code: "ArrowLeft", key: "ArrowLeft", bubbles: true }));
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    const after = [...document.querySelectorAll(".falling-blocks-cell.is-active")]
+      .map((cell) => [...cell.parentElement!.children].indexOf(cell) % 10);
+    return { before, after, receivedStates,
+      currentStates: globalThis.__multiplayer.events.filter((event) => event.type === "game.state").length };
+  });
+  assert.deepEqual(predictedMove.after, predictedMove.before.map((column) => column - 1));
+  assert.equal(predictedMove.currentStates, predictedMove.receivedStates);
   for (let drop = 0; drop < 30; drop += 1) {
     const count = await maya.evaluate(() => globalThis.__multiplayer.events.filter((event) => event.type === "game.state").length);
     await maya.keyboard.press("Space");
@@ -163,10 +187,12 @@ try {
   const replayId = await maya.evaluate(() => globalThis.__multiplayer.events.findLast((event) => event.type === "game.round_started")?.round.id);
   assert.notEqual(replayId, firstRoundId);
   await leo.evaluate(() => globalThis.__multiplayer.sockets.at(-1)!.close());
+  await leo.waitForFunction(() => globalThis.__multiplayer.sockets.at(-1)?.readyState === WebSocket.CLOSED);
+  application.runtime.runTickForTest(15_000);
   await maya.waitForFunction((roundId) => globalThis.__multiplayer.events.some((event) => event.type === "game.round_completed" && event.round.id === roundId), firstRoundId);
   assert.equal(await maya.locator(".falling-blocks-game").count(), 1);
   await leave(maya);
-  checks.push("Falling Blocks: shared start, duplicate-click protection, top-out, early exit, concurrent replay and opponent disconnect");
+  checks.push("Falling Blocks: immediate movement, shared start, top-out, replay and disconnect grace");
   console.log(checks.at(-1));
 
   for (const variant of ["Classic", "Ultimate", "Stacking"]) {

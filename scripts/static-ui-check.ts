@@ -3,7 +3,7 @@ import { mkdir, readFile } from "node:fs/promises";
 import { dirname, extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer, { type HTTPRequest, type Page } from "puppeteer";
-import { ASSET_CATALOG, type ClientCommand, type MeetingMediaSession, type ServerEvent } from "../packages/shared/src/index.js";
+import { ASSET_CATALOG, FallingBlocksGame, TETROMINO_SHAPES, type ClientCommand, type FallingBlocksGameState, type MeetingMediaSession, type ServerEvent } from "../packages/shared/src/index.js";
 import { WorkspaceStore } from "../apps/server/src/store.js";
 import { verifyTicTacToeUi } from "./tic-tac-toe-ui-check.js";
 import { getAssetPreviewPath } from "../apps/client/src/optimized-images.js";
@@ -306,10 +306,11 @@ try {
   assert(desktopBoard.width >= 280 && desktopBoard.height >= 560, "The Falling Blocks board did not use the desktop viewport.");
   await page.evaluate(() => {
     const socket = (globalThis as typeof globalThis & {
-      mockSockets: Array<{ gameState?: { lines: number }; emit: (event: unknown) => void }>;
+      mockSockets: Array<{ gameState?: FallingBlocksGameState; emit: (event: unknown) => void }>;
     }).mockSockets.at(-1);
     if (!socket?.gameState) throw new Error("Falling Blocks state is missing.");
-    socket.gameState = { ...socket.gameState, lines: socket.gameState.lines + 1 };
+    socket.gameState = { ...socket.gameState, lines: socket.gameState.lines + 1,
+      simulation: { ...socket.gameState.simulation, lines: socket.gameState.simulation.lines + 1 } };
     socket.emit(socket.gameState);
   });
   await page.waitForSelector(".falling-blocks-line-flash");
@@ -565,8 +566,13 @@ async function verifyTouchMap(touchPage: Page): Promise<void> {
 }
 
 async function installApplicationTransport(targetPage: Page): Promise<void> {
+  const initialSimulation = new FallingBlocksGame("round-static").snapshot;
+  initialSimulation.board[19] = Array.from({ length: 10 }, (_, column) => column <= 2 ? 6 : 0);
+  initialSimulation.piece = { type: "T", cells: TETROMINO_SHAPES.T.map((row) => [...row]), x: 3, y: 2, rotation: 0 };
+  initialSimulation.heldPiece = "I";
+  initialSimulation.pieceQueue = ["O", "S", "J", "L", "Z"];
   await targetPage.evaluateOnNewDocument("globalThis.__name = (target) => target;");
-  await targetPage.evaluateOnNewDocument((workspace) => {
+  await targetPage.evaluateOnNewDocument(({ workspace, initialSimulation }) => {
     class ApplicationSocket extends EventTarget {
       static readonly CONNECTING = 0;
       static readonly OPEN = 1;
@@ -578,23 +584,7 @@ async function installApplicationTransport(targetPage: Page): Promise<void> {
       activeMeeting: MeetingMediaSession | undefined;
       commands: unknown[] = [];
       heartbeatTimer: number | undefined;
-      gameState: {
-        type: string;
-        roundId: string;
-        definitionId: string;
-        grid: number[][];
-        score: number;
-        lines: number;
-        level: number;
-        running: boolean;
-        paused: boolean;
-        activePiece: string;
-        activeCells: Array<{ row: number; column: number }>;
-        ghostCells: Array<{ row: number; column: number }>;
-        heldPiece: string | null;
-        nextPieces: string[];
-        canHold: boolean;
-      } | undefined;
+      gameState: FallingBlocksGameState | undefined;
 
       constructor(_url: string | URL) {
         super();
@@ -685,6 +675,7 @@ async function installApplicationTransport(targetPage: Page): Promise<void> {
               score: 0,
               lines: 0,
               level: 1,
+              fallIntervalMs: 665,
               running: true,
               paused: false,
               activePiece: "T",
@@ -703,29 +694,14 @@ async function installApplicationTransport(targetPage: Page): Promise<void> {
               heldPiece: "I",
               nextPieces: ["O", "S", "J", "L", "Z"],
               canHold: true,
+              specials: initialSimulation.scoring.specials,
+              lastClear: null,
+              simulation: structuredClone(initialSimulation),
+              acknowledgedSequences: {},
+              serverTime: Date.now(),
             };
             this.emit(this.gameState);
           });
-        } else if (command.type === "game.command" && command.command === "hold" && this.gameState?.canHold) {
-          const nextPieces = this.gameState.heldPiece
-            ? this.gameState.nextPieces
-            : this.gameState.nextPieces.slice(1);
-          this.gameState = {
-            ...this.gameState,
-            activePiece: this.gameState.heldPiece ?? this.gameState.nextPieces[0]!,
-            heldPiece: this.gameState.activePiece,
-            nextPieces,
-            canHold: false,
-          };
-          queueMicrotask(() => this.emit(this.gameState));
-        } else if (command.type === "game.command" && command.command === "drop" && this.gameState) {
-          this.gameState = {
-            ...this.gameState,
-            activePiece: this.gameState.nextPieces[0] ?? "I",
-            nextPieces: [...this.gameState.nextPieces.slice(1), "I"],
-            canHold: true,
-          };
-          queueMicrotask(() => this.emit(this.gameState));
         }
       }
 
@@ -766,7 +742,7 @@ async function installApplicationTransport(targetPage: Page): Promise<void> {
 
     (globalThis as typeof globalThis & { mockSockets: ApplicationSocket[] }).mockSockets = [];
     Object.defineProperty(globalThis, "WebSocket", { configurable: true, value: ApplicationSocket });
-  }, bootstrap);
+  }, { workspace: bootstrap, initialSimulation });
 
   await targetPage.setRequestInterception(true);
   targetPage.on("request", (request) => void respondToRequest(request));

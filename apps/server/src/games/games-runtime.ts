@@ -26,6 +26,10 @@ export class GamesRuntime {
     this.ticTacToe = new TicTacToeMultiplayerRuntime(store);
   }
 
+  isPlayingFallingBlocks(userId: string): boolean {
+    return this.fallingBlocks.isPlaying(userId);
+  }
+
   syncLobbies(players: Iterable<WorldPlayer>, connectedUserIds: ReadonlySet<string>): GameEventDelivery[] {
     const availablePlayers = [...players].filter((player) =>
       !this.getRoundId(player.userId),
@@ -69,7 +73,7 @@ export class GamesRuntime {
     throw new Error("GAME_NOT_FOUND");
   }
 
-  command(userId: string, roundId: string, command: GameCommand): GameEventDelivery[] {
+  command(userId: string, roundId: string, command: GameCommand, sequence = 0, inputSessionId = "test"): GameEventDelivery[] {
     const currentRoundId = this.getRoundId(userId);
     if (!currentRoundId) throw new Error("GAME_NOT_STARTED");
     if (currentRoundId !== roundId) throw new Error("GAME_ROUND_CHANGED");
@@ -77,7 +81,7 @@ export class GamesRuntime {
       if (!isFallingBlocksCommand(command)) {
         throw new Error("GAME_COMMAND_INVALID");
       }
-      return this.fallingBlocks.command(userId, command);
+      return this.fallingBlocks.command(userId, command, sequence, inputSessionId);
     }
     if (this.ticTacToe.isPlaying(userId)) {
       if (!isTicTacToeCommand(command)) {

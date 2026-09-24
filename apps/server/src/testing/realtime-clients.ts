@@ -34,6 +34,8 @@ export async function multiplayerFixture(position: { x: number; y: number }, che
 export class RealtimeClient {
   readonly socket: WebSocket;
   readonly events: ServerEvent[] = [];
+  private sequence = 0;
+  private readonly inputSessionId = randomUUID();
 
   constructor(application: ApplicationContext, cookie: string) {
     const { port } = application.app.server.address() as AddressInfo;
@@ -52,7 +54,7 @@ export class RealtimeClient {
 
   async drop(roundId: string): Promise<ServerEvent> {
     const response = this.waitFor((event) => event.type === "game.state" && event.roundId === roundId, this.events.length);
-    this.socket.send(JSON.stringify({ type: "game.command", requestId: randomUUID(), roundId, command: "drop" }));
+    this.socket.send(JSON.stringify({ type: "game.command", requestId: randomUUID(), roundId, command: "drop", sequence: ++this.sequence, inputSessionId: this.inputSessionId }));
     return response;
   }
 

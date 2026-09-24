@@ -106,11 +106,16 @@ describe("Falling Blocks protocol", () => {
   });
 
   it("accepts the hold command", () => {
-    expect(clientCommandSchema.safeParse({
+    const command = {
       type: "game.command", roundId: "11111111-1111-4111-8111-111111111111",
       requestId: "hold-piece",
       command: "hold",
-    }).success).toBe(true);
+      sequence: 1,
+      inputSessionId: "11111111-1111-4111-8111-111111111111",
+    };
+    expect(clientCommandSchema.safeParse(command).success).toBe(true);
+    expect(clientCommandSchema.safeParse({ ...command, sequence: undefined }).success).toBe(false);
+    expect(clientCommandSchema.safeParse({ ...command, inputSessionId: undefined }).success).toBe(false);
   });
 });
 

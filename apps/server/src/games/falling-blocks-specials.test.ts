@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { TETROMINO_SHAPES, type TetrominoType } from "@workhard/shared";
-import { FallingBlocksGame } from "./falling-blocks.js";
-import { rotateCells, type FallingBlocksRotation } from "./falling-blocks-rotation.js";
+import { FallingBlocksGame } from "@workhard/shared";
+import { rotateCells, type FallingBlocksRotation } from "@workhard/shared";
 import { prepareLineClear, prepareTSpinDouble } from "./testing/falling-blocks.js";
 
 describe("Falling Blocks rotations and specials", () => {

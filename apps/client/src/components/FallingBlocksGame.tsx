@@ -6,6 +6,7 @@ import { GameResultActions } from "./GameResultActions";
 import { GameExitPrompt } from "./GameExitPrompt";
 import { useModalFocus } from "../hooks/useModalFocus";
 import { useFallingBlocksKeyboard } from "../hooks/useFallingBlocksKeyboard";
+import { useFallingBlocksPrediction } from "../hooks/useFallingBlocksPrediction";
 import { IconButton } from "./IconButton";
 import { FallingBlocksMark } from "./FallingBlocksMark";
 import { FallingBlocksControls } from "./FallingBlocksControls";
@@ -21,14 +22,16 @@ interface FallingBlocksGameProps {
   round: GameRoundState;
   members: Member[];
   currentUserId: string;
-  onCommand: (command: FallingBlocksCommand) => void;
+  connected?: boolean;
+  onCommand: (command: FallingBlocksCommand, sequence: number, inputSessionId: string) => boolean | void;
   onClose: () => void;
   onPlayAgain?: (() => void) | undefined;
 }
 
 const EMPTY_GRID = Array.from({ length: 20 }, () => Array<number>(10).fill(0));
 
-export function FallingBlocksGame({ state, round, members, currentUserId, onCommand, onClose, onPlayAgain }: FallingBlocksGameProps) {
+export function FallingBlocksGame({ state: authoritativeState, round, members, currentUserId, connected = true, onCommand, onClose, onPlayAgain }: FallingBlocksGameProps) {
+  const { state, command } = useFallingBlocksPrediction(authoritativeState, round.fallingBlocks?.settings.mode ?? "classic", onCommand, connected);
   const [confirmingExit, setConfirmingExit] = useState(false);
   const [showControls, setShowControls] = useState(() => window.matchMedia("(pointer: coarse)").matches);
   const controlsId = useId();
@@ -56,7 +59,7 @@ export function FallingBlocksGame({ state, round, members, currentUserId, onComm
     paused: state?.paused === true,
     allowPause: !multiplayer,
     allowHold: state?.canHold === true,
-    onCommand,
+    onCommand: command,
   });
 
   useEffect(() => {
@@ -183,7 +186,7 @@ export function FallingBlocksGame({ state, round, members, currentUserId, onComm
           </aside>
 
           {canControl && showControls && (
-            <FallingBlocksControls id={controlsId} paused={state.paused} canHold={state.canHold} multiplayer={multiplayer} onCommand={onCommand} />
+            <FallingBlocksControls id={controlsId} paused={state.paused} canHold={state.canHold} multiplayer={multiplayer} onCommand={command} />
           )}
         </div>
         {currentPlayer?.status === "finished" && <GameResultActions onClose={onClose} onPlayAgain={round.status === "completed" ? onPlayAgain : undefined} />}

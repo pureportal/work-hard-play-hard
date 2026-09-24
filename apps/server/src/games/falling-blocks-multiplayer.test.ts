@@ -7,6 +7,21 @@ import { WorkspaceStore } from "../store.js";
 import { FallingBlocksMultiplayerRuntime } from "./falling-blocks-multiplayer.js";
 
 describe("FallingBlocksMultiplayerRuntime", () => {
+  it("deduplicates retried inputs independently for each connection", () => {
+    const runtime = new FallingBlocksMultiplayerRuntime(new WorkspaceStore(createTestData()));
+    const player = nearbyPlayer("user-maya", 1_250, 620);
+    runtime.syncLobbies([player], new Set([player.userId]));
+    runtime.start(player.userId, "object-falling-blocks", true);
+
+    const first = events(runtime.command(player.userId, "drop", 1, "session-one"));
+    expect(first).toContainEqual(expect.objectContaining({ type: "game.state", acknowledgedSequences: { "session-one": 1 } }));
+    expect(runtime.command(player.userId, "drop", 1, "session-one")).toEqual([]);
+    const second = events(runtime.command(player.userId, "drop", 1, "session-two"));
+    expect(second).toContainEqual(expect.objectContaining({
+      type: "game.state", acknowledgedSequences: { "session-one": 1, "session-two": 1 },
+    }));
+  });
+
   it.each(["object-tetris", "saved-cabinet"])("plays a restored cabinet with the ID %s", (objectId) => {
     const store = new WorkspaceStore(createTestData());
     const saved = store.exportMutableState();

@@ -1,6 +1,6 @@
 import { FALLING_BLOCKS_GARBAGE_CELL, FALLING_BLOCKS_HARD_CELL, type FallingBlocksMode } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
-import { FallingBlocksGame } from "./falling-blocks.js";
+import { FallingBlocksGame } from "@workhard/shared";
 import { prepareLineClear, setFallingBlocksBoard } from "./testing/falling-blocks.js";
 
 describe("Falling Blocks modes", () => {

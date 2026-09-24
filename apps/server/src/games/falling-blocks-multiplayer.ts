@@ -11,7 +11,7 @@ import {
   type WorldPlayer,
 } from "@workhard/shared";
 import { WorkspaceStore } from "../store.js";
-import { FallingBlocksGame } from "./falling-blocks.js";
+import { FallingBlocksGame } from "@workhard/shared";
 import { FallingBlocksAttacks } from "./falling-blocks-attacks.js";
 import type { GameEventDelivery } from "./game-event-delivery.js";
 
@@ -19,6 +19,7 @@ export type { GameEventDelivery } from "./game-event-delivery.js";
 
 const LOBBY_CAPACITY = 8;
 const SIMULATION_STEP_MS = 50;
+const MAX_INPUT_SESSIONS_PER_PLAYER = 16;
 
 type GameCommand = Parameters<FallingBlocksGame["command"]>[0];
 
@@ -34,6 +35,7 @@ interface ActiveRound {
   startedAt: string;
   participantIds: string[];
   games: Map<string, FallingBlocksGame>;
+  sequences: Map<string, Map<string, number>>;
   settings: FallingBlocksSettings;
   attacks: FallingBlocksAttacks;
   completions: Map<string, PlayerCompletion>;
@@ -109,6 +111,7 @@ export class FallingBlocksMultiplayerRuntime {
       startedAt: new Date().toISOString(),
       participantIds,
       games,
+      sequences: new Map(),
       settings: { ...settings },
       attacks: new FallingBlocksAttacks(games, settings.attackTarget, this.random),
       completions: new Map(),
@@ -130,8 +133,7 @@ export class FallingBlocksMultiplayerRuntime {
       event: { type: "game.round_started", round: state },
     });
     for (const participantId of participantIds) {
-      const game = round.games.get(participantId)!;
-      deliveries.push({ scope: "users", userIds: [participantId], event: game.state });
+      deliveries.push({ scope: "users", userIds: [participantId], event: this.gameState(round, participantId) });
       deliveries.push({
         scope: "all",
         event: {
@@ -155,7 +157,7 @@ export class FallingBlocksMultiplayerRuntime {
     return deliveries;
   }
 
-  command(userId: string, command: GameCommand): GameEventDelivery[] {
+  command(userId: string, command: GameCommand, sequence = 0, inputSessionId = "test"): GameEventDelivery[] {
     const round = this.requireRoundForUser(userId);
     if (round.completions.has(userId)) {
       throw new Error("GAME_ALREADY_FINISHED");
@@ -163,13 +165,19 @@ export class FallingBlocksMultiplayerRuntime {
     if (command === "pause" && round.participantIds.length > 1) {
       throw new Error("GAME_PAUSE_MULTIPLAYER");
     }
+    if (sequence > 0) {
+      const sequences = round.sequences.get(userId) ?? new Map<string, number>();
+      if (sequence <= (sequences.get(inputSessionId) ?? 0)) return [];
+      if (!sequences.has(inputSessionId) && sequences.size >= MAX_INPUT_SESSIONS_PER_PLAYER) throw new Error("GAME_COMMAND_INVALID");
+      sequences.set(inputSessionId, sequence);
+      round.sequences.set(userId, sequences);
+    }
     const game = round.games.get(userId)!;
     game.command(command);
     round.attacks.enqueue(userId, game.consumeClears());
     const deliveries: GameEventDelivery[] = [];
-    if (game.consumeChanged()) {
-      deliveries.push({ scope: "users", userIds: [userId], event: game.state });
-    }
+    game.consumeChanged();
+    deliveries.push({ scope: "users", userIds: [userId], event: this.gameState(round, userId) });
     if (game.completed) {
       this.finishPlayer(round, userId, deliveries);
     }
@@ -197,7 +205,7 @@ export class FallingBlocksMultiplayerRuntime {
         }
         const game = round.games.get(participantId)!;
         if (game.consumeChanged()) {
-          deliveries.push({ scope: "users", userIds: [participantId], event: game.state });
+          deliveries.push({ scope: "users", userIds: [participantId], event: this.gameState(round, participantId) });
           changed = true;
         }
         if (game.completed) {
@@ -221,7 +229,7 @@ export class FallingBlocksMultiplayerRuntime {
     game.end();
     const deliveries: GameEventDelivery[] = [];
     if (game.consumeChanged()) {
-      deliveries.push({ scope: "users", userIds: [userId], event: game.state });
+      deliveries.push({ scope: "users", userIds: [userId], event: this.gameState(round, userId) });
     }
     this.finishPlayer(round, userId, deliveries);
     this.appendRoundUpdate(round, deliveries);
@@ -247,7 +255,7 @@ export class FallingBlocksMultiplayerRuntime {
       events.push({ type: "game.round_started", round: this.roundState(round) });
       const game = round.games.get(userId);
       if (game) {
-        events.push(game.state);
+        events.push(this.gameState(round, userId));
       }
     }
     return events;
@@ -279,7 +287,7 @@ export class FallingBlocksMultiplayerRuntime {
     }];
     const game = round.games.get(userId);
     if (game) {
-      deliveries.push({ scope: "users", userIds: [userId], event: game.state });
+      deliveries.push({ scope: "users", userIds: [userId], event: this.gameState(round, userId) });
     }
     return deliveries;
   }
@@ -290,6 +298,13 @@ export class FallingBlocksMultiplayerRuntime {
       throw new Error("GAME_NOT_STARTED");
     }
     return round;
+  }
+
+  private gameState(round: ActiveRound, userId: string) {
+    return {
+      ...round.games.get(userId)!.state,
+      acknowledgedSequences: Object.fromEntries(round.sequences.get(userId) ?? []),
+    };
   }
 
   private getRoundForUser(userId: string): ActiveRound | undefined {

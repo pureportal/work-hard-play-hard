@@ -870,6 +870,7 @@ export function Workspace({
     if (handleWorkEvent(event)) return;
     if (event.type === "session.ready") {
       synchronizingSession.current = true;
+      activeGameRound.current = undefined;
       const floorChanged = event.floorId !== activeFloorIdRef.current;
       activeFloorIdRef.current = event.floorId;
       if (floorChanged) {
@@ -898,6 +899,11 @@ export function Workspace({
       }
     } else if (event.type === "session.synced") {
       synchronizingSession.current = false;
+      if (gameOpen && !activeGameRound.current) {
+        setGameOpen(false);
+        setGameRound(undefined);
+        setGameState(undefined);
+      }
     } else if (event.type === "workspace.snapshot") {
       onCorporateIdentityChange(event.data.corporateIdentity);
       setData((current) => mergeWorkspaceSnapshot(
@@ -1337,7 +1343,7 @@ export function Workspace({
       }
       if (!callErrorHandled) showToast(event.message);
     }
-  }, [activeCall, activeConversationId, activePanel, announceOffscreenGong, callRequest.handle, currentMeeting, currentUser.availability, data.currentUserId, data.members, displayGongRing, displayHighFive, displayReaction, floorId, handleSpotifyEvent, handleSpecialPropEvent, handleWorkEvent, onCorporateIdentityChange, showToast]);
+  }, [activeCall, activeConversationId, activePanel, announceOffscreenGong, callRequest.handle, currentMeeting, currentUser.availability, data.currentUserId, data.members, displayGongRing, displayHighFive, displayReaction, floorId, gameOpen, handleSpotifyEvent, handleSpecialPropEvent, handleWorkEvent, onCorporateIdentityChange, showToast]);
 
   const { connection, snapshot, send } = useRealtime({
     floorId,
@@ -3192,7 +3198,8 @@ export function Workspace({
             round={gameRound}
             members={data.members}
             currentUserId={data.currentUserId}
-            onCommand={(command) => request({ type: "game.command", requestId: requestId(), roundId: gameRound.id, command })}
+            connected={connection === "online"}
+            onCommand={(command, sequence, inputSessionId) => send({ type: "game.command", requestId: requestId(), roundId: gameRound.id, command, sequence, inputSessionId })}
             onPlayAgain={gameRound.participants.length === 1 ? () => {
               closeGame();
               lobbyRequest.run(request, { type: "game.start", requestId: requestId(), definitionId: FALLING_BLOCKS_DEFINITION_ID, objectId: gameRound.objectId, solo: true,

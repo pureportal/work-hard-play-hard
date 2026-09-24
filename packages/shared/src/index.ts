@@ -23,7 +23,7 @@ import type { CoinTransaction, GameCoinReward, GameSettings, PlayerEconomy } fro
 import type { Position } from "./geometry.js";
 import type { SpecialPropUse } from "./special-props.js";
 export * from "./special-props.js";
-import type { TetrominoType, FallingBlocksCellPosition, FallingBlocksCommand, FallingBlocksSettings, FallingBlocksRoundState, FallingBlocksClear, FallingBlocksSpecialCounts, FallingBlocksStatistics } from "./falling-blocks.js";
+import { FALLING_BLOCKS_DEFINITION_ID, type FallingBlocksGameState, type FallingBlocksCommand, type FallingBlocksSettings, type FallingBlocksRoundState, type FallingBlocksSpecialCounts, type FallingBlocksStatistics } from "./falling-blocks.js";
 import {
   TIC_TAC_TOE_DEFINITION_ID,
   type TicTacToeCommand,
@@ -54,6 +54,11 @@ export * from "./public-economy.js";
 export * from "./player-asset-placement.js";
 export * from "./kidnapping.js";
 export * from "./falling-blocks.js";
+export { FallingBlocksGame } from "./falling-blocks-engine.js";
+export { FallingBlocksScoring } from "./falling-blocks-scoring.js";
+export { rotateCells, rotationKicks } from "./falling-blocks-rotation.js";
+export type { FallingBlocksRotation } from "./falling-blocks-rotation.js";
+export { FALLING_BLOCKS_ATTACK_DELAY_MS, FALLING_BLOCKS_WIDTH, FALLING_BLOCKS_HEIGHT, FALLING_BLOCKS_SPEED_STEP_MS, FALLING_BLOCKS_HARD_ROW_INTERVAL_MS } from "./falling-blocks-rules.js";
 export * from "./chess.js";
 export * from "./tic-tac-toe.js";
 export * from "./game-area.js";
@@ -251,7 +256,6 @@ export interface MiniGameDefinition {
   assetId: string;
 }
 
-export const FALLING_BLOCKS_DEFINITION_ID = "game-falling-blocks" as const;
 
 export interface GameScore {
   id: string;
@@ -382,27 +386,6 @@ export interface RoomKnock {
 
 export type RoomKnockState = "pending" | "accepted" | "declined" | "expired";
 
-export interface FallingBlocksGameState {
-  type: "game.state";
-  roundId: string;
-  definitionId: typeof FALLING_BLOCKS_DEFINITION_ID;
-  grid: number[][];
-  score: number;
-  lines: number;
-  level: number;
-  fallIntervalMs: number;
-  running: boolean;
-  paused: boolean;
-  activePiece: TetrominoType | null;
-  activeCells: FallingBlocksCellPosition[];
-  ghostCells: FallingBlocksCellPosition[];
-  heldPiece: TetrominoType | null;
-  nextPieces: TetrominoType[];
-  canHold: boolean;
-  specials: FallingBlocksSpecialCounts;
-  lastClear: FallingBlocksClear | null;
-}
-
 export type GameState = FallingBlocksGameState | TicTacToeGameState;
 export type GameCommand = FallingBlocksCommand | TicTacToeCommand;
 
@@ -528,7 +511,8 @@ export type ClientCommand =
   | { type: "game.start"; requestId: string; definitionId: typeof FALLING_BLOCKS_DEFINITION_ID; objectId: string; solo?: boolean; settings?: FallingBlocksSettings }
   | { type: "game.start"; requestId: string; definitionId: typeof TIC_TAC_TOE_DEFINITION_ID; objectId: string; variantId: TicTacToeVariantId; bot?: GameBot }
   | { type: "game.end"; requestId: string; roundId: string }
-  | { type: "game.command"; requestId: string; roundId: string; command: GameCommand }
+  | { type: "game.command"; requestId: string; roundId: string; command: FallingBlocksCommand; sequence: number; inputSessionId: string }
+  | { type: "game.command"; requestId: string; roundId: string; command: TicTacToeCommand }
   | { type: "chess.match_create"; requestId: string; settings: ChessMatchSettings }
   | { type: "chess.match_join"; requestId: string; matchId: string }
   | { type: "chess.match_open"; requestId: string; matchId: string }

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { FALLING_BLOCKS_DEFINITION_ID, emptyFallingBlocksSpecialCounts, fallingBlocksAverages, type FallingBlocksSpecialCounts, type WorldPlayer } from "@workhard/shared";
 import { WorkspaceStore } from "../store.js";
 import { FallingBlocksMultiplayerRuntime } from "./falling-blocks-multiplayer.js";
-import type { FallingBlocksGame } from "./falling-blocks.js";
+import type { FallingBlocksGame } from "@workhard/shared";
 import { prepareTSpinDouble } from "./testing/falling-blocks.js";
 
 describe("Falling Blocks saved results", () => {

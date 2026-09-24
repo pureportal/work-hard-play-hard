@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FallingBlocksLineCount, FallingBlocksSpin } from "@workhard/shared";
-import { FallingBlocksScoring } from "./falling-blocks-scoring.js";
+import { FallingBlocksScoring } from "@workhard/shared";
 
 describe("Falling Blocks scoring", () => {
   it.each<[FallingBlocksSpin, FallingBlocksLineCount, number, number]>([

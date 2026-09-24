@@ -1426,7 +1426,7 @@ describe("WorldRuntime game lifecycle", () => {
     send(runtime, mayaPeer, { type: "game.start", requestId: "start-game", definitionId: "game-falling-blocks", objectId: "object-falling-blocks", solo: true });
     expect(mayaEvents).toContainEqual(expect.objectContaining({ type: "game.state" }));
     send(runtime, mayaPeer, { type: "game.end", roundId: mayaEvents.findLast((event) => event.type === "game.state")!.roundId, requestId: "end-game" });
-    send(runtime, mayaPeer, { type: "game.command", roundId: mayaEvents.findLast((event) => event.type === "game.state")!.roundId, requestId: "move-after-close", command: "left" });
+    send(runtime, mayaPeer, { type: "game.command", roundId: mayaEvents.findLast((event) => event.type === "game.state")!.roundId, requestId: "move-after-close", command: "left", sequence: 1, inputSessionId: "11111111-1111-4111-8111-111111111111" });
 
     expect(mayaEvents.at(-1)).toMatchObject({ type: "command.error", code: "GAME_NOT_STARTED" });
     runtime.stop();

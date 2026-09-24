@@ -1,3 +1,5 @@
+export const FALLING_BLOCKS_DEFINITION_ID = "game-falling-blocks" as const;
+
 export const TETROMINO_TYPES = ["I", "O", "T", "J", "L", "S", "Z"] as const;
 
 export type TetrominoType = typeof TETROMINO_TYPES[number];
@@ -84,6 +86,55 @@ export interface FallingBlocksClear {
   backToBack: boolean;
   perfectClear: boolean;
   attackRows: number;
+}
+
+export interface FallingBlocksSimulationState {
+  board: number[][];
+  piece: { type: TetrominoType; cells: number[][]; x: number; y: number; rotation: 0 | 1 | 2 | 3 } | null;
+  pieceQueue: TetrominoType[];
+  randomState: number;
+  heldPiece: TetrominoType | null;
+  holdAvailable: boolean;
+  accumulatedMs: number;
+  elapsedMs: number;
+  groundedMs: number;
+  lockResetCount: number;
+  lastRotationKick: number | null;
+  score: number;
+  lines: number;
+  running: boolean;
+  paused: boolean;
+  scoring: {
+    specials: FallingBlocksSpecialCounts;
+    lastClear: FallingBlocksClear | null;
+    combo: number;
+    backToBack: boolean;
+    sequence: number;
+  };
+}
+
+export interface FallingBlocksGameState {
+  type: "game.state";
+  roundId: string;
+  definitionId: typeof FALLING_BLOCKS_DEFINITION_ID;
+  grid: number[][];
+  score: number;
+  lines: number;
+  level: number;
+  fallIntervalMs: number;
+  running: boolean;
+  paused: boolean;
+  activePiece: TetrominoType | null;
+  activeCells: FallingBlocksCellPosition[];
+  ghostCells: FallingBlocksCellPosition[];
+  heldPiece: TetrominoType | null;
+  nextPieces: TetrominoType[];
+  canHold: boolean;
+  specials: FallingBlocksSpecialCounts;
+  lastClear: FallingBlocksClear | null;
+  simulation: FallingBlocksSimulationState;
+  acknowledgedSequences: Record<string, number>;
+  serverTime: number;
 }
 
 export const FALLING_BLOCKS_SPECIAL_LABELS = {

@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { emptyFallingBlocksSpecialCounts, FALLING_BLOCKS_HARD_CELL, FALLING_BLOCKS_GARBAGE_CELL, type FallingBlocksGameState, type GameRoundState, type FallingBlocksCommand } from "@workhard/shared";
+import { emptyFallingBlocksSpecialCounts, FALLING_BLOCKS_HARD_CELL, FALLING_BLOCKS_GARBAGE_CELL, FallingBlocksGame as FallingBlocksEngine, TETROMINO_SHAPES, type FallingBlocksGameState, type GameRoundState, type FallingBlocksCommand } from "@workhard/shared";
 import { FallingBlocksGame } from "./FallingBlocksGame";
 
 beforeEach(() => vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: false }))));
@@ -28,13 +28,13 @@ describe("FallingBlocksGame", () => {
     expect(screen.queryByRole("button", { name: "Move left" })).toBeNull();
     fireEvent.keyDown(window, { code: "KeyZ" });
     fireEvent.keyUp(window, { code: "KeyZ" });
-    expect(onCommand).toHaveBeenCalledWith("rotate-counterclockwise");
+    expect(onCommand).toHaveBeenCalledWith("rotate-counterclockwise", expect.any(Number), expect.any(String));
     screen.getByRole("button", { name: "Show controls" }).focus();
     fireEvent.click(screen.getByRole("button", { name: "Show controls" }));
     expect(document.activeElement).toBe(screen.getByRole("dialog"));
     fireEvent.keyDown(document.activeElement!, { code: "ArrowLeft" });
     fireEvent.keyUp(document.activeElement!, { code: "ArrowLeft" });
-    expect(onCommand).toHaveBeenLastCalledWith("left");
+    expect(onCommand).toHaveBeenLastCalledWith("left", expect.any(Number), expect.any(String));
     expect(screen.getByRole("button", { name: "Hide controls" }).getAttribute("aria-expanded")).toBe("true");
     expect(screen.getByRole("button", { name: "Move left" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Hide controls" }));
@@ -46,12 +46,16 @@ describe("FallingBlocksGame", () => {
     const onCommand = vi.fn();
     const result = renderGame(onCommand);
     fireEvent.keyDown(window, { code: "ArrowLeft" });
-    result.rerender(gameElement(onCommand, { ...createState(), paused: true }));
+    const pausedState = createState();
+    pausedState.paused = true;
+    pausedState.simulation.paused = true;
+    pausedState.acknowledgedSequences = {};
+    result.rerender(gameElement(onCommand, pausedState));
     act(() => vi.advanceTimersByTime(500));
     fireEvent.keyDown(window, { code: "Space" });
     expect(onCommand.mock.calls.map(([command]) => command)).toEqual(["left"]);
     fireEvent.keyDown(window, { code: "KeyP" });
-    expect(onCommand).toHaveBeenLastCalledWith("pause");
+    expect(onCommand).toHaveBeenLastCalledWith("pause", expect.any(Number), expect.any(String));
     fireEvent.keyDown(screen.getByRole("button", { name: "Show controls" }), { code: "Space" });
     expect(onCommand).toHaveBeenCalledTimes(2);
   });
@@ -59,6 +63,7 @@ describe("FallingBlocksGame", () => {
   it("shows a special's awarded points briefly without repeating on ordinary updates", () => {
     vi.useFakeTimers();
     const state: FallingBlocksGameState = { ...createState(), lastClear: { id: 1, lines: 2, spin: "full", points: 1850, combo: 1, backToBack: true, perfectClear: false, attackRows: 5 } };
+    state.simulation.scoring.lastClear = state.lastClear;
     const result = render(gameElement(vi.fn(), state));
     expect(screen.getByRole("status").textContent).toContain("T-spin DoubleBack-to-backCombo 1+1,850");
     act(() => vi.advanceTimersByTime(1800));
@@ -71,6 +76,8 @@ describe("FallingBlocksGame", () => {
     const state = createState();
     state.grid[19] = Array(10).fill(FALLING_BLOCKS_HARD_CELL);
     state.grid[18] = Array.from({ length: 10 }, (_, column) => column === 0 ? 0 : FALLING_BLOCKS_GARBAGE_CELL);
+    state.simulation.board[19] = [...state.grid[19]!];
+    state.simulation.board[18] = [...state.grid[18]!];
     const multiplayerRound: GameRoundState = {
       ...round,
       participants: [...round.participants, { userId: "user-leo", score: 0, lines: 0, level: 1, status: "playing" }],
@@ -110,7 +117,7 @@ describe("FallingBlocksGame", () => {
     const result = renderGame(firstCommandHandler);
 
     fireEvent.keyDown(window, { code: "ArrowLeft", key: "ArrowLeft" });
-    expect(firstCommandHandler).toHaveBeenCalledWith("left");
+    expect(firstCommandHandler).toHaveBeenCalledWith("left", expect.any(Number), expect.any(String));
 
     result.rerender(gameElement(secondCommandHandler, { ...createState(), score: 1_241 }));
     fireEvent.keyDown(window, { code: "ArrowUp", key: "ArrowUp" });
@@ -143,7 +150,7 @@ describe("FallingBlocksGame", () => {
     fireEvent.keyUp(window, { code: "KeyC", key: "c" });
 
     expect(onCommand).toHaveBeenCalledOnce();
-    expect(onCommand).toHaveBeenCalledWith("hold");
+    expect(onCommand).toHaveBeenCalledWith("hold", expect.any(Number), expect.any(String));
   });
 });
 
@@ -165,6 +172,13 @@ function gameElement(onCommand: (command: FallingBlocksCommand) => void, state: 
 }
 
 function createState(): FallingBlocksGameState {
+  const simulation = new FallingBlocksEngine("round-test").snapshot;
+  simulation.board = Array.from({ length: 20 }, () => Array<number>(10).fill(0));
+  simulation.piece = { type: "I", cells: TETROMINO_SHAPES.I.map((row) => [...row]), x: 3, y: -1, rotation: 0 };
+  simulation.pieceQueue = ["O", "S", "J", "L", "Z"];
+  simulation.heldPiece = "T";
+  simulation.score = 1_240;
+  simulation.lines = 8;
   const grid = Array.from({ length: 20 }, () => Array<number>(10).fill(0));
   for (const column of [3, 4, 5, 6]) {
     grid[0]![column] = 1;
@@ -188,6 +202,9 @@ function createState(): FallingBlocksGameState {
     canHold: true,
     specials: emptyFallingBlocksSpecialCounts(),
     lastClear: null,
+    simulation,
+    acknowledgedSequences: {},
+    serverTime: Date.now(),
   };
 }
 

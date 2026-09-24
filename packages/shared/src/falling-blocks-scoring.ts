@@ -3,7 +3,8 @@ import {
   type FallingBlocksClear,
   type FallingBlocksLineCount,
   type FallingBlocksSpin,
-} from "@workhard/shared";
+  type FallingBlocksSimulationState,
+} from "./falling-blocks.js";
 
 const LINE_POINTS = [0, 100, 300, 500, 800] as const;
 const SPIN_POINTS = { mini: [100, 200, 400, 0, 0], full: [400, 800, 1200, 1600, 0] } as const;
@@ -17,6 +18,24 @@ export class FallingBlocksScoring {
   private combo = -1;
   private backToBack = false;
   private sequence = 0;
+
+  get snapshot() {
+    return {
+      specials: { ...this.specials },
+      lastClear: this.lastClear ? { ...this.lastClear } : null,
+      combo: this.combo,
+      backToBack: this.backToBack,
+      sequence: this.sequence,
+    };
+  }
+
+  restore(snapshot: FallingBlocksSimulationState["scoring"]): void {
+    Object.assign(this.specials, snapshot.specials);
+    this.lastClear = snapshot.lastClear ? { ...snapshot.lastClear } : null;
+    this.combo = snapshot.combo;
+    this.backToBack = snapshot.backToBack;
+    this.sequence = snapshot.sequence;
+  }
 
   lock(lines: FallingBlocksLineCount, spin: FallingBlocksSpin, perfectClear: boolean, level: number): FallingBlocksClear {
     this.combo = lines > 0 ? this.combo + 1 : -1;

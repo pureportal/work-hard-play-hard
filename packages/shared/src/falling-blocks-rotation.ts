@@ -1,4 +1,4 @@
-import type { TetrominoType } from "@workhard/shared";
+import type { TetrominoType } from "./falling-blocks.js";
 
 export type FallingBlocksRotation = 0 | 1 | 2 | 3;
 type Offset = readonly [number, number];

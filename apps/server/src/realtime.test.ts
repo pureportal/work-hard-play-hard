@@ -291,7 +291,7 @@ describe("realtime transport", () => {
 
     const completedForMaya = waitForEvent(mayaSocket, (event) => event.type === "game.round_completed");
     const completedForLeo = waitForEvent(leoSocket, (event) => event.type === "game.round_completed");
-    mayaSocket.send(JSON.stringify({ type: "game.command", roundId: mayaRoundEvent.round.id, requestId: "score", command: "drop" }));
+    mayaSocket.send(JSON.stringify({ type: "game.command", roundId: mayaRoundEvent.round.id, requestId: "score", command: "drop", sequence: 1, inputSessionId: "11111111-1111-4111-8111-111111111111" }));
     leoSocket.send(JSON.stringify({ type: "game.end", roundId: mayaRoundEvent.round.id, requestId: "finish-leo" }));
     mayaSocket.send(JSON.stringify({ type: "game.end", roundId: mayaRoundEvent.round.id, requestId: "finish-maya" }));
     const [mayaCompletion, leoCompletion] = await Promise.all([completedForMaya, completedForLeo]);

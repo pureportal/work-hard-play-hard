@@ -1,6 +1,6 @@
 import type { FallingBlocksAttack, FallingBlocksAttackTarget, FallingBlocksClear } from "@workhard/shared";
-import type { FallingBlocksGame } from "./falling-blocks.js";
-import { FALLING_BLOCKS_ATTACK_DELAY_MS, FALLING_BLOCKS_WIDTH } from "./falling-blocks-rules.js";
+import type { FallingBlocksGame } from "@workhard/shared";
+import { FALLING_BLOCKS_ATTACK_DELAY_MS, FALLING_BLOCKS_WIDTH } from "@workhard/shared";
 
 interface PendingAttack extends Omit<FallingBlocksAttack, "remainingMs"> {
   dueAtMs: number;

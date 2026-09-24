@@ -13,7 +13,8 @@ import {
   type FallingBlocksClear,
   type FallingBlocksLineCount,
   type FallingBlocksSpin,
-} from "@workhard/shared";
+  type FallingBlocksSimulationState,
+} from "./falling-blocks.js";
 import {
   FALLING_BLOCKS_HEIGHT as HEIGHT,
   FALLING_BLOCKS_WIDTH as WIDTH,
@@ -40,7 +41,7 @@ export class FallingBlocksGame {
   private board = Array.from({ length: HEIGHT }, () => Array<number>(WIDTH).fill(0));
   private piece: Piece | undefined;
   private readonly pieceQueue: TetrominoType[] = [];
-  private readonly random: () => number;
+  private randomState: number;
   private heldPiece: TetrominoType | undefined;
   private holdAvailable = true;
   private accumulatedMs = 0;
@@ -57,8 +58,50 @@ export class FallingBlocksGame {
   private changed = true;
 
   constructor(private readonly roundId: string, private readonly mode: FallingBlocksMode = "classic") {
-    this.random = createSeededRandom(roundId);
+    this.randomState = seedRandom(roundId);
     this.spawnPiece();
+  }
+
+  get snapshot(): FallingBlocksSimulationState {
+    return {
+      board: this.board.map((row) => [...row]),
+      piece: this.piece ? { type: this.piece.type, cells: this.piece.cells.map((row) => [...row]), x: this.piece.x, y: this.piece.y, rotation: this.piece.rotation } : null,
+      pieceQueue: [...this.pieceQueue],
+      randomState: this.randomState,
+      heldPiece: this.heldPiece ?? null,
+      holdAvailable: this.holdAvailable,
+      accumulatedMs: this.accumulatedMs,
+      elapsedMs: this.elapsedMs,
+      groundedMs: this.groundedMs,
+      lockResetCount: this.lockResetCount,
+      lastRotationKick: this.lastRotationKick,
+      score: this.score,
+      lines: this.lines,
+      running: this.running,
+      paused: this.paused,
+      scoring: this.scoring.snapshot,
+    };
+  }
+
+  restore(snapshot: FallingBlocksSimulationState): void {
+    this.board = snapshot.board.map((row) => [...row]);
+    this.piece = snapshot.piece ? { ...snapshot.piece, color: TETROMINO_COLOR_IDS[snapshot.piece.type], cells: snapshot.piece.cells.map((row) => [...row]) } : undefined;
+    this.pieceQueue.splice(0, this.pieceQueue.length, ...snapshot.pieceQueue);
+    this.randomState = snapshot.randomState;
+    this.heldPiece = snapshot.heldPiece ?? undefined;
+    this.holdAvailable = snapshot.holdAvailable;
+    this.accumulatedMs = snapshot.accumulatedMs;
+    this.elapsedMs = snapshot.elapsedMs;
+    this.groundedMs = snapshot.groundedMs;
+    this.lockResetCount = snapshot.lockResetCount;
+    this.lastRotationKick = snapshot.lastRotationKick;
+    this.score = snapshot.score;
+    this.lines = snapshot.lines;
+    this.running = snapshot.running;
+    this.paused = snapshot.paused;
+    this.scoring.restore(snapshot.scoring);
+    this.clears = [];
+    this.changed = true;
   }
 
   update(deltaMs: number): boolean {
@@ -180,6 +223,9 @@ export class FallingBlocksGame {
       canHold: this.holdAvailable && this.running,
       specials: { ...this.scoring.specials },
       lastClear: this.scoring.lastClear ? { ...this.scoring.lastClear } : null,
+      simulation: this.snapshot,
+      acknowledgedSequences: {},
+      serverTime: Date.now(),
     };
   }
 
@@ -282,11 +328,19 @@ export class FallingBlocksGame {
     while (this.pieceQueue.length < minimumLength) {
       const bag = [...TETROMINO_TYPES];
       for (let index = bag.length - 1; index > 0; index -= 1) {
-        const swapIndex = Math.floor(this.random() * (index + 1));
+        const swapIndex = Math.floor(this.nextRandom() * (index + 1));
         [bag[index], bag[swapIndex]] = [bag[swapIndex]!, bag[index]!];
       }
       this.pieceQueue.push(...bag);
     }
+  }
+
+  private nextRandom(): number {
+    this.randomState += 0x6d2b79f5;
+    let value = this.randomState;
+    value = Math.imul(value ^ value >>> 15, value | 1);
+    value ^= value + Math.imul(value ^ value >>> 7, value | 61);
+    return ((value ^ value >>> 14) >>> 0) / 4_294_967_296;
   }
 
   private tryHold(): boolean {
@@ -441,16 +495,10 @@ export class FallingBlocksGame {
   }
 }
 
-function createSeededRandom(seed: string): () => number {
+function seedRandom(seed: string): number {
   let state = 2_166_136_261;
   for (let index = 0; index < seed.length; index += 1) {
     state = Math.imul(state ^ seed.charCodeAt(index), 16_777_619);
   }
-  return () => {
-    state += 0x6d2b79f5;
-    let value = state;
-    value = Math.imul(value ^ value >>> 15, value | 1);
-    value ^= value + Math.imul(value ^ value >>> 7, value | 61);
-    return ((value ^ value >>> 14) >>> 0) / 4_294_967_296;
-  };
+  return state;
 }

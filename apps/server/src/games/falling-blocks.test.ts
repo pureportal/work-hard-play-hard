@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { TETROMINO_SHAPES, type FallingBlocksCellPosition } from "@workhard/shared";
-import { FallingBlocksGame } from "./falling-blocks.js";
+import { FallingBlocksGame } from "@workhard/shared";
 
 describe("FallingBlocksGame", () => {
   it("starts with a complete empty-sized board and an active piece", () => {

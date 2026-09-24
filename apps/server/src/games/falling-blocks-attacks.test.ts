@@ -2,7 +2,7 @@ import { createTestData } from "../testing/workspace-data.js";
 import { FALLING_BLOCKS_DEFINITION_ID, FALLING_BLOCKS_GARBAGE_CELL, FALLING_BLOCKS_HARD_CELL, type FallingBlocksSettings, type WorldPlayer } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
 import { WorkspaceStore } from "../store.js";
-import type { FallingBlocksGame } from "./falling-blocks.js";
+import type { FallingBlocksGame } from "@workhard/shared";
 import { FallingBlocksMultiplayerRuntime } from "./falling-blocks-multiplayer.js";
 import { prepareLineClear, prepareTSpinDouble, setFallingBlocksBoard } from "./testing/falling-blocks.js";
 
@@ -44,7 +44,7 @@ describe("Falling Blocks multiplayer attacks", () => {
     expect(games.get("user-priya")!.stoneCount).toBe(0);
     expect(snapshot(runtime).attacks).toEqual([]);
     if (rows) {
-      expect(applied).toContainEqual({ scope: "users", userIds: ["user-leo"], event: gameState(runtime, "user-leo") });
+      expect(applied).toContainEqual({ scope: "users", userIds: ["user-leo"], event: expect.objectContaining({ type: "game.state", grid: gameState(runtime, "user-leo").grid }) });
       expect(gameState(runtime, "user-leo").grid.flat().filter((cell) => cell === FALLING_BLOCKS_GARBAGE_CELL)).toHaveLength(rows * 9);
     }
     runtime.update(1);
@@ -91,7 +91,7 @@ describe("Falling Blocks multiplayer attacks", () => {
     const { runtime, games } = setup();
     const sender = games.get("user-maya")!;
     prepareLineClear(sender, 4);
-    while (runtime.command("user-maya", "down").some((delivery) => delivery.event.type === "game.state")) continue;
+    while (sender.command("down")) continue;
     runtime.update(499);
     expect(snapshot(runtime).attacks).toEqual([]);
     runtime.update(1);

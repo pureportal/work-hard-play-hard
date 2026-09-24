@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import cors from "@fastify/cors";
 import websocket from "@fastify/websocket";
-import type { AuthUser, ClientCommand, MemberRole, ServerEvent } from "@workhard/shared";
+import { FALLING_BLOCKS_DEFINITION_ID, type AuthUser, type ClientCommand, type MemberRole, type ServerEvent } from "@workhard/shared";
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyRequest } from "fastify";
 import { characterAppearanceSchema } from "./avatar/character-schema.js";
 import { AuthStore } from "./auth/auth-store.js";
@@ -936,7 +936,45 @@ interface RealtimeSocket {
   terminate: () => void;
 }
 
+const pendingFallingBlocksStates = new WeakMap<RealtimeSocket, { event: ServerEvent; timer: ReturnType<typeof setTimeout> }>();
+const lastFallingBlocksStateAt = new WeakMap<RealtimeSocket, number>();
+
 function sendEvent(socket: RealtimeSocket, event: ServerEvent, options: { droppable?: boolean } = {}): void {
+  if (event.type === "game.state" && event.definitionId === FALLING_BLOCKS_DEFINITION_ID) {
+    const pending = pendingFallingBlocksStates.get(socket);
+    if (pending) {
+      pending.event = event;
+      return;
+    }
+    const delayMs = 100 - (performance.now() - (lastFallingBlocksStateAt.get(socket) ?? -Infinity));
+    if (delayMs <= 0) {
+      sendEventNow(socket, event);
+      lastFallingBlocksStateAt.set(socket, performance.now());
+      return;
+    }
+    const timer = setTimeout(() => {
+      const latest = pendingFallingBlocksStates.get(socket);
+      if (!latest) return;
+      pendingFallingBlocksStates.delete(socket);
+      sendEventNow(socket, latest.event);
+      lastFallingBlocksStateAt.set(socket, performance.now());
+    }, delayMs);
+    pendingFallingBlocksStates.set(socket, { event, timer });
+    return;
+  }
+  if (event.type === "game.round_completed" || event.type === "game.round_started" || event.type === "session.synced") {
+    const pending = pendingFallingBlocksStates.get(socket);
+    if (pending) {
+      clearTimeout(pending.timer);
+      pendingFallingBlocksStates.delete(socket);
+      sendEventNow(socket, pending.event);
+      lastFallingBlocksStateAt.set(socket, performance.now());
+    }
+  }
+  sendEventNow(socket, event, options);
+}
+
+function sendEventNow(socket: RealtimeSocket, event: ServerEvent, options: { droppable?: boolean } = {}): void {
   if (socket.readyState !== 1) {
     return;
   }

@@ -218,7 +218,11 @@ export const clientCommandSchema = z.discriminatedUnion("type", [
     requestId,
     roundId: z.string().uuid(),
     command: z.union([z.enum(FALLING_BLOCKS_COMMANDS), ticTacToeCommand]),
-  }).strict(),
+    sequence: z.number().int().positive().safe().optional(),
+    inputSessionId: z.string().uuid().optional(),
+  }).strict().refine((value) => typeof value.command === "string"
+    ? value.sequence !== undefined && value.inputSessionId !== undefined
+    : value.sequence === undefined && value.inputSessionId === undefined),
   z.object({ type: z.literal("chess.match_create"), requestId, settings: chessMatchSettings }).strict(),
   z.object({ type: z.literal("chess.match_join"), requestId, matchId: chessMatchId }).strict(),
   z.object({ type: z.literal("chess.match_open"), requestId, matchId: chessMatchId }).strict(),

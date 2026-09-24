@@ -1,6 +1,6 @@
 import { FALLING_BLOCKS_HARD_CELL, TETROMINO_SHAPES } from "@workhard/shared";
-import { rotateCells } from "../falling-blocks-rotation.js";
-import type { FallingBlocksGame } from "../falling-blocks.js";
+import { rotateCells } from "@workhard/shared";
+import type { FallingBlocksGame } from "@workhard/shared";
 
 export function setFallingBlocksBoard(game: FallingBlocksGame, board: number[][]): void {
   Object.assign(game, {
