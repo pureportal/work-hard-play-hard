@@ -61,9 +61,9 @@ describe("multiplayer over real WebSockets", () => {
       expect(replay.round.id).not.toBe(roundId);
       expect(await secondMaya.request({ type: "game.end", requestId: randomUUID(), roundId })).toMatchObject({ code: "GAME_ROUND_CHANGED" });
       expect(await secondMaya.request({ type: "game.command", requestId: randomUUID(), roundId, command: "drop", sequence: 1, inputSessionId: randomUUID() })).toMatchObject({ code: "GAME_ROUND_CHANGED" });
-      const leoClosed = new Promise<void>((resolve) => leo.socket.once("close", () => resolve()));
+      const beforeDisconnect = secondMaya.events.length;
       leo.socket.terminate();
-      await leoClosed;
+      await secondMaya.waitFor((event) => event.type === "presence.changed" && event.member.id === "user-leo" && !event.member.online, beforeDisconnect);
       fixture.runtime.runTickForTest(15_000);
       await secondMaya.waitFor((event) => event.type === "game.round_completed" && event.round.id === roundId);
       expect(await secondMaya.drop(replay.round.id)).toMatchObject({ roundId: replay.round.id, running: true });
