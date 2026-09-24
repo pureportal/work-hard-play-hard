@@ -296,25 +296,27 @@ describe("useRealtime", () => {
     unmount();
   });
 
-  it("reconnects instead of enabling commands after an incomplete synchronization", () => {
+  it.each(["session.ready", "world.snapshot", "workspace.snapshot"] as const)("reconnects instead of enabling commands when synchronization omits %s", (missingEvent) => {
     const { result, unmount } = renderHook(() => useRealtime({ floorId: "floor-one", onEvent: vi.fn() }));
     act(() => vi.advanceTimersByTime(0));
     const socket = MockWebSocket.instances[0]!;
+    const close = vi.spyOn(socket, "close");
+    const initialEvents: ServerEvent[] = [
+      { type: "session.ready", userId: "user-one", floorId: "floor-one" },
+      { type: "world.snapshot", tick: 1, floorId: "floor-one", layoutRevision: 1, players: [] },
+      { type: "workspace.snapshot", data: workspaceSnapshot },
+    ];
 
     act(() => {
       socket.open();
-      socket.receive({ type: "session.ready", userId: "user-one", floorId: "floor-one" });
-      socket.receive({
-        type: "world.snapshot",
-        tick: 1,
-        floorId: "floor-one",
-        layoutRevision: 1,
-        players: [],
-      });
+      for (const event of initialEvents) {
+        if (event.type !== missingEvent) socket.receive(event);
+      }
       socket.receive({ type: "session.synced" });
     });
 
     expect(result.current.connection).toBe("offline");
+    expect(close).toHaveBeenCalledWith(4002, "Synchronization incomplete");
     expect(socket.readyState).toBe(MockWebSocket.CLOSED);
     act(() => vi.advanceTimersByTime(500));
     expect(MockWebSocket.instances).toHaveLength(2);

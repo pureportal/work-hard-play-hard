@@ -1,10 +1,11 @@
 import type { AddressInfo } from "node:net";
 import { FALLING_BLOCKS_DEFINITION_ID, type ServerEvent } from "@workhard/shared";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import WebSocket from "ws";
 import type { ApplicationContext } from "./app.js";
-import { createTestApplication } from "./testing/application.js";
+import { createTestApplication, populateTestWorkspace } from "./testing/application.js";
 import { MemoryDatabase } from "./persistence/memory-database.js";
+import { PublicEconomyStore } from "./economy/public-economy-store.js";
 
 const applications: ApplicationContext[] = [];
 const sockets: WebSocket[] = [];
@@ -14,6 +15,7 @@ afterEach(async () => {
     socket.terminate();
   }
   await Promise.all(applications.splice(0).map(({ app }) => app.close()));
+  vi.restoreAllMocks();
 });
 
 describe("realtime transport", () => {
@@ -27,7 +29,9 @@ describe("realtime transport", () => {
     await waitForEvent(socket, (event) => event.type === "session.synced");
 
     const synchronizedAt = events.findIndex((event) => event.type === "session.synced");
+    expect(events.findIndex((event) => event.type === "world.snapshot")).toBeGreaterThanOrEqual(0);
     expect(events.findIndex((event) => event.type === "world.snapshot")).toBeLessThan(synchronizedAt);
+    expect(events.findIndex((event) => event.type === "workspace.snapshot")).toBeGreaterThanOrEqual(0);
     expect(events.findIndex((event) => event.type === "workspace.snapshot")).toBeLessThan(synchronizedAt);
 
     const invalid = waitForEvent(
@@ -75,6 +79,95 @@ describe("realtime transport", () => {
       }));
     }
     await expect(throttled).resolves.toBe(1008);
+  });
+
+  it.each([64 * 1024, 4 * 1024 * 1024 - 1])("delivers the initial world snapshot with %i bytes buffered", async (bufferedAmount) => {
+    const context = await listeningApplication();
+    const cookie = await loginCookie(context);
+    context.app.websocketServer.once("connection", (socket) => {
+      vi.spyOn(socket, "bufferedAmount", "get").mockReturnValue(bufferedAmount);
+    });
+    const socket = connect(context, cookie);
+    const events: ServerEvent[] = [];
+    socket.on("message", (source) => events.push(JSON.parse(source.toString()) as ServerEvent));
+
+    await waitForEvent(socket, (event) => event.type === "session.synced");
+
+    expect(events.find((event) => event.type === "world.snapshot")).toMatchObject({ floorId: "floor-studio" });
+    expect(events.findIndex((event) => event.type === "world.snapshot"))
+      .toBeLessThan(events.findIndex((event) => event.type === "session.synced"));
+    const response = waitForEvent(socket, (event) => event.type === "presence.changed"
+      && event.member.id === "user-maya" && event.member.availability === "busy");
+    socket.send(JSON.stringify({ type: "presence.set_availability", requestId: "after-sync", availability: "busy" }));
+    await expect(response).resolves.toMatchObject({ type: "presence.changed", member: { id: "user-maya", availability: "busy" } });
+  });
+
+  it("synchronizes restored economy history on initial connection and reconnect", async () => {
+    const database = new MemoryDatabase();
+    await populateTestWorkspace(database);
+    const state = (await database.loadWorkspaceState())!;
+    const economy = new PublicEconomyStore(state.store.publicEconomy);
+    for (let index = 0; index < 800; index += 1) {
+      economy.record("workspace", "user-maya", "donation", 1, `donation-${index}`);
+    }
+    state.store.publicEconomy = economy.exportState();
+    await database.saveWorkspaceState(state);
+    const context = await listeningApplication(database);
+    const cookie = await loginCookie(context);
+    const economyBytes = Buffer.byteLength(JSON.stringify(context.store.getPublicEconomy()));
+    expect(economyBytes).toBeGreaterThan(64 * 1024);
+    context.app.websocketServer.on("connection", (socket) => {
+      vi.spyOn(socket, "bufferedAmount", "get").mockReturnValue(economyBytes);
+    });
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const socket = connect(context, cookie);
+      const events: ServerEvent[] = [];
+      socket.on("message", (source) => events.push(JSON.parse(source.toString()) as ServerEvent));
+      await waitForEvent(socket, (event) => event.type === "session.synced");
+
+      expect(events.map((event) => event.type)).toEqual(expect.arrayContaining([
+        "public_economy.updated", "session.ready", "world.snapshot", "workspace.snapshot", "session.synced",
+      ]));
+      expect(events.find((event) => event.type === "workspace.snapshot")?.data.publicEconomy.transactions).toHaveLength(800);
+      expect(events.findIndex((event) => event.type === "world.snapshot"))
+        .toBeLessThan(events.findIndex((event) => event.type === "session.synced"));
+      const closed = new Promise<void>((resolve) => socket.once("close", () => resolve()));
+      socket.close();
+      await closed;
+    }
+  });
+
+  it("drops periodic snapshots under backpressure and resumes after the buffer drains", async () => {
+    const context = await listeningApplication();
+    const cookie = await loginCookie(context);
+    const socket = connect(context, cookie);
+    await waitForEvent(socket, (event) => event.type === "session.synced");
+    const serverSocket = [...context.app.websocketServer.clients][0]!;
+    let bufferedAmount = 64 * 1024;
+    vi.spyOn(serverSocket, "bufferedAmount", "get").mockImplementation(() => bufferedAmount);
+    const send = vi.spyOn(serverSocket, "send");
+
+    for (let tick = 0; tick < 100; tick += 1) context.runtime.runTickForTest();
+    expect(send.mock.calls.map(([payload]) => (JSON.parse(String(payload)) as ServerEvent).type))
+      .not.toContain("world.snapshot");
+
+    const snapshot = waitForEvent(socket, (event) => event.type === "world.snapshot");
+    bufferedAmount = 0;
+    for (let tick = 0; tick < 100; tick += 1) context.runtime.runTickForTest();
+    await expect(snapshot).resolves.toMatchObject({ type: "world.snapshot", floorId: "floor-studio" });
+  });
+
+  it("still terminates a connection at the hard buffer limit during synchronization", async () => {
+    const context = await listeningApplication();
+    const cookie = await loginCookie(context);
+    context.app.websocketServer.once("connection", (socket) => {
+      vi.spyOn(socket, "bufferedAmount", "get").mockReturnValue(4 * 1024 * 1024);
+    });
+    const socket = connect(context, cookie);
+    const closed = new Promise<number>((resolve) => socket.once("close", resolve));
+
+    await expect(closed).resolves.toBe(1006);
   });
 
   it("closes an unauthenticated websocket with the authentication code", async () => {
@@ -218,8 +311,8 @@ describe("realtime transport", () => {
   });
 });
 
-async function listeningApplication(): Promise<ApplicationContext> {
-  const context = await createTestApplication({ database: new MemoryDatabase(), fixture: true });
+async function listeningApplication(database = new MemoryDatabase()): Promise<ApplicationContext> {
+  const context = await createTestApplication({ database, fixture: true });
   applications.push(context);
   await context.app.listen({ host: "127.0.0.1", port: 0 });
   return context;

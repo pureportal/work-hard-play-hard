@@ -155,7 +155,7 @@ interface Peer {
   id: string;
   userId: string;
   floorId: string;
-  send: (event: ServerEvent) => void;
+  send: (event: ServerEvent, options?: { droppable?: boolean }) => void;
 }
 
 interface MovementState {
@@ -3703,7 +3703,7 @@ export class WorldRuntime {
     for (const floorId of floorIds) {
       const snapshot = this.createSnapshot(floorId, this.connectedPlayersByFloor.get(floorId) ?? []);
       for (const peer of this.peersByFloor.get(floorId) ?? []) {
-        peer.send(snapshot);
+        peer.send(snapshot, { droppable: true });
       }
     }
   }

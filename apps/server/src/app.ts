@@ -858,7 +858,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     socket.on("error", disconnect);
 
     try {
-      peerId = runtime.connect(user.id, floorId, (event) => sendEvent(socket, event));
+      peerId = runtime.connect(user.id, floorId, (event, options) => sendEvent(socket, event, options));
       if (userSockets.size === 1) spotify.setOnline(user.id, true);
       sendEvent(socket, { type: "spotify.snapshot", serverTime: Date.now(), activities: spotify.snapshot() });
     } catch {
@@ -936,7 +936,7 @@ interface RealtimeSocket {
   terminate: () => void;
 }
 
-function sendEvent(socket: RealtimeSocket, event: ServerEvent): void {
+function sendEvent(socket: RealtimeSocket, event: ServerEvent, options: { droppable?: boolean } = {}): void {
   if (socket.readyState !== 1) {
     return;
   }
@@ -944,7 +944,7 @@ function sendEvent(socket: RealtimeSocket, event: ServerEvent): void {
     socket.terminate();
     return;
   }
-  if (event.type === "world.snapshot" && socket.bufferedAmount >= SNAPSHOT_BACKPRESSURE_BYTES) {
+  if (options.droppable && event.type === "world.snapshot" && socket.bufferedAmount >= SNAPSHOT_BACKPRESSURE_BYTES) {
     return;
   }
   try {
