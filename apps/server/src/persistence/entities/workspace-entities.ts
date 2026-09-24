@@ -1,4 +1,5 @@
 import type { OrganisationState, CoinTransactionKind } from "@workhard/shared";
+import type { ApprovalDeskState } from "@workhard/shared";
 import type { PublicEconomyState } from "../../economy/public-economy-store.js";
 import type { GitHubAppSettingsRecord } from "../../github/github-record.js";
 import { EntitySchema } from "@mikro-orm/core";
@@ -184,6 +185,7 @@ export class CoinTransactionEntity {
 }
 
 export class WorkspaceSettingsEntity {
+  approvalDesk!: ApprovalDeskState;
   publicEconomy!: PublicEconomyState;
   organisation!: OrganisationState;
   id!: string;
@@ -532,7 +534,7 @@ export const coinTransactionSchema = new EntitySchema({
   },
   uniques: [{ properties: ["userId", "operationKey"] }],
   checks: [
-    { name: "coin_transactions_kind_check", expression: "kind in ('welcome', 'daily_bonus', 'game_reward', 'shop_purchase', 'donation', 'asset_sale', 'asset_donation')" },
+    { name: "coin_transactions_kind_check", expression: "kind in ('welcome', 'daily_bonus', 'game_reward', 'approval_reward', 'approval_upgrade', 'shop_purchase', 'donation', 'asset_sale', 'asset_donation')" },
     { name: "coin_transactions_balance_after_check", expression: "balance_after >= 0" },
     { name: "coin_transactions_sort_order_check", expression: "sort_order >= 0" },
   ],
@@ -545,6 +547,7 @@ export const workspaceSettingsSchema = new EntitySchema({
     id: { type: String, primary: true },
     floors: { type: "json" },
     gameSettings: { type: "json", fieldName: "game_settings" },
+    approvalDesk: { type: "json", fieldName: "approval_desk" },
     organisation: { type: "json" },
     publicEconomy: { type: "json", fieldName: "public_economy" },
     kidnappingSettings: { type: "json", fieldName: "kidnapping_settings" },

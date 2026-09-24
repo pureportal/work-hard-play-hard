@@ -76,6 +76,8 @@ export const REACTION_KINDS = ["wave", "heart", "celebrate", "thumbs_up", "laugh
 
 export type ReactionKind = typeof REACTION_KINDS[number];
 
+export type GroupReactionKind = "high_five" | "love";
+
 export type ReactionScope =
   | { type: "floor"; floorId: string }
   | { type: "meeting"; meetingId: string };
@@ -327,6 +329,7 @@ export interface WorkspaceAccessData {
 }
 
 export interface BootstrapData extends WorkspaceAccessData {
+  features?: { approvalDesk: boolean };
   organisation: OrganisationState;
   currentUserId: string;
   corporateIdentity: CorporateIdentity;
@@ -345,11 +348,14 @@ export interface BootstrapData extends WorkspaceAccessData {
   registrationSettings?: RegistrationSettings;
 }
 
+export * from "./approval-desk.js";
+
 export interface WorldPlayer {
   userId: string;
   floorId: string;
   x: number;
   y: number;
+  destination?: { floorId: string; x: number; y: number };
   facing: "up" | "down" | "left" | "right";
   availability: Availability;
   roomId?: string;
@@ -416,7 +422,7 @@ export type ServerEvent =
   | { type: "room.access_revoked"; roomId: string }
   | { type: "interaction.wave"; fromUserId: string; toUserId: string; floorId: string }
   | { type: "interaction.reaction"; id: string; userId: string; reaction: ReactionKind; scope: ReactionScope }
-  | { type: "interaction.high_five"; id: string; userIds: [string, string]; floorId: string }
+  | { type: "interaction.group_reaction"; id: string; kind: GroupReactionKind; userIds: [string, string]; floorId: string }
   | { type: "interaction.gong_rang"; ring: GongRing }
   | { type: "interaction.prop_used"; use: SpecialPropUse }
   | { type: "interaction.gong_cooldown"; objectId: string; floorId: string; cooldownUntil: number }
@@ -448,6 +454,7 @@ export type ServerEvent =
   | { type: "game.settings_updated"; settings: GameSettings }
   | { type: "chess.lobby_updated"; lobby: ChessLobbyState }
   | { type: "chess.lobby_closed"; definitionId: ChessLobbyState["definitionId"] }
+  | { type: "chess.waiting_updated"; objectIds: string[] }
   | { type: "chess.match_state"; match: ChessMatchView }
   | { type: "chess.match_closed"; matchId: string }
   | { type: "kidnapping.global_settings_updated"; settings: GlobalKidnappingSettings }

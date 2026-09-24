@@ -11,9 +11,10 @@ interface PersonalPlacedAssetsProps {
   activeFloorId: string;
   selectedItem: LayoutItemReference | undefined;
   onFocus: (floorId: string, objectId: string) => void;
+  onOpenInventory: () => void;
 }
 
-export function PersonalPlacedAssets({ currentUserId, layouts, floors, activeFloorId, selectedItem, onFocus }: PersonalPlacedAssetsProps) {
+export function PersonalPlacedAssets({ currentUserId, layouts, floors, activeFloorId, selectedItem, onFocus, onOpenInventory }: PersonalPlacedAssetsProps) {
   const groups = useMemo(() => floors.flatMap((floor) => {
     const layout = layouts.find((candidate) => candidate.floorId === floor.id);
     const objects = layout?.objects.filter((object) => object.ownerUserId === currentUserId) ?? [];
@@ -21,7 +22,7 @@ export function PersonalPlacedAssets({ currentUserId, layouts, floors, activeFlo
   }), [currentUserId, floors, layouts]);
 
   if (!groups.length) {
-    return <div className="inventory-empty"><PackageOpen size={24} aria-hidden="true" /><span>No placed items yet.</span></div>;
+    return <div className="inventory-empty placed-empty"><PackageOpen size={24} aria-hidden="true" /><span>No placed items yet.</span><button type="button" onClick={onOpenInventory}>Open Inventory</button></div>;
   }
 
   return <div className="personal-placed-assets">

@@ -8,7 +8,7 @@ import {
 } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
 import { WorkspaceStore } from "../store.js";
-import { ChessMultiplayerRuntime, elapsedClockMs } from "./chess-multiplayer.js";
+import { CHESS_INVITATION_TIMEOUT_MS, ChessMultiplayerRuntime, elapsedClockMs } from "./chess-multiplayer.js";
 import type { GameEventDelivery } from "./game-event-delivery.js";
 
 const STANDARD_OPEN: ChessMatchSettings = {
@@ -51,6 +51,11 @@ describe("ChessMultiplayerRuntime", () => {
       outcome: { result: "checkmate", winnerUserId: "user-leo" },
     });
     expect(match.moves.map(({ san }) => san)).toEqual(["f3", "e5", "g4", "Qh4#"]);
+    const lobby = game.runtime.getSessionEvents("user-maya").find((event) => event.type === "chess.lobby_updated");
+    expect(lobby?.type === "chess.lobby_updated" && lobby.lobby.statistics).toEqual([
+      { userId: "user-leo", games: 1, wins: 1, draws: 0 },
+      { userId: "user-maya", games: 1, wins: 0, draws: 0 },
+    ]);
   });
 
   it("supports castling, en passant, and every promotion choice", () => {
@@ -164,6 +169,82 @@ describe("ChessMultiplayerRuntime", () => {
 
     const open = activeMatch(STANDARD_OPEN, "user-priya");
     expect(open.store.getChessMatches()[0]?.blackUserId).toBe("user-priya");
+  });
+
+  it("keeps multiple invitations open and clears the waiting cue as seats fill or expire", () => {
+    let now = new Date("2026-09-04T12:00:00.000Z");
+    const store = new WorkspaceStore(createTestData());
+    const runtime = new ChessMultiplayerRuntime(store, () => now);
+    const players = [nearby("user-maya"), nearby("user-leo")];
+    runtime.syncLobby(players, new Set(players.map(({ userId }) => userId)));
+
+    const first = runtime.create("user-maya", STANDARD_OPEN);
+    const openedId = store.getChessMatches()[0]!.id;
+    expect(first).toContainEqual({ scope: "all", event: { type: "chess.waiting_updated", objectIds: ["object-chess"] } });
+
+    now = new Date(now.getTime() + 60_000);
+    runtime.create("user-maya", { ...STANDARD_OPEN, access: "locked", opponentUserId: "user-leo" });
+    const secondId = store.getChessMatches().find((match) => match.id !== openedId)!.id;
+    expect(store.getChessMatches()).toHaveLength(2);
+    expect(runtime.getSessionEvents("user-leo")).toContainEqual({ type: "chess.waiting_updated", objectIds: ["object-chess"] });
+
+    now = new Date(Date.parse("2026-09-04T12:00:00.000Z") + CHESS_INVITATION_TIMEOUT_MS - 1);
+    runtime.update();
+    expect(store.getChessMatches()).toHaveLength(2);
+    now = new Date(now.getTime() + 1);
+    const expired = runtime.update();
+    expect(store.getChessMatches().map((match) => match.id)).toEqual([secondId]);
+    expect(expired).toContainEqual({ scope: "all", event: { type: "chess.waiting_updated", objectIds: ["object-chess"] } });
+    expect(() => runtime.join("user-leo", openedId)).toThrow("CHESS_MATCH_NOT_FOUND");
+
+    const joined = runtime.join("user-leo", secondId);
+    expect(joined).toContainEqual({ scope: "all", event: { type: "chess.waiting_updated", objectIds: [] } });
+    expect(store.getChessMatches()[0]?.status).toBe("active");
+
+    runtime.create("user-maya", STANDARD_OPEN);
+    now = new Date(now.getTime() + CHESS_INVITATION_TIMEOUT_MS);
+    const finalExpiry = runtime.update();
+    expect(finalExpiry).toContainEqual({ scope: "all", event: { type: "chess.waiting_updated", objectIds: [] } });
+    expect(store.getChessMatches()).toHaveLength(1);
+    expect(store.getChessMatches()[0]?.status).toBe("active");
+  });
+
+  it("removes unaccepted invitations after a restart and rejects an expired join before the next tick", () => {
+    let now = new Date("2026-09-04T12:00:00.000Z");
+    const store = new WorkspaceStore(createTestData());
+    const runtime = new ChessMultiplayerRuntime(store, () => now);
+    const players = [nearby("user-maya"), nearby("user-leo")];
+    runtime.syncLobby(players, new Set(players.map(({ userId }) => userId)));
+    const matchId = createdMatchId(runtime.create("user-maya", STANDARD_OPEN), "user-maya");
+
+    now = new Date(now.getTime() + CHESS_INVITATION_TIMEOUT_MS);
+    expect(() => runtime.join("user-leo", matchId)).toThrow("CHESS_MATCH_NOT_FOUND");
+    const restored = new ChessMultiplayerRuntime(store, () => now);
+    expect(store.getChessMatches()).toEqual([]);
+    expect(restored.getSessionEvents("user-leo")).toContainEqual({ type: "chess.waiting_updated", objectIds: [] });
+  });
+
+  it("tracks waiting highlights independently across chess tables", () => {
+    const store = new WorkspaceStore(createTestData());
+    const layout = structuredClone(store.getLayout("floor-studio")!);
+    const table = layout.objects.find((object) => object.id === "object-chess")!;
+    layout.objects.push({ ...table, id: "object-chess-two", x: 900 });
+    layout.revision += 1;
+    store.replaceLayout(layout);
+    const runtime = new ChessMultiplayerRuntime(store);
+    runtime.syncLobby([nearby("user-maya")], new Set(["user-maya"]));
+    runtime.create("user-maya", STANDARD_OPEN);
+    const openedId = store.getChessMatches()[0]!.id;
+
+    runtime.syncLobby([{ ...nearby("user-maya"), x: 870 }], new Set(["user-maya"]));
+    const second = runtime.create("user-maya", STANDARD_OPEN);
+    expect(second).toContainEqual({
+      scope: "all", event: { type: "chess.waiting_updated", objectIds: ["object-chess", "object-chess-two"] },
+    });
+    expect(store.getChessMatches()).toHaveLength(2);
+
+    const cancelled = runtime.cancel("user-maya", openedId);
+    expect(cancelled).toContainEqual({ scope: "all", event: { type: "chess.waiting_updated", objectIds: ["object-chess-two"] } });
   });
 
   it("runs rapid clocks and excludes paused weekends from 24-hour turns", () => {

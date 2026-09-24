@@ -1,8 +1,6 @@
 import { Film, MousePointerClick, Search, X } from "lucide-react";
-import { useId, useRef, useState, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { ASSET_CATALOG, ASSET_RARITIES, type AssetDefinition, type AssetRarity } from "@workhard/shared";
-import { useHorizontalWheelScroll } from "../hooks/useHorizontalWheelScroll";
-import { useSelectedTabVisibility } from "../hooks/useSelectedTabVisibility";
 import { hasAssetFeature, type AssetFeature } from "../asset-features";
 import { AssetRarityFilter } from "./AssetRarityFilter";
 import "../asset-browser.css";
@@ -17,8 +15,6 @@ interface AssetBrowserProps {
 
 export function AssetBrowser({ assets, categoryLabel, empty, footer, renderAsset }: AssetBrowserProps) {
   const panelId = useId();
-  const tabsRef = useRef<HTMLDivElement>(null);
-  const scrollTabs = useHorizontalWheelScroll(tabsRef);
   const [categoryId, setCategoryId] = useState("all");
   const [rarity, setRarity] = useState<AssetRarity | "all">("all");
   const [feature, setFeature] = useState<AssetFeature | "all">("all");
@@ -36,8 +32,6 @@ export function AssetBrowser({ assets, categoryLabel, empty, footer, renderAsset
   if (selectedCategoryId !== "all") {
     visibleAssets.sort((left, right) => ASSET_RARITIES.indexOf(left.rarity) - ASSET_RARITIES.indexOf(right.rarity));
   }
-
-  useSelectedTabVisibility(tabsRef, selectedCategoryId);
 
   return <div className="asset-browser">
     {assets.length > 0 && <>
@@ -62,7 +56,13 @@ export function AssetBrowser({ assets, categoryLabel, empty, footer, renderAsset
           <MousePointerClick size={15} aria-hidden="true" />Interactive
         </button>
       </div>
-      <div ref={scrollTabs} className="asset-category-tabs" role="tablist" aria-label={categoryLabel}>
+      <label className="asset-browser-category-select">
+        <span>Category</span>
+        <select aria-label={categoryLabel} value={selectedCategoryId} onChange={(event) => setCategoryId(event.target.value)}>
+          {categories.map((category) => <option key={category.id} value={category.id}>{category.id === "all" ? "All categories" : category.name}</option>)}
+        </select>
+      </label>
+      <div className="asset-category-tabs" role="tablist" aria-label={categoryLabel}>
         {categories.map((category, index) => <button key={category.id} id={`${panelId}-${category.id}`} role="tab"
           aria-selected={category.id === selectedCategoryId} aria-controls={`${panelId}-assets`} tabIndex={category.id === selectedCategoryId ? 0 : -1}
           className={category.id === selectedCategoryId ? "active" : ""} onClick={() => setCategoryId(category.id)}
@@ -77,7 +77,7 @@ export function AssetBrowser({ assets, categoryLabel, empty, footer, renderAsset
             }
             event.preventDefault();
             setCategoryId(categories[next]!.id);
-            tabsRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
+            event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
           }}>{category.name}</button>)}
       </div>
     </>}

@@ -9,6 +9,7 @@ import {
   type ChessMatchRecord,
   type ChessMatchSettings,
   type ChessMatchSummary,
+  type ChessPlayerStatistics,
   type ChessMatchView,
   type ChessMoveInput,
   type ChessSquare,
@@ -25,6 +26,7 @@ import { availableDrawClaims, boardPieces, canPossiblyMate, colorName, drawClaim
 const RAPID_TIME_MS = 10 * 60 * 1_000;
 const DAILY_TIME_MS = 24 * 60 * 60 * 1_000;
 const CLOCK_BROADCAST_INTERVAL_MS = 1_000;
+export const CHESS_INVITATION_TIMEOUT_MS = 10 * 60 * 1_000;
 const MAX_VISIBLE_MATCHES = 50;
 
 type Now = () => Date;
@@ -47,6 +49,10 @@ export class ChessMultiplayerRuntime {
     private readonly searchBot: ChessBotSearch = findStockfishMove,
   ) {
     for (const match of store.getChessMatches()) {
+      if (match.status === "waiting" && this.isInvitationExpired(match, this.now())) {
+        store.removeChessMatch(match.id);
+        continue;
+      }
       this.positions.set(match.id, hydrateChess(match));
       this.matches.set(match.id, match);
     }
@@ -91,10 +97,6 @@ export class ChessMultiplayerRuntime {
     if (settings.bot && [...this.matches.values()].some((match) => match.creatorUserId === userId && match.settings.bot && match.status === "active")) {
       throw new Error("CHESS_BOT_MATCH_ACTIVE");
     }
-    if ([...this.matches.values()].some((match) => match.creatorUserId === userId && match.status === "waiting")) {
-      throw new Error("CHESS_MATCH_PENDING");
-    }
-
     const createdAt = this.now().toISOString();
     const initialClock = initialClockMs(settings.timeControl);
     const match: ChessMatchRecord = {
@@ -121,12 +123,15 @@ export class ChessMultiplayerRuntime {
     this.positions.set(match.id, new Chess());
     this.store.saveChessMatch(match);
     if (settings.bot) this.viewingMatchIdByUser.set(userId, match.id);
-    return [...this.lobbyDeliveries(), ...this.matchViewDeliveries(match, this.now())];
+    return [...this.lobbyDeliveries(), this.waitingDelivery(), ...this.matchViewDeliveries(match, this.now())];
   }
 
   join(userId: string, matchId: string): GameEventDelivery[] {
     this.requireNearby(userId);
     const match = this.requireMatch(matchId);
+    if (this.isInvitationExpired(match, this.now())) {
+      throw new Error("CHESS_MATCH_NOT_FOUND");
+    }
     if (match.status !== "waiting") {
       throw new Error("CHESS_MATCH_STARTED");
     }
@@ -148,6 +153,7 @@ export class ChessMultiplayerRuntime {
     this.store.saveChessMatch(match);
     return [
       ...this.lobbyDeliveries(),
+      this.waitingDelivery(),
       ...this.matchViewDeliveries(match, now),
     ];
   }
@@ -186,16 +192,8 @@ export class ChessMultiplayerRuntime {
     if (match.status !== "waiting" || match.creatorUserId !== userId) {
       throw new Error("CHESS_MATCH_CANNOT_CANCEL");
     }
-    this.matches.delete(match.id);
-    this.positions.delete(match.id);
-    this.positionViews.delete(match.id);
-    this.store.removeChessMatch(match.id);
-    for (const [viewerUserId, viewedMatchId] of this.viewingMatchIdByUser) {
-      if (viewedMatchId === match.id) {
-        this.viewingMatchIdByUser.delete(viewerUserId);
-      }
-    }
-    return this.lobbyDeliveries();
+    this.removeWaitingMatch(match);
+    return [...this.lobbyDeliveries(), this.waitingDelivery()];
   }
 
   move(userId: string, matchId: string, input: ChessMoveInput): GameEventDelivery[] {
@@ -344,6 +342,14 @@ export class ChessMultiplayerRuntime {
     const now = this.now();
     const deliveries = this.botDeliveries;
     this.botDeliveries = [];
+    let invitationsExpired = false;
+    for (const match of this.matches.values()) {
+      if (match.status === "waiting" && this.isInvitationExpired(match, now)) {
+        this.removeWaitingMatch(match);
+        invitationsExpired = true;
+      }
+    }
+    if (invitationsExpired) deliveries.push(...this.lobbyDeliveries(), this.waitingDelivery());
     this.updateBot();
     for (const match of this.matches.values()) {
       if (match.status !== "active" || match.settings.timeControl === "standard") {
@@ -404,7 +410,7 @@ export class ChessMultiplayerRuntime {
   }
 
   getSessionEvents(userId: string): ServerEvent[] {
-    const events: ServerEvent[] = [];
+    const events: ServerEvent[] = [this.waitingDelivery().event];
     if (this.nearbyObjectIdByUser.has(userId)) {
       events.push(this.lobbyEvent(userId, this.requireChessObject(userId)));
     }
@@ -524,6 +530,7 @@ export class ChessMultiplayerRuntime {
           .sort(compareMatchesForUser(userId))
           .filter((match, index) => match.status !== "completed" || index < MAX_VISIBLE_MATCHES)
           .map((match) => matchSummary(match)),
+        statistics: chessStatistics(this.matches.values()),
       },
     };
   }
@@ -585,6 +592,32 @@ export class ChessMultiplayerRuntime {
       }
     }
   }
+
+  private waitingDelivery(): { scope: "all"; event: Extract<ServerEvent, { type: "chess.waiting_updated" }> } {
+    return {
+      scope: "all",
+      event: {
+        type: "chess.waiting_updated",
+        objectIds: [...new Set([...this.matches.values()]
+          .filter((match) => match.status === "waiting")
+          .map((match) => match.objectId))],
+      },
+    };
+  }
+
+  private isInvitationExpired(match: ChessMatchRecord, now: Date): boolean {
+    return match.status === "waiting" && now.getTime() - Date.parse(match.createdAt) >= CHESS_INVITATION_TIMEOUT_MS;
+  }
+
+  private removeWaitingMatch(match: ChessMatchRecord): void {
+    this.matches.delete(match.id);
+    this.positions.delete(match.id);
+    this.positionViews.delete(match.id);
+    this.store.removeChessMatch(match.id);
+    for (const [userId, viewedMatchId] of this.viewingMatchIdByUser) {
+      if (viewedMatchId === match.id) this.viewingMatchIdByUser.delete(userId);
+    }
+  }
 }
 
 function initialClockMs(timeControl: ChessMatchSettings["timeControl"]): number | null {
@@ -643,6 +676,23 @@ function compareMatchesForUser(userId: string): (left: ChessMatchRecord, right: 
     }
     return Date.parse(right.updatedAt) - Date.parse(left.updatedAt);
   };
+}
+
+function chessStatistics(matches: Iterable<ChessMatchRecord>): ChessPlayerStatistics[] {
+  const byUser = new Map<string, ChessPlayerStatistics>();
+  for (const match of matches) {
+    if (match.status !== "completed") continue;
+    for (const participantId of participantIds(match)) {
+      if (participantId === GAME_BOT_USER_ID) continue;
+      const entry = byUser.get(participantId) ?? { userId: participantId, games: 0, wins: 0, draws: 0 };
+      entry.games++;
+      if (!match.outcome?.winnerUserId) entry.draws++;
+      else if (match.outcome.winnerUserId === participantId) entry.wins++;
+      byUser.set(participantId, entry);
+    }
+  }
+
+  return [...byUser.values()].sort((left, right) => right.wins - left.wins || right.games - left.games);
 }
 
 function matchSummary(match: ChessMatchRecord): ChessMatchSummary {

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createOrganisation, createPublicEconomy, type Member, type SpendingProposal } from "@workhard/shared";
 import { FundsPanel } from "./FundsPanel";
 import { ProjectToolbar } from "./ProjectToolbar";
+import { ContextMenuProvider } from "../ContextMenu";
 
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.useRealTimers(); });
 
@@ -15,7 +16,8 @@ describe("Approvals", () => {
     expect(screen.getByText("10s left")).toBeTruthy();
     act(() => vi.advanceTimersByTime(9_000));
     expect(screen.getByText("1s left")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Approve" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Approve" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Reject" })).toBeTruthy();
     act(() => vi.advanceTimersByTime(1_000));
     expect(screen.queryByRole("button", { name: "Approve" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Reject" })).toBeNull();
@@ -44,7 +46,8 @@ describe("Approvals", () => {
     const onCommand = vi.fn();
     renderPanel(onCommand, economy, "bob");
     expect(screen.getByText("1 / 2 approvals")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Approve" }));
+    fireEvent.contextMenu(screen.getByRole("article", { name: "Spending rules" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Approve" }));
     expect(onCommand).toHaveBeenCalledWith(expect.objectContaining({ type: "public_economy.vote", approve: true, proposalId: "proposal" }));
     expect(screen.queryByRole("button", { name: "Apply proposal" })).toBeNull();
   });
@@ -121,8 +124,8 @@ function project() {
 }
 
 function renderPanel(onCommand = vi.fn(), economy = createPublicEconomy(), userId = "alice") {
-  return render(<FundsPanel rooms={[]} layouts={[]} floors={[]} economy={economy} organisation={createOrganisation()} members={[] as Member[]} userId={userId}
-    globalSettings={{ enabled: false, targetPolicy: { mode: "allow_all", userIds: [] } }} onOpenRooms={vi.fn()} personalBalance={250} pending={false} onCommand={onCommand} onReview={vi.fn()} onEdit={vi.fn()} onPlace={vi.fn()} onViewChange={vi.fn()} onClose={vi.fn()} />);
+  return render(<ContextMenuProvider><FundsPanel rooms={[]} layouts={[]} floors={[]} economy={economy} organisation={createOrganisation()} members={[] as Member[]} userId={userId}
+    globalSettings={{ enabled: false, targetPolicy: { mode: "allow_all", userIds: [] } }} onOpenRooms={vi.fn()} personalBalance={250} pending={false} onCommand={onCommand} onReview={vi.fn()} onEdit={vi.fn()} onPlace={vi.fn()} onViewChange={vi.fn()} onClose={vi.fn()} /></ContextMenuProvider>);
 }
 
 function proposal(): SpendingProposal {

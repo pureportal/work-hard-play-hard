@@ -1,4 +1,7 @@
 import type {
+  ApprovalDeskView,
+  ApprovalCaseId,
+  ApprovalUpgradeId,
   AuthUser,
   GameGuideState,
   GameGuideStatus,
@@ -181,6 +184,16 @@ export async function fetchBootstrap(): Promise<BootstrapData> {
 
 export async function fetchGameGuideState(): Promise<GameGuideState> {
   return readResponse<GameGuideState>(await fetchWithTimeout("/v1/me/game-guide", { cache: "no-store" }));
+}
+
+export async function fetchApprovalDesk(): Promise<ApprovalDeskView> {
+  return readResponse<ApprovalDeskView>(await fetchWithTimeout("/v1/approval-desk", { cache: "no-store" }));
+}
+
+export async function sendApprovalDeskAction(action: { action: "start"; caseId: ApprovalCaseId } | { action: "collect" } | { action: "stamp" } | { action: "buy"; upgradeId: ApprovalUpgradeId; expectedLevel: number }): Promise<{ view: ApprovalDeskView; forms?: number; coins?: number }> {
+  return readResponse(await fetchWithTimeout("/v1/approval-desk", {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(action),
+  }));
 }
 
 export async function saveGameGuideStatus(status: GameGuideStatus): Promise<GameGuideState> {

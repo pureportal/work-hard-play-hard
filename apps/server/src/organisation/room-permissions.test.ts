@@ -87,6 +87,51 @@ describe("independent room permissions", () => {
 });
 
 describe("permission command enforcement", () => {
+  it("limits room build votes to builders and applies an owner's opted-in furnishing directly", () => {
+    const { store, room } = fixture();
+    store.updateRoomSettings(room.id, { ...room, build: { mode: "assigned", assignedPersonIds: ["user-jonas", "user-priya"] } });
+    const runtime = new WorldRuntime(store);
+    const events: ServerEvent[] = [];
+    const jonas = runtime.connect("user-jonas", room.floorId, (event) => events.push(event));
+    const maya = runtime.connect("user-maya", room.floorId, (event) => events.push(event));
+    const priya = runtime.connect("user-priya", room.floorId, (event) => events.push(event));
+    const edit = (requestId: string, x: number) => {
+      runtime.handleCommand(jonas, { type: "project.edit", requestId, fundId: "workspace", baseRevision: store.getLayout(room.floorId)!.revision,
+        edit: { tool: "asset", assetId: "plant-floor", position: { x, y: 800 }, variantId: getDefaultAssetVariantId(requireAssetDefinition("plant-floor")), rotation: 0 } });
+      const preview = events.findLast((event) => event.type === "project.preview" && event.requestId === requestId);
+      if (preview?.type !== "project.preview") throw new Error(JSON.stringify(events.findLast((event) => event.type === "command.error")));
+      return preview.project.id;
+    };
+    try {
+      const first = edit("preview-vote", 400);
+      runtime.handleCommand(jonas, { type: "project.submit", requestId: "submit-vote", draftId: first, title: "Room plant" });
+      const proposal = store.getPublicEconomy().proposals[0]!;
+      expect(proposal.electorate).toEqual(["user-jonas", "user-priya"]);
+      expect(proposal.status).toBe("open");
+      runtime.handleCommand(maya, { type: "public_economy.vote", requestId: "outside-vote", proposalId: proposal.id, approve: true });
+      expect(events).toContainEqual(expect.objectContaining({ type: "command.error", requestId: "outside-vote", code: "PROPOSAL_VOTE_FORBIDDEN" }));
+      runtime.handleCommand(priya, { type: "public_economy.vote", requestId: "builder-vote", proposalId: proposal.id, approve: true });
+      expect(store.publicEconomy.proposal(proposal.id).status).toBe("approved");
+
+      store.updateRoomSettings(room.id, { ...room, ownerUserId: "user-jonas", ownerBuildApproval: "direct" });
+      runtime.handleCommand(jonas, { type: "public_economy.execute", requestId: "stale-vote", proposalId: proposal.id });
+      expect(events).toContainEqual(expect.objectContaining({ type: "command.error", requestId: "stale-vote", code: "PROJECT_STALE" }));
+      expect(store.publicEconomy.proposal(proposal.id).status).toBe("cancelled");
+      store.donateMoney("user-maya", "workspace", 100, "room-build-fund");
+      const second = edit("preview-direct", 448);
+      runtime.handleCommand(jonas, { type: "project.submit", requestId: "submit-direct", draftId: second, title: "Own room plant" });
+      expect(events).not.toContainEqual(expect.objectContaining({ type: "command.error", requestId: "submit-direct" }));
+      expect(store.getPublicEconomy().proposals.at(-1)).toMatchObject({ status: "applied", approvalRate: 0, required: 0 });
+      expect(store.getLayout(room.floorId)!.objects.some((object) => object.x === 448 && object.y === 800 && object.assetId === "plant-floor")).toBe(true);
+    } finally { runtime.stop(); }
+  });
+
+  it("requires owner access for direct room building", () => {
+    const { store, room } = fixture();
+    expect(() => store.updateRoomSettings(room.id, { ...room, ownerUserId: "user-jonas", ownerBuildApproval: "direct",
+      access: { mode: "none", assignedPersonIds: [], knockable: false } })).toThrow("PERSONAL_AREA_INVALID");
+  });
+
   it("requires approval for room and global changes even for a lead", () => {
     const { store, room, unitId } = fixture();
     const runtime = new WorldRuntime(store);

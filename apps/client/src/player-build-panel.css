@@ -16,7 +16,7 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  padding: 12px 14px 0;
+  padding: 12px 14px;
   border-top: 0;
 }
 
@@ -201,7 +201,7 @@
 }
 
 .player-build-panel .panel-scroll.build-panel-scroll > .inventory-empty {
-  min-height: 100%;
+  min-height: 0;
   align-content: center;
 }
 
@@ -226,7 +226,7 @@
 .player-build-panel .asset-browser .inventory-asset > button,
 .player-build-panel .asset-browser .shop-asset > button {
   min-height: 38px;
-  padding-inline: 12px;
+  padding-inline: 6px;
   color: var(--accent-text);
   background: var(--accent-soft);
   border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line));
@@ -248,18 +248,6 @@
   opacity: .8;
 }
 
-.player-build-panel > .economy-summary {
-  flex-shrink: 0;
-  padding: 8px 14px max(8px, env(safe-area-inset-bottom));
-  border-top: 1px solid var(--line);
-  border-bottom: 0;
-}
-
-.player-build-panel .daily-reward {
-  min-height: 0;
-  padding: 6px 10px;
-}
-
 @media (max-width: 700px) {
   .player-build-panel .asset-view-tabs {
     padding-inline: 10px;
@@ -271,7 +259,7 @@
 
   .player-asset-shop,
   .player-inventory-view > .asset-library {
-    padding: 9px 10px 0;
+    padding: 9px 10px 10px;
   }
 
   .player-build-panel .panel-scroll.build-panel-scroll {

@@ -18,7 +18,7 @@ vi.mock("../api", async (importOriginal) => ({
   requestMagicLink: apiMocks.requestMagicLink,
 }));
 
-vi.mock("./CharacterPreview", () => ({ CharacterPreview: () => null }));
+vi.mock("./AuthWorldPreview", () => ({ AuthWorldPreview: () => null }));
 
 beforeEach(() => localStorage.clear());
 

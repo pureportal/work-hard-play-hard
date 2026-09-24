@@ -16,6 +16,7 @@ import {
   SPECIAL_PROP_RANGE,
   GONG_INTERACTION_RANGE,
   MAX_LAYOUT_OBJECTS_PER_FLOOR,
+  PROXIMITY_INTERACTION_RADIUS,
   detectLayoutRooms,
   getAssetDefinition,
   getAssetPlacementError,
@@ -145,8 +146,8 @@ const CALL_TIMEOUT_MS = 20_000;
 const KNOCK_RANGE = 84;
 const KNOCK_TIMEOUT_MS = 20_000;
 const REACTION_COOLDOWN_MS = 450;
-const HIGH_FIVE_RANGE = 96;
-const HIGH_FIVE_WINDOW_MS = 4_000;
+const GROUP_REACTION_RANGE = PROXIMITY_INTERACTION_RADIUS * 2;
+const GROUP_REACTION_WINDOW_MS = 4_000;
 const ASSET_INTERACTION_RANGE = 72;
 const KIDNAPPING_PICKUP_DISTANCE = 0.01;
 const EMPTY_ROOM_GRANTS: ReadonlySet<string> = new Set();
@@ -188,14 +189,16 @@ interface ActiveRoomKnock {
   timer: NodeJS.Timeout;
 }
 
-interface RecentWave {
+interface RecentGroupReaction {
   at: number;
+  reaction: "wave" | "heart";
   targetUserId?: string;
 }
 
 export class WorldRuntime {
   private readonly players = new Map<string, WorldPlayer>();
   private readonly connectedPlayersByFloor = new Map<string, Set<WorldPlayer>>();
+  private tickRoomOccupancy: Map<string, Map<string, number>> | undefined;
   private readonly peers = new Map<string, Peer>();
   private readonly roomAccessInspections = new Map<Peer, { userId: string; serialized: string }>();
   private readonly peersByFloor = new Map<string, Set<Peer>>();
@@ -214,7 +217,7 @@ export class WorldRuntime {
   private readonly activeMeetings = new Map<string, string>();
   private readonly meetingSessions = new MeetingSessions();
   private readonly lastReactionAt = new Map<string, number>();
-  private readonly recentWaves = new Map<string, RecentWave>();
+  private readonly recentGroupReactions = new Map<string, RecentGroupReaction>();
   private readonly gongCooldowns = new Map<string, number>();
   private readonly specialProps = new SpecialPropInteractions();
   private readonly seatOrigins = new Map<string, { x: number; y: number }>();
@@ -227,7 +230,10 @@ export class WorldRuntime {
   private economyDayKey = getUtcDayKey(new Date());
   dirty = false;
 
-  constructor(private readonly store: WorkspaceStore, options: { chessNow?: () => Date } = {}) {
+  constructor(
+    private readonly store: WorkspaceStore,
+    private readonly options: { chessNow?: () => Date; devDummyUserIds?: ReadonlySet<string>; approvalDeskEnabled?: boolean } = {},
+  ) {
     for (const meeting of store.getMeetings()) {
       for (const userId of meeting.participantIds) store.leaveMeeting(meeting.id, userId);
     }
@@ -294,7 +300,7 @@ export class WorldRuntime {
     }
     for (const userId of this.activeMeetings.keys()) this.leaveActiveMeeting(userId);
     this.lastReactionAt.clear();
-    this.recentWaves.clear();
+    this.recentGroupReactions.clear();
     this.gongCooldowns.clear();
     this.specialProps.clear();
     this.seatOrigins.clear();
@@ -383,7 +389,13 @@ export class WorldRuntime {
     send({ type: "session.ready", userId, floorId: floor.id });
     this.sendSnapshot(peer);
     const activeMeetingId = this.activeMeetings.get(userId);
-    send({ type: "workspace.snapshot", data: this.store.getBootstrap(userId) });
+    send({
+      type: "workspace.snapshot",
+      data: {
+        ...this.store.getBootstrap(userId),
+        features: { approvalDesk: this.options.approvalDeskEnabled === true },
+      },
+    });
     this.syncGameLobbies();
     this.sendActiveSessionState(peer, activeMeetingId);
     send({ type: "session.synced" });
@@ -427,7 +439,7 @@ export class WorldRuntime {
       this.chessRuntime.disconnect(peer.userId);
       this.roomGrants.delete(peer.userId);
       this.lastReactionAt.delete(peer.userId);
-      this.clearRecentWavesForUser(peer.userId);
+      this.clearRecentGroupReactionsForUser(peer.userId);
       this.syncGameLobbies();
       this.reconcileProximityCalls();
     } else {
@@ -804,6 +816,7 @@ export class WorldRuntime {
 
   private tick(deltaMs = TICK_MS, gameDeltaMs = deltaMs): void {
     this.tickNumber += 1;
+    this.tickRoomOccupancy = new Map();
     this.projects.tick();
     for (const [userId, remainingMs] of this.disconnectedFallingBlocks) {
       if (remainingMs > gameDeltaMs) {
@@ -884,6 +897,7 @@ export class WorldRuntime {
         }
       }
     }
+    this.tickRoomOccupancy = undefined;
   }
 
   private advancePlayer(player: WorldPlayer, movement: MovementState, deltaSeconds: number): boolean {
@@ -1013,19 +1027,25 @@ export class WorldRuntime {
     if (!layout) {
       return EMPTY_ROOM_GRANTS;
     }
-    const occupancy = new Map<string, number>();
-    for (const candidate of this.players.values()) {
-      if (!candidate.connected || candidate.userId === userId || candidate.floorId !== floorId || !candidate.roomId) {
-        continue;
+    let occupancy = this.tickRoomOccupancy?.get(floorId);
+    if (!occupancy) {
+      occupancy = new Map();
+      for (const candidate of this.connectedPlayersByFloor.get(floorId) ?? []) {
+        if (candidate.roomId) occupancy.set(candidate.roomId, (occupancy.get(candidate.roomId) ?? 0) + 1);
       }
-      occupancy.set(candidate.roomId, (occupancy.get(candidate.roomId) ?? 0) + 1);
+      this.tickRoomOccupancy?.set(floorId, occupancy);
     }
-    return new Set(layout.rooms.filter((room) => (occupancy.get(room.id) ?? 0) >= room.capacity).map((room) => room.id));
+    const player = this.players.get(userId);
+    const ownRoomId = player?.connected && player.floorId === floorId ? player.roomId : undefined;
+    return new Set(layout.rooms.filter((room) => (occupancy.get(room.id) ?? 0) - Number(ownRoomId === room.id) >= room.capacity).map((room) => room.id));
   }
 
   private getRoomAccessIds(userId: string, layout: FloorLayout): ReadonlySet<string> {
+    const settings = this.store.getGameSettings();
+    const organisation = this.store.getOrganisation();
+    const grants = this.roomGrants.get(userId);
     const accessibleRoomIds = layout.rooms
-      .filter((room) => this.userHasRoomAccess(userId, room))
+      .filter((room) => roomAccessAllows(room, userId, settings, organisation) || Boolean(grants?.has(room.id)))
       .map((room) => room.id);
     return accessibleRoomIds.length === 0 ? EMPTY_ROOM_GRANTS : new Set(accessibleRoomIds);
   }
@@ -1333,7 +1353,7 @@ export class WorldRuntime {
       this.leaveActiveMeeting(player.userId);
       this.handleKnockDisconnect(player.userId);
       this.roomGrants.delete(player.userId);
-      this.clearRecentWavesForUser(player.userId);
+      this.clearRecentGroupReactionsForUser(player.userId);
       this.movePlayerToFloor(player, floorId);
       player.x = arrival.x;
       player.y = arrival.y;
@@ -1386,6 +1406,8 @@ export class WorldRuntime {
     delete movement.destinationRequestId;
     delete movement.journey;
     this.activeMovementUserIds.delete(userId);
+    const player = this.players.get(userId);
+    if (player) this.dirtySnapshotFloorIds.add(player.floorId);
     if (requestId) {
       this.sendToUser(userId, {
         type: "command.error",
@@ -1405,6 +1427,7 @@ export class WorldRuntime {
     } else {
       delete player.roomId;
     }
+    if (previousRoomId !== player.roomId) this.tickRoomOccupancy?.delete(player.floorId);
     if (previousRoomId && previousRoomId !== player.roomId) {
       this.removeKnockRecipient(player.userId, previousRoomId);
     }
@@ -1427,6 +1450,7 @@ export class WorldRuntime {
     if ((dx !== 0 || dy !== 0) && this.players.get(peer.userId)?.seat) {
       this.leaveSeat(peer.userId);
     }
+    const hadDestination = movement.path.length > 0 || Boolean(movement.journey);
     movement.dx = dx;
     movement.dy = dy;
     movement.path = [];
@@ -1439,6 +1463,8 @@ export class WorldRuntime {
     delete movement.kidnappingRequestId;
     delete movement.assetInteraction;
     this.synchronizeMovementActivity(peer.userId, movement);
+    const player = this.players.get(peer.userId);
+    if (hadDestination && player) this.dirtySnapshotFloorIds.add(player.floorId);
   }
 
   private handleDestination(peer: Peer, requestId: string, floorId: string, x: number, y: number): void {
@@ -1468,6 +1494,7 @@ export class WorldRuntime {
     delete movement.assetInteraction;
     movement.path = [];
     this.activeMovementUserIds.delete(peer.userId);
+    this.dirtySnapshotFloorIds.add(player.floorId);
     const carriedPlayer = this.getCarriedPlayer(peer.userId);
     const route = findFloorRoute({
       floors: this.store.getFloors(),
@@ -3056,7 +3083,7 @@ export class WorldRuntime {
     this.sendToUser(targetUserId, event);
     peer.send(event);
     player.wavingUntil = now + 2_000;
-    this.registerWave(peer.userId, targetUserId);
+    this.registerGroupReaction(peer.userId, "wave", targetUserId);
   }
 
   private react(peer: Peer, reaction: ReactionKind): void {
@@ -3066,12 +3093,17 @@ export class WorldRuntime {
     }
     const now = Date.now();
     this.enforceReactionCooldown(peer.userId, now);
-    const activeMeetingId = this.activeMeetings.get(peer.userId);
+    this.emitReaction(player, reaction, now);
+    if (!this.activeMeetings.has(peer.userId)) this.reactNearbyDevDummies(player, reaction, now);
+  }
+
+  private emitReaction(player: WorldPlayer, reaction: ReactionKind, now: number): void {
+    const activeMeetingId = this.activeMeetings.get(player.userId);
     if (activeMeetingId) {
       const event: ServerEvent = {
         type: "interaction.reaction",
         id: randomUUID(),
-        userId: peer.userId,
+        userId: player.userId,
         reaction,
         scope: { type: "meeting", meetingId: activeMeetingId },
       };
@@ -3084,7 +3116,7 @@ export class WorldRuntime {
       this.broadcastToVisiblePlayer(player, {
         type: "interaction.reaction",
         id: randomUUID(),
-        userId: peer.userId,
+        userId: player.userId,
         reaction,
         scope: { type: "floor", floorId: player.floorId },
       });
@@ -3092,8 +3124,26 @@ export class WorldRuntime {
     if (reaction === "wave") {
       player.wavingUntil = now + 2_000;
       if (!activeMeetingId) {
-        this.registerWave(peer.userId);
+        this.registerGroupReaction(player.userId, "wave");
       }
+    } else if (reaction === "heart" && !activeMeetingId) {
+      this.registerGroupReaction(player.userId, "heart");
+    }
+  }
+
+  private reactNearbyDevDummies(player: WorldPlayer, reaction: ReactionKind, now: number): void {
+    if (!this.options.devDummyUserIds?.size) return;
+    const liveUserIds = this.connectedUserIds();
+    for (const dummy of this.connectedPlayersByFloor.get(player.floorId) ?? []) {
+      if (dummy.userId === player.userId
+        || !this.options.devDummyUserIds.has(dummy.userId)
+        || dummy.roomId !== player.roomId
+        || this.activeMeetings.has(dummy.userId)
+        || liveUserIds.has(dummy.userId)
+        || Math.hypot(dummy.x - player.x, dummy.y - player.y) > GROUP_REACTION_RANGE
+        || now - (this.lastReactionAt.get(dummy.userId) ?? 0) < REACTION_COOLDOWN_MS) continue;
+      this.enforceReactionCooldown(dummy.userId, now);
+      this.emitReaction(dummy, reaction, now);
     }
   }
 
@@ -3209,29 +3259,30 @@ export class WorldRuntime {
     }
   }
 
-  private registerWave(userId: string, targetUserId?: string): void {
+  private registerGroupReaction(userId: string, reaction: "wave" | "heart", targetUserId?: string): void {
     const now = Date.now();
-    for (const [candidateUserId, wave] of this.recentWaves) {
-      if (now - wave.at > HIGH_FIVE_WINDOW_MS) {
-        this.recentWaves.delete(candidateUserId);
+    for (const [candidateUserId, previous] of this.recentGroupReactions) {
+      if (now - previous.at > GROUP_REACTION_WINDOW_MS) {
+        this.recentGroupReactions.delete(candidateUserId);
       }
     }
     const player = this.players.get(userId);
     if (!player || this.activeMeetings.has(userId)) {
-      this.clearRecentWavesForUser(userId);
+      this.clearRecentGroupReactionsForUser(userId);
       return;
     }
-    const candidate = [...this.recentWaves.entries()]
-      .filter(([candidateUserId, wave]) => {
+    const candidate = [...this.recentGroupReactions.entries()]
+      .filter(([candidateUserId, previous]) => {
         const candidatePlayer = this.players.get(candidateUserId);
         return candidateUserId !== userId
+          && previous.reaction === reaction
           && candidatePlayer?.connected
           && !this.activeMeetings.has(candidateUserId)
           && candidatePlayer.floorId === player.floorId
           && candidatePlayer.roomId === player.roomId
           && (!targetUserId || targetUserId === candidateUserId)
-          && (!wave.targetUserId || wave.targetUserId === userId)
-          && Math.hypot(candidatePlayer.x - player.x, candidatePlayer.y - player.y) <= HIGH_FIVE_RANGE;
+          && (!previous.targetUserId || previous.targetUserId === userId)
+          && Math.hypot(candidatePlayer.x - player.x, candidatePlayer.y - player.y) <= GROUP_REACTION_RANGE;
       })
       .sort(([leftUserId], [rightUserId]) => {
         const left = this.players.get(leftUserId)!;
@@ -3239,14 +3290,15 @@ export class WorldRuntime {
         return Math.hypot(left.x - player.x, left.y - player.y) - Math.hypot(right.x - player.x, right.y - player.y);
       })[0];
     if (!candidate) {
-      this.recentWaves.set(userId, { at: now, ...(targetUserId ? { targetUserId } : {}) });
+      this.recentGroupReactions.set(userId, { at: now, reaction, ...(targetUserId ? { targetUserId } : {}) });
       return;
     }
-    this.recentWaves.delete(candidate[0]);
-    this.recentWaves.delete(userId);
+    this.recentGroupReactions.delete(candidate[0]);
+    this.recentGroupReactions.delete(userId);
     this.broadcastToVisiblePlayer(player, {
-      type: "interaction.high_five",
+      type: "interaction.group_reaction",
       id: randomUUID(),
+      kind: reaction === "wave" ? "high_five" : "love",
       userIds: [candidate[0], userId],
       floorId: player.floorId,
     });
@@ -3260,10 +3312,10 @@ export class WorldRuntime {
     this.lastReactionAt.set(userId, now);
   }
 
-  private clearRecentWavesForUser(userId: string): void {
-    for (const [candidateUserId, wave] of this.recentWaves) {
-      if (candidateUserId === userId || wave.targetUserId === userId) {
-        this.recentWaves.delete(candidateUserId);
+  private clearRecentGroupReactionsForUser(userId: string): void {
+    for (const [candidateUserId, previous] of this.recentGroupReactions) {
+      if (candidateUserId === userId || previous.targetUserId === userId) {
+        this.recentGroupReactions.delete(candidateUserId);
       }
     }
   }
@@ -3556,7 +3608,7 @@ export class WorldRuntime {
     if (active && active !== meeting.id) {
       this.leaveActiveMeeting(userId);
     }
-    this.clearRecentWavesForUser(userId);
+    this.clearRecentGroupReactionsForUser(userId);
     this.endCallsForUser(userId);
     const joined = this.store.joinMeeting(meeting.id, userId);
     this.proximitySessions.delete(userId);
@@ -3628,6 +3680,7 @@ export class WorldRuntime {
     if (!movement) {
       return;
     }
+    const hadDestination = movement.path.length > 0 || Boolean(movement.journey);
     movement.dx = 0;
     movement.dy = 0;
     movement.path = [];
@@ -3640,6 +3693,8 @@ export class WorldRuntime {
     delete movement.kidnappingRequestId;
     delete movement.assetInteraction;
     this.activeMovementUserIds.delete(userId);
+    const player = this.players.get(userId);
+    if (hadDestination && player) this.dirtySnapshotFloorIds.add(player.floorId);
   }
 
   private synchronizeMovementActivity(userId: string, movement: MovementState): void {
@@ -3662,10 +3717,12 @@ export class WorldRuntime {
     const existing = this.players.get(player.userId);
     if (existing?.connected) {
       removeFromFloorIndex(this.connectedPlayersByFloor, existing.floorId, existing);
+      this.tickRoomOccupancy?.delete(existing.floorId);
     }
     this.players.set(player.userId, player);
     if (player.connected) {
       addToFloorIndex(this.connectedPlayersByFloor, player.floorId, player);
+      this.tickRoomOccupancy?.delete(player.floorId);
     }
   }
 
@@ -3680,6 +3737,7 @@ export class WorldRuntime {
       removeFromFloorIndex(this.connectedPlayersByFloor, player.floorId, player);
       player.connected = false;
     }
+    this.tickRoomOccupancy?.delete(player.floorId);
   }
 
   private movePlayerToFloor(player: WorldPlayer, floorId: string): void {
@@ -3689,10 +3747,12 @@ export class WorldRuntime {
     if (player.connected) {
       removeFromFloorIndex(this.connectedPlayersByFloor, player.floorId, player);
     }
+    this.tickRoomOccupancy?.delete(player.floorId);
     player.floorId = floorId;
     if (player.connected) {
       addToFloorIndex(this.connectedPlayersByFloor, floorId, player);
     }
+    this.tickRoomOccupancy?.delete(floorId);
   }
 
   private addPeer(peer: Peer): void {
@@ -3747,7 +3807,17 @@ export class WorldRuntime {
       tick: this.tickNumber,
       floorId,
       layoutRevision,
-      players: Array.from(players, cloneWorldPlayer),
+      players: Array.from(players, (player) => {
+        const snapshotPlayer = cloneWorldPlayer(player);
+        const movement = this.movements.get(player.userId);
+        const journey = movement?.journey;
+        const currentLeg = journey?.legs.slice(journey.legIndex).find((leg) => leg.floorId === player.floorId);
+        const destination = movement?.path.at(-1) ?? currentLeg?.path.at(-1);
+        if (destination) {
+          snapshotPlayer.destination = { floorId: player.floorId, ...destination };
+        }
+        return snapshotPlayer;
+      }),
     };
   }
 
@@ -4015,7 +4085,6 @@ export class WorldRuntime {
       CHESS_NOT_FOUND: "Chess is unavailable.",
       CHESS_TOO_FAR: "Move closer to the chess table.",
       CHESS_MATCH_NOT_FOUND: "That match is no longer available.",
-      CHESS_MATCH_PENDING: "Cancel your waiting match first.",
       CHESS_BOT_MATCH_ACTIVE: "Open your bot game to continue, or resign before starting another.",
       CHESS_MATCH_STARTED: "That match has already started.",
       CHESS_MATCH_OWN: "Choose another match.",

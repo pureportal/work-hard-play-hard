@@ -16,6 +16,14 @@ function fixture(): GuideData {
 }
 
 describe("Game guide state selection", () => {
+  it("introduces stamping and starting a case before other systems when the Desk is enabled", () => {
+    const data = { ...fixture(), features: { approvalDesk: true } } as GuideData;
+    const steps = createGuideSteps(data, "floor", new Set());
+    expect(steps.slice(0, 2).map((step) => step.id)).toEqual(["desk-stamp", "desk-case"]);
+    expect(steps.slice(0, 2).every((step) => step.screen.panel === "approvalDesk" && step.blockTargetInteraction === false)).toBe(true);
+    expect(createGuideSteps(fixture(), "floor", new Set()).some((step) => step.screen.panel === "approvalDesk")).toBe(false);
+  });
+
   it("does not direct a player to join a restricted room", () => {
     const data = fixture();
     data.layouts[0]!.rooms[0]!.access.mode = "none";

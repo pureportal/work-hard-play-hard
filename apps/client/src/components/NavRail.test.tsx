@@ -22,6 +22,17 @@ const currentUser: Member = {
 afterEach(cleanup);
 
 describe("NavRail", () => {
+  it("shows Approval Desk only when the feature is enabled", () => {
+    const props = {
+      corporateIdentity: createTestCorporateIdentity(), activePanel: null, canUseBuild: true,
+      currentUser, unreadMessages: 0, onChange: vi.fn(), onAvatarClick: vi.fn(), onSignOut: vi.fn(),
+    } as const;
+    const { rerender } = render(<NavRail {...props} />);
+    expect(screen.queryByRole("button", { name: "Approval Desk" })).toBeNull();
+    rerender(<NavRail {...props} approvalDeskEnabled />);
+    expect(screen.getByRole("button", { name: "Approval Desk" })).toBeTruthy();
+  });
+
   it("associates the unread count with Messages without changing its control name", () => {
     const { container } = render(
       <NavRail

@@ -163,6 +163,25 @@ describe("WorldCanvas start point", () => {
   });
 });
 
+describe("WorldCanvas identity color", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("colors the destination and start point and updates them when the identity changes", async () => {
+    const fill = vi.spyOn(Graphics.prototype, "fill");
+    const props = createProps();
+    const players = [{ ...player, destination: { floorId: floor.id, x: 300, y: 300 } }];
+    const { container, rerender } = render(<WorldCanvas {...props} players={players} primaryColor="#d15a32" />);
+    await findCanvas(container);
+    expect(fill).toHaveBeenCalledWith("#d15a32");
+    expect(fill).toHaveBeenCalledWith({ color: "#d15a32", alpha: 0.35 });
+
+    fill.mockClear();
+    rerender(<WorldCanvas {...props} players={players} primaryColor="#269b79" />);
+    expect(fill).toHaveBeenCalledWith("#269b79");
+    expect(fill).toHaveBeenCalledWith({ color: "#269b79", alpha: 0.35 });
+  });
+});
+
 describe("WorldCanvas asset focus", () => {
   afterEach(() => vi.restoreAllMocks());
 
@@ -623,7 +642,7 @@ describe("WorldCanvas camera", () => {
     expect(screen.queryByRole("button", { name: "Follow" })).toBeNull();
 
     fireEvent.wheel(canvas, { clientX: 400, clientY: 300, deltaY: 1_000_000 });
-    expect(getWorldScale(application)).toBe(0.5);
+    expect(getWorldScale(application)).toBe(0.08);
     fireEvent.wheel(canvas, { clientX: 400, clientY: 300, deltaY: -1_000_000 });
     expect(getWorldScale(application)).toBe(1.45);
   });
@@ -817,6 +836,60 @@ describe("WorldCanvas build targets", () => {
     fireEvent.click(screen.getByRole("button", { name: "Cancel action" }));
     expect(props.onPlacementCancel).toHaveBeenCalledOnce();
     expect(props.onEdit).not.toHaveBeenCalled();
+  });
+
+  it("opens a ground action on right click without moving", async () => {
+    const onContextSelect = vi.fn();
+    const onDestination = vi.fn();
+    const { container } = render(<WorldCanvas {...createProps()} onContextSelect={onContextSelect} onDestination={onDestination} />);
+    const canvas = await findCanvas(container);
+
+    fireEvent.contextMenu(canvas, { clientX: 200, clientY: 200 });
+
+    expect(onContextSelect).toHaveBeenCalledWith(expect.objectContaining({ type: "ground" }), expect.any(Object));
+    expect(onDestination).not.toHaveBeenCalled();
+  });
+
+  it("opens a ground action on touch hold without moving", async () => {
+    const onContextSelect = vi.fn();
+    const onDestination = vi.fn();
+    const { container } = render(<WorldCanvas {...createProps()} onContextSelect={onContextSelect} onDestination={onDestination} />);
+    const canvas = await findCanvas(container);
+
+    dispatchPointer(canvas, "pointerdown", 200, 200, { pointerType: "touch" });
+    await waitFor(() => expect(onContextSelect).toHaveBeenCalledOnce(), { timeout: 1200 });
+    dispatchPointer(canvas, "pointerup", 200, 200, { pointerType: "touch" });
+
+    expect(onDestination).not.toHaveBeenCalled();
+  });
+
+  it("uses the touch target when the browser fires a native context event", async () => {
+    const onContextSelect = vi.fn();
+    const onDestination = vi.fn();
+    const { container } = render(<WorldCanvas {...createProps()} onContextSelect={onContextSelect} onDestination={onDestination} />);
+    const canvas = await findCanvas(container);
+
+    dispatchPointer(canvas, "pointerdown", 200, 200, { pointerType: "touch" });
+    fireEvent.contextMenu(canvas, { clientX: 200, clientY: 200 });
+    dispatchPointer(canvas, "pointerup", 200, 200, { pointerType: "touch" });
+
+    expect(onContextSelect).toHaveBeenCalledOnce();
+    expect(onDestination).not.toHaveBeenCalled();
+  });
+
+  it("opens the selected build item's actions on right click", async () => {
+    const onContextSelect = vi.fn();
+    const buildLayout: FloorLayout = {
+      ...layout,
+      walls: [{ id: "wall", start: { x: 96, y: 288 }, end: { x: 512, y: 288 } }],
+    };
+    const { container } = render(<WorldCanvas {...createProps()} layout={buildLayout} editing onContextSelect={onContextSelect} />);
+    const canvas = await findCanvas(container);
+    const point = getScreenPoint(getApplication(), 288, 288);
+
+    fireEvent.contextMenu(canvas, { clientX: point.x, clientY: point.y });
+
+    expect(onContextSelect).toHaveBeenCalledWith({ type: "build", item: { type: "wall", id: "wall" } }, expect.any(Object));
   });
 
   it.each([null, "erase"] as const)("outlines the same overlapping asset that %s will affect", async (editingTool) => {
@@ -1205,7 +1278,7 @@ function createProps(): WorldCanvasProps {
     members: [member],
     players: [player],
     reactions: [],
-    highFives: [],
+    groupReactions: [],
     gongRings: [],
     currentUserId: player.userId,
     editingTool: null,
@@ -1213,6 +1286,7 @@ function createProps(): WorldCanvasProps {
     editingAssetVariantId: "white",
     editingAssetRotation: 0,
     colorTheme: "light",
+    primaryColor: "#6757e8",
     editing: false,
     inputEnabled: true,
     onDestination: vi.fn(),

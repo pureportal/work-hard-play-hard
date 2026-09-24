@@ -46,6 +46,23 @@ afterEach(() => {
 });
 
 describe("Database-backed game guide", () => {
+  it("reports the loaded status once so the first session can defer the daily bonus", async () => {
+    const onProgressLoaded = vi.fn();
+    const props = { ...fixture(), onProgressLoaded };
+    const view = render(<StrictMode><GameGuide {...props} /></StrictMode>);
+    await nextFrame();
+    expect(onProgressLoaded).toHaveBeenCalledOnce();
+    expect(onProgressLoaded).toHaveBeenCalledWith(null);
+    fireEvent.click(screen.getByRole("button", { name: "Finish guide" }));
+    await nextFrame();
+    expect(onProgressLoaded).toHaveBeenCalledOnce();
+    view.unmount();
+    vi.mocked(fetchGameGuideState).mockResolvedValue({ status: "completed" });
+    render(<GameGuide {...props} />);
+    await nextFrame();
+    expect(onProgressLoaded).toHaveBeenLastCalledWith("completed");
+  });
+
   it("starts once in Strict Mode and remembers skipping across remounts while allowing replay", async () => {
     const props = fixture();
     const view = render(<StrictMode><GameGuide {...props} /></StrictMode>);

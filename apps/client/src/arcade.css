@@ -4,6 +4,8 @@
 
 @import "./tic-tac-toe.css";
 
+@import "./game-statistics.css";
+
 .arcade-game,
 .game-lobby {
   --game-cross: #ba625e;
@@ -171,6 +173,10 @@
   border-radius: 10px;
 }
 
+.interaction-panel:has(.game-lobby) > .interaction-dismiss {
+  top: 15px;
+}
+
 .interaction-dismiss + .interaction-content .game-lobby > header {
   position: sticky;
   z-index: 1;
@@ -253,6 +259,21 @@
   letter-spacing: -0.025em;
 }
 
+.game-lobby > header .game-statistics-trigger {
+  margin-left: auto;
+}
+
+.game-setting-group {
+  display: grid;
+  gap: 6px;
+}
+
+.game-setting-group > span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .game-opponent-picker {
   display: grid;
   gap: 8px;
@@ -291,27 +312,58 @@
   font-size: 13px;
 }
 
-.game-lobby .falling-blocks-player-stats > div,
-.game-lobby .tic-tac-toe-player-stats > div {
-  background: var(--panel-strong);
-  color: var(--ink);
+.game-lobby h3 {
+  color: var(--muted);
+  font-size: 12px;
 }
 
-.game-lobby .falling-blocks-player-stats dt,
-.game-lobby .tic-tac-toe-player-stats dt {
+.game-lobby-roster {
+  margin-top: 12px;
+}
+
+.game-lobby-roster-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
   color: var(--muted);
   font-size: 11px;
 }
 
-.game-lobby .falling-blocks-player-stats dd,
-.game-lobby .tic-tac-toe-player-stats dd {
-  font-size: 15px;
+.game-lobby-roster-heading h3 {
+  margin: 0;
 }
 
-.game-lobby h3,
-.game-lobby .falling-blocks-high-scores li {
-  color: var(--muted);
+.game-lobby-roster ul {
+  display: grid;
+  gap: 5px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.game-lobby-roster li {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 6px 8px;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 10px;
   font-size: 12px;
+}
+
+.game-lobby-roster li > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.game-lobby-roster li strong {
+  font-variant-numeric: tabular-nums;
 }
 
 .game-play-button {
@@ -401,6 +453,9 @@
     width: min(300px, calc(100% - 20px - env(safe-area-inset-right)));
     max-height: min(56dvh, calc(100% - 184px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
   }
+  .interaction-panel:has(.game-lobby) {
+    max-height: min(82dvh, calc(100% - 104px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+  }
 }
 
 @media (max-height: 520px) and (min-width: 701px) {
@@ -426,6 +481,9 @@
   .interaction-dismiss {
     width: 44px;
     height: 44px;
+  }
+  .interaction-panel:has(.game-lobby) > .interaction-dismiss {
+    top: 12px;
   }
   .interaction-dismiss + .interaction-content .game-lobby > header {
     min-height: 44px;

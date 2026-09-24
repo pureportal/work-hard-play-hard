@@ -1,6 +1,7 @@
-.build-economy-navigation { display: flex; gap: 6px; padding: 12px; flex: 0 0 auto; border-bottom: 1px solid var(--line); }
-.build-economy-navigation button { flex: 1; min-height: 40px; padding: 8px 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-strong); color: inherit; font-size: 12px; font-weight: 600; }
+.build-economy-navigation { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 12px; flex: 0 0 auto; border-bottom: 1px solid var(--line); }
+.build-economy-navigation button { min-width: 0; min-height: 40px; padding: 8px 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-strong); color: inherit; font-size: 12px; font-weight: 600; }
 .build-economy-navigation .active { background: var(--accent); color: white; }
+@media (max-width: 360px) { .build-economy-navigation { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px 10px; } }
 .project-toolbar { padding: 12px 16px max(12px, env(safe-area-inset-bottom)); flex: 0 0 auto; border-top: 1px solid var(--line); background: var(--panel-strong); }
 .project-toolbar > label { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; }
 .project-toolbar .economy-actions { justify-content: flex-end; }
@@ -23,6 +24,9 @@
 .economy-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .economy-actions button { min-height: 38px; }
 .proposal-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 16px; }
+.funds-dialog.is-empty { height: auto; max-height: calc(100dvh - 32px); }
+.funds-dialog.is-empty .dialog-tab-content { flex: 0 1 auto; padding-block: 8px 20px; }
+.funds-dialog.is-empty .dialog-empty { gap: 10px; padding: 20px 12px; }
 .spending-proposal { display: grid; gap: 14px; padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel-strong); font-size: 13px; overflow-wrap: anywhere; }
 .spending-proposal header { display: flex; flex-wrap: wrap; align-items: start; justify-content: space-between; gap: 10px; }
 .spending-proposal h3 { margin: 0; font-size: 16px; }

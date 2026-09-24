@@ -61,16 +61,6 @@
 
   .build-panel .asset-view-tabs { margin: 8px 12px 0; }
 
-  .build-panel .economy-summary {
-    padding: 10px 12px;
-  }
-
-  .build-panel .daily-reward {
-    min-height: 0;
-    gap: 6px;
-    padding: 8px;
-  }
-
   .build-panel .asset-library {
     min-width: 0;
     padding: 8px 12px;

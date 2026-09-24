@@ -92,6 +92,52 @@ describe("WorldRuntime snapshot fanout", () => {
     expect(rooftopEvents.filter((event) => event.type === "world.snapshot")).toHaveLength(0);
   });
 
+  it("includes the active walking destination and clears it when interrupted or reached", () => {
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
+    const events: ServerEvent[] = [];
+    const peerId = runtime.connect("user-maya", "floor-studio", (event) => events.push(event));
+    events.length = 0;
+
+    runtime.handleCommand(peerId, {
+      type: "movement.set_destination", requestId: "walk", floorId: "floor-studio", x: 800, y: 760,
+    });
+    runtime.runTickForTest();
+    runtime.runTickForTest();
+
+    const walkingSnapshot = events.filter((event): event is WorldSnapshot => event.type === "world.snapshot").at(-1);
+    expect(walkingSnapshot?.players.find((player) => player.userId === "user-maya")?.destination)
+      .toEqual({ floorId: "floor-studio", x: 800, y: 760 });
+
+    runtime.handleCommand(peerId, { type: "movement.stop", requestId: "stop" });
+    runtime.runTickForTest();
+    runtime.runTickForTest();
+
+    const stoppedSnapshot = events.filter((event): event is WorldSnapshot => event.type === "world.snapshot").at(-1);
+    expect(stoppedSnapshot?.players.find((player) => player.userId === "user-maya")?.destination).toBeUndefined();
+
+    runtime.handleCommand(peerId, {
+      type: "movement.set_destination", requestId: "walk-by-keyboard", floorId: "floor-studio", x: 800, y: 760,
+    });
+    runtime.runTickForTest();
+    runtime.runTickForTest();
+    runtime.handleCommand(peerId, { type: "movement.input", sequence: 1, dx: 0, dy: 0 });
+    runtime.runTickForTest();
+    runtime.runTickForTest();
+
+    const interruptedSnapshot = events.filter((event): event is WorldSnapshot => event.type === "world.snapshot").at(-1);
+    expect(interruptedSnapshot?.players.find((player) => player.userId === "user-maya")?.destination).toBeUndefined();
+
+    runtime.handleCommand(peerId, {
+      type: "movement.set_destination", requestId: "walk-again", floorId: "floor-studio", x: 800, y: 760,
+    });
+    for (let tick = 0; tick < 120; tick += 1) runtime.runTickForTest();
+
+    const arrivedSnapshot = events.filter((event): event is WorldSnapshot => event.type === "world.snapshot").at(-1);
+    expect(arrivedSnapshot?.players.find((player) => player.userId === "user-maya"))
+      .toMatchObject({ x: 800, y: 760 });
+    expect(arrivedSnapshot?.players.find((player) => player.userId === "user-maya")?.destination).toBeUndefined();
+  });
+
   it("heartbeats idle floors independently of active-floor snapshots", () => {
     const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
     const studioEvents: ServerEvent[] = [];

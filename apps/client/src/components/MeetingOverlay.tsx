@@ -4,7 +4,7 @@ import type { ChatMessage, Meeting, Member, ReactionKind, WorldObject } from "@w
 import { useMediaDevices } from "../hooks/useMediaDevices";
 import { useModalFocus } from "../hooks/useModalFocus";
 import type { MediaConnection } from "../media-connection";
-import { REACTION_EMOJI, REACTION_LABEL, type DisplayReaction } from "../reactions";
+import { REACTION_ICON, REACTION_LABEL, type DisplayReaction } from "../reactions";
 import { Avatar } from "./Avatar";
 import { CallVideoStage, type CallVideoTile } from "./CallVideoStage";
 import { MeetingAudio, MeetingVideo } from "./MeetingMediaElement";
@@ -73,7 +73,7 @@ export function MeetingOverlay({ small, meeting, connection, members, currentUse
       return [{ id: participant.sessionId, name: local ? "You" : member.name, background: `${member.color}22`,
         content: <>{camera ? <MeetingVideo stream={camera} mirror={local} label={`${local ? "Your" : member.name + "’s"} camera`} /> : <Avatar member={member} className="video-avatar" />}
           {!local && peer && <MeetingAudio stream={peer.audio} name={member.name} />}
-          {reaction && <span className="meeting-reaction" aria-label={`${REACTION_LABEL[reaction.reaction]} reaction`}>{REACTION_EMOJI[reaction.reaction]}</span>}</>,
+          {reaction && <span key={reaction.id} className="meeting-reaction" aria-label={`${REACTION_LABEL[reaction.reaction]} reaction`}><img src={REACTION_ICON[reaction.reaction]} alt="" width="31" height="31" /></span>}</>,
         details: <>{!local && peer?.state === "connecting" && <span>Connecting…</span>}{!microphone && <MicOff size={14} aria-label="Microphone off" />}</> }];
     }),
   ];

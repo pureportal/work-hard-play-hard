@@ -2,7 +2,7 @@ import { assertPublicReachability } from "./world/public-reachability.js";
 import { applyOrganisationEdit, validateOrganisation, validateRoomPermission } from "./organisation/organisation-store.js";
 import { gameSettingsSchema } from "./organisation/organisation-schema.js";
 import { PublicEconomyStore, validatePublicEconomy, type PublicEconomyState } from "./economy/public-economy-store.js";
-import { canEditRoomPermissions, validatePersonalSpaces, type OrganisationEdit, type OrganisationState } from "@workhard/shared";
+import { canEditRoomPermissions, permissionAllows, validatePersonalSpaces, type OrganisationEdit, type OrganisationState } from "@workhard/shared";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import {
   BOT_DIFFICULTIES,
@@ -64,6 +64,8 @@ import type {
 import { createInitialData } from "./initial-data.js";
 import type { GitHubAppSettingsRecord } from "./github/github-record.js";
 import { addFallingBlocksStatistics, validFallingBlocksCounts } from "./games/falling-blocks-statistics.js";
+import { ApprovalDeskStore } from "./games/approval-desk.js";
+import type { ApprovalCaseId, ApprovalDeskState, ApprovalDeskView, ApprovalUpgradeId } from "@workhard/shared";
 import { workObjectStateSchema } from "./work/work-object-state.js";
 import { synchronizeRoomMeetings } from "./meetings/room-meetings.js";
 import {
@@ -85,6 +87,7 @@ export interface MutableStoreState {
   scores: GameScore[];
   gameStatistics: PlayerGameStatistics[];
   chessMatches: ChessMatchRecord[];
+  approvalDesk: ApprovalDeskState;
   economy: EconomyPersistenceState;
   publicEconomy: PublicEconomyState;
   kidnapping: KidnappingPersistenceState;
@@ -136,6 +139,7 @@ export class WorkspaceStore {
   private data: BootstrapData;
   private messageSequenceByConversation: Map<string, number>;
   private readonly economy: EconomyStore;
+  private readonly approvalDesk: ApprovalDeskStore;
   readonly publicEconomy: PublicEconomyStore;
   private globalKidnappingSettings: GlobalKidnappingSettings;
   private readonly playerKidnappingSettings = new Map<string, PlayerKidnappingSettings>();
@@ -154,6 +158,7 @@ export class WorkspaceStore {
     }
     this.messageSequenceByConversation = indexMessageSequences(this.data.messages);
     this.economy = new EconomyStore(this.data.members.map((member) => member.id));
+    this.approvalDesk = new ApprovalDeskStore(this.economy);
     this.economy.updateGameSettings(initialData.gameSettings);
     this.globalKidnappingSettings = structuredClone(initialData.kidnapping.global);
     validateCorporateIdentity(initialData.corporateIdentity);
@@ -463,7 +468,7 @@ export class WorkspaceStore {
       next.objects = next.objects.filter((object) => object.ownerUserId !== userId);
       let changed = next.objects.length !== layout.objects.length;
       for (const room of next.rooms) {
-        if (room.ownerUserId === userId) { delete room.ownerUserId; changed = true; }
+        if (room.ownerUserId === userId) { delete room.ownerUserId; delete room.ownerBuildApproval; changed = true; }
         if (room.personalAreas?.some((area) => area.ownerUserId === userId)) {
           room.personalAreas = room.personalAreas.filter((area) => area.ownerUserId !== userId);
           changed = true;
@@ -502,6 +507,7 @@ export class WorkspaceStore {
       && match.reservedBlackUserId !== userId
     ));
     this.economy.removeAccount(userId);
+    this.approvalDesk.removePlayer(userId);
     this.playerKidnappingSettings.delete(userId);
     this.globalKidnappingSettings.targetPolicy.userIds = this.globalKidnappingSettings.targetPolicy.userIds.filter((id) => id !== userId);
     for (const settings of this.playerKidnappingSettings.values()) {
@@ -855,6 +861,8 @@ export class WorkspaceStore {
     const memberIds = this.data.members.map((member) => member.id);
     validateRoomPermission(settings.access, this.data.organisation, memberIds);
     validatePersonalSpaces(room, settings, memberIds);
+    if (settings.ownerBuildApproval === "direct" && (!settings.ownerUserId || !room.privateEligible
+      || !permissionAllows(settings.access.mode === "default" ? this.data.gameSettings.roomAccess : settings.access, settings.ownerUserId, this.data.organisation))) throw new Error("PERSONAL_AREA_INVALID");
     if (settings.build) validateRoomPermission(settings.build, this.data.organisation, memberIds);
     if (settings.organisationUnitId && !this.data.organisation.units.some((unit) => unit.id === settings.organisationUnitId)) throw new Error("ORGANISATION_UNIT_NOT_FOUND");
     if (settings.access.mode !== "open" && settings.access.mode !== "default" && !room.privateEligible) throw new Error("ROOM_NOT_PRIVATE_ELIGIBLE");
@@ -867,6 +875,8 @@ export class WorkspaceStore {
     else delete nextRoom.meetingRoom;
     nextRoom.access = structuredClone(settings.access);
     nextRoom.build = structuredClone(settings.build ?? { mode: "default", assignedPersonIds: [] });
+    if (settings.ownerBuildApproval) nextRoom.ownerBuildApproval = settings.ownerBuildApproval;
+    else delete nextRoom.ownerBuildApproval;
     if (settings.organisationUnitId) nextRoom.organisationUnitId = settings.organisationUnitId;
     else delete nextRoom.organisationUnitId;
     if (settings.ownerUserId) nextRoom.ownerUserId = settings.ownerUserId;
@@ -1010,6 +1020,39 @@ export class WorkspaceStore {
     return this.economy.getPlayerEconomy(userId);
   }
 
+  getApprovalDesk(userId: string): ApprovalDeskView {
+    if (!this.getMember(userId)) throw new Error("USER_NOT_FOUND");
+    return this.approvalDesk.view(userId, this.data.members);
+  }
+
+  startApprovalCase(userId: string, caseId: ApprovalCaseId): ApprovalDeskView {
+    if (!this.getMember(userId)) throw new Error("USER_NOT_FOUND");
+    this.approvalDesk.start(userId, caseId);
+    this.dirty = true;
+    return this.getApprovalDesk(userId);
+  }
+
+  collectApprovalCase(userId: string): { view: ApprovalDeskView; forms: number; coins: number } {
+    if (!this.getMember(userId)) throw new Error("USER_NOT_FOUND");
+    const result = this.approvalDesk.collect(userId);
+    this.dirty = true;
+    return { view: this.getApprovalDesk(userId), ...result };
+  }
+
+  stampApprovalForm(userId: string): ApprovalDeskView {
+    if (!this.getMember(userId)) throw new Error("USER_NOT_FOUND");
+    this.approvalDesk.stamp(userId);
+    this.dirty = true;
+    return this.getApprovalDesk(userId);
+  }
+
+  buyApprovalUpgrade(userId: string, upgradeId: ApprovalUpgradeId, expectedLevel: number): ApprovalDeskView {
+    if (!this.getMember(userId)) throw new Error("USER_NOT_FOUND");
+    this.approvalDesk.buy(userId, upgradeId, expectedLevel);
+    this.dirty = true;
+    return this.getApprovalDesk(userId);
+  }
+
   getPublicEconomy() {
     this.publicEconomy.invalidateLayoutProposals(this.data.layouts);
     this.publicEconomy.refresh(this.data.organisation, this.data.members.map((member) => member.id));
@@ -1150,6 +1193,7 @@ export class WorkspaceStore {
       scores: this.data.scores,
       gameStatistics: this.data.gameStatistics,
       chessMatches: this.chessMatches,
+      approvalDesk: this.approvalDesk.exportState(),
       economy: this.economy.exportState(),
       publicEconomy: this.publicEconomy.exportState(),
       kidnapping: {
@@ -1204,6 +1248,7 @@ export class WorkspaceStore {
       throw new Error("STORE_STATE_INVALID");
     }
     this.economy.restoreState(next.economy);
+    this.approvalDesk.restoreState(next.approvalDesk, memberIds);
     this.publicEconomy.restoreState(next.publicEconomy);
     this.data.members = next.members;
     this.data.organisation = next.organisation;

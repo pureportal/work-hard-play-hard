@@ -11,6 +11,7 @@ import { SurfaceHeader } from "./SurfaceHeader";
 import { PlayerAssetShop } from "./PlayerAssetShop";
 import { AssetDispositionDialog } from "./economy/AssetDispositionDialog";
 import { PersonalPlacedAssets } from "./PersonalPlacedAssets";
+import { useContextActions, type ContextAction } from "./ContextMenu";
 import "../player-build-panel.css";
 
 type EconomyRequest =
@@ -42,7 +43,6 @@ interface PlayerBuildPanelProps {
   pendingEconomyRequest?: EconomyRequest | undefined;
   pendingPublicAction?: boolean;
   publicActionError?: string | undefined;
-  onOpenDaily: () => void;
   onPurchase: (assetId: string) => void;
   onPlace: (ownedAssetId: string, assetId: string) => void;
   onFocus: (floorId: string, objectId: string) => void;
@@ -79,7 +79,6 @@ export function PlayerBuildPanel({
   pendingEconomyRequest,
   pendingPublicAction = false,
   publicActionError,
-  onOpenDaily,
   onPurchase,
   onPlace,
   onFocus,
@@ -92,6 +91,7 @@ export function PlayerBuildPanel({
 }: PlayerBuildPanelProps) {
   const tabs = ["inventory", "placed", "shop"] as const;
   const [view, setView] = useState<typeof tabs[number]>("inventory");
+  const contextActions = useContextActions();
   const panelId = useId();
   const [disposition, setDisposition] = useState<{ assetId: string; action: "sell" | "donate" }>();
   const disposingAsset = economy.inventory.find((asset) => asset.id === disposition?.assetId && !asset.placement);
@@ -125,23 +125,6 @@ export function PlayerBuildPanel({
       </section>
     )}
   </>;
-  const dailyBonus = (
-    <section className="economy-summary" aria-label="Daily bonus">
-      <div className="daily-reward">
-        <div>
-          <strong>Daily bonus</strong>
-          {economy.dailyReward.streak > 0 && <span>{economy.dailyReward.streak}-day streak</span>}
-        </div>
-        <button
-          className="primary-button"
-          onClick={onOpenDaily}
-        >
-          <Gift size={16} aria-hidden="true" />Open bonus
-        </button>
-      </div>
-    </section>
-  );
-
   return (
     <aside className="side-panel build-panel player-build-panel" aria-label="Build">
       <SurfaceHeader className="panel-header" title="Build" closeLabel="Close build tools" onClose={onClose}
@@ -169,7 +152,7 @@ export function PlayerBuildPanel({
       <div className="panel-scroll build-panel-scroll" id={`${panelId}-placed`} role="tabpanel" aria-labelledby={`${panelId}-placed-tab`} hidden={view !== "placed"}>
         {view === "placed" && selectionControls}
         <PersonalPlacedAssets currentUserId={currentUserId} layouts={layouts} floors={floors}
-          activeFloorId={layout.floorId} selectedItem={selectedItem} onFocus={onFocus} />
+          activeFloorId={layout.floorId} selectedItem={selectedItem} onFocus={onFocus} onOpenInventory={() => setView("inventory")} />
       </div>
       <div className="player-inventory-view" id={`${panelId}-inventory`} role="tabpanel" aria-labelledby={`${panelId}-inventory-tab`} hidden={view !== "inventory"}>
         {view === "inventory" && selectionControls}
@@ -189,9 +172,20 @@ export function PlayerBuildPanel({
                   .filter(Boolean).join(" · ");
                 const placing = instances.some((instance) => instance.id === placingOwnedAssetId);
                 return (
-                  <article className={`catalog-asset inventory-asset${placing ? " active" : ""}`} key={asset.id} data-rarity={asset.rarity}>
+                  <article className={`catalog-asset inventory-asset${placing ? " active" : ""}`} key={asset.id} data-rarity={asset.rarity}
+                    tabIndex={0} {...contextActions(() => {
+                      const first = available[0];
+                      const busy = pendingPublicAction || Boolean(pendingEconomyRequest);
+                      const actions: ContextAction[] = [
+                        { label: "Place", icon: Move, onSelect: () => first && onPlace(first.id, asset.id), disabled: busy || !first || !viewingPlayerFloor || !canPlaceOnFloor || floorFull },
+                      ];
+                      if (onSell) actions.push({ label: "Sell", icon: Coins, onSelect: () => first && setDisposition({ assetId: first.id, action: "sell" }), disabled: busy || !first });
+                      if (onDonate) actions.push({ label: "Donate", icon: Gift, onSelect: () => first && setDisposition({ assetId: first.id, action: "donate" }), disabled: busy || !first });
+                      return actions;
+                    })}>
                     <AssetShape asset={asset} rotation={asset.id === assetId ? assetRotation : 0} variantId={asset.id === assetId ? assetVariantId : getDefaultAssetVariantId(asset)} />
-                    <div className="catalog-asset-details"><span className="catalog-asset-name"><strong>{asset.name}</strong><AssetFeatureIndicators asset={asset} /></span><span>{counts}</span></div>
+                    <div className="catalog-asset-details"><strong>{asset.name}</strong><span className="catalog-asset-meta"><span className="catalog-asset-rarity">{asset.rarity}</span><span>{counts}</span></span></div>
+                    <span className="catalog-asset-features"><AssetFeatureIndicators asset={asset} /></span>
                     <button
                       disabled={pendingPublicAction || Boolean(pendingEconomyRequest) || available.length === 0 || !viewingPlayerFloor || !canPlaceOnFloor || floorFull}
                       onClick={() => onPlace(available[0]!.id, asset.id)}
@@ -224,7 +218,7 @@ export function PlayerBuildPanel({
           )}
         </section>
       </div>
-      {projectControls ?? dailyBonus}
+      {projectControls}
       {disposition && disposingAsset && <AssetDispositionDialog asset={disposingAsset} action={disposition.action} pending={pendingPublicAction}
         error={publicActionError}
         onClose={() => setDisposition(undefined)} onConfirm={() => {

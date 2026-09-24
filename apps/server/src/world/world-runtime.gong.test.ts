@@ -70,7 +70,8 @@ describe("WorldRuntime celebration gong", () => {
       reaction: "wave",
     });
     expect(mayaEvents).toContainEqual(expect.objectContaining({
-      type: "interaction.high_five",
+      type: "interaction.group_reaction",
+      kind: "high_five",
       userIds: ["user-leo", "user-maya"],
       floorId: "floor-studio",
     }));

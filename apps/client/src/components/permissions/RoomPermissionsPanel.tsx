@@ -1,6 +1,6 @@
 import { DoorOpen, LockKeyhole } from "lucide-react";
 import { useEffect, useState } from "react";
-import { canEditRoomPermissions, publicFundForUnit, publicFundMemberIds, type Floor, type FloorLayout, type GameSettings, type Member, type OrganisationState, type PublicEconomy, type RoomSettings } from "@workhard/shared";
+import { canEditRoomPermissions, permissionAllows, publicFundForUnit, publicFundMemberIds, type Floor, type FloorLayout, type GameSettings, type Member, type OrganisationState, type PublicEconomy, type RoomSettings } from "@workhard/shared";
 import { WorkspaceDialog } from "../WorkspaceDialog";
 import { DialogTabs } from "../DialogTabs";
 import { PermissionEditor } from "./PermissionEditor";
@@ -39,6 +39,7 @@ export function RoomPermissionsPanel({ initialRoomId = "", equalTeam = false, fl
   const canVoteOnRoom = publicFundMemberIds(roomFund, organisation, members.map((member) => member.id)).includes(currentUser.id);
   const isCeo = organisation.ceoIds.includes(currentUser.id);
   const canManageDefaults = members.some((member) => member.id === currentUser.id);
+  const defaultAccessibleIds = new Set(members.filter((member) => permissionAllows(defaults.roomAccess, member.id, organisation)).map((member) => member.id));
   return <WorkspaceDialog title="Room settings" className="room-settings-dialog" error={error} onBack={onBack} onClose={onClose}>
     <DialogTabs label="Room settings views" tabs={[{ id: "rooms", label: "Rooms" }, { id: "defaults", label: "Defaults" }]} value={tab} onChange={setTab}>
       {tab === "rooms" ? <div className="room-settings-layout">
@@ -64,7 +65,7 @@ export function RoomPermissionsPanel({ initialRoomId = "", equalTeam = false, fl
           <fieldset className="permission-form-fields" disabled={!canManageDefaults || pending}>
             <div className="room-permission-columns">
             <PermissionEditor label="Access" allowDefault={false} value={defaults.roomAccess} members={members} organisation={organisation} onChange={(value) => setDefaults({ ...defaults, roomAccess: value as GameSettings["roomAccess"] })} />
-            <PermissionEditor label="Build" allowDefault={false} value={defaults.roomBuild} members={members} organisation={organisation} onChange={(value) => setDefaults({ ...defaults, roomBuild: value as GameSettings["roomBuild"] })} />
+            <PermissionEditor label="Build" allowDefault={false} value={defaults.roomBuild} members={members} organisation={organisation} eligibleMemberIds={defaultAccessibleIds} onChange={(value) => setDefaults({ ...defaults, roomBuild: value as GameSettings["roomBuild"] })} />
             </div>
             {canManageDefaults && <div className="room-settings-save"><button type="submit" className="primary-button" disabled={JSON.stringify(defaults) === JSON.stringify(settings)}>Propose defaults</button></div>}
           </fieldset>

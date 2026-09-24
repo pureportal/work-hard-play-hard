@@ -39,46 +39,18 @@
   background: #70aa99;
 }
 
-.falling-blocks-lobby-players,
-.falling-blocks-high-scores {
-  margin-top: 10px;
+.falling-blocks-lobby > header .falling-blocks-mark {
+  width: 42px;
+  height: 42px;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 12px;
 }
 
-.falling-blocks-lobby ul,
-.falling-blocks-high-scores ol {
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.falling-blocks-lobby-players li,
-.falling-blocks-high-scores li {
-  display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-  min-height: 36px;
-  font-size: 12px;
-  border-bottom: 1px solid var(--line);
-}
-
-.falling-blocks-lobby-players li > span:nth-child(2),
-.falling-blocks-high-scores li > span:nth-child(2) {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.falling-blocks-high-scores h3 {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.falling-blocks-high-scores li > span:first-child {
-  text-align: center;
-  color: var(--muted);
-}
+.falling-blocks-lobby > header .falling-blocks-mark i:first-child { left: 14px; top: 7px; }
+.falling-blocks-lobby > header .falling-blocks-mark i:nth-child(2) { left: 0; top: 21px; }
+.falling-blocks-lobby > header .falling-blocks-mark i:nth-child(3) { left: 14px; top: 21px; }
+.falling-blocks-lobby > header .falling-blocks-mark i:nth-child(4) { left: 28px; top: 21px; }
 
 .falling-blocks-start-button {
   width: 100%;
@@ -89,6 +61,15 @@
   display: grid;
   gap: 10px;
   margin: 10px 0;
+}
+
+.falling-blocks-settings .game-segments {
+  margin: 0;
+}
+
+.falling-blocks-settings .game-segments button {
+  padding-inline: 2px;
+  font-size: 11px;
 }
 
 .falling-blocks-settings label {
@@ -116,7 +97,7 @@
 }
 
 .falling-blocks-crown {
-  margin: 12px 0;
+  margin: 0;
   font-size: 13px;
 }
 
@@ -166,31 +147,6 @@
 
 .falling-blocks-special-statistics th:first-child {
   text-align: left;
-}
-
-.falling-blocks-player-stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 4px;
-  margin: 10px 0 0;
-}
-
-.falling-blocks-player-stats > div {
-  padding: 8px 3px;
-  text-align: center;
-  border-radius: 10px;
-}
-
-.falling-blocks-player-stats dt {
-  color: var(--muted);
-  font-size: 11px;
-}
-
-.falling-blocks-player-stats dd {
-  margin: 5px 0 0;
-  font-size: 16px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
 }
 
 .falling-blocks-game {

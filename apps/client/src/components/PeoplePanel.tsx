@@ -1,9 +1,10 @@
-import { LocateFixed, Mail, Phone, Search, Waves } from "lucide-react";
+import { LocateFixed, Mail, Phone, Search, UserRoundPlus, Waves } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Member } from "@workhard/shared";
 import { Avatar } from "./Avatar";
 import { IconButton } from "./IconButton";
 import { SurfaceHeader } from "./SurfaceHeader";
+import { useContextActions } from "./ContextMenu";
 
 const availabilityLabels: Record<Member["availability"], string> = {
   available: "Available",
@@ -20,6 +21,7 @@ interface PeoplePanelProps {
   onMessage: (userId: string) => void;
   onCall: (userId: string) => void;
   onLocate: (userId: string) => void;
+  onInvite?: () => void;
 
 }
 
@@ -31,6 +33,7 @@ export function PeoplePanel({
   onMessage,
   onCall,
   onLocate,
+  onInvite,
 }: PeoplePanelProps) {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string>();
@@ -44,7 +47,8 @@ export function PeoplePanel({
 
   return (
     <aside className="side-panel people-panel" aria-label="People">
-      <SurfaceHeader className="panel-header" title="People" onClose={onClose} />
+      <SurfaceHeader className="panel-header" title="People" onClose={onClose}
+        actions={onInvite && <button type="button" className="secondary-button" onClick={onInvite}><UserRoundPlus size={16} aria-hidden="true" />Invite</button>} />
 
       <div className="panel-scroll people-panel-content">
         <label className="panel-search">
@@ -118,8 +122,15 @@ interface PersonRowProps {
 
 function PersonRow({ member, currentUser, expanded, onToggle, onWave, onMessage, onCall, onLocate }: PersonRowProps) {
   const isCurrentUser = member.id === currentUser.id;
+  const contextActions = useContextActions();
   return (
-    <div className={`person-row-wrap ${expanded ? "expanded" : ""}`}>
+    <div className={`person-row-wrap ${expanded ? "expanded" : ""}`} tabIndex={isCurrentUser ? undefined : 0}
+      {...(!isCurrentUser ? contextActions(() => [
+        { label: "Message", icon: Mail, onSelect: () => onMessage(member.id) },
+        { label: "Call", icon: Phone, onSelect: () => onCall(member.id), disabled: !member.online },
+        { label: "Wave", icon: Waves, onSelect: () => onWave(member.id), disabled: !member.online || member.availability === "dnd" },
+        { label: "Locate", icon: LocateFixed, onSelect: () => onLocate(member.id), disabled: !member.online },
+      ]) : {})}>
       <div className="person-row">
         <button className="person-main" aria-label={`${member.name}${isCurrentUser ? " (you)" : ""}`} onClick={onToggle} aria-expanded={expanded}>
           <Avatar member={member} className="person-avatar" decorative={false}>

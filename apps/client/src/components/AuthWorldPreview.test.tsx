@@ -1,62 +1,52 @@
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthWorldPreview } from "./AuthWorldPreview";
 
-vi.mock("./CharacterPreview", () => ({
-  CharacterPreview: ({ motion, direction }: { motion: string; direction: string }) =>
-    <span data-testid="preview-character" data-motion={motion} data-direction={direction} />,
+const preview = vi.hoisted(() => ({ destroyScene: vi.fn(), destroyApp: vi.fn() }));
+
+vi.mock("pixi.js", () => ({
+  Application: class {
+    canvas = document.createElement("canvas");
+    init = () => Promise.resolve();
+    destroy = preview.destroyApp;
+    renderer = {};
+  },
+}));
+vi.mock("pixi.js/unsafe-eval", () => ({}));
+vi.mock("../auth-preview-scene", () => ({
+  PREVIEW_WIDTH: 512,
+  PREVIEW_HEIGHT: 426,
+  AuthPreviewScene: class {
+    destroy = preview.destroyScene;
+  },
 }));
 
-beforeEach(() => vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: false }))));
-
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.stubGlobal("IntersectionObserver", class {
+    constructor(private readonly callback: IntersectionObserverCallback) {}
+    observe() { this.callback([{ isIntersecting: true } as IntersectionObserverEntry], this as unknown as IntersectionObserver); }
+    disconnect() {}
+  });
+});
 afterEach(() => {
   cleanup();
-  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
 describe("auth world preview", () => {
-  it("wanders on its own until a visitor explores", () => {
-    vi.useFakeTimers();
+  it("mounts a decorative canvas without an interaction target", async () => {
     const { container } = render(<AuthWorldPreview />);
-    act(() => vi.advanceTimersByTime(2600));
-    expect(container.querySelector<HTMLElement>(".auth-preview-player")?.style.left).toBe("33%");
-    expect(screen.getByTestId("preview-character").dataset.motion).toBe("walk");
-    act(() => vi.advanceTimersByTime(420));
-    expect(screen.getByTestId("preview-character").dataset.motion).toBe("idle");
-    fireEvent.click(screen.getByRole("button", { name: "Explore the office" }), { detail: 0 });
-    act(() => vi.advanceTimersByTime(5000));
-    expect(container.querySelector<HTMLElement>(".auth-preview-player")?.style.left).toBe("36%");
+    await waitFor(() => expect(container.querySelector(".auth-preview-canvas canvas")).not.toBeNull());
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(container.querySelector(".auth-preview-canvas")?.getAttribute("aria-hidden")).toBe("true");
   });
 
-  it("walks toward a clicked point, then returns to idle", () => {
-    vi.useFakeTimers();
-    const { container } = render(<AuthWorldPreview />);
-    const preview = screen.getByRole("button", { name: "Explore the office" });
-    vi.spyOn(preview, "getBoundingClientRect").mockReturnValue({ left: 0, top: 0, width: 500, height: 400 } as DOMRect);
-
-    fireEvent.click(preview, { clientX: 400, clientY: 240, detail: 1 });
-    const player = container.querySelector<HTMLElement>(".auth-preview-player");
-    expect(player?.style.left).toBe("80%");
-    expect(player?.style.top).toBe("60%");
-    expect(screen.getByTestId("preview-character").dataset.motion).toBe("walk");
-    expect(screen.getByTestId("preview-character").dataset.direction).toBe("right");
-
-    act(() => vi.advanceTimersByTime(1500));
-    expect(screen.getByTestId("preview-character").dataset.motion).toBe("idle");
-  });
-
-  it("supports keyboard activation and keeps the destination inside the scene", () => {
-    const { container } = render(<AuthWorldPreview />);
-    const preview = screen.getByRole("button", { name: "Explore the office" });
-    fireEvent.click(preview, { detail: 0 });
-    expect(container.querySelector<HTMLElement>(".auth-preview-player")?.style.left).toBe("36%");
-    fireEvent.click(preview, { detail: 0 });
-    expect(container.querySelector<HTMLElement>(".auth-preview-player")?.style.left).toBe("70%");
-
-    vi.spyOn(preview, "getBoundingClientRect").mockReturnValue({ left: 0, top: 0, width: 500, height: 400 } as DOMRect);
-    fireEvent.click(preview, { clientX: 999, clientY: 999, detail: 1 });
-    expect(container.querySelector<HTMLElement>(".auth-preview-player")?.style.left).toBe("80%");
-    expect(container.querySelector<HTMLElement>(".auth-preview-player")?.style.top).toBe("78%");
+  it("cleans up the renderer", async () => {
+    const { container, unmount } = render(<AuthWorldPreview />);
+    await waitFor(() => expect(container.querySelector(".auth-preview-canvas canvas")).not.toBeNull());
+    unmount();
+    expect(preview.destroyScene).toHaveBeenCalledOnce();
+    expect(preview.destroyApp).toHaveBeenCalledOnce();
   });
 });

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { GameOpponentPicker } from "./GameOpponentPicker";
-import { Crown, Play, Trophy } from "lucide-react";
+import { Crown, Play } from "lucide-react";
 import { DEFAULT_FALLING_BLOCKS_SETTINGS, FALLING_BLOCKS_MODES, FALLING_BLOCKS_MODE_LABELS } from "@workhard/shared";
 import type {
   FallingBlocksSettings,
@@ -14,6 +14,7 @@ import type {
 import { Avatar } from "./Avatar";
 import { FallingBlocksMark } from "./FallingBlocksMark";
 import { FallingBlocksSpecialStatistics } from "./FallingBlocksSpecialStatistics";
+import { GameStatisticsButton, GameStatisticsDialog } from "./GameStatisticsDialog";
 
 interface FallingBlocksLobbyProps {
   lobby: GameLobbyState;
@@ -40,6 +41,7 @@ export function FallingBlocksLobby({
 }: FallingBlocksLobbyProps) {
   const [mode, setMode] = useState(initialMode);
   const [settings, setSettings] = useState(initialSettings);
+  const [statisticsOpen, setStatisticsOpen] = useState(false);
   const participants = lobby.participantIds.flatMap((userId) => {
     const member = members.find((candidate) => candidate.id === userId);
     return member ? [member] : [];
@@ -56,31 +58,26 @@ export function FallingBlocksLobby({
       bestScoresByUser.set(score.userId, score);
     }
   }
-  const highScores = [...bestScoresByUser.values()]
-    .sort((left, right) => right.score - left.score)
-    .slice(0, 5);
+  const highScores = [...bestScoresByUser.values()].sort((left, right) => right.score - left.score);
+  const gameScores = scores.filter((score) => score.definitionId === lobby.definitionId).sort((left, right) => right.playedAt.localeCompare(left.playedAt));
 
   return (
     <aside className="game-lobby falling-blocks-lobby" aria-label="Falling Blocks lobby" aria-busy={pending}>
       <header>
         <FallingBlocksMark />
-        <div>
-          <h2>Falling Blocks</h2>
-
-        </div>
+        <h2>Falling Blocks</h2>
+        <GameStatisticsButton onClick={() => setStatisticsOpen(true)} />
       </header>
-
-      {crownMember && <p className="falling-blocks-crown" aria-label="Crown holder"><Crown size={17} />{crownMember.id === currentUserId ? "You" : crownMember.name}</p>}
 
       <GameOpponentPicker mode={mode} onModeChange={setMode} soloLabel="Solo" />
 
       <div className="falling-blocks-settings">
-        <label>
-          Mode
-          <select value={settings.mode} onChange={(event) => setSettings({ ...settings, mode: event.target.value as FallingBlocksMode })}>
-            {FALLING_BLOCKS_MODES.map((gameMode) => <option key={gameMode} value={gameMode}>{FALLING_BLOCKS_MODE_LABELS[gameMode]}</option>)}
-          </select>
-        </label>
+        <div className="game-setting-group">
+          <span>Rules</span>
+          <div className="game-segments" role="group" aria-label="Rules">
+            {FALLING_BLOCKS_MODES.map((gameMode) => <button key={gameMode} type="button" aria-pressed={settings.mode === gameMode} onClick={() => setSettings({ ...settings, mode: gameMode as FallingBlocksMode })}>{FALLING_BLOCKS_MODE_LABELS[gameMode]}</button>)}
+          </div>
+        </div>
         {mode === "multiplayer" && <label>
           Attack target
           <select value={settings.attackTarget} onChange={(event) => setSettings({ ...settings, attackTarget: event.target.value as FallingBlocksAttackTarget })}>
@@ -90,8 +87,8 @@ export function FallingBlocksLobby({
         </label>}
       </div>
 
-      {mode === "multiplayer" && <section className="falling-blocks-lobby-players">
-        <h3>Lobby</h3>
+      {mode === "multiplayer" && <section className="game-lobby-roster" aria-label="Players">
+        <div className="game-lobby-roster-heading"><h3>Players</h3><span>Best</span></div>
         <ul>
           {participants.map((member) => (
             <li key={member.id}>
@@ -108,32 +105,19 @@ export function FallingBlocksLobby({
         {pending ? "Starting…" : mode === "multiplayer" && participants.length < 2 ? "Waiting for player" : "Play"}
       </button>
 
-      <dl className="falling-blocks-player-stats" aria-label="Your Falling Blocks statistics">
-        <div><dt>Best</dt><dd>{(playerStatistics?.highestScore ?? 0).toLocaleString()}</dd></div>
-        <div><dt>Wins</dt><dd>{playerStatistics?.multiplayerWins ?? 0}</dd></div>
-        <div><dt>Games</dt><dd>{playerStatistics?.gamesPlayed ?? 0}</dd></div>
-        <div><dt>Lines</dt><dd>{playerStatistics?.totalLines ?? 0}</dd></div>
-      </dl>
-
-      <FallingBlocksSpecialStatistics members={members} statistics={statistics} currentUserId={currentUserId} />
-
-      {highScores.length > 0 && (
-        <section className="falling-blocks-high-scores">
-          <h3><Trophy size={15} />High scores</h3>
-          <ol>
-            {highScores.map((score, index) => {
-              const member = members.find((candidate) => candidate.id === score.userId);
-              return (
-                <li key={score.id}>
-                  <span>{index + 1}</span>
-                  <span>{member?.name ?? "Player"}</span>
-                  <strong>{score.score.toLocaleString()}</strong>
-                </li>
-              );
-            })}
-          </ol>
-        </section>
-      )}
+      {statisticsOpen && <GameStatisticsDialog game="Falling Blocks" onClose={() => setStatisticsOpen(false)} rankingLabel="Best score"
+        metrics={[
+          { label: "Best score", value: (playerStatistics?.highestScore ?? 0).toLocaleString() },
+          { label: "Wins", value: String(playerStatistics?.multiplayerWins ?? 0) },
+          { label: "Games", value: String(playerStatistics?.gamesPlayed ?? 0) },
+          { label: "Lines", value: (playerStatistics?.totalLines ?? 0).toLocaleString() },
+        ]}
+        rankings={highScores.map((score) => ({ id: score.userId, name: score.userId === currentUserId ? "You" : members.find((member) => member.id === score.userId)?.name ?? "Player", value: score.score.toLocaleString() }))}
+        history={gameScores.filter((score) => score.userId === currentUserId).slice(0, 30).map((score) => ({ id: score.id, title: score.mode === "solo" ? "Solo" : "Players", detail: new Date(score.playedAt).toLocaleDateString(), value: score.score.toLocaleString() }))}
+      >
+        {crownMember && <p className="falling-blocks-crown" aria-label="Crown holder"><Crown size={17} />Crown: {crownMember.id === currentUserId ? "You" : crownMember.name}</p>}
+        <FallingBlocksSpecialStatistics members={members} statistics={statistics} currentUserId={currentUserId} />
+      </GameStatisticsDialog>}
     </aside>
   );
 }

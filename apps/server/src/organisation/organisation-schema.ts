@@ -19,6 +19,7 @@ export const roomSettingsSchema = z.object({
   name: z.string().trim().min(1).max(60), color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   meetingRoom: z.boolean().optional(),
   access: roomPermissionSchema.extend({ knockable: z.boolean() }), build: roomPermissionSchema.optional(),
+  ownerBuildApproval: z.enum(["vote", "direct"]).optional(),
   organisationUnitId: id.optional(), ownerUserId: id.optional(),
   personalAreas: z.array(z.object({ id, name, ownerUserId: id, bounds: z.object({
     x: z.number().int(), y: z.number().int(),

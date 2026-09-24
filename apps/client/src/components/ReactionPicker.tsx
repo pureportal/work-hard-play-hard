@@ -61,7 +61,7 @@ export function ReactionPicker({ onReact, disabled = false }: ReactionPickerProp
                 rootRef.current?.querySelector<HTMLButtonElement>(".reaction-trigger")?.focus();
               }}
             >
-              <span aria-hidden="true">{option.emoji}</span>
+              <img src={option.icon} alt="" width="30" height="30" draggable={false} />
               <kbd aria-hidden="true">{option.shortcut}</kbd>
             </button>
           ))}

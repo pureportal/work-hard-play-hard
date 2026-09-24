@@ -6,9 +6,11 @@ Approvals is available from the navigation rail and lists proposals from every p
 
 Organisation contains the team tree. People and units can be moved through drag and drop or explicit controls. Changes create proposals; they do not immediately alter the tree. The server rejects cycles, missing references, stale revisions and deletion of units still referenced by rooms, funds or defaults.
 
-Room settings separates Access, Build and Personal spaces. Access and Build independently support everyone, nobody, selected people, CEOs, and unit members or leads, with optional descendants. Room defaults use the same evaluator. A preview shows effective grants for each person. Temporary admission does not grant building rights.
+Room settings separates Access, Build and Personal spaces. Build rights always require room access; the Build editor only lists people and units with access. Both controls support everyone, nobody, selected people, CEOs, and unit members or leads, with optional descendants. Room defaults use the same evaluator. A preview shows effective grants for each person. Temporary admission does not grant building rights.
 
-A room can belong to one person, or contain multiple non-overlapping personal areas assigned to members. Areas are drawn inside the room and may be refined with dimensions. Assigning or releasing ownership requires approval. Owners may furnish their entire assigned space with their own paid inventory without a proposal. Shared purchases and construction still require public money and team approval. Personal ownership does not grant room entry.
+A room can belong to one person, or contain multiple non-overlapping personal areas assigned to members. Areas are drawn inside the room and may be refined with dimensions. Assigning or releasing ownership requires approval. Owners may furnish their entire assigned space with their own paid inventory without a proposal. A room owner can also be granted direct approval for furnishing projects contained in that room; these projects still use their selected fund and require enough money to apply. Structural changes and work outside the room retain normal approval. Personal ownership does not grant room entry.
+
+For a building project contained in rooms, the electorate is the people with effective build rights in those rooms. Projects that also affect shared space use the selected fund's electorate. A proposal is cancelled when its builder electorate changes before it is applied.
 
 Private items placed in public areas remain personal property and appear with their owner in the proposal preview. Their owner can recover them at any time without a vote, even without room entry or building rights and while viewing another floor. Other members cannot move, remove or spend another player's inventory through a proposal. Supported objects return to storage when their supporting personal item is recovered.
 
@@ -17,5 +19,7 @@ Room enclosure protection applies to private rooms and personally assigned space
 ## Verification
 
 `pnpm e2e:governance` uses Playwright with production client assets and the real server protocol in isolated memory. It starts no development server and changes no shared accounts. Its screenshots and report are in `artifacts/governance`.
+
+With the client already running, `pnpm --filter @workhard/server exec tsx ../../scripts/room-permissions-browser-check.ts` checks the room editor at desktop and mobile sizes. Screenshots and results are in `artifacts/room-permissions`.
 
 `src/world/world-runtime.personal-spaces.test.ts` checks administrator isolation, immediate personal placement, mixed public/private construction, revoked-access recovery, and protection against stolen assets. Organisation and permission suites cover revision checks, independent grants, team proposals and CEO safeguards. PostgreSQL integration tests check migration and persistence in disposable test databases.

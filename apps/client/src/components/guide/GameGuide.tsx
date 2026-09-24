@@ -19,6 +19,7 @@ interface GameGuideProps {
   onStart: () => void;
   onNavigate: (screen: GuideScreen) => void;
   onFinish: () => void;
+  onProgressLoaded?: (status: GameGuideStatus | null) => void;
 }
 
 export function GameGuide(props: GameGuideProps) {
@@ -29,11 +30,17 @@ export function GameGuide(props: GameGuideProps) {
 function PlayerGameGuide(props: GameGuideProps) {
   const progress = useGuideProgress();
   const attempted = useRef(false);
+  const reportedProgress = useRef(false);
   const [steps, setSteps] = useState<GuideStep[]>();
   const active = steps !== undefined;
   const [error, setError] = useState<string>();
   const callbacks = useRef(props);
   callbacks.current = props;
+  useEffect(() => {
+    if (progress.loading || progress.status === undefined || reportedProgress.current) return;
+    reportedProgress.current = true;
+    callbacks.current.onProgressLoaded?.(progress.status);
+  }, [progress.loading, progress.status]);
   const running = useRef(false);
   const transition = useRef<AbortController | undefined>(undefined);
   useEffect(() => () => {
@@ -130,7 +137,17 @@ function GuideLoading({ onClose }: { onClose: () => void }) {
 
 function GuideTooltip({ backProps, closeProps, controls, index, isLastStep, primaryProps, size, step, tooltipProps }: TooltipRenderProps) {
   const interactive = step.blockTargetInteraction === false;
+  const requiresAction = step.id === "desk-stamp" || step.id === "desk-case";
+  const [actionDone, setActionDone] = useState(false);
   const ref = useModalFocus<HTMLDivElement>(() => controls.skip(), true, !interactive);
+  useEffect(() => {
+    if (!requiresAction) return;
+    setActionDone(step.id === "desk-case" && document.querySelector('[data-guide="desk-case"]')?.getAttribute("data-guide-case-active") === "true");
+    const eventName = step.id === "desk-stamp" ? "approval-desk:stamp" : "approval-desk:start";
+    const complete = () => setActionDone(true);
+    window.addEventListener(eventName, complete);
+    return () => window.removeEventListener(eventName, complete);
+  }, [requiresAction, step.id]);
   useEffect(() => {
     if (!interactive || typeof step.target !== "string") return;
     const selector = step.target;
@@ -168,7 +185,7 @@ function GuideTooltip({ backProps, closeProps, controls, index, isLastStep, prim
         </div>
       </div>
       {index > 0 && <button {...backProps} className="guide-back"><ArrowLeft size={16} aria-hidden="true" />Back</button>}
-      <button {...primaryProps} className="guide-next">{isLastStep ? "Let’s play" : "Next"}
+      <button {...primaryProps} disabled={requiresAction && !actionDone} className="guide-next">{isLastStep ? "Let’s play" : "Next"}
         {isLastStep ? <Check size={17} aria-hidden="true" /> : <ArrowRight size={17} aria-hidden="true" />}
       </button>
     </footer>

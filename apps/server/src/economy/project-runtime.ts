@@ -1,8 +1,8 @@
 import { assertPublicReachability, assertTeleportersRetained } from "../world/public-reachability.js";
 import { randomUUID } from "node:crypto";
 import {
-  WORKSPACE_FUND_ID, approvalRateForAction, availablePublicMoney, detectLayoutRooms, getAssetDefinition, canManageUnit, projectRequiredMoney, publicFundForUnit, publicFundMemberIds, rebaseProjectLayout, validatePersonalSpaces, type BuildProject, type FloorLayout,
-  type ProjectEdit, type PublicAction, type ServerEvent,
+  WORKSPACE_FUND_ID, approvalRateForAction, availablePublicMoney, detectLayoutRooms, getAssetDefinition, canManageUnit, permissionAllows, projectRequiredMoney, publicFundForUnit, publicFundMemberIds, rebaseProjectLayout, roomBuildAllows, validatePersonalSpaces, type BuildProject, type FloorLayout,
+  type ProjectEdit, type PublicAction, type ServerEvent, type SpendingProposal,
 } from "@workhard/shared";
 import type { WorkspaceStore } from "../store.js";
 import { validateRoomPermission } from "../organisation/organisation-store.js";
@@ -90,21 +90,26 @@ export class ProjectRuntime {
     this.store.getPublicEconomy();
     const project = this.validateProject(peer.userId, draft.project);
     const action: PublicAction = { kind: "project", project };
+    const options = this.projectApproval(peer.userId, project);
     let submittedProposalId: string;
     if (proposalId) {
       if (draft.proposalId !== proposalId) throw new Error("PROJECT_STALE");
       const proposal = this.store.publicEconomy.proposal(proposalId);
       if (proposal.proposedBy !== peer.userId || !["open", "approved"].includes(proposal.status)) throw new Error("PROJECT_STALE");
-      if (!proposal.electorate.length) throw new Error("PROPOSAL_NO_APPROVERS");
+      if (!options.electorate.length && !options.direct && approvalRateForAction(this.store.publicEconomy.getApprovalRates(), action) > 0) throw new Error("PROPOSAL_NO_APPROVERS");
+      const revisedAutomaticProposal = proposal.approvalRate === 0 && !options.direct;
       proposal.title = title;
       proposal.action = structuredClone(action);
+      proposal.electorate = options.electorate;
+      proposal.approvalRate = options.direct ? 0 : approvalRateForAction(this.store.publicEconomy.getApprovalRates(), action);
       proposal.ballots = [];
-      proposal.required = Math.max(1, Math.ceil(proposal.electorate.length * proposal.approvalRate / 100));
-      proposal.status = "open";
+      proposal.required = revisedAutomaticProposal ? 1 : Math.ceil(proposal.electorate.length * proposal.approvalRate / 100);
+      proposal.status = proposal.required === 0 ? "approved" : "open";
       proposal.expiresAt = new Date(Date.now() + (process.env.NODE_ENV === "production" ? 7 * 86_400_000 : 10_000)).toISOString();
-      this.publish(requestId);
+      if (proposal.required === 0 && projectRequiredMoney(project) <= availablePublicMoney(this.store.publicEconomy.view(), project.fundId)) this.execute(peer, requestId, proposal.id);
+      else this.publish(requestId);
       submittedProposalId = proposal.id;
-    } else submittedProposalId = this.submitProposal(peer, requestId, title, action, project.fundId);
+    } else submittedProposalId = this.submitProposal(peer, requestId, title, action, project.fundId, options);
     draft.submitted = true;
     this.store.publicEconomy.recordOperation(peer.userId, requestId, fingerprint, submittedProposalId);
     peer.send({ type: "project.submitted", requestId, proposalId: submittedProposalId });
@@ -124,6 +129,7 @@ export class ProjectRuntime {
     this.store.getPublicEconomy();
     const fingerprint = `vote:${proposalId}:${approve}`;
     if (this.store.publicEconomy.findOperation(peer.userId, requestId, fingerprint) === undefined) {
+      this.assertProjectElectorateCurrent(this.store.publicEconomy.proposal(proposalId));
       this.store.publicEconomy.vote(peer.userId, proposalId, approve);
       this.store.publicEconomy.recordOperation(peer.userId, requestId, fingerprint, proposalId);
     }
@@ -136,6 +142,7 @@ export class ProjectRuntime {
     if (proposal.status === "applied") { this.publish(requestId); return; }
     if (proposal.status !== "approved") throw new Error("PROJECT_APPROVAL_REQUIRED");
     if (proposal.proposedBy !== peer.userId && !proposal.electorate.includes(peer.userId)) throw new Error("PROPOSAL_VOTE_FORBIDDEN");
+    this.assertProjectElectorateCurrent(proposal);
     const action: PublicAction = proposal.action.kind === "project"
       ? { kind: "project", project: this.validateProject(proposal.proposedBy, proposal.action.project) }
       : proposal.action;
@@ -166,13 +173,14 @@ export class ProjectRuntime {
     if (this.store.publicEconomy.hasDueProposals() || this.publishedResolutionRevision !== this.store.publicEconomy.resolutionRevision) this.publish();
   }
 
-  private submitProposal(peer: ProjectPeer, requestId: string, title: string, action: PublicAction, fundId: string): string {
-    const automatic = approvalRateForAction(this.store.publicEconomy.getApprovalRates(), action) === 0;
+  private submitProposal(peer: ProjectPeer, requestId: string, title: string, action: PublicAction, fundId: string, options: { electorate?: string[]; direct?: boolean } = {}): string {
+    const automatic = options.direct || approvalRateForAction(this.store.publicEconomy.getApprovalRates(), action) === 0;
     const checkpoint = automatic ? this.store.exportMutableState() : undefined;
     const wasDirty = this.store.dirty;
     try {
       const proposal = this.store.publicEconomy.propose(peer.userId, title, action, fundId,
-        this.store.getOrganisation(), this.store.getMembers().map((member) => member.id));
+        this.store.getOrganisation(), this.store.getMembers().map((member) => member.id), new Date(),
+        { ...(options.electorate ? { electorate: options.electorate } : {}), ...(options.direct ? { approvalRate: 0 } : {}) });
       if (automatic && (action.kind !== "project" || projectRequiredMoney(action.project) <= availablePublicMoney(this.store.publicEconomy.view(), fundId))) {
         this.execute(peer, requestId, proposal.id);
       }
@@ -185,6 +193,37 @@ export class ProjectRuntime {
       }
       throw error;
     }
+  }
+
+  private projectApproval(userId: string, project: BuildProject): { electorate: string[]; direct: boolean } {
+    const layout = this.store.getLayout(project.floorId)!;
+    const organisation = this.store.getOrganisation();
+    const settings = this.store.getGameSettings();
+    const members = this.store.getMembers().map((member) => member.id);
+    const fund = this.store.publicEconomy.fund(project.fundId);
+    const impact = assertProjectScope(layout, project.layout, fund, userId, settings, organisation);
+    const fundMembers = publicFundMemberIds(fund, organisation, members);
+    const affectedRooms = layout.rooms.filter((room) => impact.roomIds.includes(room.id));
+    const electorate = affectedRooms.length && !impact.affectsSharedSpace
+      ? members.filter((id) => affectedRooms.some((room) => roomBuildAllows(room, id, settings, organisation)))
+      : fundMembers;
+    const ownerRoom = affectedRooms.length === 1 ? affectedRooms[0] : undefined;
+    const direct = Boolean(ownerRoom && ownerRoom.ownerUserId === userId && ownerRoom.ownerBuildApproval === "direct"
+      && impact.containedRoomIds.includes(ownerRoom.id) && !project.quote.structural && !project.spawn
+      && project.quote.assetChanges.length > 0 && JSON.stringify(layout.tiles) === JSON.stringify(project.layout.tiles)
+      && roomBuildAllows(ownerRoom, userId, settings, organisation));
+    return { electorate, direct };
+  }
+
+  private assertProjectElectorateCurrent(proposal: SpendingProposal): void {
+    if (proposal.action.kind !== "project" || !["open", "approved"].includes(proposal.status)) return;
+    const project = this.validateProject(proposal.proposedBy, proposal.action.project);
+    const current = this.projectApproval(proposal.proposedBy, project);
+    const delegationRevoked = proposal.approvalRate === 0 && this.store.publicEconomy.getApprovalRates().building > 0 && !current.direct;
+    if (!delegationRevoked && JSON.stringify(current.electorate) === JSON.stringify(proposal.electorate)) return;
+    proposal.status = "cancelled";
+    this.publish();
+    throw new Error("PROJECT_STALE");
   }
 
   private assertFundMember(userId: string, fundId: string): void {
@@ -251,6 +290,8 @@ export class ProjectRuntime {
       if (action.settings.access.knockable && accessMode === "open") throw new Error("ROOM_KNOCK_REQUIRES_PRIVATE");
       validateRoomPermission(action.settings.access, organisation, memberIds);
       validatePersonalSpaces(room, action.settings, memberIds);
+      if (action.settings.ownerBuildApproval === "direct" && (!action.settings.ownerUserId || !room.privateEligible
+        || !permissionAllows(action.settings.access.mode === "default" ? this.store.getGameSettings().roomAccess : action.settings.access, action.settings.ownerUserId, organisation))) throw new Error("PERSONAL_AREA_INVALID");
       if (action.settings.build) validateRoomPermission(action.settings.build, organisation, memberIds);
       if (action.settings.organisationUnitId && !organisation.units.some((unit) => unit.id === action.settings.organisationUnitId)) throw new Error("ORGANISATION_UNIT_NOT_FOUND");
       const layout = structuredClone(this.store.getLayout(room.floorId)!);

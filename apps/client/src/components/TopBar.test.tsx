@@ -30,7 +30,7 @@ describe("TopBar connection status", () => {
     expect(view.container.querySelector(".floor-picker-value")?.textContent).toBe("1 ·Studio");
   });
 
-  it("shows a compact Connection Lost icon with an accessible tooltip", () => {
+  it("keeps the connection message visible until the workspace reconnects", () => {
     const view = render(
       <TopBar
         officeName="Office"
@@ -41,9 +41,19 @@ describe("TopBar connection status", () => {
       />,
     );
 
-    const indicator = screen.getByRole("img", { name: "Connection Lost" });
-    expect(indicator.getAttribute("tabindex")).toBe("0");
-    expect(within(indicator).getByRole("tooltip").textContent).toBe("Connection Lost");
+    expect(document.querySelector(".connection-notice")?.textContent).toBe("Connection unavailable");
+    expect(within(view.container).getByRole("status").textContent).toBe("Connection unavailable");
+
+    view.rerender(
+      <TopBar
+        officeName="Office"
+        floors={[floor]}
+        floorId={floor.id}
+        connection="connecting"
+        onFloorChange={vi.fn()}
+      />,
+    );
+    expect(document.querySelector(".connection-notice")?.textContent).toBe("Connecting…");
 
     view.rerender(
       <TopBar
@@ -54,7 +64,8 @@ describe("TopBar connection status", () => {
         onFloorChange={vi.fn()}
       />,
     );
-    expect(screen.queryByRole("img", { name: "Connection Lost" })).toBeNull();
+    expect(document.querySelector(".connection-notice")).toBeNull();
+    expect(within(view.container).getByRole("status").textContent).toBe("Connected");
   });
 
   it("switches between dark and light modes", () => {

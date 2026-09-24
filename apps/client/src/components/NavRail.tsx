@@ -7,6 +7,7 @@ import {
   Users,
   Video,
   ClipboardCheck,
+  Stamp,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { CorporateIdentity, Member } from "@workhard/shared";
@@ -14,12 +15,13 @@ import { Avatar } from "./Avatar";
 import { IconButton } from "./IconButton";
 import { BrandMark } from "./BrandMark";
 
-export type WorkspacePanel = "people" | "chat" | "meetings" | "build" | "settings" | "organisation" | "rooms" | "approvals" | "admin" | null;
+export type WorkspacePanel = "people" | "chat" | "meetings" | "build" | "settings" | "organisation" | "rooms" | "approvals" | "approvalDesk" | "admin" | null;
 
 interface NavRailProps {
   activePanel: WorkspacePanel;
   corporateIdentity: CorporateIdentity;
   canUseBuild: boolean;
+  approvalDeskEnabled?: boolean;
   currentUser: Member;
   unreadMessages: number;
   pendingApprovals?: number;
@@ -30,15 +32,16 @@ interface NavRailProps {
 
 const items: { panel: Exclude<WorkspacePanel, null>; label: string; icon: LucideIcon }[] = [
   { panel: "people", label: "People", icon: Users },
-  { panel: "organisation", label: "Organisation", icon: Network },
-  { panel: "chat", label: "Messages", icon: MessageCircle },
-  { panel: "meetings", label: "Meetings", icon: Video },
+  { panel: "approvalDesk", label: "Approval Desk", icon: Stamp },
   { panel: "build", label: "Build", icon: PencilRuler },
   { panel: "approvals", label: "Approvals", icon: ClipboardCheck },
+  { panel: "chat", label: "Messages", icon: MessageCircle },
+  { panel: "meetings", label: "Meetings", icon: Video },
+  { panel: "organisation", label: "Organisation", icon: Network },
   { panel: "settings", label: "Settings", icon: Settings },
 ];
 
-export function NavRail({ activePanel, corporateIdentity, canUseBuild, currentUser, unreadMessages, pendingApprovals = 0, onChange, onAvatarClick, onSignOut }: NavRailProps) {
+export function NavRail({ activePanel, corporateIdentity, canUseBuild, approvalDeskEnabled = false, currentUser, unreadMessages, pendingApprovals = 0, onChange, onAvatarClick, onSignOut }: NavRailProps) {
   return (
     <nav className="nav-rail" aria-label="Workspace">
       <span className="nav-item brand-nav-item">
@@ -52,6 +55,7 @@ export function NavRail({ activePanel, corporateIdentity, canUseBuild, currentUs
           if (panel === "build" && !canUseBuild) {
             return null;
           }
+          if (panel === "approvalDesk" && !approvalDeskEnabled) return null;
           const unread = panel === "chat" ? unreadMessages : panel === "approvals" ? pendingApprovals : 0;
           return (
             <span className="nav-item" key={panel}>

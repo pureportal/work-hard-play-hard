@@ -47,57 +47,10 @@
   margin: 12px 0;
 }
 
-.tic-tac-toe-lobby-players {
-  padding: 0;
-  margin: 14px 0 0;
-  list-style: none;
-}
-
-.tic-tac-toe-lobby-players li {
-  display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) auto;
-  align-items: center;
-  min-height: 42px;
-  gap: 8px;
-  font-size: 12px;
-}
-
-.tic-tac-toe-lobby-players li > span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .tic-tac-toe-start-button {
   width: 100%;
   justify-content: center;
   margin-top: 12px;
-}
-
-.tic-tac-toe-player-stats {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
-  margin: 14px 0 0;
-}
-
-.tic-tac-toe-player-stats > div {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  padding: 10px;
-  border-radius: 10px;
-}
-
-.tic-tac-toe-player-stats dt {
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.tic-tac-toe-player-stats dd {
-  margin: 0;
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
 }
 
 .tic-tac-toe-game {

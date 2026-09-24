@@ -13,10 +13,11 @@ import "../../public-economy.css";
 
 type FundsView = "votes" | "inventory" | "activity" | "settings" | "rules";
 
-export function FundsPanel({ economy, organisation, members, userId, personalBalance, pending, error, initialFundId = "workspace", globalSettings, onOpenRooms, onCommand, onReview, onEdit, onPlace, onViewChange, onClose, rooms, layouts, floors }: {
+export function FundsPanel({ economy, organisation, members, userId, personalBalance, pending, error, initialFundId = "workspace", globalSettings, onOpenRooms, onOpenBuild, onCommand, onReview, onEdit, onPlace, onViewChange, onClose, rooms, layouts, floors }: {
   economy: PublicEconomy; organisation: OrganisationState; members: Member[]; userId: string; personalBalance: number; pending: boolean; initialFundId?: string;
   error?: string | undefined;
   globalSettings: GlobalKidnappingSettings; onOpenRooms: () => void;
+  onOpenBuild?: () => void;
   rooms: Room[]; layouts: FloorLayout[]; floors: Floor[];
   onCommand: (command: ClientCommand) => void; onReview: (project: BuildProject) => void; onEdit: (proposal: SpendingProposal) => void;
   onPlace: (publicAssetId: string, assetId: string, fundId: string) => void; onViewChange: (view: BuildView) => void; onClose: () => void;
@@ -34,7 +35,7 @@ export function FundsPanel({ economy, organisation, members, userId, personalBal
   const inventory = economy.inventory.filter((asset) => asset.fundId === fundId);
   const transactions = economy.transactions.filter((entry) => entry.fundId === fundId).reverse();
   const transactionNames = { donation: "Donation", purchase: "Building purchase", refund: "Refund", transfer: "Transfer", asset_donation: "Item donated", asset_sale: "Item sold" };
-  return <WorkspaceDialog title="Approvals" className="funds-dialog" error={error} onBack={() => onViewChange("shared")} onClose={onClose}>
+  return <WorkspaceDialog title="Approvals" className={`funds-dialog${view === "votes" && !proposals.some((proposal) => proposal.status === "open" || proposal.status === "approved") ? " is-empty" : ""}`} error={error} onBack={() => onViewChange("shared")} onClose={onClose}>
     <DialogTabs label="Funds views" value={view} onChange={setView} tabs={[
       { id: "votes", label: "Proposals", count: waiting }, { id: "inventory", label: "Shared items" },
       { id: "activity", label: "Activity" }, ...(canPropose ? [{ id: "settings" as const, label: "Funds" }] : []), { id: "rules", label: "Game rules" },
@@ -49,7 +50,7 @@ export function FundsPanel({ economy, organisation, members, userId, personalBal
       </div>}
       {view === "rules" && <GameRulesEditor settings={globalSettings} members={members} pending={pending} onOpenRooms={onOpenRooms}
         onPropose={(settings) => propose("Change carrying rules", { kind: "kidnapping.settings", settings })} />}
-      {view === "votes" && <SpendingProposals proposals={proposals} economy={economy} organisation={organisation} members={members} rooms={rooms} layouts={layouts} floors={floors} userId={userId} pending={pending} onCommand={onCommand} onReview={onReview} onEdit={onEdit} />}
+      {view === "votes" && <SpendingProposals proposals={proposals} economy={economy} organisation={organisation} members={members} rooms={rooms} layouts={layouts} floors={floors} userId={userId} pending={pending} onCommand={onCommand} onReview={onReview} onEdit={onEdit} {...(canPropose && onOpenBuild ? { onOpenBuild } : {})} />}
       {view === "inventory" && <section aria-label="Shared inventory">{inventory.length ? <div className="shared-inventory">{inventory.map((asset) => {
         const definition = getAssetDefinition(asset.assetId)!;
         return <article className="shared-inventory-item" key={asset.id}><AssetShape asset={definition} rotation={0} variantId={getDefaultAssetVariantId(definition)} />

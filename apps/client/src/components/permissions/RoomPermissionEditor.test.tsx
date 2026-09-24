@@ -56,4 +56,25 @@ describe("room access and build editor", () => {
     expect(screen.queryByRole("button", { name: "Propose changes" })).toBeNull();
     expect(screen.getByLabelText("Name").closest("fieldset")!.disabled).toBe(true);
   });
+
+  it("only offers people with entry access for building and lets an owner skip votes", () => {
+    const onSave = vi.fn();
+    render(<RoomPermissionEditor room={room} members={members} organisation={organisation} settings={DEFAULT_GAME_SETTINGS} editable canAssignUnit pending={false} onSave={onSave} />);
+    fireEvent.change(screen.getByRole("combobox", { name: "Access" }), { target: { value: "assigned" } });
+    const access = screen.getByRole("group", { name: "Access" });
+    fireEvent.click(within(access).getByText("People", { exact: true }));
+    fireEvent.click(within(access).getByRole("checkbox", { name: "Lead" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Build" }), { target: { value: "assigned" } });
+    const build = screen.getByRole("group", { name: "Build" });
+    fireEvent.click(within(build).getByText("People", { exact: true }));
+    expect(within(build).getByRole("checkbox", { name: "Lead" })).toBeTruthy();
+    expect(within(build).queryByRole("checkbox", { name: "Member" })).toBeNull();
+    fireEvent.change(screen.getByRole("combobox", { name: "Room owner" }), { target: { value: "Lead" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Owner's builds" }), { target: { value: "direct" } });
+    fireEvent.click(screen.getByRole("button", { name: "Propose changes" }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ ownerUserId: "Lead", ownerBuildApproval: "direct" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Access" }), { target: { value: "none" } });
+    expect(screen.getByText("Give the owner room access to skip approval.")).toBeTruthy();
+    expect((screen.getByRole("button", { name: "Propose changes" }) as HTMLButtonElement).disabled).toBe(true);
+  });
 });

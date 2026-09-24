@@ -78,6 +78,7 @@ export interface Room {
   meetingRoom?: boolean;
   access: RoomAccess;
   build?: RoomPermission;
+  ownerBuildApproval?: "vote" | "direct";
   organisationUnitId?: string;
   ownerUserId?: string;
   personalAreas?: PersonalArea[];
@@ -89,6 +90,7 @@ export interface RoomSettings {
   meetingRoom?: boolean;
   access: RoomAccess;
   build?: RoomPermission;
+  ownerBuildApproval?: "vote" | "direct";
   organisationUnitId?: string;
   ownerUserId?: string;
   personalAreas?: PersonalArea[];

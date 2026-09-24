@@ -1,9 +1,10 @@
 import { useImperativeHandle, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type Ref } from "react";
-import { Grip, Maximize2, Minus, Plus, Scaling } from "lucide-react";
-import { WHITEBOARD_HEIGHT, WHITEBOARD_WIDTH, type WhiteboardCard } from "@workhard/shared";
+import { Copy, Grip, Maximize2, Minus, Pencil, Plus, Scaling, Trash2 } from "lucide-react";
+import { WHITEBOARD_CARD_LIMIT, WHITEBOARD_HEIGHT, WHITEBOARD_WIDTH, type WhiteboardCard } from "@workhard/shared";
 import { IconButton } from "../IconButton";
 import { positionCard, resizeCard } from "./whiteboard-model";
 import { WhiteboardCardContent } from "./WhiteboardCardContent";
+import { useContextActions } from "../ContextMenu";
 
 interface Props {
   ref?: Ref<{ position: () => { x: number; y: number } }>;
@@ -13,6 +14,8 @@ interface Props {
   onSelect: (id: string) => void;
   onChange: (card: WhiteboardCard) => void;
   onAdd: (position: { x: number; y: number }) => void;
+  onDuplicate: (id: string) => void;
+  onRemove: (id: string) => void;
 }
 
 interface Drag {
@@ -24,7 +27,8 @@ interface Drag {
   preview: WhiteboardCard;
 }
 
-export function WhiteboardCanvas({ ref, cards, disabled, selectedId, onSelect, onChange, onAdd }: Props) {
+export function WhiteboardCanvas({ ref, cards, disabled, selectedId, onSelect, onChange, onAdd, onDuplicate, onRemove }: Props) {
+  const contextActions = useContextActions();
   const viewport = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | undefined>(undefined);
   const [preview, setPreview] = useState<WhiteboardCard>();
@@ -101,13 +105,18 @@ export function WhiteboardCanvas({ ref, cards, disabled, selectedId, onSelect, o
           {cards.map((saved) => {
             const card = preview?.id === saved.id ? preview : saved;
             return <article key={card.id} data-card-id={card.id}
+              tabIndex={0} {...contextActions(() => [
+                { label: "Edit", icon: Pencil, onSelect: () => onSelect(card.id) },
+                { label: "Duplicate", icon: Copy, onSelect: () => onDuplicate(card.id), disabled: disabled || cards.length >= WHITEBOARD_CARD_LIMIT },
+                { label: "Delete", icon: Trash2, onSelect: () => onRemove(card.id), disabled, danger: true },
+              ])}
               className={`whiteboard-card canvas-card color-${card.color} kind-${card.kind}${selectedId === card.id ? " selected" : ""}${preview?.id === card.id ? " dragging" : ""}`}
               style={{ left: card.x, top: card.y, width: card.width, height: card.height }}>
-              <button className="whiteboard-drag-handle" aria-label={`Move ${card.title || "card"}`} aria-description="Use arrow keys to move. Hold Shift for larger steps." {...handle(card, "move")}>
+              <button className="whiteboard-drag-handle" data-context-press-ignore aria-label={`Move ${card.title || "card"}`} aria-description="Use arrow keys to move. Hold Shift for larger steps." {...handle(card, "move")}>
                 <Grip size={17} aria-hidden="true" />
               </button>
               <WhiteboardCardContent card={card} canvas onSelect={() => onSelect(card.id)} />
-              <button className="whiteboard-resize-handle" aria-label={`Resize ${card.title || "card"}`} aria-description="Use arrow keys to resize." {...handle(card, "resize")}>
+              <button className="whiteboard-resize-handle" data-context-press-ignore aria-label={`Resize ${card.title || "card"}`} aria-description="Use arrow keys to resize." {...handle(card, "resize")}>
                 <Scaling size={16} aria-hidden="true" />
               </button>
             </article>;

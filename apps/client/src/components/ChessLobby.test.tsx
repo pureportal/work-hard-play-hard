@@ -100,6 +100,44 @@ describe("ChessLobby", () => {
     expect(onJoin.mock.calls).toEqual([["invitation"], ["open-seat"]]);
     expect(within(invitations).getByText("24 hours · Weekends paused")).toBeTruthy();
   });
+
+  it("lets a player create another game while an invitation is waiting", () => {
+    const onCreate = vi.fn();
+    const waiting = match("waiting-one", "user-maya", undefined, { timeControl: "standard", pauseWeekends: false, access: "open" });
+    const props = { members, currentUserId: "user-maya", onCreate, onJoin: vi.fn(), onOpen: vi.fn(), onCancel: vi.fn() };
+    const view = render(<ChessLobby {...props} lobby={lobby([waiting])} />);
+    fireEvent.click(screen.getByRole("button", { name: "Players" }));
+    fireEvent.click(screen.getByRole("button", { name: "New game" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create game" }));
+    expect(onCreate).toHaveBeenCalledWith({ timeControl: "standard", pauseWeekends: false, access: "open" });
+
+    const second = match("waiting-two", "user-maya", undefined, { timeControl: "standard", pauseWeekends: false, access: "open" });
+    view.rerender(<ChessLobby {...props} lobby={lobby([waiting, second])} />);
+    expect(screen.getByRole("button", { name: "New game" })).toBeTruthy();
+    expect(within(screen.getByRole("heading", { name: "Your games" }).closest("section")!).getAllByRole("button", { name: "Cancel game" })).toHaveLength(2);
+  });
+
+  it("separates completed games and opens the shared statistics views", () => {
+    const completed = {
+      ...match("past", "user-maya", "user-leo", { timeControl: "rapid" as const, pauseWeekends: false, access: "open" as const }, "completed"),
+      outcome: { result: "checkmate" as const, winnerUserId: "user-maya" },
+    };
+    const onOpen = vi.fn();
+    render(<ChessLobby lobby={{ ...lobby([completed]), statistics: [
+      { userId: "user-maya", games: 1, wins: 1, draws: 0 },
+      { userId: "user-leo", games: 1, wins: 0, draws: 0 },
+    ] }} members={members} currentUserId="user-maya" onCreate={vi.fn()} onJoin={vi.fn()} onOpen={onOpen} onCancel={vi.fn()} />);
+    const history = screen.getByRole("heading", { name: "History" }).closest("section")!;
+    expect(within(history).getByText("Rapid · You won")).toBeTruthy();
+    fireEvent.click(within(history).getByRole("button", { name: "Review game" }));
+    expect(onOpen).toHaveBeenCalledWith("past");
+    fireEvent.click(screen.getByRole("button", { name: "Statistics" }));
+    expect(screen.getByRole("dialog", { name: "Chess" }).textContent).toContain("1");
+    fireEvent.click(screen.getByRole("tab", { name: "Rankings" }));
+    expect(screen.getByRole("tabpanel", { name: "Rankings" }).textContent).toContain("Leo Martins");
+    fireEvent.click(screen.getByRole("tab", { name: "History" }));
+    expect(screen.getByRole("tabpanel", { name: "History" }).textContent).toContain("Win");
+  });
 });
 
 function lobby(matches: ChessMatchSummary[]): ChessLobbyState {
@@ -108,6 +146,7 @@ function lobby(matches: ChessMatchSummary[]): ChessLobbyState {
     objectId: "object-chess",
     floorId: "floor-studio",
     matches,
+    statistics: [],
   };
 }
 

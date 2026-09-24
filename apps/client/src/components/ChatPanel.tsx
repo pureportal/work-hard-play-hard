@@ -1,4 +1,4 @@
-import { ArrowDown, Hash, ImagePlus, LoaderCircle, Send, UserRound, Video } from "lucide-react";
+import { ArrowDown, Copy, Hash, Image, ImagePlus, LoaderCircle, Send, UserRound, Video } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent, type KeyboardEvent } from "react";
 import type { ChatMessage, Conversation, Member } from "@workhard/shared";
 import { resolveServerUrl } from "../server-url";
@@ -7,6 +7,7 @@ import { Avatar } from "./Avatar";
 import { MessageInput } from "./MessageInput";
 import { MessageMarkdown } from "./MessageMarkdown";
 import { SurfaceHeader } from "./SurfaceHeader";
+import { useContextActions, type ContextAction } from "./ContextMenu";
 import "../chat-panel.css";
 
 interface ChatPanelProps {
@@ -43,12 +44,14 @@ export function ChatPanel({
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [imageError, setImageError] = useState<string>();
+  const [copyError, setCopyError] = useState<string>();
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
   const conversationTabsRef = useRef<HTMLDivElement>(null);
   const scrollConversationTabs = useHorizontalWheelScroll(conversationTabsRef);
+  const contextActions = useContextActions();
   const activeConversationTabRef = useRef<HTMLButtonElement>(null);
   const previousConversationIdRef = useRef<string | undefined>(undefined);
   const stickToBottomRef = useRef(true);
@@ -275,7 +278,24 @@ export function ChatPanel({
             const mine = message.userId === currentUserId;
             const hasImage = Boolean(message.attachments?.length);
             return (
-              <div className={`chat-message ${mine ? "mine" : ""} ${grouped ? "grouped" : ""} ${hasImage ? "has-image" : ""}`} key={message.id}>
+              <div className={`chat-message ${mine ? "mine" : ""} ${grouped ? "grouped" : ""} ${hasImage ? "has-image" : ""}`} key={message.id}
+                tabIndex={0} {...contextActions(() => {
+                  const actions: ContextAction[] = [];
+                  if (message.body) actions.push({ label: "Copy message", icon: Copy, onSelect: () => {
+                    void (async () => {
+                      try {
+                        await navigator.clipboard.writeText(message.body);
+                        setCopyError(undefined);
+                      } catch {
+                        setCopyError("Could not copy message.");
+                      }
+                    })();
+                  } });
+                  if (message.attachments?.length) actions.push({ label: "Open image", icon: Image, onSelect: () => {
+                    window.open(resolveServerUrl(message.attachments![0]!.url), "_blank", "noopener,noreferrer");
+                  } });
+                  return actions;
+                })}>
                 {!grouped && !mine && (
                   <Avatar member={member} className="message-avatar" />
                 )}
@@ -297,6 +317,7 @@ export function ChatPanel({
             );
           })}
         </div>
+        {copyError && <p className="composer-error" role="alert">{copyError}</p>}
         {showJumpToLatest && (
           <button className="jump-to-latest" onClick={jumpToLatest}>
             <ArrowDown size={15} aria-hidden="true" />

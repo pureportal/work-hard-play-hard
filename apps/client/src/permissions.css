@@ -11,7 +11,7 @@
 .permission-editor summary { padding: 6px 0; cursor: pointer; }
 .permission-unit { padding: 8px 0; }
 .permission-unit > label:first-child { display: grid; grid-template-columns: 1fr 105px; align-items: center; }
-.permission-people { display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; padding: 8px 0; }
+.permission-people { display: flex; flex-direction: column; gap: 8px; padding: 8px 0; }
 .permission-preview { margin-top: 24px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-strong); }
 .permission-preview > summary { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 14px 16px; border-radius: 11px; color: var(--ink); font-size: 14px; font-weight: 600; list-style: none; cursor: pointer; }
 .permission-preview > summary::-webkit-details-marker { display: none; }
@@ -49,8 +49,9 @@
 .room-settings-detail > h3 { margin: 0; font-size: 20px; }
 .room-permission-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 16px; }
 .room-knocking { margin-top: 12px; }
-.room-settings-save { display: flex; justify-content: flex-end; padding-top: 8px; }
+.room-settings-save { position: sticky; bottom: 0; z-index: 2; display: flex; justify-content: flex-end; padding: 12px 0; background: var(--panel); border-top: 1px solid var(--line); }
 .room-settings-readonly { color: var(--muted); font-size: 13px; }
+.room-build-approval-detail { margin: -8px 0 0; color: var(--muted); font-size: 12px; }
 .room-defaults { padding: 24px; }
 .room-directory .mobile-room-picker { display: none; }
 .room-settings-dialog .permission-content input:not([type="checkbox"]), .room-settings-dialog .permission-content select { min-height: 42px; border-radius: 10px; }

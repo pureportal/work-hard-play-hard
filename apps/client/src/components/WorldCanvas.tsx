@@ -1,7 +1,7 @@
 import type { CharacterSeatedPose, OrganisationState } from "@workhard/shared";
-import { ArrowUp, Check, LocateFixed, Minus, Plus, RotateCw, X } from "lucide-react";
+import { ArrowUp, Check, LocateFixed, Minus, Plus, RotateCw, Scan, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Application, Container, Graphics, Text } from "pixi.js";
+import { Application, Assets, Container, Graphics, Sprite, Text, Texture } from "pixi.js";
 import "pixi.js/unsafe-eval";
 import { CharacterSprite } from "../character-sprite";
 import { reloadUpdatedClient } from "../client-update";
@@ -70,6 +70,7 @@ import type {
   PlacedAssetInteraction,
   PlayerRoomAccessibility,
   Rect,
+  ReactionKind,
   Wall,
   WorldObject,
   WorldPlayer,
@@ -81,7 +82,9 @@ import { renderCharacter } from "../character-renderer";
 import { getAssetOrientationLabel, rotateAssetClockwise } from "../asset-orientation";
 import { projectPreviewMarks } from "../project-preview";
 import { getAssetDirectionIndicators } from "../asset-direction-indicators";
-import { REACTION_EMOJI, type DisplayHighFive, type DisplayReaction } from "../reactions";
+import { REACTION_OPTIONS, type DisplayGroupReaction, type DisplayReaction } from "../reactions";
+import highFiveIcon from "../assets/reactions/high_five.svg?url";
+import { WorldReactionParticles } from "../world-reaction-particles";
 import type { ColorTheme } from "../theme";
 import { isPointInWorldTarget, resolveWorldPointTarget } from "../world-point-target";
 import { IconButton } from "./IconButton";
@@ -103,9 +106,10 @@ export interface WorldCanvasProps {
   members: Member[];
   players: WorldPlayer[];
   reactions: DisplayReaction[];
-  highFives: DisplayHighFive[];
+  groupReactions: DisplayGroupReaction[];
   gongRings: DisplayGongRing[];
   specialPropUses?: DisplaySpecialPropUse[];
+  waitingChessObjectIds?: readonly string[];
   currentUserId: string;
   editingTool: LayoutTool | null;
   editingAssetId: string;
@@ -116,6 +120,7 @@ export interface WorldCanvasProps {
   playerAssetPlacement?: { userId: string; settings: GameSettings; organisation: OrganisationState; officeBuilder: boolean } | undefined;
   roomAccessibility?: PlayerRoomAccessibility | undefined;
   colorTheme: ColorTheme;
+  primaryColor: string;
   editing: boolean;
   inputEnabled: boolean;
   focusTarget?: WorldFocusTarget | undefined;
@@ -124,6 +129,7 @@ export interface WorldCanvasProps {
   onEdit: (edit: LayoutEdit) => void;
   onObjectSelect: (object: WorldObject, interactionId: string | undefined, anchor: ContextAnchor) => void;
   onBuildItemSelect: (item?: LayoutItemReference) => void;
+  onContextSelect?: (target: WorldContextTarget, anchor: ContextAnchor) => void;
   onAssetRotationChange: (rotation: AssetRotation) => void;
   onPlacementCancel: () => void;
   onPlacementBlocked: (message: string) => void;
@@ -136,12 +142,19 @@ export interface ContextAnchor {
   y: number;
 }
 
+export type WorldContextTarget =
+  | { type: "player"; userId: string }
+  | { type: "object"; object: WorldObject; interactionId?: string }
+  | { type: "ground"; x: number; y: number }
+  | { type: "build"; item: LayoutItemReference | undefined };
+
 interface RendererCallbacks {
   onDestination: WorldCanvasProps["onDestination"];
   onPlayerSelect: WorldCanvasProps["onPlayerSelect"];
   onEdit: WorldCanvasProps["onEdit"];
   onObjectSelect: WorldCanvasProps["onObjectSelect"];
   onBuildItemSelect: WorldCanvasProps["onBuildItemSelect"];
+  onContextSelect: WorldCanvasProps["onContextSelect"];
   onGongOffscreen: WorldCanvasProps["onGongOffscreen"];
   onPlacementBlocked: WorldCanvasProps["onPlacementBlocked"];
   onPlacementPreviewStateChange: (state: PlacementPreviewState) => void;
@@ -165,7 +178,7 @@ interface ActivePointer {
   pointerType: string;
 }
 
-const MIN_CAMERA_ZOOM = 0.5;
+const MIN_CAMERA_ZOOM = 0.08;
 const MAX_CAMERA_ZOOM = 1.45;
 const MOUSE_DRAG_THRESHOLD = 6;
 const TOUCH_DRAG_THRESHOLD = 10;
@@ -192,7 +205,9 @@ interface PlayerView {
   seatShadow: Graphics;
   seatOcclusion: CharacterSeatOcclusion;
   reactionBubble: Container;
-  reactionText: Text;
+  reactionIcon: Sprite;
+  reactionParticles: WorldReactionParticles;
+  reactionKind?: ReactionKind;
   reactionId?: string;
   reactionStartedAt: number;
   reactionUntil: number;
@@ -203,9 +218,11 @@ interface PlayerView {
   facingDirection?: WorldPlayer["facing"];
 }
 
-interface HighFiveView {
+interface GroupReactionView {
   container: Container;
   ring: Graphics;
+  icons: Sprite[];
+  kind: DisplayGroupReaction["kind"];
   userIds: [string, string];
   startedAt: number;
   expiresAt: number;
@@ -266,6 +283,7 @@ export function WorldCanvas(props: WorldCanvasProps) {
     onEdit: props.onEdit,
     onObjectSelect: props.onObjectSelect,
     onBuildItemSelect: props.onBuildItemSelect,
+    onContextSelect: props.onContextSelect,
     onGongOffscreen: props.onGongOffscreen,
     onPlacementBlocked: props.onPlacementBlocked,
     onPlacementPreviewStateChange: setPlacementPreviewState,
@@ -286,6 +304,7 @@ export function WorldCanvas(props: WorldCanvasProps) {
     onEdit: props.onEdit,
     onObjectSelect: props.onObjectSelect,
     onBuildItemSelect: props.onBuildItemSelect,
+    onContextSelect: props.onContextSelect,
     onGongOffscreen: props.onGongOffscreen,
     onPlacementBlocked: props.onPlacementBlocked,
     onPlacementPreviewStateChange: setPlacementPreviewState,
@@ -334,6 +353,7 @@ export function WorldCanvas(props: WorldCanvasProps) {
         rendererRef.current = renderer;
         const current = propsRef.current;
         renderer.setRoomAccessibility(current.roomAccessibility);
+        renderer.setWaitingChessObjects(current.waitingChessObjectIds ?? []);
         renderer.setScene(
           current.floor,
           current.layout,
@@ -346,13 +366,14 @@ export function WorldCanvas(props: WorldCanvasProps) {
           current.movingBuildItem,
           current.playerAssetPlacement,
           current.colorTheme,
+          current.primaryColor,
         );
         renderer.setPlayers(current.players, current.members, current.currentUserId);
         renderer.setProjectPreview(current.projectPreview?.savedLayout);
         renderer.setListeningActivities(current.listeningActivities ?? {});
         renderer.setActiveInteraction(current.editing ? undefined : current.activeInteraction);
         renderer.setReactions(current.reactions);
-        renderer.setHighFives(current.highFives);
+        renderer.setGroupReactions(current.groupReactions);
         renderer.setGongRings(current.gongRings);
         renderer.setSpecialPropUses(current.specialPropUses ?? []);
         if (current.focusTarget && renderer.focus(current.focusTarget)) {
@@ -417,8 +438,13 @@ export function WorldCanvas(props: WorldCanvasProps) {
       props.movingBuildItem,
       props.playerAssetPlacement,
       props.colorTheme,
+      props.primaryColor,
     );
-  }, [props.colorTheme, props.editing, props.editingAssetId, props.editingAssetRotation, props.editingAssetVariantId, props.editingTool, props.floor, props.layout, props.movingBuildItem, props.playerAssetPlacement, props.selectedBuildItem]);
+  }, [props.colorTheme, props.primaryColor, props.editing, props.editingAssetId, props.editingAssetRotation, props.editingAssetVariantId, props.editingTool, props.floor, props.layout, props.movingBuildItem, props.playerAssetPlacement, props.selectedBuildItem]);
+
+  useEffect(() => {
+    rendererRef.current?.setWaitingChessObjects(props.waitingChessObjectIds ?? []);
+  }, [props.waitingChessObjectIds]);
 
   const pointPlacementActive = props.editing
     && (props.editingTool === "asset" || props.editingTool === "spawn" || props.movingBuildItem?.type === "asset");
@@ -455,8 +481,8 @@ export function WorldCanvas(props: WorldCanvasProps) {
   }, [props.listeningActivities]);
 
   useEffect(() => {
-    rendererRef.current?.setHighFives(props.highFives);
-  }, [props.highFives]);
+    rendererRef.current?.setGroupReactions(props.groupReactions);
+  }, [props.groupReactions]);
 
   useEffect(() => {
     rendererRef.current?.setGongRings(props.gongRings);
@@ -559,6 +585,7 @@ export function WorldCanvas(props: WorldCanvasProps) {
       {props.projectPreview && <div className="world-project-state" role="status"><span>{props.projectPreview.status}</span>
         {props.projectPreview.removing && <span className="project-removal-key">To remove</span>}</div>}
       <div className="world-zoom-controls" role="toolbar" aria-label="Camera">
+        <IconButton label="Fit floor" icon={Scan} onClick={() => rendererRef.current?.fitFloor()} />
         <IconButton label="Zoom in" icon={Plus} onClick={() => rendererRef.current?.zoomBy(0.12)} />
         <IconButton label="Zoom out" icon={Minus} onClick={() => rendererRef.current?.zoomBy(-0.12)} />
         {cameraMode === "free" && (
@@ -604,6 +631,7 @@ export function WorldCanvas(props: WorldCanvasProps) {
 class OfficeRenderer {
   private readonly world = new Container();
   private readonly layoutLayer = new Container();
+  private readonly destinationMarker = new Graphics();
   private readonly selectionOverlay = new Graphics();
   private readonly hoverOverlay = new Graphics();
   private readonly projectOverlay = new Graphics();
@@ -618,10 +646,15 @@ class OfficeRenderer {
   private assetPreview: { key: string; container: Container } | undefined;
   private readonly depth = new WorldDepth();
   private readonly objectViews = new Map<string, Container>();
+  private readonly waitingChessHighlights = new Map<string, Graphics>();
+  private waitingChessObjectIds = new Set<string>();
   private readonly assetAnimations = new Map<Container, (now: number) => void>();
   private readonly celebrationLayer = new Container();
   private readonly playerViews = new Map<string, PlayerView>();
-  private readonly highFiveViews = new Map<string, HighFiveView>();
+  private readonly groupReactionViews = new Map<string, GroupReactionView>();
+  private readonly reactionTextures = new Map<ReactionKind, Texture>();
+  private highFiveTexture?: Texture;
+  private reactionTexturesLoading?: Promise<void>;
   private readonly gongViews = new Map<string, GongObjectView>();
   private readonly gongCelebrationViews = new Map<string, GongCelebrationView>();
   private readonly specialPropViews = new Map<string, SpecialPropView>();
@@ -660,8 +693,11 @@ class OfficeRenderer {
   private buildStart?: { x: number; y: number };
   private buildOrientation?: "horizontal" | "vertical";
   private colorTheme: ColorTheme = "light";
+  private primaryColor = "";
   private placementPreviewState: PlacementPreviewState = { hasPoint: false, canPlace: false };
   private touchPlacement = false;
+  private longPressTimer: number | undefined;
+  private longPressed = false;
 
   constructor(
     private readonly app: Application,
@@ -669,13 +705,14 @@ class OfficeRenderer {
   ) {
     this.app.stage.addChild(this.world);
     this.world.scale.set(this.zoom);
-    this.world.addChild(this.layoutLayer, this.accessibilityOverlay, this.interactionOverlay, this.depth.container, this.personalSpacesLayer, this.projectOverlay, this.selectionOverlay, this.hoverOverlay, this.assetFocus.overlay, this.assetPreviewLayer, this.buildPreview, this.celebrationLayer);
+    this.world.addChild(this.layoutLayer, this.destinationMarker, this.accessibilityOverlay, this.interactionOverlay, this.depth.container, this.personalSpacesLayer, this.projectOverlay, this.selectionOverlay, this.hoverOverlay, this.assetFocus.overlay, this.assetPreviewLayer, this.buildPreview, this.celebrationLayer);
     this.app.canvas.addEventListener("pointerdown", this.handlePointerDown);
     this.app.canvas.addEventListener("pointermove", this.handlePointerMove);
     this.app.canvas.addEventListener("pointerup", this.handlePointerUp);
     this.app.canvas.addEventListener("pointercancel", this.handlePointerCancel);
     this.app.canvas.addEventListener("lostpointercapture", this.handleLostPointerCapture);
     this.app.canvas.addEventListener("pointerleave", this.handlePointerLeave);
+    this.app.canvas.addEventListener("contextmenu", this.handleContextMenu);
     this.app.canvas.addEventListener("wheel", this.handleWheel, { passive: false });
     this.app.ticker.add(this.renderFrame);
   }
@@ -688,19 +725,22 @@ class OfficeRenderer {
     editingAssetId: string,
     editingAssetVariantId: string,
     editingAssetRotation: AssetRotation,
-    selectedBuildItem?: LayoutItemReference,
-    movingBuildItem?: LayoutItemReference,
-    playerAssetPlacement?: { userId: string; settings: GameSettings; organisation: OrganisationState; officeBuilder: boolean },
-    colorTheme: ColorTheme = "light",
+    selectedBuildItem: LayoutItemReference | undefined,
+    movingBuildItem: LayoutItemReference | undefined,
+    playerAssetPlacement: { userId: string; settings: GameSettings; organisation: OrganisationState; officeBuilder: boolean } | undefined,
+    colorTheme: ColorTheme,
+    primaryColor: string,
   ): void {
     const floorChanged = this.floor?.id !== floor.id;
     const structureChanged = this.floor !== floor || this.layout !== layout;
     const editingGridChanged = this.editing !== editing
       || (editing && (this.editingTool === "asset") !== (editingTool === "asset"));
     const themeChanged = this.colorTheme !== colorTheme;
+    const primaryColorChanged = this.primaryColor !== primaryColor;
     const layoutChanged = structureChanged
       || editingGridChanged
-      || themeChanged;
+      || themeChanged
+      || primaryColorChanged;
     const toolChanged = this.editing !== editing
       || this.editingTool !== editingTool
       || itemKey(this.movingBuildItem) !== itemKey(movingBuildItem);
@@ -719,6 +759,7 @@ class OfficeRenderer {
     this.movingBuildItem = movingBuildItem;
     this.playerAssetPlacement = playerAssetPlacement;
     this.colorTheme = colorTheme;
+    this.primaryColor = primaryColor;
     if (toolChanged) {
       this.clearBuildPreview();
       delete this.buildStart;
@@ -730,6 +771,10 @@ class OfficeRenderer {
       this.cancelPointerInteraction();
       this.cameraUserId = this.currentUserId;
       this.updateCameraMode("follow");
+      if (this.app.screen.width <= 700) {
+        const floorScale = Math.min((this.app.screen.width - 28) / floor.width, (this.app.screen.height - 120) / floor.height);
+        this.zoom = clampCameraZoom(Math.max(0.38, Math.min(0.55, floorScale * 1.8)));
+      }
       for (const view of this.gongCelebrationViews.values()) {
         view.container.destroy({ children: true });
       }
@@ -753,6 +798,13 @@ class OfficeRenderer {
   }
 
   private listeningActivities: Readonly<Record<string, SpotifyActivity>> = {};
+  setWaitingChessObjects(objectIds: readonly string[]): void {
+    this.waitingChessObjectIds = new Set(objectIds);
+    for (const [objectId, highlight] of this.waitingChessHighlights) {
+      highlight.visible = this.waitingChessObjectIds.has(objectId);
+    }
+  }
+
   setProjectPreview(savedLayout: FloorLayout | undefined): void {
     this.projectOverlay.clear();
     if (!savedLayout || !this.layout) return;
@@ -774,6 +826,13 @@ class OfficeRenderer {
   setPlayers(players: WorldPlayer[], members: Member[], currentUserId: string): void {
     this.players = players;
     this.currentUserId = currentUserId;
+    const destination = players.find((player) => player.userId === currentUserId)?.destination;
+    this.destinationMarker.clear();
+    if (!this.editing && destination && destination.floorId === this.floor?.id) {
+      this.destinationMarker
+        .circle(destination.x, destination.y, 8).fill({ color: "#ffffff", alpha: 0.88 })
+        .circle(destination.x, destination.y, 5).fill(this.primaryColor);
+    }
     if (!this.cameraUserId) {
       this.cameraUserId = currentUserId;
     }
@@ -862,6 +921,7 @@ class OfficeRenderer {
   }
 
   setReactions(reactions: DisplayReaction[]): void {
+    if (reactions.length > 0) this.loadReactionTextures();
     this.reactions.clear();
     for (const reaction of reactions) {
       this.reactions.set(reaction.userId, reaction);
@@ -871,39 +931,79 @@ class OfficeRenderer {
     }
   }
 
-  setHighFives(highFives: DisplayHighFive[]): void {
-    const visibleIds = new Set(highFives.map((highFive) => highFive.id));
-    for (const [id, view] of this.highFiveViews) {
+  private loadReactionTextures(): void {
+    if (this.reactionTexturesLoading) return;
+    this.reactionTexturesLoading = Promise.all([...REACTION_OPTIONS.map(async ({ kind, icon }) => {
+      this.reactionTextures.set(kind, await Assets.load<Texture>(icon));
+    }), Assets.load<Texture>(highFiveIcon).then((texture) => { this.highFiveTexture = texture; })]).then(() => {
+      for (const view of this.playerViews.values()) {
+        if (view.reactionKind) this.updateReactionIcon(view);
+      }
+      for (const view of this.groupReactionViews.values()) this.updateGroupReactionIcons(view);
+    }).catch((error: unknown) => {
+      this.callbacks.current.onArtworkError(error instanceof Error ? error : new Error(String(error)));
+    });
+  }
+
+  private updateReactionIcon(view: PlayerView): void {
+    const texture = view.reactionKind && this.reactionTextures.get(view.reactionKind);
+    if (!texture || view.container.destroyed) return;
+    view.reactionIcon.texture = texture;
+    view.reactionIcon.width = 29;
+    view.reactionIcon.height = 29;
+  }
+
+  private updateGroupReactionIcons(view: GroupReactionView): void {
+    const texture = view.kind === "love" ? this.reactionTextures.get("heart") : this.highFiveTexture;
+    if (!texture || view.container.destroyed) return;
+    for (const [index, icon] of view.icons.entries()) {
+      icon.texture = texture;
+      icon.width = view.kind === "love" ? index > 0 ? 12 : 27 : 37;
+      icon.height = icon.width;
+    }
+  }
+
+  setGroupReactions(groupReactions: DisplayGroupReaction[]): void {
+    if (groupReactions.length > 0) this.loadReactionTextures();
+    const visibleIds = new Set(groupReactions.map((groupReaction) => groupReaction.id));
+    for (const [id, view] of this.groupReactionViews) {
       if (!visibleIds.has(id)) {
         view.container.destroy({ children: true });
-        this.highFiveViews.delete(id);
+        this.groupReactionViews.delete(id);
       }
     }
-    for (const highFive of highFives) {
-      if (this.highFiveViews.has(highFive.id)) {
+    for (const groupReaction of groupReactions) {
+      if (this.groupReactionViews.has(groupReaction.id)) {
         continue;
       }
-      const container = new Container();
-      const ring = new Graphics().circle(0, 0, 30).fill({ color: "#ffffff", alpha: 0.96 }).stroke({ color: "#f4b942", width: 4 });
-      const emoji = new Text({
-        text: "🙌",
-        style: { fontFamily: "Segoe UI Emoji, Apple Color Emoji, sans-serif", fontSize: 26, fill: "#282631" },
-      });
-      emoji.anchor.set(0.5);
+      const container = new Container({ label: `world-group-reaction:${groupReaction.kind}` });
+      const love = groupReaction.kind === "love";
+      const ring = new Graphics().circle(0, 0, 29)
+        .fill({ color: love ? "#fff3f7" : "#fffaf0", alpha: 0.97 })
+        .stroke({ color: love ? "#e85578" : "#f4b344", width: 3 });
       const sparks = new Graphics()
-        .circle(-34, -20, 4).fill("#ff7a66")
-        .circle(34, -18, 4).fill("#6c5ce7")
-        .circle(-28, 28, 3).fill("#25b99a")
-        .circle(30, 26, 3).fill("#f4b942");
-      container.addChild(ring, sparks, emoji);
+        .circle(-31, -20, 3).fill(love ? "#e85578" : "#ff7a66")
+        .circle(31, -18, 3).fill("#6c5ce7")
+        .circle(-28, 25, 2).fill("#79d3c4")
+        .circle(29, 24, 2).fill("#f4b942");
+      const icons = Array.from({ length: love ? 4 : 1 }, () => {
+        const icon = new Sprite(Texture.EMPTY);
+        icon.anchor.set(0.5);
+        return icon;
+      });
+      container.addChild(ring, sparks, ...icons);
       this.celebrationLayer.addChild(container);
-      this.highFiveViews.set(highFive.id, {
+      const view: GroupReactionView = {
         container,
         ring,
-        userIds: highFive.userIds,
+        icons,
+        kind: groupReaction.kind,
+        userIds: groupReaction.userIds,
         startedAt: Date.now(),
-        expiresAt: highFive.expiresAt,
-      });
+        expiresAt: groupReaction.expiresAt,
+      };
+      this.groupReactionViews.set(groupReaction.id, view);
+      this.updateGroupReactionIcons(view);
     }
   }
 
@@ -1033,6 +1133,18 @@ class OfficeRenderer {
     return true;
   }
 
+  fitFloor(): void {
+    if (!this.floor) return;
+    this.zoom = clampCameraZoom(Math.min(
+      (this.app.screen.width - 28) / this.floor.width,
+      (this.app.screen.height - 120) / this.floor.height,
+    ));
+    this.freeCameraX = this.floor.width / 2;
+    this.freeCameraY = this.floor.height / 2;
+    this.updateCameraMode("free");
+    this.applyFreeCameraTransform();
+  }
+
   zoomBy(amount: number): void {
     const nextZoom = clampCameraZoom(this.zoom + amount);
     if (nextZoom === this.zoom) {
@@ -1101,6 +1213,7 @@ class OfficeRenderer {
     this.app.canvas.removeEventListener("pointercancel", this.handlePointerCancel);
     this.app.canvas.removeEventListener("lostpointercapture", this.handleLostPointerCapture);
     this.app.canvas.removeEventListener("pointerleave", this.handlePointerLeave);
+    this.app.canvas.removeEventListener("contextmenu", this.handleContextMenu);
     this.app.canvas.removeEventListener("wheel", this.handleWheel);
     this.cancelPointerInteraction();
     this.assetTextures.destroy();
@@ -1114,6 +1227,7 @@ class OfficeRenderer {
     for (const child of this.personalSpacesLayer.removeChildren()) child.destroy({ children: true });
     if (this.editing) this.personalSpacesLayer.addChild(createPersonalSpaceOverlay(this.layout, this.memberMap, this.currentUserId));
     this.gongViews.clear();
+    this.waitingChessHighlights.clear();
     for (const view of this.objectViews.values()) view.destroy({ children: true });
     this.objectViews.clear();
     for (const child of this.layoutLayer.removeChildren()) {
@@ -1215,7 +1329,7 @@ class OfficeRenderer {
       .lineTo(this.floor.spawn.x, this.floor.spawn.y + 8)
       .lineTo(this.floor.spawn.x - 8, this.floor.spawn.y)
       .closePath()
-      .fill({ color: "#7f70ee", alpha: dark ? 0.55 : 0.35 });
+      .fill({ color: this.primaryColor, alpha: dark ? 0.55 : 0.35 });
     this.layoutLayer.addChild(spawn);
   }
 
@@ -1223,6 +1337,15 @@ class OfficeRenderer {
     const definition = requireAssetDefinition(object.assetId);
     const view = createWorldAssetView(this.assetTextures, object, this.layout!, this.colorTheme, this.callbacks.current.onArtworkError);
     this.objectViews.set(object.id, view.container);
+    if (object.assetId === "equipment-chess") {
+      const bounds = getPlacedWorldAssetArtwork(this.layout!, object).bounds;
+      const highlight = new Graphics({ label: `chess-waiting:${object.id}` })
+        .roundRect(bounds.x + 1, bounds.y + 1, bounds.width - 2, bounds.height * 0.84, 2)
+        .stroke({ color: 0x80dfff, width: 2, alpha: 0.9 });
+      highlight.visible = this.waitingChessObjectIds.has(object.id);
+      view.container.addChild(highlight);
+      this.waitingChessHighlights.set(object.id, highlight);
+    }
     if (view.animate) {
       this.assetAnimations.set(view.container, view.animate);
       view.container.once("destroyed", () => this.assetAnimations.delete(view.container));
@@ -1257,21 +1380,19 @@ class OfficeRenderer {
     name.anchor.set(0.5, 0);
     name.position.set(0, 10);
     const status = new Graphics();
-    const reactionBubble = new Container();
+    const reactionBubble = new Container({ label: `world-reaction:${member.id}` });
     reactionBubble.visible = false;
     reactionBubble.position.set(0, -CHARACTER_WORLD_SIZE - 22);
-    const reactionShadow = new Graphics().roundRect(-22, -20, 44, 40, 15).fill({ color: "#24212d", alpha: 0.18 });
+    const reactionShadow = new Graphics().roundRect(-20, -18, 40, 36, 11).fill({ color: "#24212d", alpha: 0.18 });
     reactionShadow.position.set(2, 3);
     const reactionBackground = new Graphics()
-      .roundRect(-22, -20, 44, 40, 15)
+      .roundRect(-20, -18, 40, 36, 11)
       .fill({ color: "#ffffff", alpha: 0.98 })
-      .stroke({ color: member.color, width: 2, alpha: 0.45 });
-    const reactionText = new Text({
-      text: "",
-      style: { fontFamily: "Segoe UI Emoji, Apple Color Emoji, sans-serif", fontSize: 22, fill: "#282631" },
-    });
-    reactionText.anchor.set(0.5);
-    reactionBubble.addChild(reactionShadow, reactionBackground, reactionText);
+      .stroke({ color: member.color, width: 2, alpha: 0.6 });
+    const reactionIcon = new Sprite(Texture.EMPTY);
+    reactionIcon.anchor.set(0.5);
+    const reactionParticles = new WorldReactionParticles();
+    reactionBubble.addChild(reactionShadow, reactionBackground, reactionIcon, reactionParticles.container);
     const music = new MusicIndicator();
     container.addChild(wave, ground, avatarImage, name, status, music.container, reactionBubble);
     const view: PlayerView = {
@@ -1290,7 +1411,8 @@ class OfficeRenderer {
       seatShadow,
       seatOcclusion: new CharacterSeatOcclusion(avatarImage, this.assetTextures, this.callbacks.current.onArtworkError),
       reactionBubble,
-      reactionText,
+      reactionIcon,
+      reactionParticles,
       reactionStartedAt: 0,
       reactionUntil: 0,
       targetX: 0,
@@ -1335,7 +1457,9 @@ class OfficeRenderer {
     if (view.reactionId !== reaction.id) {
       view.reactionId = reaction.id;
       view.reactionStartedAt = Date.now();
-      view.reactionText.text = REACTION_EMOJI[reaction.reaction];
+      view.reactionKind = reaction.reaction;
+      view.reactionParticles.setKind(reaction.reaction);
+      this.updateReactionIcon(view);
     }
     view.reactionUntil = reaction.expiresAt;
   }
@@ -1344,8 +1468,16 @@ class OfficeRenderer {
     const now = Date.now();
     this.assetFocus.update(now, this.musicReducedMotion.matches);
     for (const animate of this.assetAnimations.values()) animate(this.musicReducedMotion.matches ? 0 : now);
+    for (const highlight of this.waitingChessHighlights.values()) {
+      highlight.alpha = this.musicReducedMotion.matches ? 0.8 : 0.65 + 0.3 * (1 + Math.sin(now / 550)) / 2;
+    }
     for (const view of this.specialPropViews.values()) view.animate(now);
     const interpolation = 1 - Math.exp(-Math.min(this.app.ticker.deltaMS, 100) / 67);
+    const pairedReactionUserIds = new Set<string>();
+    for (const view of this.groupReactionViews.values()) {
+      if (now >= view.expiresAt || !this.playerViews.has(view.userIds[0]) || !this.playerViews.has(view.userIds[1])) continue;
+      for (const userId of view.userIds) pairedReactionUserIds.add(userId);
+    }
     for (const [userId, view] of this.playerViews) {
       const moving = view.canWalk && Math.hypot(view.targetX - view.container.x, view.targetY - view.container.y) > 0.4;
       const listening = (this.listeningActivities[userId]?.expiresAt ?? 0) > now;
@@ -1361,30 +1493,52 @@ class OfficeRenderer {
       view.music.update(now, this.listeningActivities[userId]?.expiresAt ?? 0,
         -CHARACTER_WORLD_SIZE + (view.seated ? SEATED_CHARACTER_OFFSET + view.seatOffsetY : 0),
         this.musicReducedMotion.matches, reacting);
-      view.reactionBubble.visible = reacting;
+      view.reactionBubble.visible = reacting && !pairedReactionUserIds.has(userId);
       if (reacting) {
-        const entrance = Math.min(1, (now - view.reactionStartedAt) / 180);
+        const elapsed = now - view.reactionStartedAt;
+        const entrance = Math.min(1, elapsed / 210);
         const exit = Math.min(1, (view.reactionUntil - now) / 280);
-        const scale = 0.72 + 0.28 * (1 - Math.pow(1 - entrance, 3));
-        view.reactionBubble.alpha = exit;
-        view.reactionBubble.scale.set(scale);
-        view.reactionBubble.y = (-CHARACTER_WORLD_SIZE - 22) + (view.seated ? SEATED_CHARACTER_OFFSET + view.seatOffsetY : 0) - entrance * 5;
+        const pop = 1 - Math.pow(1 - entrance, 3);
+        const restingY = -CHARACTER_WORLD_SIZE - 27 + (view.seated ? SEATED_CHARACTER_OFFSET + view.seatOffsetY : 0);
+        view.reactionBubble.alpha = this.musicReducedMotion.matches ? exit : Math.min(exit, entrance * 2);
+        view.reactionBubble.scale.set(this.musicReducedMotion.matches ? 1 : 0.7 + pop * 0.3 + Math.sin(entrance * Math.PI) * 0.08);
+        view.reactionBubble.y = restingY + (this.musicReducedMotion.matches ? 0 : (1 - pop) * 9 + Math.sin(elapsed / 310) * 1.2);
+        view.reactionIcon.rotation = this.musicReducedMotion.matches ? 0
+          : view.reactionKind === "wave" || view.reactionKind === "clap" ? Math.sin(elapsed / 95) * 0.13 : 0;
+        view.reactionParticles.update(elapsed, this.musicReducedMotion.matches);
       }
     }
     this.depth.sort();
-    for (const view of this.highFiveViews.values()) {
+    for (const view of this.groupReactionViews.values()) {
       const left = this.playerViews.get(view.userIds[0]);
       const right = this.playerViews.get(view.userIds[1]);
       view.container.visible = Boolean(left && right && now < view.expiresAt);
       if (!left || !right || now >= view.expiresAt) {
         continue;
       }
-      view.container.position.set((left.container.x + right.container.x) / 2, (left.container.y + right.container.y) / 2 - 34);
-      const entrance = Math.min(1, (now - view.startedAt) / 220);
+      const elapsed = now - view.startedAt;
+      const entrance = Math.min(1, elapsed / 260);
       const exit = Math.min(1, (view.expiresAt - now) / 320);
-      view.container.alpha = exit;
-      view.container.scale.set(0.62 + entrance * 0.38);
-      view.ring.scale.set(1 + entrance * 0.12);
+      const settled = 1 - Math.pow(1 - entrance, 3);
+      const reducedMotion = this.musicReducedMotion.matches;
+      view.container.position.set((left.container.x + right.container.x) / 2,
+        (left.container.y + right.container.y) / 2 - 35 - (reducedMotion ? 0 : settled * 5));
+      view.container.alpha = reducedMotion ? exit : Math.min(exit, entrance * 3);
+      view.container.scale.set(reducedMotion ? 1 : 0.72 + settled * 0.28);
+      view.ring.scale.set(reducedMotion ? 1 : 0.84 + settled * 0.16 + Math.sin(entrance * Math.PI) * 0.12);
+      if (view.kind === "high_five") {
+        view.icons[0]!.position.set(0, reducedMotion ? 0 : (1 - settled) * 12);
+        view.icons[0]!.rotation = reducedMotion ? 0 : Math.sin(elapsed / 150) * 0.045 * Math.max(0, 1 - elapsed / 800);
+        view.icons[0]!.scale.set(reducedMotion ? 1 : 0.8 + settled * 0.2);
+      } else {
+        view.icons[0]!.position.set(0, 0);
+        view.icons[0]!.scale.set(reducedMotion ? 1 : 1 + Math.sin(elapsed / 170) * 0.08);
+        for (let index = 1; index < view.icons.length; index++) {
+          const spread = (index - 2) * 25;
+          view.icons[index]!.position.set(spread, reducedMotion ? -28 : -20 - settled * (10 + index * 4));
+          view.icons[index]!.alpha = reducedMotion ? 1 : Math.min(1, entrance * 2);
+        }
+      }
     }
     for (const view of this.gongViews.values()) {
       const elapsed = now - view.ringStartedAt;
@@ -1474,17 +1628,28 @@ class OfficeRenderer {
     this.activePointers.set(event.pointerId, pointer);
     this.app.canvas.setPointerCapture(event.pointerId);
     if (this.activePointers.size > 1) {
+      if (this.longPressTimer) window.clearTimeout(this.longPressTimer);
+      this.longPressTimer = undefined;
       this.multiPointerGesture = true;
       this.panning = false;
       this.setPinchReference();
       return;
     }
     this.activePointerId = event.pointerId;
+    this.longPressed = false;
     this.pointerStart.x = event.clientX;
     this.pointerStart.y = event.clientY;
     this.lastPointer.x = pointer.screenX;
     this.lastPointer.y = pointer.screenY;
     this.panning = event.pointerType === "mouse" && (event.button === 1 || event.shiftKey);
+    if (event.pointerType === "touch" && !this.editing) {
+      this.longPressTimer = window.setTimeout(() => {
+        this.longPressTimer = undefined;
+        if (this.activePointerId !== event.pointerId || this.panning || this.multiPointerGesture) return;
+        this.longPressed = true;
+        this.selectContextAt(event.clientX, event.clientY, true);
+      }, 520);
+    }
     if (this.panning) {
       this.app.canvas.style.cursor = "grabbing";
       this.hoverOverlay.clear();
@@ -1523,6 +1688,10 @@ class OfficeRenderer {
     event.preventDefault();
     const pointer = this.getPointer(event);
     this.activePointers.set(event.pointerId, pointer);
+    if (this.longPressTimer && Math.hypot(event.clientX - this.pointerStart.x, event.clientY - this.pointerStart.y) > TOUCH_DRAG_THRESHOLD) {
+      window.clearTimeout(this.longPressTimer);
+      this.longPressTimer = undefined;
+    }
     if (event.pointerType !== "touch") this.hoverClientPoint = { x: event.clientX, y: event.clientY, pointerType: event.pointerType };
     if (this.multiPointerGesture && this.activePointers.size > 1) {
       this.updateMultiPointerGesture();
@@ -1574,6 +1743,8 @@ class OfficeRenderer {
       return;
     }
     event.preventDefault();
+    if (this.longPressTimer) window.clearTimeout(this.longPressTimer);
+    this.longPressTimer = undefined;
     const pointer = this.getPointer(event);
     this.activePointers.set(event.pointerId, pointer);
     if (event.pointerType !== "touch") this.hoverClientPoint = { x: event.clientX, y: event.clientY, pointerType: event.pointerType };
@@ -1594,6 +1765,12 @@ class OfficeRenderer {
       return;
     }
     this.activePointerId = undefined;
+    if (this.longPressed) {
+      this.longPressed = false;
+      this.panning = false;
+      this.app.canvas.style.removeProperty("cursor");
+      return;
+    }
     const threshold = event.pointerType === "mouse" ? MOUSE_DRAG_THRESHOLD : TOUCH_DRAG_THRESHOLD;
     const moved = Math.hypot(event.clientX - this.pointerStart.x, event.clientY - this.pointerStart.y);
     if (!this.panning && moved > threshold) {
@@ -1677,32 +1854,52 @@ class OfficeRenderer {
       return;
     }
     const anchor = this.toViewport(event.clientX, event.clientY);
+    const target = this.getWorldContextTarget(pointerPoint, event.pointerType !== "mouse");
+    if (target.type === "player") this.callbacks.current.onPlayerSelect(target.userId, anchor);
+    else if (target.type === "object") this.callbacks.current.onObjectSelect(target.object, target.interactionId, anchor);
+    else if (target.type === "ground") this.callbacks.current.onDestination(target.x, target.y);
+  };
+
+  private getWorldContextTarget(point: { x: number; y: number }, touch: boolean): WorldContextTarget {
     const touchTargetSize = this.getTouchTargetWorldSize();
-    const playerTargetRadius = event.pointerType === "mouse"
-      ? 28
-      : Math.max(28, touchTargetSize / 2);
+    const playerTargetRadius = touch ? Math.max(28, touchTargetSize / 2) : 28;
     const player = [...this.playerViews.entries()].reverse().find(
-        ([userId, view]) => userId !== this.currentUserId && isPointInWorldTarget(pointerPoint.x, pointerPoint.y, { x: view.container.x - 14, y: view.container.y - CHARACTER_WORLD_SIZE, width: 28, height: CHARACTER_WORLD_SIZE + 4 }, playerTargetRadius * 2),
+      ([userId, view]) => userId !== this.currentUserId && isPointInWorldTarget(point.x, point.y,
+        { x: view.container.x - 14, y: view.container.y - CHARACTER_WORLD_SIZE, width: 28, height: CHARACTER_WORLD_SIZE + 4 }, playerTargetRadius * 2),
     );
-    if (player) {
-      this.callbacks.current.onPlayerSelect(player[0], anchor);
-      return;
+    if (player) return { type: "player", userId: player[0] };
+    const target = resolveWorldPointTarget(this.layout!, point.x, point.y, touch ? touchTargetSize : 0,
+      object => this.hitAssetArtwork(object, point));
+    return target.type === "object"
+      ? { type: "object", object: target.object, ...(target.interactionId ? { interactionId: target.interactionId } : {}) }
+      : { type: "ground", x: target.x, y: target.y };
+  }
+
+  private selectContextAt(clientX: number, clientY: number, touch: boolean): void {
+    if (!this.layout) return;
+    const point = this.toWorld(clientX, clientY);
+    const target: WorldContextTarget = this.editing
+      ? { type: "build", item: this.getBuildTarget(point, touch ? this.getTouchTargetWorldSize() : 0, false) }
+      : this.getWorldContextTarget(point, touch);
+    this.callbacks.current.onContextSelect?.(target, this.toViewport(clientX, clientY));
+  }
+
+  private readonly handleContextMenu = (event: MouseEvent): void => {
+    event.preventDefault();
+    if (this.longPressed || this.multiPointerGesture || this.panning) return;
+    const touch = [...this.activePointers.values()].some((pointer) => pointer.pointerType !== "mouse");
+    if (touch) {
+      if (this.longPressTimer) window.clearTimeout(this.longPressTimer);
+      this.longPressTimer = undefined;
+      this.longPressed = true;
     }
-    const target = resolveWorldPointTarget(
-      this.layout,
-      pointerPoint.x,
-      pointerPoint.y,
-      event.pointerType === "mouse" ? 0 : touchTargetSize,
-      object => this.hitAssetArtwork(object, pointerPoint),
-    );
-    if (target.type === "object") {
-      this.callbacks.current.onObjectSelect(target.object, target.interactionId, anchor);
-      return;
-    }
-    this.callbacks.current.onDestination(target.x, target.y);
+    this.selectContextAt(event.clientX, event.clientY, touch);
   };
 
   private readonly handlePointerCancel = (event: PointerEvent): void => {
+    if (this.longPressTimer) window.clearTimeout(this.longPressTimer);
+    this.longPressTimer = undefined;
+    this.longPressed = false;
     if (!this.activePointers.has(event.pointerId)) {
       return;
     }
@@ -1845,6 +2042,9 @@ class OfficeRenderer {
   }
 
   private cancelPointerInteraction(): void {
+    if (this.longPressTimer) window.clearTimeout(this.longPressTimer);
+    this.longPressTimer = undefined;
+    this.longPressed = false;
     const pointerIds = [...this.activePointers.keys()];
     this.activePointers.clear();
     for (const pointerId of pointerIds) {
@@ -2036,7 +2236,7 @@ class OfficeRenderer {
     if (!this.layout || !this.floor || this.playerAssetPlacement?.officeBuilder === false) return false;
     const position = { x: snapToBuildGrid(point.x), y: snapToBuildGrid(point.y) };
     const blocked = Boolean(getSpawnPlacementError(this.layout, getOutdoorBounds(this.floor), position, this.players, this.playerAssetPlacement?.settings.roomAccess.mode));
-    const color = blocked ? "#c93636" : "#5143bd";
+    const color = blocked ? "#c93636" : this.primaryColor;
     const { x, y } = position;
     this.clearBuildPreview()
       .circle(x, y, 13).fill({ color, alpha: 0.15 }).stroke({ color, width: 2 })

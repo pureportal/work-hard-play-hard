@@ -102,13 +102,13 @@ export class PublicEconomyStore {
     this.state.transactions.push({ id: randomUUID(), fundId, userId, kind, amount, sourceId, balanceAfter: balance, createdAt: now.toISOString() });
   }
 
-  propose(userId: string, title: string, action: PublicAction, fundId: string, organisation: OrganisationState, memberIds: string[], now = new Date()): SpendingProposal {
+  propose(userId: string, title: string, action: PublicAction, fundId: string, organisation: OrganisationState, memberIds: string[], now = new Date(), options: { electorate?: string[]; approvalRate?: number } = {}): SpendingProposal {
     this.refresh(organisation, memberIds, now);
     const fund = this.fund(fundId);
     const members = publicFundMemberIds(fund, organisation, memberIds);
     if (!memberIds.includes(userId) || (!members.includes(userId) && !canManageUnit(organisation, userId, fund.unitId))) throw new Error("PUBLIC_FUND_FORBIDDEN");
-    const electorate = members;
-    const approvalRate = approvalRateForAction(this.state.approvalRates, action);
+    const electorate = options.electorate ?? members;
+    const approvalRate = options.approvalRate ?? approvalRateForAction(this.state.approvalRates, action);
     if (!electorate.length && approvalRate > 0) throw new Error("PROPOSAL_NO_APPROVERS");
     if (this.state.proposals.filter((entry) => entry.proposedBy === userId && ["open", "approved"].includes(entry.status)).length >= 20) throw new Error("PROPOSAL_LIMIT");
     const reserved = action.kind === "fund.transfer" ? action.amount : 0;

@@ -8,6 +8,9 @@ beforeEach(() => {
   vi.stubGlobal("ResizeObserver", vi.fn(function ResizeObserver() {
     return { observe: vi.fn(), unobserve: vi.fn(), disconnect: vi.fn() };
   }));
+  vi.stubGlobal("IntersectionObserver", vi.fn(function IntersectionObserver() {
+    return { observe: vi.fn(), unobserve: vi.fn(), disconnect: vi.fn() };
+  }));
   vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
     matches: false,
     media: query,

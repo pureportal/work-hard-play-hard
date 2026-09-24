@@ -52,7 +52,8 @@ describe("FallingBlocksLobby", () => {
         ? { ...entry, fallingBlocks: { gamesPlayed: 2, totals: { ...emptyFallingBlocksSpecialCounts(), tSpins: 3, quads: 5 } } }
         : { ...entry, holdsCrown: true })}
     />);
-    expect(screen.getByLabelText("Crown holder").textContent).toBe("Leo Martins");
+    fireEvent.click(screen.getByRole("button", { name: "Statistics" }));
+    expect(screen.getByLabelText("Crown holder").textContent).toBe("Crown: Leo Martins");
     fireEvent.click(screen.getByText("Specials"));
     expect(screen.getByText("2 games tracked")).toBeTruthy();
     expect(screen.getByRole("row", { name: "T-spins 3 1.50" })).toBeTruthy();
@@ -69,7 +70,7 @@ describe("FallingBlocksLobby", () => {
       members={members} scores={[]} statistics={[]} currentUserId="maya" onStart={onStart}
     />);
     expect(screen.queryByRole("combobox", { name: "Attack target" })).toBeNull();
-    fireEvent.change(screen.getByRole("combobox", { name: "Mode" }), { target: { value: mode } });
+    fireEvent.click(screen.getByRole("group", { name: "Rules" }).getElementsByTagName("button")[["classic", "speed-up", "sudden-death"].indexOf(mode)]!);
     fireEvent.click(screen.getByRole("button", { name: "Play" }));
     expect(onStart).toHaveBeenLastCalledWith(true, { mode, attackTarget: "random" });
     fireEvent.click(screen.getByRole("button", { name: "Players" }));
@@ -100,10 +101,14 @@ describe("FallingBlocksLobby", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Players" }));
     const lobby = screen.getByRole("complementary", { name: "Falling Blocks lobby" });
+    expect(within(lobby).getByRole("heading", { name: "Players" })).toBeTruthy();
+    expect(within(lobby).getByText("Best")).toBeTruthy();
     expect(within(lobby).getByText("You", { selector: "li span" })).toBeTruthy();
-    expect(within(lobby).getAllByText("Leo Martins", { selector: "li span" })).toHaveLength(2);
-    expect(within(lobby).getByLabelText("Your Falling Blocks statistics").textContent).toContain("1,240");
-    expect(within(lobby).getByLabelText("Your Falling Blocks statistics").textContent).toContain("19");
+    expect(within(lobby).getByText("Leo Martins", { selector: "li span" })).toBeTruthy();
+    fireEvent.click(within(lobby).getByRole("button", { name: "Statistics" }));
+    expect(screen.getByRole("dialog", { name: "Falling Blocks" }).textContent).toContain("1,240");
+    expect(screen.getByRole("dialog", { name: "Falling Blocks" }).textContent).toContain("19");
+    fireEvent.click(screen.getByRole("button", { name: "Close statistics" }));
 
     fireEvent.click(within(lobby).getByRole("button", { name: "Play" }));
     expect(onStart).toHaveBeenCalledWith(false, { mode: "classic", attackTarget: "random" });
@@ -128,6 +133,9 @@ describe("FallingBlocksLobby", () => {
     );
 
     expect(screen.getByRole("button", { name: "Play" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Statistics" }));
+    fireEvent.keyDown(screen.getByRole("tablist", { name: "Statistics view" }), { key: "ArrowRight" });
+    expect(screen.getByRole("tab", { name: "Rankings" }).getAttribute("aria-selected")).toBe("true");
   });
 });
 

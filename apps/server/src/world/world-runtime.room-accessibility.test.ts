@@ -57,6 +57,21 @@ describe("builder room accessibility", () => {
     runtime.stop();
   });
 
+  it("respects room capacity when two players reach its door on the same tick", () => {
+    const { store, runtime, roomId } = fixture();
+    store.getRoom(roomId)!.access = { mode: "open", assignedPersonIds: [], knockable: false };
+    store.getRoom(roomId)!.capacity = 1;
+    runtime.restorePlayers([person("user-leo", 160, 280), person("user-amara", 160, 280)]);
+    const first = runtime.connect("user-leo", "floor-studio", () => undefined);
+    const second = runtime.connect("user-amara", "floor-studio", () => undefined);
+    runtime.handleCommand(first, { type: "movement.input", sequence: 1, dx: 0, dy: -1 });
+    runtime.handleCommand(second, { type: "movement.input", sequence: 1, dx: 0, dy: -1 });
+    for (let tick = 0; tick < 4; tick++) runtime.runTickForTest();
+    const players = (runtime as unknown as { players: Map<string, WorldPlayer> }).players;
+    expect([players.get("user-leo"), players.get("user-amara")].filter((player) => player?.roomId === roomId)).toHaveLength(1);
+    runtime.stop();
+  });
+
   it("requires a gameplay CEO role, validates the target, and stops updates after revocation or closing", () => {
     const { store, runtime, events, roomId } = fixture();
     store.getOrganisation().ceoIds = store.getOrganisation().ceoIds.filter((id) => id !== "user-leo");

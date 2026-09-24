@@ -58,6 +58,20 @@ export function WhiteboardDialog({ title, state, unavailable, onUpdate, onUpload
     change((current) => ({ ...current, cards: current.cards.map((card) => card.id === next.id ? next : card) }));
   };
 
+  const removeCard = (id: string) => {
+    if (disabled) return;
+    change((current) => ({ ...current, cards: current.cards.filter((card) => card.id !== id) }));
+    if (selectedId === id) setSelectedId(undefined);
+  };
+
+  const duplicateCard = (id: string) => {
+    const source = cards.find((card) => card.id === id);
+    if (!source || disabled || full) return;
+    const card = positionCard({ ...source, id: crypto.randomUUID() }, source.x + 30, source.y + 30);
+    change((current) => ({ ...current, cards: [...current.cards, card] }));
+    setSelectedId(card.id);
+  };
+
   const addCard = (status: WhiteboardStatus = "todo", src?: string, position = canvas.current?.position(), sticker?: Pick<WhiteboardCard, "title" | "text" | "color">) => {
     if (unavailable || full) return;
     let card = { ...createWhiteboardCard(cards, status, src), ...sticker };
@@ -134,23 +148,19 @@ export function WhiteboardDialog({ title, state, unavailable, onUpdate, onUpload
       {imageOpen && <WhiteboardImagePicker disabled={saving || Boolean(unavailable) || full} onUpload={onUploadImage} onBusy={setUploading} onAdd={(src) => addCard("todo", src)} onClose={() => { setImageOpen(false); dialogRef.current?.focus(); }} />}
       <div className={`whiteboard-workspace${selected && view !== "notes" ? " has-editor" : ""}`}>
         <div className="whiteboard-surface">
-          {view === "canvas" && <WhiteboardCanvas ref={canvas} cards={cards} disabled={disabled} selectedId={selectedId} onSelect={setSelectedId} onAdd={(position) => addCard("todo", undefined, position)} onChange={(position) => {
+          {view === "canvas" && <WhiteboardCanvas ref={canvas} cards={cards} disabled={disabled} selectedId={selectedId} onSelect={setSelectedId} onDuplicate={duplicateCard} onRemove={removeCard} onAdd={(position) => addCard("todo", undefined, position)} onChange={(position) => {
             if (!disabled) change((current) => ({ ...current, cards: current.cards.map((card) => card.id === position.id
               ? { ...card, x: position.x, y: position.y, width: position.width, height: position.height } : card) }));
           }} />}
-          {view === "board" && <WhiteboardBoard cards={cards} disabled={disabled} full={full} selectedId={selectedId} onSelect={setSelectedId} onAdd={addCard}
+          {view === "board" && <WhiteboardBoard cards={cards} disabled={disabled} full={full} selectedId={selectedId} onSelect={setSelectedId} onAdd={addCard} onDuplicate={duplicateCard} onRemove={removeCard}
             onMove={(id, status, beforeId) => { if (!disabled) change((current) => moveBoardCard(current, id, status, beforeId)); }} />}
           {view === "notes" && <textarea className="whiteboard-notes" aria-label="Notes" value={editing.document.text} maxLength={WHITEBOARD_TEXT_LIMIT} readOnly={disabled}
             onChange={(event) => change((current) => ({ ...current, text: event.target.value }))} />}
         </div>
         {selected && view !== "notes" && <WhiteboardCardEditor card={selected} disabled={disabled} full={full} onChange={changeCard} canMoveUp={selectedIndex > 0} canMoveDown={selectedIndex < peers.length - 1}
           onClose={closeCardEditor}
-          onRemove={() => { change((current) => ({ ...current, cards: current.cards.filter((card) => card.id !== selected.id) })); closeCardEditor(); }}
-          onDuplicate={() => {
-            const card = positionCard({ ...selected, id: crypto.randomUUID() }, selected.x + 30, selected.y + 30);
-            change((current) => ({ ...current, cards: [...current.cards, card] }));
-            setSelectedId(card.id);
-          }}
+          onRemove={() => { removeCard(selected.id); closeCardEditor(); }}
+          onDuplicate={() => duplicateCard(selected.id)}
           onReorder={(direction) => {
             const beforeId = direction < 0 ? peers[selectedIndex - 1]?.id : peers[selectedIndex + 2]?.id;
             change((current) => moveBoardCard(current, selected.id, selected.status, beforeId));

@@ -10,13 +10,19 @@ import {
   DoorOpen,
   Gift,
   Hand,
+  Hammer,
   LockKeyhole,
+  MapPin,
   Minimize2,
+  Move,
+  Music2,
+  Package,
   Phone,
   Play,
   Radio,
   RotateCw,
   ServerCog,
+  Trash2,
   Video,
   X,
 } from "lucide-react";
@@ -116,11 +122,11 @@ import { FallingBlocksLobby } from "./components/FallingBlocksLobby";
 import { ChessLobby } from "./components/ChessLobby";
 import { TicTacToeLobby } from "./components/TicTacToeLobby";
 import { TopBar } from "./components/TopBar";
-import type { ContextAnchor, WorldFocusTarget } from "./components/WorldCanvas";
+import type { ContextAnchor, WorldContextTarget, WorldFocusTarget } from "./components/WorldCanvas";
 import { WorldActionMenu } from "./components/WorldActionMenu";
+import { useOpenContextMenu, type ContextAction } from "./components/ContextMenu";
 import { useSpotifyPresence } from "./spotify/useSpotifyPresence";
 import { SpotifySongDetails } from "./spotify/SpotifySongDetails";
-import { Music2 } from "lucide-react";
 import { preloadWorldCanvas, WorldCanvas } from "./components/WorldCanvasLoader";
 import { playGongChime, prepareGongChime } from "./gong-audio";
 import { GONG_EFFECT_DURATION_MS, type DisplayGongRing } from "./gong";
@@ -128,7 +134,7 @@ import { useSpecialProps } from "./special-props";
 import { SpecialPropAction } from "./components/SpecialPropAction";
 import { useRealtime } from "./hooks/useRealtime";
 import { useGameRequest } from "./hooks/useGameRequest";
-import { REACTION_LABEL, REACTION_OPTIONS, type DisplayHighFive, type DisplayReaction } from "./reactions";
+import { REACTION_LABEL, REACTION_OPTIONS, type DisplayGroupReaction, type DisplayReaction } from "./reactions";
 import { mergeWorkspaceSnapshot } from "./workspace-state";
 import { applyColorTheme, getInitialColorTheme, type ColorTheme } from "./theme";
 import { getRotatedAssetPosition, rotateAssetClockwise } from "./asset-orientation";
@@ -144,6 +150,7 @@ const PlayerBuildPanel = lazy(() => import("./components/PlayerBuildPanel").then
 const SettingsPanel = lazy(() => import("./components/SettingsPanel").then((module) => ({ default: module.SettingsPanel })));
 const ServerAdminDialog = lazy(() => import("./components/admin/ServerAdminDialog").then((module) => ({ default: module.ServerAdminDialog })));
 const WorkObjectDialog = lazy(() => import("./components/WorkObjectDialog").then((module) => ({ default: module.WorkObjectDialog })));
+const ApprovalDeskPanel = lazy(() => import("./components/ApprovalDeskPanel").then((module) => ({ default: module.ApprovalDeskPanel })));
 const GitHubMailroom = lazy(() => import("./github/GitHubMailroom").then((module) => ({ default: module.GitHubMailroom })));
 const loadFallingBlocksGame = () => import("./components/FallingBlocksGame").then((module) => ({ default: module.FallingBlocksGame }));
 const loadChessGame = () => import("./components/ChessGame").then((module) => ({ default: module.ChessGame }));
@@ -163,7 +170,7 @@ type PendingEconomyRequest =
 type MeetingView = "full" | "small";
 
 const REACTION_DURATION_MS = 3_200;
-const HIGH_FIVE_DURATION_MS = 2_200;
+const GROUP_REACTION_DURATION_MS = 2_200;
 const OFFLINE_RECOVERY_PROBE_MS = 30_000;
 const DEFAULT_ASSET = ASSET_CATALOG.assets.find((asset) => asset.buildable)!;
 const DEFAULT_ASSET_ID = DEFAULT_ASSET.id;
@@ -596,7 +603,9 @@ export function Workspace({
   onSessionExpired: () => void;
   onServerChanged?: (() => void) | undefined;
 }) {
+  const openContextMenu = useOpenContextMenu();
   const [data, setData] = useState(initialData);
+  const updateApprovalEconomy = useCallback((economy: BootstrapData["economy"]) => setData((current) => ({ ...current, economy })), []);
   const [buildView, setBuildView] = useState<BuildView>("personal");
   const [publicFundId, setPublicFundId] = useState("workspace");
   const [projectDraft, setProjectDraft] = useState<BuildProject>();
@@ -629,7 +638,8 @@ export function Workspace({
   const [movingBuildItem, setMovingBuildItem] = useState<LayoutItemReference>();
   const [placingOwnedAssetId, setPlacingOwnedAssetId] = useState<string>();
   const [pendingEconomyRequest, setPendingEconomyRequest] = useState<PendingEconomyRequest>();
-  const [dailyBonusOpen, setDailyBonusOpen] = useState(initialData.economy.dailyReward.claimable);
+  const [dailyBonusOpen, setDailyBonusOpen] = useState(false);
+  const [adminInviteOpen, setAdminInviteOpen] = useState(false);
   const [dailyBonusError, setDailyBonusError] = useState<string>();
   const [meetingId, setMeetingId] = useState<string>();
   const [meetingConnection, setMeetingConnection] = useState<MediaConnection>();
@@ -647,6 +657,7 @@ export function Workspace({
   const lobbyRequest = useGameRequest();
   const turnRequest = useGameRequest();
   const [chessLobby, setChessLobby] = useState<ChessLobbyState>();
+  const [waitingChessObjectIds, setWaitingChessObjectIds] = useState<string[]>([]);
   const [chessMatch, setChessMatch] = useState<ChessMatchView>();
   const [chessOpen, setChessOpen] = useState(false);
   const chessOpenRef = useRef(false);
@@ -660,7 +671,7 @@ export function Workspace({
   const activeCallRef = useRef<ActiveCall | undefined>(undefined);
   const callRequest = useCallRequest(realtimeSendRef);
   const [reactions, setReactions] = useState<DisplayReaction[]>([]);
-  const [highFives, setHighFives] = useState<DisplayHighFive[]>([]);
+  const [groupReactions, setGroupReactions] = useState<DisplayGroupReaction[]>([]);
   const [gongRings, setGongRings] = useState<DisplayGongRing[]>([]);
   const [gongCooldowns, setGongCooldowns] = useState<Record<string, number>>({});
   const [gongClock, setGongClock] = useState(() => Date.now());
@@ -681,7 +692,7 @@ export function Workspace({
   const toastTimer = useRef<number | undefined>(undefined);
   const callDismissTimer = useRef<number | undefined>(undefined);
   const reactionTimers = useRef(new Map<string, number>());
-  const highFiveTimers = useRef(new Map<string, number>());
+  const groupReactionTimers = useRef(new Map<string, number>());
   const gongTimers = useRef(new Map<string, number>());
   const announcedGongIds = useRef(new Set<string>());
   const connectionWasOnline = useRef(false);
@@ -767,20 +778,26 @@ export function Workspace({
     reactionTimers.current.set(reaction.userId, timer);
   }, [data.members]);
 
-  const displayHighFive = useCallback((highFive: Omit<DisplayHighFive, "expiresAt">) => {
-    const previousTimer = highFiveTimers.current.get(highFive.id);
+  const displayGroupReaction = useCallback((groupReaction: Omit<DisplayGroupReaction, "expiresAt">) => {
+    for (const userId of groupReaction.userIds) {
+      const reactionTimer = reactionTimers.current.get(userId);
+      if (reactionTimer) window.clearTimeout(reactionTimer);
+      reactionTimers.current.delete(userId);
+    }
+    setReactions((current) => current.filter((reaction) => !groupReaction.userIds.includes(reaction.userId)));
+    const previousTimer = groupReactionTimers.current.get(groupReaction.id);
     if (previousTimer) {
       window.clearTimeout(previousTimer);
     }
-    const expiresAt = Date.now() + HIGH_FIVE_DURATION_MS;
-    setHighFives((current) => [...current.filter((candidate) => candidate.id !== highFive.id), { ...highFive, expiresAt }]);
+    const expiresAt = Date.now() + GROUP_REACTION_DURATION_MS;
+    setGroupReactions((current) => [...current.filter((candidate) => candidate.id !== groupReaction.id), { ...groupReaction, expiresAt }]);
     const timer = window.setTimeout(() => {
-      setHighFives((current) => current.filter((candidate) => candidate.id !== highFive.id));
-      if (highFiveTimers.current.get(highFive.id) === timer) {
-        highFiveTimers.current.delete(highFive.id);
+      setGroupReactions((current) => current.filter((candidate) => candidate.id !== groupReaction.id));
+      if (groupReactionTimers.current.get(groupReaction.id) === timer) {
+        groupReactionTimers.current.delete(groupReaction.id);
       }
-    }, HIGH_FIVE_DURATION_MS);
-    highFiveTimers.current.set(highFive.id, timer);
+    }, GROUP_REACTION_DURATION_MS);
+    groupReactionTimers.current.set(groupReaction.id, timer);
   }, []);
 
   const displayGongRing = useCallback((ring: DisplayGongRing) => {
@@ -859,7 +876,7 @@ export function Workspace({
     for (const timer of reactionTimers.current.values()) {
       window.clearTimeout(timer);
     }
-    for (const timer of highFiveTimers.current.values()) {
+    for (const timer of groupReactionTimers.current.values()) {
       window.clearTimeout(timer);
     }
     for (const timer of gongTimers.current.values()) {
@@ -1155,12 +1172,10 @@ export function Workspace({
         reaction: event.reaction,
         scope: event.scope,
       });
-    } else if (event.type === "interaction.high_five") {
-      displayHighFive({ id: event.id, userIds: event.userIds, floorId: event.floorId });
+    } else if (event.type === "interaction.group_reaction") {
+      displayGroupReaction({ id: event.id, kind: event.kind, userIds: event.userIds, floorId: event.floorId });
       if (event.userIds.includes(data.currentUserId)) {
-        const peerId = event.userIds.find((userId) => userId !== data.currentUserId);
-        const peer = data.members.find((member) => member.id === peerId);
-        showToast(`High five with ${peer?.name ?? "a teammate"}!`);
+        setReactionAnnouncement(event.kind === "high_five" ? "High five!" : "Shared love!");
       }
     } else if (event.type === "interaction.prop_used") {
       if (event.use.userId === data.currentUserId && event.use.result) setReactionAnnouncement(event.use.result);
@@ -1275,6 +1290,8 @@ export function Workspace({
       setChessLobby(event.lobby);
     } else if (event.type === "chess.lobby_closed") {
       setChessLobby(undefined);
+    } else if (event.type === "chess.waiting_updated") {
+      setWaitingChessObjectIds(event.objectIds);
     } else if (event.type === "chess.match_state") {
       if ((chessOpenRef.current || synchronizingSession.current)
         && (!pendingChessOpenRequestId.current || !selectedChessMatchId.current || selectedChessMatchId.current === event.match.id)) {
@@ -1354,7 +1371,7 @@ export function Workspace({
       }
       if (!callErrorHandled) showToast(event.message);
     }
-  }, [activeCall, activeConversationId, activePanel, announceOffscreenGong, callRequest.handle, currentMeeting, currentUser.availability, data.currentUserId, data.members, displayGongRing, displayHighFive, displayReaction, floorId, gameOpen, handleSpotifyEvent, handleSpecialPropEvent, handleWorkEvent, onCorporateIdentityChange, showToast]);
+  }, [activeCall, activeConversationId, activePanel, announceOffscreenGong, callRequest.handle, currentMeeting, currentUser.availability, data.currentUserId, data.members, displayGongRing, displayGroupReaction, displayReaction, floorId, gameOpen, handleSpotifyEvent, handleSpecialPropEvent, handleWorkEvent, onCorporateIdentityChange, showToast]);
 
   const { connection, snapshot, send } = useRealtime({
     floorId,
@@ -1445,12 +1462,13 @@ export function Workspace({
     lobbyRequest.clear();
     turnRequest.clear();
     setChessLobby(undefined);
+    setWaitingChessObjectIds([]);
     setChessMatch(undefined);
     setChessOpen(false);
     chessOpenRef.current = false;
     pendingChessOpenRequestId.current = undefined;
     setReactions([]);
-    setHighFives([]);
+    setGroupReactions([]);
     setGongRings([]);
     resetSpecialProps();
     setGongCooldowns({});
@@ -1459,10 +1477,10 @@ export function Workspace({
       window.clearTimeout(timer);
     }
     reactionTimers.current.clear();
-    for (const timer of highFiveTimers.current.values()) {
+    for (const timer of groupReactionTimers.current.values()) {
       window.clearTimeout(timer);
     }
-    highFiveTimers.current.clear();
+    groupReactionTimers.current.clear();
     for (const timer of gongTimers.current.values()) {
       window.clearTimeout(timer);
     }
@@ -1727,6 +1745,7 @@ export function Workspace({
 
   const openPanel = (panel: WorkspacePanel) => {
     setActivePanel(panel);
+    if (panel !== "admin") setAdminInviteOpen(false);
     if (panel === "build") {
       pendingTravelFocus.current = undefined;
       request({ type: "movement.stop", requestId: requestId() });
@@ -2136,9 +2155,9 @@ export function Workspace({
       : [],
     [currentMeeting, reactions],
   );
-  const floorHighFives = useMemo(
-    () => highFives.filter((highFive) => highFive.floorId === floorId),
-    [floorId, highFives],
+  const floorGroupReactions = useMemo(
+    () => groupReactions.filter((groupReaction) => groupReaction.floorId === floorId),
+    [floorId, groupReactions],
   );
   const floorGongRings = useMemo(
     () => gongRings.filter((ring) => ring.floorId === floorId),
@@ -2345,35 +2364,35 @@ export function Workspace({
     setPlacingPublicAssetId(undefined);
   };
 
-  const moveSelectedBuildItem = () => {
-    if (!buildSelection || (!canBuild && floorId !== activeFloorIdRef.current)) {
+  const moveSelectedBuildItem = (item = buildSelection) => {
+    if (!item || (!canBuild && floorId !== activeFloorIdRef.current)) {
       return;
     }
-    if (movingBuildItem?.type === buildSelection.type && movingBuildItem.id === buildSelection.id) {
+    if (movingBuildItem?.type === item.type && movingBuildItem.id === item.id) {
       setMovingBuildItem(undefined);
       return;
     }
-    if (buildSelection.type === "asset") {
-      const object = layout.objects.find((candidate) => candidate.id === buildSelection.id);
+    if (item.type === "asset") {
+      const object = layout.objects.find((candidate) => candidate.id === item.id);
       if (object) {
         setEditingAssetId(object.assetId);
         setEditingAssetVariantId(object.variantId);
         setEditingAssetRotation(object.rotation);
       }
     }
-    setMovingBuildItem(buildSelection);
+    setMovingBuildItem(item);
   };
 
-  const rotateSelectedBuildItem = () => {
-    if (!buildSelection) {
+  const rotateSelectedBuildItem = (item = buildSelection) => {
+    if (!item) {
       return;
     }
-    if (buildSelection.type === "asset") {
-      if (movingBuildItem?.type === "asset" && movingBuildItem.id === buildSelection.id) {
+    if (item.type === "asset") {
+      if (movingBuildItem?.type === "asset" && movingBuildItem.id === item.id) {
         setEditingAssetRotation(rotateAssetClockwise);
         return;
       }
-      const object = layout.objects.find((candidate) => candidate.id === buildSelection.id);
+      const object = layout.objects.find((candidate) => candidate.id === item.id);
       if (!object) {
         return;
       }
@@ -2382,8 +2401,8 @@ export function Workspace({
       applyBuildEdit({ tool: "asset.move", objectId: object.id, position, variantId: object.variantId, rotation });
       return;
     }
-    if (buildSelection.type === "wall") {
-      const source = mergeWallSegments(layout.walls, layout.openings).walls.find((candidate) => candidate.id === buildSelection.id);
+    if (item.type === "wall") {
+      const source = mergeWallSegments(layout.walls, layout.openings).walls.find((candidate) => candidate.id === item.id);
       if (!source) {
         return;
       }
@@ -2396,8 +2415,8 @@ export function Workspace({
     }
   };
 
-  const removeSelectedBuildItem = () => {
-    if (buildSelection) setPendingBuildRemoval({ tool: "item.remove", item: buildSelection });
+  const removeSelectedBuildItem = (item = buildSelection) => {
+    if (item) setPendingBuildRemoval({ tool: "item.remove", item });
   };
 
   useEffect(() => {
@@ -2438,6 +2457,7 @@ export function Workspace({
         onClaim={claimDailyReward} onClose={() => setDailyBonusOpen(false)} />}
       <NavRail
         activePanel={activePanel}
+        approvalDeskEnabled={Boolean(data.features?.approvalDesk)}
         corporateIdentity={data.corporateIdentity}
         canUseBuild
         currentUser={currentUser}
@@ -2462,12 +2482,13 @@ export function Workspace({
               <Gift size={18} aria-hidden="true" /><span>Daily bonus</span>
             </button>
             <GameGuide data={data} floorId={floorId} grantedRoomIds={grantedRoomIds}
+            onProgressLoaded={(status) => { if (status !== null && data.economy.dailyReward.claimable) setDailyBonusOpen(true); }}
             unavailable={dailyBonusOpen ? "Close the daily bonus to start the guide." : connection !== "online" ? "Reconnect to start the guide."
               : projectDraft || reviewingProject || editingTool || movingBuildItem || (!guideScreen && pendingEconomyRequest) || publicCommand.pending
                 ? "Finish building before starting the guide."
                 : gameOpen || gameRound?.status === "playing" || chessOpen || currentMeeting || activeCall || proximityCallParticipants.length > 0 || workObject || avatarDialogOpen || openingMeeting || meetingSwitch
                   ? "Close your activity before starting the guide."
-                  : !guideScreen && (activePanel === "rooms" || activePanel === "settings" || activePanel === "admin" || activePanel === "organisation" || activePanel === "approvals" || buildView === "donate" && activePanel === "build")
+                  : !guideScreen && (activePanel === "rooms" || activePanel === "settings" || activePanel === "admin" || activePanel === "organisation" || activePanel === "approvals" || activePanel === "approvalDesk" || buildView === "donate" && activePanel === "build")
                     ? "Close this panel before starting the guide." : undefined}
             onStart={() => { guidePreviousScreen.current = { panel: activePanel, buildView }; }}
             onNavigate={(screen) => {
@@ -2501,9 +2522,10 @@ export function Workspace({
           members={data.members}
           players={visiblePlayers}
           reactions={floorReactions}
-          highFives={floorHighFives}
+          groupReactions={floorGroupReactions}
           gongRings={floorGongRings}
           specialPropUses={specialPropUses}
+          waitingChessObjectIds={waitingChessObjectIds}
           currentUserId={data.currentUserId}
           editing={activePanel === "build"}
           roomAccessibility={activePanel === "build" && canBuild && connection === "online" && roomAccessibility?.userId === accessInspectionUserId ? roomAccessibility : undefined}
@@ -2515,6 +2537,7 @@ export function Workspace({
           movingBuildItem={movingBuildItem}
           playerAssetPlacement={playerAssetPlacement}
           colorTheme={colorTheme}
+          primaryColor={data.corporateIdentity.primaryColor}
           activeInteraction={activePanel !== "build" && !gameOpen && !chessOpen ? activeInteraction?.highlight : undefined}
           inputEnabled={floorId === activeFloorIdRef.current && activePanel !== "build" && activePanel !== "rooms" && !avatarDialogOpen && !gameOpen && !chessOpen && !workObject && (!currentMeeting || meetingView === "small")}
           focusTarget={focusTarget}
@@ -2547,6 +2570,55 @@ export function Workspace({
                 : undefined;
             setBuildSelection(selectableItem);
             setMovingBuildItem(undefined);
+          }}
+          onContextSelect={(target: WorldContextTarget, anchor) => {
+            if (activePanel !== "build" && (floorId !== activeFloorIdRef.current || activePanel === "rooms"
+              || avatarDialogOpen || gameOpen || chessOpen || workObject || currentMeeting && meetingView !== "small")) return;
+            if (target.type === "player") {
+              setSelection({ type: "player", userId: target.userId, anchor });
+              setSongUserId(undefined);
+              return;
+            }
+            if (target.type === "object") {
+              if (data.miniGames.some((game) => game.assetId === target.object.assetId)
+                && interactionAreas.some((area) => area.id === target.object.id)) {
+                selectInteraction(target.object.id);
+                setSelection(undefined);
+                return;
+              }
+              setSelection({ type: "object", object: target.object, ...(target.interactionId ? { interactionId: target.interactionId } : {}), anchor });
+              return;
+            }
+            const canvas = document.querySelector<HTMLElement>(".world-canvas");
+            const bounds = canvas?.getBoundingClientRect();
+            const x = (bounds?.left ?? 0) + anchor.x;
+            const y = (bounds?.top ?? 0) + anchor.y;
+            if (target.type === "ground") {
+              if (activePanel === "build" || !floor || !currentPlayer) return;
+              openContextMenu([
+                { label: "Move here", icon: MapPin, onSelect: () => navigateToDestination(floorId, target.x, target.y) },
+                { label: "Build", icon: Hammer, onSelect: () => openPanel("build") },
+              ], x, y, canvas ?? undefined);
+              return;
+            }
+            if (activePanel !== "build" || reviewingProject || publicCommand.pending || connection !== "online") return;
+            const item = target.item;
+            if (!item) {
+              if (editingTool || movingBuildItem) openContextMenu([{ label: "Cancel action", icon: X, onSelect: cancelBuildPlacement }], x, y, canvas ?? undefined);
+              return;
+            }
+            const object = item.type === "asset" ? layout.objects.find((candidate) => candidate.id === item.id) : undefined;
+            if ((object?.ownerUserId && object.ownerUserId !== data.currentUserId)
+              || (!canBuild && object?.ownerUserId !== data.currentUserId)) return;
+            setBuildSelection(item);
+            const actions: ContextAction[] = [
+              { label: "Move", icon: Move, onSelect: () => moveSelectedBuildItem(item) },
+              ...(item.type !== "opening" ? [{ label: "Rotate", icon: RotateCw, onSelect: () => rotateSelectedBuildItem(item) }] : []),
+              ...(!object || getAssetDefinition(object.assetId)?.kind !== "portal"
+                ? [{ label: object?.ownerUserId ? "Store" : "Remove", icon: object?.ownerUserId ? Package : Trash2, onSelect: () => removeSelectedBuildItem(item), danger: !object?.ownerUserId }]
+                : []),
+            ];
+            openContextMenu(actions, x, y, canvas ?? undefined);
           }}
           onAssetRotationChange={setEditingAssetRotation}
           onPlacementCancel={cancelBuildPlacement}
@@ -2584,6 +2656,7 @@ export function Workspace({
             lobby={visibleGameLobby}
             members={data.members}
             statistics={data.gameStatistics}
+            scores={data.scores}
             currentUserId={data.currentUserId}
             pending={lobbyRequest.pending}
             initialMode={gamePreferences.current.get(visibleGameLobby.objectId)?.mode}
@@ -2677,7 +2750,7 @@ export function Workspace({
           <WorldActionMenu anchor={selection?.anchor} besidePlayer={Boolean(selectedPlayerMember)}>
           {hasVisibleSelection && (
             <div
-              className="context-action"
+              className={`context-action${selectedPlayerMember ? " person-context-action" : ""}`}
               role="region"
               aria-label={selectedPlayerMember ? `Selected ${selectedPlayerMember.name}` : "Selected place"}
               onClick={(event) => {
@@ -2699,6 +2772,7 @@ export function Workspace({
                   aria-label={`View ${selectedPlayerMember.name}’s song`} aria-expanded={songUserId === selectedPlayerMember.id}
                   onClick={() => setSongUserId(songUserId === selectedPlayerMember.id ? undefined : selectedPlayerMember.id)}
                 ><Music2 size={18} /></button>}
+                <button className="secondary-button" onClick={() => messageMember(selectedPlayerMember.id)}>Chat</button>
                 <button
                   className="primary-button"
                   aria-label={`Call ${selectedPlayerMember.name}`}
@@ -2945,6 +3019,9 @@ export function Workspace({
         )}
       </section>
 
+      {activePanel === "approvalDesk" && data.features?.approvalDesk && <DeferredContent onClose={() => openPanel(null)}>
+        <ApprovalDeskPanel currentUserId={data.currentUserId} guideActive={guideScreen?.panel === "approvalDesk"} onEconomyChange={updateApprovalEconomy} onClose={() => openPanel(null)} />
+      </DeferredContent>}
       {activePanel === "organisation" && <DeferredContent sidebar onClose={() => openPanel(null)}>
         <OrganisationPanel organisation={data.organisation} members={data.members} currentUserId={data.currentUserId}
           error={workspaceCommand.error}
@@ -2989,6 +3066,7 @@ export function Workspace({
           onMessage={messageMember}
           onCall={callMember}
           onLocate={locateMember}
+          {...(currentUser.role === "owner" ? { onInvite: () => { setAdminInviteOpen(true); openPanel("admin"); } } : {})}
         />
       )}
       {activePanel === "chat" && (
@@ -3008,11 +3086,11 @@ export function Workspace({
         <MeetingsPanel meetings={visibleMeetings} rooms={allRooms} members={data.members} openingMeetingId={openingMeeting?.meetingId} onJoin={(meeting) => openMeeting(meeting, "full")} onClose={() => setActivePanel(null)} />
       )}
       {activePanel === "admin" && canManageMembers && <DeferredContent onClose={() => openPanel(null)}>
-        <ServerAdminDialog members={data.members} currentUser={currentUser} invitations={data.invitations} invitationLinks={invitationLinks}
+        <ServerAdminDialog members={data.members} currentUser={currentUser} invitations={data.invitations} invitationLinks={invitationLinks} showInvite={adminInviteOpen}
           corporateIdentity={data.corporateIdentity}
           onInvite={addInvitation} onRevokeInvite={removeInvitation} onCopyInvite={copyInvitationLink} onAccessChange={updateMemberAccess}
           onRegistrationSettingsSave={saveRegistrationSettings} onCorporateIdentitySave={saveCorporateIdentity}
-          onCorporateLogoUpload={updateCorporateLogo} onCorporateLogoRemove={removeCorporateIdentityLogo} onClose={() => openPanel(null)} />
+          onCorporateLogoUpload={updateCorporateLogo} onCorporateLogoRemove={removeCorporateIdentityLogo} onClose={() => { setAdminInviteOpen(false); openPanel(null); }} />
       </DeferredContent>}
       {activePanel === "settings" && (
         <DeferredContent sidebar onClose={() => setActivePanel(null)}>
@@ -3088,9 +3166,9 @@ export function Workspace({
             onAssetChange={(assetId) => { setPlacingPublicAssetId(undefined); changeEditingAsset(assetId); }}
             onAssetVariantChange={setEditingAssetVariantId}
             onAssetRotationChange={setEditingAssetRotation}
-            onMoveSelected={moveSelectedBuildItem}
-            onRotateSelected={rotateSelectedBuildItem}
-            onRemoveSelected={removeSelectedBuildItem}
+            onMoveSelected={() => moveSelectedBuildItem()}
+            onRotateSelected={() => rotateSelectedBuildItem()}
+            onRemoveSelected={() => removeSelectedBuildItem()}
             onOpenRooms={() => openPanel("rooms")}
             onClose={() => reviewingProject ? closeProjectReview() : openPanel(null)}
           />
@@ -3131,7 +3209,6 @@ export function Workspace({
             selectedItem={buildSelection}
             movingItem={movingBuildItem}
             pendingEconomyRequest={pendingEconomyRequest}
-            onOpenDaily={() => { setDailyBonusError(undefined); setDailyBonusOpen(true); }}
             onPurchase={purchaseAsset}
             onFocus={focusPersonalAsset}
             onPlace={(ownedAssetId, selectedAssetId) => {
@@ -3148,9 +3225,9 @@ export function Workspace({
             }}
             onAssetVariantChange={setEditingAssetVariantId}
             onAssetRotationChange={setEditingAssetRotation}
-            onMoveSelected={moveSelectedBuildItem}
-            onRotateSelected={rotateSelectedBuildItem}
-            onRemoveSelected={removeSelectedBuildItem}
+            onMoveSelected={() => moveSelectedBuildItem()}
+            onRotateSelected={() => rotateSelectedBuildItem()}
+            onRemoveSelected={() => removeSelectedBuildItem()}
             onClose={() => openPanel(null)}
           />
         </DeferredContent>
@@ -3165,6 +3242,7 @@ export function Workspace({
       {(activePanel === "approvals" || activePanel === "build" && buildView === "funds") && <DeferredContent onClose={() => openPanel(null)}><FundsPanel economy={data.publicEconomy} organisation={data.organisation}
         rooms={allRooms} layouts={data.layouts} floors={data.floors}
         globalSettings={data.kidnapping.global} onOpenRooms={() => openPanel("rooms")}
+        onOpenBuild={() => { openPanel("build"); changeBuildView("shared"); }}
         initialFundId={publicFundId}
         error={publicCommand.error}
         members={data.members} userId={data.currentUserId} personalBalance={data.economy.coinBalance} pending={publicCommand.pending || connection !== "online"}

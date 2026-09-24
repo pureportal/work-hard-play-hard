@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { GameSettings, Member, OrganisationState, Room, RoomSettings } from "@workhard/shared";
 import { PermissionEditor } from "./PermissionEditor";
 import { PermissionPreview } from "./PermissionPreview";
-import { validatePersonalSpaces } from "@workhard/shared";
+import { roomAccessAllows, validatePersonalSpaces } from "@workhard/shared";
 import { PersonalSpacesEditor } from "./PersonalSpacesEditor";
 
 interface RoomPermissionEditorProps {
@@ -22,14 +22,17 @@ export function RoomPermissionEditor({ room, members, organisation, settings, ed
   const accessMode = draft.access.mode === "default" ? settings.roomAccess.mode : draft.access.mode;
   const needsDoor = !room.privateEligible && accessMode !== "open";
   const changed = JSON.stringify(draft) !== JSON.stringify(room);
+  const accessibleMemberIds = new Set(members.filter((member) => roomAccessAllows(draft, member.id, settings, organisation)).map((member) => member.id));
+  const ownerNeedsAccess = draft.ownerBuildApproval === "direct" && Boolean(draft.ownerUserId && !accessibleMemberIds.has(draft.ownerUserId));
   let spacesError: string | undefined;
   try { validatePersonalSpaces(room, draft, members.map((member) => member.id)); }
   catch { spacesError = "Keep each area inside the room, without overlaps."; }
   return <div className="room-permission-editor">
     <form onSubmit={(event) => {
       event.preventDefault();
-      if (!editable || pending || !changed || needsDoor || spacesError || !draft.name.trim()) return;
+      if (!editable || pending || !changed || needsDoor || ownerNeedsAccess || spacesError || !draft.name.trim()) return;
       onSave({ name: draft.name.trim(), color: draft.color, meetingRoom: Boolean(draft.meetingRoom), access: draft.access, build: draft.build ?? { mode: "default", assignedPersonIds: [] },
+        ...(draft.ownerUserId ? { ownerBuildApproval: draft.ownerBuildApproval ?? "vote" } : {}),
         ...(draft.organisationUnitId ? { organisationUnitId: draft.organisationUnitId } : {}),
         ...(draft.ownerUserId ? { ownerUserId: draft.ownerUserId } : {}), personalAreas: draft.personalAreas ?? [] });
     }}>
@@ -48,12 +51,17 @@ export function RoomPermissionEditor({ room, members, organisation, settings, ed
         <PermissionEditor label="Access" value={draft.access} members={members} organisation={organisation} onChange={(access) => setDraft({ ...draft, access: { ...access, knockable: (access.mode === "default" ? settings.roomAccess.mode : access.mode) !== "open" && draft.access.knockable } })} />
         {accessMode !== "open" && <label className="permission-check room-knocking"><input type="checkbox" checked={draft.access.knockable} onChange={(event) => setDraft({ ...draft, access: { ...draft.access, knockable: event.target.checked } })} />Allow knocking</label>}
         </div>
-        <PermissionEditor label="Build" value={draft.build ?? { mode: "default", assignedPersonIds: [] }} members={members} organisation={organisation} onChange={(build) => setDraft({ ...draft, build })} />
+        <PermissionEditor label="Build" value={draft.build ?? { mode: "default", assignedPersonIds: [] }} members={members} organisation={organisation} eligibleMemberIds={accessibleMemberIds} onChange={(build) => setDraft({ ...draft, build })} />
         </div>
         <PersonalSpacesEditor room={draft} members={members} onChange={setDraft} />
+        {draft.ownerUserId && <label>Owner's builds<select value={draft.ownerBuildApproval ?? "vote"} onChange={(event) => setDraft({ ...draft, ownerBuildApproval: event.target.value as "vote" | "direct" })}>
+          <option value="vote">With approval</option><option value="direct" disabled={!accessibleMemberIds.has(draft.ownerUserId)}>Without approval</option>
+        </select></label>}
+        {draft.ownerUserId && draft.ownerBuildApproval === "direct" && <p className="room-build-approval-detail">The owner can furnish this room using its fund without a vote.</p>}
+        {ownerNeedsAccess && <p role="alert">Give the owner room access to skip approval.</p>}
         {spacesError && <p role="alert">{spacesError}</p>}
         {needsDoor && <p role="alert">Add a door before restricting access.</p>}
-        {editable && <div className="room-settings-save"><button className="primary-button" type="submit" disabled={!changed || !draft.name.trim() || needsDoor || Boolean(spacesError)}>{pending ? "Submitting…" : "Propose changes"}</button></div>}
+        {editable && <div className="room-settings-save"><button className="primary-button" type="submit" disabled={!changed || !draft.name.trim() || needsDoor || ownerNeedsAccess || Boolean(spacesError)}>{pending ? "Submitting…" : "Propose changes"}</button></div>}
       </fieldset>
     </form>
     {!editable && <p className="room-settings-readonly">You cannot change this room’s settings.</p>}

@@ -107,6 +107,14 @@ export interface ChessLobbyState {
   objectId: string;
   floorId: string;
   matches: ChessMatchSummary[];
+  statistics: ChessPlayerStatistics[];
+}
+
+export interface ChessPlayerStatistics {
+  userId: string;
+  games: number;
+  wins: number;
+  draws: number;
 }
 
 export interface ChessBoardPiece {

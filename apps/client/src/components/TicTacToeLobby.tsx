@@ -5,6 +5,7 @@ import {
   type BotDifficulty,
   type GameBot,
   type GameLobbyState,
+  type GameScore,
   type Member,
   type PlayerGameStatistics,
   type TicTacToeVariantId,
@@ -12,11 +13,13 @@ import {
 import { GameOpponentPicker } from "./GameOpponentPicker";
 import { Avatar } from "./Avatar";
 import { TicTacToeMark } from "./TicTacToeMark";
+import { GameStatisticsButton, GameStatisticsDialog } from "./GameStatisticsDialog";
 
 interface TicTacToeLobbyProps {
   lobby: GameLobbyState;
   members: Member[];
   statistics: PlayerGameStatistics[];
+  scores: GameScore[];
   currentUserId: string;
   pending?: boolean;
   initialMode?: "solo" | "multiplayer" | undefined;
@@ -29,6 +32,7 @@ export function TicTacToeLobby({
   lobby,
   members,
   statistics,
+  scores,
   currentUserId,
   pending = false,
   initialMode = "solo",
@@ -39,6 +43,7 @@ export function TicTacToeLobby({
   const [mode, setMode] = useState(initialMode);
   const [difficulty, setDifficulty] = useState(initialDifficulty);
   const [variantId, setVariantId] = useState(initialVariant);
+  const [statisticsOpen, setStatisticsOpen] = useState(false);
   const participants = lobby.participantIds.flatMap((userId) => {
     const member = members.find((candidate) => candidate.id === userId);
     return member ? [member] : [];
@@ -52,9 +57,8 @@ export function TicTacToeLobby({
     <aside className="game-lobby tic-tac-toe-lobby" aria-label="Tic-Tac-Toe lobby" aria-busy={pending}>
       <header>
         <TicTacToeMark />
-        <div>
-          <h2>Tic-Tac-Toe</h2>
-        </div>
+        <h2>Tic-Tac-Toe</h2>
+        <GameStatisticsButton onClick={() => setStatisticsOpen(true)} />
       </header>
 
       <GameOpponentPicker mode={mode} onModeChange={setMode} difficulty={difficulty} onDifficultyChange={setDifficulty} />
@@ -72,17 +76,20 @@ export function TicTacToeLobby({
         ))}
       </div>
 
-      {mode === "multiplayer" && <ul className="tic-tac-toe-lobby-players" aria-label="Players">
-        {participants.map((member) => (
-          <li key={member.id}>
-            <Avatar member={member} className="score-avatar" />
-            <span>{member.id === currentUserId ? "You" : member.name}</span>
-            <strong>{statistics.find((candidate) =>
-              candidate.definitionId === lobby.definitionId && candidate.userId === member.id,
-            )?.multiplayerWins ?? 0}</strong>
-          </li>
-        ))}
-      </ul>}
+      {mode === "multiplayer" && <section className="game-lobby-roster" aria-label="Players">
+        <div className="game-lobby-roster-heading"><h3>Players</h3><span>Wins</span></div>
+        <ul>
+          {participants.map((member) => (
+            <li key={member.id}>
+              <Avatar member={member} className="score-avatar" />
+              <span>{member.id === currentUserId ? "You" : member.name}</span>
+              <strong>{statistics.find((candidate) =>
+                candidate.definitionId === lobby.definitionId && candidate.userId === member.id,
+              )?.multiplayerWins ?? 0}</strong>
+            </li>
+          ))}
+        </ul>
+      </section>}
 
       <button
         className="primary-button tic-tac-toe-start-button"
@@ -93,10 +100,15 @@ export function TicTacToeLobby({
         {pending ? "Starting…" : ready ? "Play" : "Waiting for player"}
       </button>
 
-      {mode === "multiplayer" && <dl className="tic-tac-toe-player-stats" aria-label="Your Tic-Tac-Toe statistics">
-        <div><dt>Wins</dt><dd>{playerStatistics?.multiplayerWins ?? 0}</dd></div>
-        <div><dt>Games</dt><dd>{playerStatistics?.gamesPlayed ?? 0}</dd></div>
-      </dl>}
+      {statisticsOpen && <GameStatisticsDialog game="Tic-Tac-Toe" onClose={() => setStatisticsOpen(false)} rankingLabel="Wins"
+        metrics={[{ label: "Wins vs players", value: String(playerStatistics?.multiplayerWins ?? 0) }, { label: "Games vs players", value: String(playerStatistics?.gamesPlayed ?? 0) }]}
+        rankings={statistics.filter((entry) => entry.definitionId === lobby.definitionId && entry.gamesPlayed > 0)
+          .sort((left, right) => right.multiplayerWins - left.multiplayerWins || right.gamesPlayed - left.gamesPlayed)
+          .map((entry) => ({ id: entry.userId, name: entry.userId === currentUserId ? "You" : members.find((member) => member.id === entry.userId)?.name ?? "Player", value: String(entry.multiplayerWins) }))}
+        history={scores.filter((score) => score.definitionId === lobby.definitionId && score.userId === currentUserId)
+          .sort((left, right) => right.playedAt.localeCompare(left.playedAt)).slice(0, 30)
+          .map((score) => ({ id: score.id, title: score.won ? "Win" : scores.some((entry) => entry.roundId === score.roundId && entry.won) ? "Loss" : "Draw", detail: new Date(score.playedAt).toLocaleDateString() }))}
+      />}
     </aside>
   );
 }

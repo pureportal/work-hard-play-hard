@@ -1,6 +1,6 @@
 import {
   BUILD_GRID_SIZE, BUILD_PRICES, WORKSPACE_FUND_ID, assetResaleValue, getAssetDefinition, getTeleporterPrice,
-  getPlacedAssetBounds, getOpeningRect, getWallLength, getWallRect, isInPersonalSpace, isPermanentAsset, isUnitWithin, normalizeWall, roomBuildAllows, roomAccessAllows,
+  getPlacedAssetBounds, getOpeningRect, getWallLength, getWallRect, isInPersonalSpace, isPermanentAsset, isUnitWithin, normalizeWall, roomBuildAllows, roomAccessAllows, roomContainsBounds,
   type ConstructionReceipt, type FloorLayout, type GameSettings, type OrganisationState,
   type ProjectQuote, type PublicAsset, type PublicFund, type Rect,
 } from "@workhard/shared";
@@ -85,7 +85,13 @@ export function quoteProject(previous: FloorLayout, next: FloorLayout, fundId: s
     purchases, removedKeys, inventoryIds };
 }
 
-export function assertProjectScope(previous: FloorLayout, next: FloorLayout, fund: PublicFund, userId: string, settings: GameSettings, organisation: OrganisationState): void {
+export interface ProjectImpact {
+  roomIds: string[];
+  affectsSharedSpace: boolean;
+  containedRoomIds: string[];
+}
+
+export function assertProjectScope(previous: FloorLayout, next: FloorLayout, fund: PublicFund, userId: string, settings: GameSettings, organisation: OrganisationState): ProjectImpact {
   for (const room of previous.rooms) {
     const access = room.access.mode === "default" ? settings.roomAccess : room.access;
     if (access.mode === "open" && !room.ownerUserId && !room.personalAreas?.length) continue;
@@ -95,11 +101,13 @@ export function assertProjectScope(previous: FloorLayout, next: FloorLayout, fun
       || JSON.stringify(retained.access) !== JSON.stringify(room.access)) throw new Error("ROOM_PRIVACY_PROTECTED");
   }
   const affected: Rect[] = [];
+  const impacted: Rect[] = [];
   for (const [source, target] of [[previous, next], [next, previous]] as const) {
     for (const object of source.objects) {
       const other = target.objects.find((candidate) => candidate.id === object.id);
       if (JSON.stringify(object) === JSON.stringify(other)) continue;
       if (object.ownerUserId && object.ownerUserId !== userId) throw new Error("PRIVATE_ASSET_PROTECTED");
+      impacted.push(getPlacedAssetBounds(object));
       if (object.ownerUserId === userId && isInPersonalSpace(previous, object, userId)) {
         const bounds = getPlacedAssetBounds(object);
         if (previous.rooms.some((room) => room.footprint.some((rect) => intersects(rect, bounds)) && !roomAccessAllows(room, userId, settings, organisation))) throw new Error("ASSET_ROOM_FORBIDDEN");
@@ -133,6 +141,17 @@ export function assertProjectScope(previous: FloorLayout, next: FloorLayout, fun
     if (fund.unitId && (!rooms.length || rooms.some((room) => !room.organisationUnitId
       || !isUnitWithin(organisation, room.organisationUnitId, fund.unitId!)))) throw new Error("PUBLIC_FUND_SCOPE");
   }
+  impacted.push(...affected);
+  const touchedRoomIds = new Set<string>();
+  for (const bounds of impacted) {
+    const containing = previous.rooms.filter((room) => roomContainsBounds(room, bounds));
+    const rooms = containing.length ? containing : previous.rooms.filter((room) => room.footprint.some((rect) => intersects(rect, bounds)));
+    for (const room of rooms) touchedRoomIds.add(room.id);
+  }
+  const roomIds = [...touchedRoomIds];
+  const containedRoomIds = previous.rooms.filter((room) => impacted.length > 0 && impacted.every((bounds) => roomContainsBounds(room, bounds))).map((room) => room.id);
+  return { roomIds, containedRoomIds, affectsSharedSpace: impacted.length === 0 || impacted.some((bounds) =>
+    !previous.rooms.some((room) => roomContainsBounds(room, bounds))) };
 }
 
 function intersects(left: Rect, right: Rect): boolean {

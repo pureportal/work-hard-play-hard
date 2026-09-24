@@ -13,6 +13,7 @@ import "../../server-admin.css";
 type AdminTab = "members" | "registration" | "approvals" | "branding" | "spotify" | "github";
 
 export interface ServerAdminDialogProps {
+  showInvite?: boolean;
   members: Member[]; currentUser: Member; invitations: Invitation[]; invitationLinks: Readonly<Record<string, string>>;
   corporateIdentity: CorporateIdentity;
   onInvite: (email: string, role: Exclude<MemberRole, "owner">) => Promise<boolean>;

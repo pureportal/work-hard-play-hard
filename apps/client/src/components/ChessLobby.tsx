@@ -1,9 +1,10 @@
 import { CalendarClock, LockKeyhole, Play, Plus, Timer, Trash2, Users, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { BotDifficulty, ChessLobbyState, ChessMatchSettings, ChessMatchSummary, Member } from "@workhard/shared";
 import { GameOpponentPicker } from "./GameOpponentPicker";
 import { Avatar } from "./Avatar";
 import { ChessMark } from "./ChessMark";
+import { GameStatisticsButton, GameStatisticsDialog } from "./GameStatisticsDialog";
 
 interface ChessLobbyProps {
   lobby: ChessLobbyState;
@@ -37,13 +38,21 @@ export function ChessLobby({
   const [access, setAccess] = useState<ChessMatchSettings["access"]>("open");
   const [opponentUserId, setOpponentUserId] = useState(opponents[0]?.id ?? "");
   const [pauseWeekends, setPauseWeekends] = useState(false);
+  const [statisticsOpen, setStatisticsOpen] = useState(false);
 
   const ownMatches = lobby.matches.filter((match) => isParticipant(match, currentUserId));
+  const currentMatches = ownMatches.filter((match) => match.status !== "completed");
+  const pastMatches = ownMatches.filter((match) => match.status === "completed");
+  const playerStatistics = lobby.statistics.find((entry) => entry.userId === currentUserId);
   const activeBotMatch = ownMatches.find((match) => match.settings.bot && match.status === "active");
-  const hasWaitingMatch = ownMatches.some((match) => match.status === "waiting");
+  const waitingMatchIds = ownMatches.filter((match) => match.status === "waiting").map((match) => match.id).join("|");
+  const knownWaitingMatchIds = useRef(new Set(waitingMatchIds ? waitingMatchIds.split("|") : []));
   useEffect(() => {
-    if (hasWaitingMatch) setCreating(false);
-  }, [hasWaitingMatch]);
+    const nextIds = waitingMatchIds ? waitingMatchIds.split("|") : [];
+    const hasNewMatch = nextIds.some((id) => !knownWaitingMatchIds.current.has(id));
+    knownWaitingMatchIds.current = new Set(nextIds);
+    if (hasNewMatch) setCreating(false);
+  }, [waitingMatchIds]);
   const invitations = lobby.matches.filter((match) => (
     match.status === "waiting"
     && match.reservedBlackUserId === currentUserId
@@ -68,14 +77,8 @@ export function ChessLobby({
     <aside className="game-lobby chess-lobby" aria-label="Chess lobby" aria-busy={pending}>
       <header>
         <ChessMark />
-        <div>
-          <h2>Chess</h2>
-        </div>
-        {mode === "multiplayer" && !creating && !ownMatches.some((match) => match.status === "waiting") && (
-          <button className="chess-new-button" onClick={() => setCreating(true)}>
-            <Plus size={16} />New game
-          </button>
-        )}
+        <h2>Chess</h2>
+        <GameStatisticsButton onClick={() => setStatisticsOpen(true)} />
       </header>
 
       <GameOpponentPicker mode={mode} onModeChange={setMode} difficulty={difficulty} onDifficultyChange={setDifficulty} />
@@ -143,10 +146,11 @@ export function ChessLobby({
         </section>
       ) : (
         <div className="chess-lobby-lists" inert={pending}>
-          {ownMatches.length > 0 && (
+          {mode === "multiplayer" && <button className="chess-new-button" onClick={() => setCreating(true)}><Plus size={16} />New game</button>}
+          {currentMatches.length > 0 && (
             <MatchList
               title="Your games"
-              matches={ownMatches}
+              matches={currentMatches}
               members={members}
               currentUserId={currentUserId}
               onOpen={onOpen}
@@ -159,14 +163,16 @@ export function ChessLobby({
           {openMatches.length > 0 && (
             <JoinList title="Open games" matches={openMatches} members={members} onJoin={onJoin} />
           )}
-          {mode === "multiplayer" && ownMatches.length === 0 && invitations.length === 0 && openMatches.length === 0 && (
-            <button className="chess-empty-state" onClick={() => setCreating(true)}>
-              <ChessMark />
-              <span>Start a game</span>
-            </button>
+          {pastMatches.length > 0 && (
+            <MatchList title="History" matches={pastMatches} members={members} currentUserId={currentUserId} onOpen={onOpen} onCancel={onCancel} />
           )}
         </div>
       )}
+      {statisticsOpen && <GameStatisticsDialog game="Chess" onClose={() => setStatisticsOpen(false)} rankingLabel="Wins"
+        metrics={[{ label: "Wins", value: String(playerStatistics?.wins ?? 0) }, { label: "Games", value: String(playerStatistics?.games ?? 0) }, { label: "Draws", value: String(playerStatistics?.draws ?? 0) }]}
+        rankings={lobby.statistics.filter((entry) => entry.games > 0).map((entry) => ({ id: entry.userId, name: entry.userId === currentUserId ? "You" : members.find((member) => member.id === entry.userId)?.name ?? "Player", value: String(entry.wins) }))}
+        history={pastMatches.map((match) => ({ id: match.id, title: match.settings.bot ? "Bot" : members.find((member) => member.id === opponentIdFor(match, currentUserId))?.name ?? "Player", detail: `${timeControlLabel(match.settings)} · ${new Date(match.updatedAt).toLocaleDateString()}`, value: match.outcome?.winnerUserId ? match.outcome.winnerUserId === currentUserId ? "Win" : "Loss" : "Draw" }))}
+      />}
     </aside>
   );
 }
@@ -254,17 +260,18 @@ function opponentIdFor(match: ChessMatchSummary, userId: string): string | undef
 }
 
 function matchStatus(match: ChessMatchSummary, currentUserId: string): string {
+  const time = match.settings.timeControl === "daily" ? "24h" : timeControlLabel(match.settings);
   if (match.status === "waiting") {
-    return `${timeControlLabel(match.settings)} · Waiting`;
+    return `${time} · Waiting`;
   }
   if (match.status === "completed") {
     if (!match.outcome?.winnerUserId) {
-      return `${timeControlLabel(match.settings)} · Draw`;
+      return `${time} · Draw`;
     }
-    return `${timeControlLabel(match.settings)} · ${match.outcome.winnerUserId === currentUserId ? "You won" : "You lost"}`;
+    return `${time} · ${match.outcome.winnerUserId === currentUserId ? "You won" : "You lost"}`;
   }
   const currentColor = match.whiteUserId === currentUserId ? "white" : "black";
-  return `${timeControlLabel(match.settings)} · ${match.turn === currentColor ? "Your turn" : "Their turn"}`;
+  return `${time} · ${match.turn === currentColor ? "Your turn" : "Their turn"}`;
 }
 
 function timeControlLabel(settings: ChessMatchSettings): string {

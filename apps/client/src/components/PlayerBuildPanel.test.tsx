@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createOrganisation, getDailyRewardStatus, MAX_LAYOUT_OBJECTS_PER_FLOOR, MAX_OWNED_ASSETS, type FloorLayout, type Room } from "@workhard/shared";
+import { createOrganisation, MAX_LAYOUT_OBJECTS_PER_FLOOR, MAX_OWNED_ASSETS, type FloorLayout, type Room } from "@workhard/shared";
 import { createTestEconomy, createTestGameSettings } from "../test-fixtures";
 import { PlayerBuildPanel } from "./PlayerBuildPanel";
 
@@ -37,6 +37,9 @@ describe("PlayerBuildPanel", () => {
     fireEvent.keyDown(screen.getByRole("tab", { name: "Inventory" }), { key: "ArrowRight" });
     expect(screen.getByRole("tab", { name: "Placed" }).getAttribute("aria-selected")).toBe("true");
     expect(screen.getByText("No placed items yet.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Open Inventory" }));
+    expect(screen.getByRole("tab", { name: "Inventory" }).getAttribute("aria-selected")).toBe("true");
+    fireEvent.click(screen.getByRole("tab", { name: "Placed" }));
     fireEvent.keyDown(screen.getByRole("tab", { name: "Placed" }), { key: "End" });
     expect(screen.getByRole("tab", { name: "Shop" }).getAttribute("aria-selected")).toBe("true");
     fireEvent.keyDown(screen.getByRole("tab", { name: "Shop" }), { key: "ArrowRight" });
@@ -97,16 +100,12 @@ describe("PlayerBuildPanel", () => {
     expect(onPurchase).toHaveBeenCalledWith("light-floor");
   });
 
-  it("shows the wallet and opens the daily bonus", () => {
-    const onOpenDaily = vi.fn();
-    const economy = createTestEconomy();
-    economy.dailyReward = getDailyRewardStatus({ streak: 0 }, new Date("2026-09-01T12:00:00.000Z"));
-    renderPanel({ onOpenDaily, economy });
-
+  it("shows the wallet without a daily bonus card", () => {
+    renderPanel();
     expect(screen.getByLabelText("250 coins")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Open bonus" }));
-
-    expect(onOpenDaily).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("region", { name: "Daily bonus" })).toBeNull();
+    expect(screen.queryByText(/-day streak$/)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Open bonus" })).toBeNull();
   });
 
   it("buys affordable catalog assets and disables unaffordable or unavailable assets", () => {
@@ -207,6 +206,7 @@ describe("PlayerBuildPanel", () => {
 
     expect((screen.getByRole("button", { name: "Place" }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByText("No rooms on this floor allow placement.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Open bonus" })).toBeNull();
   });
 
   it("disables placement when the floor is full", () => {
@@ -262,7 +262,6 @@ function renderPanel(overrides: Partial<React.ComponentProps<typeof PlayerBuildP
     assetId: "chair-office",
     assetVariantId: "white",
     assetRotation: 0,
-    onOpenDaily: vi.fn(),
     onPurchase: vi.fn(),
     onPlace: vi.fn(),
     onFocus: vi.fn(),

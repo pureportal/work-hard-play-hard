@@ -499,7 +499,7 @@ describe("WorldRuntime interactions", () => {
         return { ...player, x: 410, y: 650 };
       }
       if (player.userId === "user-leo") {
-        return { ...player, x: 460, y: 650 };
+        return { ...player, x: 460, y: 750 };
       }
       return player;
     }));
@@ -512,11 +512,55 @@ describe("WorldRuntime interactions", () => {
     send(runtime, leoPeer, { type: "interaction.react", requestId: "wave-leo", reaction: "wave" });
 
     expect(mayaEvents.at(-1)).toMatchObject({
-      type: "interaction.high_five",
+      type: "interaction.group_reaction",
+      kind: "high_five",
       userIds: ["user-maya", "user-leo"],
       floorId: "floor-studio",
     });
-    expect(leoEvents.at(-1)).toMatchObject({ type: "interaction.high_five" });
+    expect(leoEvents.at(-1)).toMatchObject({ type: "interaction.group_reaction", kind: "high_five" });
+    runtime.stop();
+  });
+
+  it("shares a love effect when nearby people send hearts", () => {
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
+    runtime.restorePlayers(runtime.serializePlayers().map((player) => {
+      if (player.userId === "user-maya") return { ...player, x: 410, y: 650 };
+      if (player.userId === "user-leo") return { ...player, x: 460, y: 650 };
+      return player;
+    }));
+    const mayaEvents: ServerEvent[] = [];
+    const leoEvents: ServerEvent[] = [];
+    const mayaPeer = connect(runtime, "user-maya", mayaEvents);
+    const leoPeer = connect(runtime, "user-leo", leoEvents);
+
+    send(runtime, mayaPeer, { type: "interaction.react", requestId: "heart-maya", reaction: "heart" });
+    send(runtime, leoPeer, { type: "interaction.react", requestId: "heart-leo", reaction: "heart" });
+
+    expect(mayaEvents.at(-1)).toMatchObject({
+      type: "interaction.group_reaction",
+      kind: "love",
+      userIds: ["user-maya", "user-leo"],
+      floorId: "floor-studio",
+    });
+    expect(leoEvents.at(-1)).toMatchObject({ type: "interaction.group_reaction", kind: "love" });
+    runtime.stop();
+  });
+
+  it("does not pair different reactions", () => {
+    const runtime = new WorldRuntime(new WorkspaceStore(createTestData()));
+    runtime.restorePlayers(runtime.serializePlayers().map((player) => {
+      if (player.userId === "user-maya") return { ...player, x: 410, y: 650 };
+      if (player.userId === "user-leo") return { ...player, x: 460, y: 650 };
+      return player;
+    }));
+    const mayaEvents: ServerEvent[] = [];
+    const mayaPeer = connect(runtime, "user-maya", mayaEvents);
+    const leoPeer = connect(runtime, "user-leo", []);
+
+    send(runtime, mayaPeer, { type: "interaction.react", requestId: "heart-maya", reaction: "heart" });
+    send(runtime, leoPeer, { type: "interaction.react", requestId: "wave-leo", reaction: "wave" });
+
+    expect(mayaEvents.some((event) => event.type === "interaction.group_reaction")).toBe(false);
     runtime.stop();
   });
 
@@ -540,8 +584,8 @@ describe("WorldRuntime interactions", () => {
     send(runtime, mayaPeer, { type: "meeting.join", requestId: "join-meeting", meetingId: "meeting-product-crit" });
     send(runtime, leoPeer, { type: "interaction.react", requestId: "wave-leo", reaction: "wave" });
 
-    expect(mayaEvents.some((event) => event.type === "interaction.high_five")).toBe(false);
-    expect(leoEvents.some((event) => event.type === "interaction.high_five")).toBe(false);
+    expect(mayaEvents.some((event) => event.type === "interaction.group_reaction")).toBe(false);
+    expect(leoEvents.some((event) => event.type === "interaction.group_reaction")).toBe(false);
     runtime.stop();
   });
 
@@ -554,7 +598,7 @@ describe("WorldRuntime interactions", () => {
     send(runtime, mayaPeer, { type: "interaction.react", requestId: "wave-maya", reaction: "wave" });
     send(runtime, leoPeer, { type: "interaction.react", requestId: "wave-leo", reaction: "wave" });
 
-    expect(mayaEvents.some((event) => event.type === "interaction.high_five")).toBe(false);
+    expect(mayaEvents.some((event) => event.type === "interaction.group_reaction")).toBe(false);
     runtime.stop();
   });
 

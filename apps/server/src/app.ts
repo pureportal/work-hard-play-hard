@@ -49,6 +49,7 @@ import { approvalRatesSchema } from "./economy/public-economy-schema.js";
 import { GitHubService } from "./github/github-service.js";
 import { registerGitHubRoutes } from "./github/github-routes.js";
 import { registerGameGuideRoutes } from "./guide/game-guide-routes.js";
+import { registerApprovalDeskRoutes } from "./games/approval-desk-routes.js";
 import { GITHUB_TRAY_ASSET_ID, canUseWorkObject } from "@workhard/shared";
 
 const AUTH_WINDOW_MS = 15 * 60 * 1_000;
@@ -65,6 +66,7 @@ interface RealtimeCommandWindow {
 }
 
 interface ApplicationOptions extends EmailLinkOptions, RegistrationOptions {
+  approvalDeskEnabled?: boolean;
   githubConfig?: GitHubConfig | null;
   githubFetch?: typeof fetch;
   spotifyConfig?: SpotifyConfig | null;
@@ -88,12 +90,13 @@ export interface ApplicationContext {
 }
 
 export async function createApplication(options: ApplicationOptions = {}): Promise<ApplicationContext> {
+  const approvalDeskEnabled = options.approvalDeskEnabled ?? process.env.APPROVAL_DESK_ENABLED === "true";
   const initialSpotifyConfig = options.spotifyConfig === null ? undefined : options.spotifyConfig ?? readSpotifyConfig();
   const clientUrl = normalizeClientUrl(options.clientUrl ?? process.env.CLIENT_URL ?? "http://127.0.0.1:5173");
   const clientOrigins = resolveClientOrigins(clientUrl, options.clientOrigins ?? parseClientOrigins(process.env.CLIENT_ORIGINS));
   const app = Fastify({ logger: options.logger ?? false });
   const database = options.database ?? await PostgreSqlDatabase.connect();
-  const initialized = await initializePersistentState(database, options.chessNow).catch(async (error: unknown) => {
+  const initialized = await initializePersistentState(database, approvalDeskEnabled, options.chessNow).catch(async (error: unknown) => {
     await database.close();
     throw error;
   });
@@ -260,7 +263,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     }
     return reply.code(503).send({ status: "unavailable", database: false });
   });
-  app.get("/v1/version", async () => ({ version: "9.0.0", protocol: 12 }));
+  app.get("/v1/version", async () => ({ version: "9.0.0", protocol: 13 }));
 
   app.get("/v1/auth/session", async (request) => {
     const user = getAuthenticatedUser(auth, request);
@@ -365,6 +368,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
   });
 
   registerGameGuideRoutes(app, database, request => getAuthenticatedUser(auth, request));
+  if (approvalDeskEnabled) registerApprovalDeskRoutes(app, store, request => getAuthenticatedUser(auth, request)?.id, persist);
 
   app.get("/v1/bootstrap", async (request, reply) => {
     const user = getAuthenticatedUser(auth, request);
@@ -372,7 +376,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
       return reply.code(401).send({ code: "AUTH_REQUIRED", message: "Sign in to continue." });
     }
     try {
-      return store.getBootstrap(user.id);
+      return { ...store.getBootstrap(user.id), features: { approvalDesk: approvalDeskEnabled } };
     } catch {
       return reply.code(404).send({ code: "USER_NOT_FOUND", message: "User not found." });
     }
@@ -918,7 +922,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
   return { app, store, auth, runtime, spotify, github };
 }
 
-async function initializePersistentState(database: ApplicationDatabase, chessNow?: () => Date) {
+async function initializePersistentState(database: ApplicationDatabase, approvalDeskEnabled: boolean, chessNow?: () => Date) {
   const store = new WorkspaceStore(createInitialData());
   const savedState = await database.loadWorkspaceState();
   if (savedState) {
@@ -929,7 +933,16 @@ async function initializePersistentState(database: ApplicationDatabase, chessNow
   store.updateCorporateIdentityLogo(brandingLogoUrl(await brandingLogo.getReference()), false);
 
   const auth = await AuthStore.create({ database });
-  const runtime = new WorldRuntime(store, chessNow ? { chessNow } : {});
+  const devDummyUserIds = process.env.NODE_ENV === "production" ? undefined : new Set(
+    store.getMembers()
+      .filter((member) => member.id.startsWith("person-") && member.email.endsWith("@alder.example.test"))
+      .map((member) => member.id),
+  );
+  const runtime = new WorldRuntime(store, {
+    approvalDeskEnabled,
+    ...(chessNow ? { chessNow } : {}),
+    ...(devDummyUserIds ? { devDummyUserIds } : {}),
+  });
   if (savedState) {
     runtime.restorePlayers(savedState.players);
   } else {

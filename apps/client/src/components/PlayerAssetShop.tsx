@@ -25,7 +25,8 @@ export function PlayerAssetShop({ economy, pending, purchasingAssetId, onPurchas
         : insufficient ? `Need ${shortfall} more coins for ${asset.name}` : `Buy ${asset.name}`;
       return <article className="catalog-asset shop-asset" key={asset.id} data-rarity={asset.rarity}>
         <AssetShape asset={asset} />
-        <div className="catalog-asset-details"><span className="catalog-asset-name"><strong>{asset.name}</strong><AssetFeatureIndicators asset={asset} /></span><span>{asset.shop!.price} coins</span></div>
+        <div className="catalog-asset-details"><strong>{asset.name}</strong><span className="catalog-asset-meta"><span className="catalog-asset-rarity">{asset.rarity}</span><span>{asset.shop!.price} coins</span></span></div>
+        <span className="catalog-asset-features"><AssetFeatureIndicators asset={asset} /></span>
         <button aria-label={accessibleActionLabel} disabled={unavailable || inventoryFull || insufficient || pending}
           onClick={() => onPurchase(asset.id)}>{purchasingAssetId === asset.id ? "Buying…" : actionLabel}</button>
       </article>;

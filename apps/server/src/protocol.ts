@@ -197,6 +197,7 @@ export const clientCommandSchema = z.discriminatedUnion("type", [
       meetingRoom: z.boolean().optional(),
       access: roomAccess,
       build: roomPermissionSchema.optional(),
+      ownerBuildApproval: z.enum(["vote", "direct"]).optional(),
       organisationUnitId: z.string().min(1).max(100).optional(),
     }).strict(),
   }).strict(),

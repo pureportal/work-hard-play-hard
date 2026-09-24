@@ -301,6 +301,34 @@ export class EconomyStore {
     }));
   }
 
+  rewardApprovalCase(userId: string, caseKey: string, amount: number, now = new Date()): EconomyOperationResult {
+    if (!Number.isSafeInteger(amount) || amount < 0 || amount > 80) throw new Error("APPROVAL_REWARD_INVALID");
+    const operationKey = `approval_reward:${caseKey}`;
+    const operationFingerprint = `approval_reward:${amount}`;
+    const replay = this.findOperation(userId, operationKey, operationFingerprint);
+    if (replay) return { economy: this.getPlayerEconomy(userId, now), transaction: replay, replayed: true };
+    const transaction = this.applyTransaction(this.requireAccount(userId), {
+      operationKey, operationFingerprint, kind: "approval_reward", amount,
+      createdAt: isoTimestamp(now), sourceId: caseKey,
+    });
+    return { economy: this.getPlayerEconomy(userId, now), transaction, replayed: false };
+  }
+
+  buyApprovalUpgrade(userId: string, upgradeId: string, level: number, cost: number, now = new Date()): EconomyOperationResult {
+    if (!Number.isSafeInteger(level) || level < 0 || !Number.isSafeInteger(cost) || cost <= 0) throw new Error("APPROVAL_UPGRADE_INVALID");
+    const operationKey = `approval_upgrade:${upgradeId}:${level}`;
+    const operationFingerprint = `approval_upgrade:${upgradeId}:${level}:${cost}`;
+    const replay = this.findOperation(userId, operationKey, operationFingerprint);
+    if (replay) return { economy: this.getPlayerEconomy(userId, now), transaction: replay, replayed: true };
+    const account = this.requireAccount(userId);
+    if (account.coinBalance < cost) throw new Error("INSUFFICIENT_COINS");
+    const transaction = this.applyTransaction(account, {
+      operationKey, operationFingerprint, kind: "approval_upgrade", amount: -cost,
+      createdAt: isoTimestamp(now), sourceId: upgradeId,
+    });
+    return { economy: this.getPlayerEconomy(userId, now), transaction, replayed: false };
+  }
+
   getGameSettings(): GameSettings {
     return structuredClone(this.gameSettings);
   }
@@ -787,6 +815,19 @@ function isValidUtcDay(value: string): boolean {
 }
 
 function isValidTransaction(transaction: PersistedCoinTransaction): boolean {
+  if (transaction.kind === "approval_reward") {
+    return transaction.amount >= 0 && transaction.amount <= 80
+      && transaction.operationKey === `approval_reward:${transaction.sourceId}`
+      && transaction.operationFingerprint === `approval_reward:${transaction.amount}`
+      && Boolean(transaction.sourceId)
+      && transaction.assetId === undefined && transaction.ownedAssetId === undefined;
+  }
+  if (transaction.kind === "approval_upgrade") {
+    return transaction.amount < 0 && Boolean(transaction.sourceId)
+      && /^approval_upgrade:(stamp|inbox|clerk|printer|routing):\d+$/.test(transaction.operationKey)
+      && transaction.operationFingerprint === `${transaction.operationKey}:${-transaction.amount}`
+      && transaction.assetId === undefined && transaction.ownedAssetId === undefined;
+  }
   if (transaction.kind === "welcome") {
     return transaction.operationKey === `welcome:${transaction.userId}`
       && transaction.operationFingerprint === "welcome"

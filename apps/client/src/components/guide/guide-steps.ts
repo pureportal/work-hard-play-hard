@@ -2,6 +2,7 @@ import { DAILY_REWARD_AMOUNTS, GAME_REWARD_DAILY_CAP, roomAccessAllows, roomBuil
 import type { Step } from "react-joyride";
 
 export type GuideScreen = { panel: "build" | "approvals" | "meetings" | null }
+  | { panel: "approvalDesk" }
   | { panel: "rooms"; floorId: string; roomId: string };
 
 export type GuideStep = Step & { screen: GuideScreen; target: string };
@@ -12,7 +13,7 @@ export function dailyGuideContent(reward: DailyRewardStatus): string {
     : "Today’s bonus is already claimed. The gift button reopens your rewards. Come back after midnight UTC to keep your streak going.";
 }
 
-export type GuideData = Pick<BootstrapData, "currentUserId" | "layouts" | "gameSettings" | "organisation" | "economy">;
+export type GuideData = Pick<BootstrapData, "currentUserId" | "layouts" | "gameSettings" | "organisation" | "economy"> & { features?: BootstrapData["features"] };
 
 export function createGuideSteps(data: GuideData, floorId: string, grantedRoomIds: Set<string>): GuideStep[] {
   const rooms = data.layouts.find(layout => layout.floorId === floorId)?.rooms ?? [];
@@ -21,7 +22,12 @@ export function createGuideSteps(data: GuideData, floorId: string, grantedRoomId
   const shared = accessible.filter(room => !room.meetingRoom);
   const canPlace = rooms.some(room => roomBuildAllows(room, data.currentUserId, data.gameSettings, data.organisation)
     || roomAccessAllows(room, data.currentUserId, data.gameSettings, data.organisation) && room.personalAreas?.some(area => area.ownerUserId === data.currentUserId));
-  const steps: GuideStep[] = [
+  const steps: GuideStep[] = [];
+  if (data.features?.approvalDesk) steps.push(
+    { id: "desk-stamp", target: '[data-guide="desk-stamp"]', title: "Stamp a form", content: "Tap Stamp once to add to the team total.", screen: { panel: "approvalDesk" }, placement: "left", blockTargetInteraction: false },
+    { id: "desk-case", target: '[data-guide="desk-case"]', title: "Start a case", content: "Choose a case to process while you play. Memo takes two hours.", screen: { panel: "approvalDesk" }, placement: "left", blockTargetInteraction: false },
+  );
+  steps.push(
     {
       id: "coins", target: '[data-guide="wallet"]', title: "Pocket money",
       content: `Finish Falling Blocks rounds or play Tic-Tac-Toe against another player to earn up to ${GAME_REWARD_DAILY_CAP} coins a day. Spend them in the Shop or donate to a shared fund for construction.`,
@@ -46,7 +52,7 @@ export function createGuideSteps(data: GuideData, floorId: string, grantedRoomId
       content: "Approve or Reject changes to shared spaces, spending, and room rules. A majority must approve before Apply proposal makes the change. Construction uses the shared fund.",
       screen: { panel: "approvals" }, placement: "top",
     },
-  ];
+  );
   if (shared[0]) steps.push({
     id: "shared-rooms", target: '[data-guide="room-directory"]', title: "Find your spot",
     content: "For a quick chat or call, walk up to someone in a shared room. Room settings shows who can enter and build.",
@@ -64,7 +70,7 @@ export function createGuideSteps(data: GuideData, floorId: string, grantedRoomId
   });
   steps.push({
     id: "explore", target: '[data-guide="world"]', title: "Over to you",
-    content: "Tap or click the floor to move, or use WASD / arrow keys. Walk up to objects to see what you can do. How to play brings this tour back anytime.",
+    content: "Tap or click the floor to move. Drag to pan; pinch or use the camera controls to zoom. On a keyboard, use WASD or arrow keys.",
     screen: { panel: null }, placement: "center",
   });
   return steps;

@@ -1,4 +1,4 @@
-import type { BootstrapData, ClientCommand, Floor, FloorLayout, ServerEvent, WorldObject } from "@workhard/shared";
+import type { BootstrapData, ClientCommand, Floor, FloorLayout, ServerEvent, WorldObject, WorldSnapshot } from "@workhard/shared";
 import { afterEach, describe, expect, it } from "vitest";
 import { createTestData } from "../testing/workspace-data.js";
 import { WorkspaceStore } from "../store.js";
@@ -70,7 +70,13 @@ describe("WorldRuntime floor navigation", () => {
       && (event.players[0]?.y ?? start.y) < start.y
       && (event.players[0]?.y ?? 0) > 64
     ))).toBe(true);
+    const floorOneTravelSnapshot = events.find((event): event is WorldSnapshot => event.type === "world.snapshot"
+      && event.floorId === "floor-1" && Boolean(event.players[0]?.destination));
+    expect(floorOneTravelSnapshot?.players[0]?.destination)
+      .toMatchObject({ floorId: "floor-1", x: 64, y: 64 });
     expect(firstPlayerSnapshot(events, "floor-2")).toMatchObject({ floorId: "floor-2", x: 64, y: 64 });
+    expect(firstPlayerSnapshot(events, "floor-2")?.destination)
+      .toEqual({ floorId: "floor-2", ...destination });
     expect(currentPlayer(runtime)).toMatchObject({ floorId: "floor-2", ...destination });
   });
 

@@ -156,8 +156,9 @@ export function BuildPanel({
               data-rarity={asset.rarity} onClick={() => { onAssetChange(asset.id); if (tool !== "asset" || asset.id === assetId) onToolChange("asset"); }}>
               <AssetShape asset={asset} rotation={asset.id === assetId ? assetRotation : 0}
                 variantId={asset.id === assetId ? assetVariantId : getDefaultAssetVariantId(asset)} />
-              <span className="catalog-asset-details"><span className="catalog-asset-name"><strong>{asset.name}</strong><AssetFeatureIndicators asset={asset} /></span>
+              <span className="catalog-asset-details"><strong>{asset.name}</strong>
                 <span>{asset.kind === "portal" ? getTeleporterPrice(floorCount) : asset.shop?.price} coins</span></span>
+              <span className="catalog-asset-features"><AssetFeatureIndicators asset={asset} /></span>
             </button>}
             footer={(tool === "asset" || movingItem?.type === "asset") && selectedDefinition && (
             <div className="asset-placement-options">
