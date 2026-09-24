@@ -44,7 +44,7 @@ export function AssetBrowser({ assets, categoryLabel, empty, footer, renderAsset
       <div className="asset-browser-filters">
         <div className="asset-browser-search">
           <Search size={16} aria-hidden="true" />
-          <input aria-label="Search assets" placeholder="Search assets" value={search} onChange={(event) => {
+          <input aria-label="Search assets" placeholder="Search" value={search} onChange={(event) => {
             setSearch(event.target.value);
             if (event.target.value) setCategoryId("all");
           }} />

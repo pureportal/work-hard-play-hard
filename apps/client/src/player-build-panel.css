@@ -200,6 +200,11 @@
   padding: 12px 14px;
 }
 
+.player-build-panel .panel-scroll.build-panel-scroll > .inventory-empty {
+  min-height: 100%;
+  align-content: center;
+}
+
 .player-build-panel .panel-scroll.build-panel-scroll .build-section {
   padding: 0 0 16px;
   border: 0;
@@ -323,5 +328,11 @@
     position: sticky;
     bottom: 0;
     z-index: 2;
+  }
+}
+
+@media (max-width: 360px) {
+  .workspace-shell:has(.player-build-panel) {
+    --player-build-height: min(74dvh, 600px);
   }
 }

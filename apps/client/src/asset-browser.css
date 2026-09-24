@@ -162,6 +162,12 @@
   gap: 8px;
 }
 
+.asset-browser-results > .inventory-empty,
+.asset-browser-grid:has(> .asset-browser-empty) {
+  min-height: 100%;
+  align-content: center;
+}
+
 .asset-browser-empty {
   display: grid;
   justify-items: center;

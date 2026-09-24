@@ -160,3 +160,9 @@
     width: 16px;
   }
 }
+
+@media (max-width: 360px) {
+  .workspace-shell:has(.build-layout-panel) {
+    --build-panel-height: min(72dvh, 640px);
+  }
+}

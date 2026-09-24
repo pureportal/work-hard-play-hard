@@ -156,7 +156,7 @@ describe("PlayerBuildPanel", () => {
     renderPanel({ economy, onPlace });
     fireEvent.click(screen.getByRole("button", { name: "Place" }));
 
-    expect(screen.getByText("1 available · 0 placed")).toBeTruthy();
+    expect(screen.getByText("1 available")).toBeTruthy();
     expect(onPlace).toHaveBeenCalledWith("owned-chair", "chair-office");
   });
 

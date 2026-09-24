@@ -184,11 +184,14 @@ export function PlayerBuildPanel({
                 const instances = inventoryByAssetId.get(asset.id)!;
                 const available = instances.filter((instance) => !instance.placement && !draftAssetIds.includes(instance.id));
                 const drafted = instances.filter((instance) => !instance.placement && draftAssetIds.includes(instance.id)).length;
+                const placed = instances.length - available.length - drafted;
+                const counts = [available.length && `${available.length} available`, placed && `${placed} placed`, drafted && `${drafted} in draft`]
+                  .filter(Boolean).join(" · ");
                 const placing = instances.some((instance) => instance.id === placingOwnedAssetId);
                 return (
                   <article className={`catalog-asset inventory-asset${placing ? " active" : ""}`} key={asset.id} data-rarity={asset.rarity}>
                     <AssetShape asset={asset} rotation={asset.id === assetId ? assetRotation : 0} variantId={asset.id === assetId ? assetVariantId : getDefaultAssetVariantId(asset)} />
-                    <div className="catalog-asset-details"><span className="catalog-asset-name"><strong>{asset.name}</strong><AssetFeatureIndicators asset={asset} /></span><span>{available.length} available · {instances.length - available.length - drafted} placed{drafted ? ` · ${drafted} in draft` : ""}</span></div>
+                    <div className="catalog-asset-details"><span className="catalog-asset-name"><strong>{asset.name}</strong><AssetFeatureIndicators asset={asset} /></span><span>{counts}</span></div>
                     <button
                       disabled={pendingPublicAction || Boolean(pendingEconomyRequest) || available.length === 0 || !viewingPlayerFloor || !canPlaceOnFloor || floorFull}
                       onClick={() => onPlace(available[0]!.id, asset.id)}
