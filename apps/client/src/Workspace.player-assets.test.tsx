@@ -324,8 +324,7 @@ describe("Workspace player assets", () => {
 
   it("sends daily claims and catalog purchases through the authoritative economy API", async () => {
     render(<Workspace initialData={workspace()} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "Build" }));
-
+    fireEvent.click(screen.getByRole("button", { name: "Daily bonus" }));
     fireEvent.click(await screen.findByRole("button", { name: "Claim 50 coins" }));
     expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({ type: "economy.claim_daily" }));
     expect(screen.queryByRole("dialog", { name: "Daily bonus" })).toBeNull();
@@ -348,7 +347,8 @@ describe("Workspace player assets", () => {
       transaction: updatedEconomy.recentTransactions[0]!,
     }));
     expect(screen.getByText("Daily bonus: +50 coins.")).toBeTruthy();
-    fireEvent.click(screen.getByRole("tab", { name: "Shop" }));
+    fireEvent.click(within(screen.getByRole("navigation", { name: "Workspace" }).querySelector<HTMLElement>(".nav-rail-items")!).getByRole("button", { name: "Build" }));
+    fireEvent.click(await screen.findByRole("tab", { name: "Shop" }, { timeout: 5000 }));
     fireEvent.click(screen.getByRole("tab", { name: "Seating" }));
     fireEvent.click(screen.getByRole("button", { name: "Buy Office chair" }));
 
