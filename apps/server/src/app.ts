@@ -260,7 +260,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     }
     return reply.code(503).send({ status: "unavailable", database: false });
   });
-  app.get("/v1/version", async () => ({ version: "8.1.0", protocol: 11 }));
+  app.get("/v1/version", async () => ({ version: "9.0.0", protocol: 12 }));
 
   app.get("/v1/auth/session", async (request) => {
     const user = getAuthenticatedUser(auth, request);
