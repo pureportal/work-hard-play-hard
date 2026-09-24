@@ -1,4 +1,4 @@
-import { Camera, CameraOff, Lock, Maximize2, MessageCircle, Mic, MicOff, Minimize2, MonitorUp, PhoneOff, Settings, Square, Unlock, Users, Video } from "lucide-react";
+import { Camera, CameraOff, Expand, Lock, Maximize2, MessageCircle, Mic, MicOff, Minimize2, MonitorUp, PhoneOff, Settings, Shrink, Square, Unlock, Users, Video } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { ChatMessage, Meeting, Member, ReactionKind, WorldObject } from "@workhard/shared";
 import { useMediaDevices } from "../hooks/useMediaDevices";
@@ -6,11 +6,12 @@ import { useModalFocus } from "../hooks/useModalFocus";
 import type { MediaConnection } from "../media-connection";
 import { REACTION_EMOJI, REACTION_LABEL, type DisplayReaction } from "../reactions";
 import { Avatar } from "./Avatar";
+import { CallVideoStage, type CallVideoTile } from "./CallVideoStage";
 import { MeetingAudio, MeetingVideo } from "./MeetingMediaElement";
 import { MediaDeviceSettings } from "./MediaDeviceSettings";
 import { MeetingChat } from "./MeetingChat";
 import { ReactionPicker } from "./ReactionPicker";
-import "../meeting.css";
+import { useCallFullscreen } from "../hooks/useCallFullscreen";
 
 interface MeetingOverlayProps {
   small: boolean;
@@ -37,8 +38,13 @@ interface MeetingOverlayProps {
 
 export function MeetingOverlay({ small, meeting, connection, members, currentUserId, messages, muted, cameraOn, leaving, reactions,
   assets, onOpenAsset, onInvite, onLock, onMutedChange, onCameraChange, onReact, onSendMessage, onViewChange, onLeave }: MeetingOverlayProps) {
-  const dialogRef = useModalFocus<HTMLElement>(onLeave, !small);
+  const dialogRef = useModalFocus<HTMLElement>(() => {
+    if (document.fullscreenElement === dialogRef.current || fullscreen) void document.exitFullscreen();
+    else onLeave();
+  }, !small);
+  const { fullscreen, error: fullscreenError, toggleFullscreen } = useCallFullscreen(dialogRef);
   const [mobileView, setMobileView] = useState<"video" | "chat">("video");
+  const [chatOpen, setChatOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [invitee, setInvitee] = useState("");
   const media = useMediaDevices(muted, cameraOn, onMutedChange, onCameraChange);
@@ -48,6 +54,29 @@ export function MeetingOverlay({ small, meeting, connection, members, currentUse
   const failed = [...remote.values()].some((participant) => participant.state === "failed");
   const screens = session.participants.filter((participant) => participant.sessionId === session.sessionId ? Boolean(media.streams.screen) : participant.screen);
   const eligibleInvitees = members.filter((member) => member.online && !session.participants.some((participant) => participant.userId === member.id));
+  const tiles: CallVideoTile[] = [
+    ...screens.flatMap((participant) => {
+      const local = participant.sessionId === session.sessionId;
+      const stream = local ? media.streams.screen : remote.get(participant.sessionId)?.screen;
+      if (!stream) return [];
+      const name = local ? "Your screen" : `${members.find((member) => member.id === participant.userId)?.name ?? "Participant"}’s screen`;
+      return [{ id: `screen-${participant.sessionId}`, name, screen: true, content: <MeetingVideo stream={stream} label={name} /> }];
+    }),
+    ...session.participants.flatMap((participant) => {
+      const member = members.find((candidate) => candidate.id === participant.userId);
+      if (!member) return [];
+      const local = participant.sessionId === session.sessionId;
+      const peer = remote.get(participant.sessionId);
+      const camera = local ? media.streams.camera : participant.camera ? peer?.camera : undefined;
+      const microphone = local ? Boolean(media.streams.microphone) : participant.microphone;
+      const reaction = reactions.find((candidate) => candidate.userId === member.id);
+      return [{ id: participant.sessionId, name: local ? "You" : member.name, background: `${member.color}22`,
+        content: <>{camera ? <MeetingVideo stream={camera} mirror={local} label={`${local ? "Your" : member.name + "’s"} camera`} /> : <Avatar member={member} className="video-avatar" />}
+          {!local && peer && <MeetingAudio stream={peer.audio} name={member.name} />}
+          {reaction && <span className="meeting-reaction" aria-label={`${REACTION_LABEL[reaction.reaction]} reaction`}>{REACTION_EMOJI[reaction.reaction]}</span>}</>,
+        details: <>{!local && peer?.state === "connecting" && <span>Connecting…</span>}{!microphone && <MicOff size={14} aria-label="Microphone off" />}</> }];
+    }),
+  ];
 
   useEffect(() => { connection.start(); }, [connection]);
   useEffect(() => { connection.setStreams(media.streams); }, [connection, media.streams]);
@@ -72,15 +101,20 @@ export function MeetingOverlay({ small, meeting, connection, members, currentUse
           <span className="meeting-lock" aria-label={`${session.participants.length} participants${session.locked ? ", locked" : ""}`}>
             {session.locked ? <Lock size={14} /> : <Users size={14} />}{session.participants.length}
           </span>
+          {!small && <button type="button" className="meeting-view-button meeting-chat-button" aria-label={chatOpen ? "Hide chat" : "Show chat"}
+            aria-expanded={chatOpen} onClick={() => setChatOpen(!chatOpen)}><MessageCircle size={17} /></button>}
+          {!small && <button type="button" className="meeting-view-button" aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+            onClick={() => void toggleFullscreen()}>{fullscreen ? <Shrink size={17} /> : <Expand size={17} />}</button>}
           <button type="button" className="meeting-view-button" aria-label={small ? "Expand meeting" : "Minimize meeting"}
-            disabled={leaving} onClick={() => { setSettingsOpen(false); onViewChange(!small); }}>{small ? <Maximize2 size={17} /> : <Minimize2 size={17} />}</button>
+            disabled={leaving} onClick={() => { setSettingsOpen(false); if (fullscreen) void document.exitFullscreen(); onViewChange(!small); }}>{small ? <Maximize2 size={17} /> : <Minimize2 size={17} />}</button>
         </div>
       </header>
 
-      <div className={`meeting-main show-${mobileView}`}>
+      <div className={`meeting-main show-${mobileView}${chatOpen ? "" : " without-chat"}`}>
         <div className="meeting-stage" id="meeting-video-panel">
-          {(media.errors.length > 0 || failed || !mediaSupported) && <div className="meeting-media-errors" role="alert">
+          {(media.errors.length > 0 || failed || !mediaSupported || fullscreenError) && <div className="meeting-media-errors" role="alert">
             {media.errors.map((error) => <p key={error}>{error}</p>)}
+            {fullscreenError && <p>{fullscreenError}</p>}
             {!mediaSupported && <p>Audio and video need a browser with WebRTC support.</p>}
             {failed && <p>Media connection interrupted. <button onClick={() => connection.retry()}>Retry media</button></p>}
           </div>}
@@ -98,34 +132,7 @@ export function MeetingOverlay({ small, meeting, connection, members, currentUse
             {assets.length > 0 && <div className="meeting-asset-actions">{assets.map((object) => <button className="secondary-button" key={object.id}
               onClick={() => { setSettingsOpen(false); onOpenAsset(object); }}>{object.label ?? "Open board"}</button>)}</div>}
           </div>}
-          <div className={`video-grid${session.participants.length === 1 ? " single-participant" : ""}${screens.length ? " has-screen-share" : ""}`}>
-            {screens.map((participant) => {
-              const local = participant.sessionId === session.sessionId;
-              const stream = local ? media.streams.screen : remote.get(participant.sessionId)?.screen;
-              const name = local ? "Your screen" : `${members.find((member) => member.id === participant.userId)?.name ?? "Participant"}’s screen`;
-              return stream && <article className="video-tile meeting-screen-tile" key={`screen-${participant.sessionId}`}>
-                <MeetingVideo stream={stream} label={name} /><footer><strong>{name}</strong></footer>
-              </article>;
-            })}
-            {session.participants.map((participant) => {
-              const member = members.find((candidate) => candidate.id === participant.userId);
-              if (!member) return null;
-              const local = participant.sessionId === session.sessionId;
-              const peer = remote.get(participant.sessionId);
-              const camera = local ? media.streams.camera : participant.camera ? peer?.camera : undefined;
-              const microphone = local ? Boolean(media.streams.microphone) : participant.microphone;
-              const reaction = reactions.find((candidate) => candidate.userId === member.id);
-              return <article className="video-tile" key={participant.sessionId} style={{ background: `${member.color}22` }}>
-                {camera ? <MeetingVideo stream={camera} mirror={local} label={`${local ? "Your" : member.name + "’s"} camera`} /> : <Avatar member={member} className="video-avatar" />}
-                {!local && peer && <MeetingAudio stream={peer.audio} name={member.name} />}
-                {reaction && <span className="meeting-reaction" aria-label={`${REACTION_LABEL[reaction.reaction]} reaction`}>{REACTION_EMOJI[reaction.reaction]}</span>}
-                <footer><strong>{local ? "You" : member.name}</strong>
-                  {!local && peer?.state === "connecting" && <span>Connecting…</span>}
-                  {!microphone && <MicOff size={14} aria-label="Microphone off" />}
-                </footer>
-              </article>;
-            })}
-          </div>
+          <CallVideoStage tiles={tiles} expanded={!small} />
         </div>
         <div className="meeting-chat-container" id="meeting-chat-panel" hidden={small}><MeetingChat messages={messages} members={members} currentUserId={currentUserId} disabled={leaving} onSend={onSendMessage} /></div>
       </div>

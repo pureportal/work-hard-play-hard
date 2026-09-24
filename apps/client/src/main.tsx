@@ -4,6 +4,7 @@ import { App } from "./App";
 import { reloadUpdatedClient } from "./client-update";
 import "./styles.css";
 import "./arcade.css";
+import "./meeting.css";
 
 window.addEventListener("vite:preloadError", () => {
   void reloadUpdatedClient();

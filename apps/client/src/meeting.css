@@ -177,3 +177,89 @@
   .work-object-layer { right: calc(var(--meeting-companion-width) + 24px); bottom: 12px; }
   .workspace-shell:has(.work-object-layer) .meeting-overlay-small { width: var(--meeting-companion-width); height: auto; }
 }
+
+.meeting-backdrop { padding: clamp(10px, 1.5vw, 24px); }
+.meeting-overlay:not(.meeting-overlay-small) { width: 100%; height: 100%; max-width: none; max-height: none; }
+.meeting-overlay:fullscreen,
+.proximity-call:fullscreen { width: 100%; height: 100%; max-height: none; border: 0; border-radius: 0; }
+.meeting-main { grid-template-columns: minmax(0, 1fr) clamp(280px, 24vw, 380px); }
+.meeting-stage .call-video-stage { flex: 1; min-height: 0; }
+.meeting-stage .meeting-screen-tile { grid-column: auto; aspect-ratio: auto; }
+.meeting-main.without-chat { grid-template-columns: minmax(0, 1fr); }
+.meeting-main.without-chat .meeting-chat-container { display: none; }
+
+.call-video-stage { display: flex; min-width: 0; min-height: 0; overflow: hidden; background: #2b2b36; }
+.call-video-stage .video-grid { flex: 1; min-width: 0; min-height: 0; height: 100%; overflow: auto; }
+.call-video-stage .video-grid[data-count="1"] { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+.call-video-stage .video-grid[data-count="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr); }
+.call-video-stage .video-grid[data-count="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr); }
+.call-video-stage .video-grid[data-count="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); }
+.call-video-stage .video-grid[data-count="5"],
+.call-video-stage .video-grid[data-count="6"] { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); }
+.call-video-stage .video-grid[data-count="7"],
+.call-video-stage .video-grid[data-count="8"],
+.call-video-stage .video-grid[data-count="9"] { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); }
+.call-video-stage .video-tile { min-height: 0; }
+.call-video-stage .video-tile video { transform: none; }
+.call-video-stage .video-tile video.mirror-camera { transform: scaleX(-1); }
+.call-video-stage .meeting-screen-tile video { object-fit: contain; }
+.call-video-stage .video-tile footer { right: auto; max-width: calc(100% - 56px); gap: 8px; }
+.call-video-stage .video-tile footer strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.call-tile-focus { position: absolute; z-index: 3; top: 10px; right: 10px; display: grid; place-items: center; width: 36px; height: 36px; padding: 0; color: #fff; background: #121117bd; border: 1px solid #ffffff2b; border-radius: 9px; backdrop-filter: blur(6px); cursor: pointer; }
+.call-tile-focus:hover,
+.call-tile-focus:focus-visible { background: #393342; }
+.call-video-stage.is-focused { display: grid; grid-template-columns: minmax(0, 1fr) clamp(150px, 19%, 230px); gap: 10px; padding: 10px; }
+.call-stage-primary,
+.call-stage-filmstrip { min-width: 0; min-height: 0; }
+.call-stage-primary .video-tile { width: 100%; height: 100%; }
+.call-stage-filmstrip { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+.call-stage-filmstrip .video-tile { flex: 0 0 auto; aspect-ratio: 16 / 9; }
+.call-stage-filmstrip .video-avatar { width: 42px; height: 42px; font-size: 12px; border-radius: 12px; }
+.call-stage-filmstrip .video-tile footer { font-size: 11px; }
+.call-stage-filmstrip .call-tile-focus { top: 6px; right: 6px; width: 30px; height: 30px; }
+
+.call-backdrop { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; padding: clamp(10px, 1.5vw, 24px); background: #16151da8; backdrop-filter: blur(9px); }
+.proximity-call.proximity-call-expanded { position: relative; right: auto; bottom: auto; display: flex; flex-direction: column; width: 100%; height: 100%; max-height: none; padding: 0; overflow: hidden; border: 1px solid #ffffff26; border-radius: 16px; box-shadow: 0 30px 90px #0d0b1270; }
+.proximity-call.proximity-call-expanded:fullscreen { border: 0; border-radius: 0; }
+.proximity-call-expanded > header { flex: 0 0 auto; min-height: 64px; margin: 0; padding: 12px 18px; background: #22222d; }
+.proximity-call-expanded > header strong { font-size: 16px; }
+.proximity-call-expanded .proximity-call-videos { flex: 1; min-height: 0; max-height: none; overflow: hidden; }
+.proximity-call-expanded .video-grid { max-height: none; padding: clamp(10px, 1.4vw, 20px); }
+.proximity-call-expanded .video-tile { min-height: 0; }
+.proximity-call-expanded .video-avatar { width: 72px; height: 72px; font-size: 20px; }
+.proximity-call-expanded .video-tile footer { padding: 6px 8px; font-size: 12px; }
+.proximity-call-expanded .media-device-settings { flex: 0 0 auto; margin: 0; padding: 12px 18px; }
+.proximity-call-expanded .proximity-call-controls { flex: 0 0 auto; justify-content: center; padding: 10px; }
+.proximity-call-expanded .proximity-call-controls button { width: 44px; height: 44px; }
+.proximity-call-expanded .proximity-call-controls button.leave-call { width: 52px; margin-left: 12px; }
+.proximity-call:not(.proximity-call-expanded) .call-video-stage { display: block; max-height: min(50dvh, 420px); background: transparent; }
+.proximity-call:not(.proximity-call-expanded) .call-video-stage .video-grid { gap: 6px; max-height: min(50dvh, 420px); padding: 0; }
+.proximity-call:not(.proximity-call-expanded) .call-video-stage .video-tile { min-height: 105px; }
+
+@media (max-width: 760px) {
+  .meeting-backdrop,
+  .call-backdrop { padding: 0; }
+  .meeting-overlay:not(.meeting-overlay-small),
+  .proximity-call.proximity-call-expanded { border: 0; border-radius: 0; }
+  .meeting-chat-button { display: none; }
+  .meeting-main,
+  .meeting-main.without-chat { grid-template-columns: minmax(0, 1fr); }
+  .meeting-main.show-video .meeting-chat-container,
+  .meeting-main.show-chat .meeting-stage { display: none; }
+  .meeting-main.show-chat .meeting-chat-container { display: flex; }
+  .call-video-stage .video-grid[data-count] { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-auto-rows: minmax(180px, 1fr); }
+  .call-video-stage.is-focused { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 112px; }
+  .call-stage-filmstrip { flex-direction: row; overflow-x: auto; overflow-y: hidden; }
+  .call-stage-filmstrip .video-tile { width: 176px; height: 100%; aspect-ratio: auto; }
+  .proximity-call-expanded > header { min-height: 60px; padding: 8px 12px; }
+  .proximity-call-expanded .proximity-call-actions { gap: 4px; }
+  .proximity-call-expanded .proximity-call-controls { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+}
+
+@media (max-width: 420px) {
+  .meeting-overlay-actions { gap: 4px; }
+  .meeting-overlay-header .meeting-mobile-tabs { gap: 0; }
+  .meeting-mobile-tabs button { width: 36px; height: 36px; }
+  .meeting-view-button { width: 36px; height: 36px; }
+  .proximity-call-expanded .proximity-call-actions button { min-width: 36px; min-height: 36px; }
+}

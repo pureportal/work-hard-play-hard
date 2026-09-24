@@ -33,6 +33,15 @@ export async function verifyMeetingUi(browser: Browser, store: WorkspaceStore, o
     await context.addInitScript(() => {
       localStorage.setItem("northstar.serverOrigin", location.origin);
       globalThis.meetingUiCaptures = [];
+      navigator.mediaDevices.getDisplayMedia = async () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 1280;
+        canvas.height = 720;
+        const context = canvas.getContext("2d")!;
+        context.fillStyle = "#415c78";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        return canvas.captureStream(5);
+      };
       const capture = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
       navigator.mediaDevices.getUserMedia = (constraints) => capture(constraints).then((stream) => {
         globalThis.meetingUiCaptures.push(stream);
@@ -60,6 +69,13 @@ export async function verifyMeetingUi(browser: Browser, store: WorkspaceStore, o
     await page.goto(origin);
     await page.locator(".world-canvas canvas").waitFor();
     await page.waitForFunction(() => document.querySelector('.top-bar [role="status"]')?.textContent === "Connected");
+    const dailyBonus = page.getByRole("dialog", { name: "Daily bonus" });
+    if (await dailyBonus.count()) await dailyBonus.getByRole("button", { name: "Close daily bonus" }).click();
+    const skipGuide = page.locator(".game-guide-tooltip .guide-skip");
+    await skipGuide.waitFor();
+    await skipGuide.click();
+    const closeBuild = page.getByRole("button", { name: "Close build tools" });
+    if (await closeBuild.count()) await closeBuild.click();
     assert.equal(await page.getByRole("dialog", { name: "Product crit", exact: true }).count(), 0);
     assert.equal(await page.evaluate(() => globalThis.meetingUiCaptures.length), 0);
     await page.getByRole("region", { name: "Product crit meeting" }).getByRole("button", { name: "Open", exact: true }).click();
@@ -74,6 +90,42 @@ export async function verifyMeetingUi(browser: Browser, store: WorkspaceStore, o
     await call.getByRole("button", { name: "Unmute", exact: true }).click();
     await page.waitForFunction(() => globalThis.meetingUiCaptures.some((stream) => stream.getAudioTracks().some((track) => track.readyState === "live")));
     await page.screenshot({ path: resolve(artifacts, "meeting-desktop.png") });
+
+    const desktopBounds = await call.boundingBox();
+    assert(desktopBounds && desktopBounds.width > 1300 && desktopBounds.height > 900, "Expanded meeting must use the viewport");
+    await call.getByRole("button", { name: "Focus Leo Martins" }).click();
+    assert.equal(await call.locator(".call-stage-primary footer strong").innerText(), "Leo Martins");
+    await call.getByRole("button", { name: "Focus You" }).click();
+    assert.equal(await call.locator(".call-stage-primary footer strong").innerText(), "You");
+    await call.getByRole("button", { name: "Show gallery" }).click();
+    assert.equal(await call.locator(".call-stage-primary").count(), 0);
+    const stageWithChat = (await call.locator(".meeting-stage").boundingBox())!.width;
+    await call.getByRole("button", { name: "Hide chat" }).click();
+    assert((await call.locator(".meeting-stage").boundingBox())!.width > stageWithChat + 200);
+    await call.getByRole("button", { name: "Show chat" }).click();
+    await call.getByRole("button", { name: "Share screen or window" }).click();
+    await call.getByRole("button", { name: "Show gallery" }).waitFor();
+    assert.equal(await call.locator(".call-stage-primary footer strong").innerText(), "Your screen");
+    await page.screenshot({ path: resolve(artifacts, "meeting-screen-focus.png") });
+    await call.getByRole("button", { name: "Stop sharing" }).click();
+    await call.getByRole("button", { name: "Enter fullscreen" }).click();
+    await page.waitForFunction(() => document.fullscreenElement?.classList.contains("meeting-overlay"));
+    assert.equal(await call.getByRole("button", { name: "Exit fullscreen" }).count(), 1);
+    await page.screenshot({ path: resolve(artifacts, "meeting-fullscreen.png") });
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => !document.fullscreenElement);
+    assert(await call.isVisible());
+    for (const size of [{ width: 390, height: 844 }, { width: 320, height: 568 }]) {
+      await page.setViewportSize(size);
+      await call.getByRole("button", { name: "Focus Leo Martins" }).click();
+      const primary = await call.locator(".call-stage-primary").boundingBox();
+      const filmstrip = await call.locator(".call-stage-filmstrip").boundingBox();
+      assert(primary && filmstrip && filmstrip.y >= primary.y + primary.height - 1);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      await page.screenshot({ path: resolve(artifacts, `meeting-focused-${size.width}.png`) });
+      await call.getByRole("button", { name: "Show gallery" }).click();
+    }
+    await page.setViewportSize({ width: 1440, height: 1000 });
 
     await call.getByRole("log").evaluate((element) => { element.scrollTop = 0; element.dispatchEvent(new Event("scroll")); });
     await call.getByRole("button", { name: "Jump to latest" }).waitFor();
