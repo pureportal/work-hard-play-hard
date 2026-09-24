@@ -1071,6 +1071,11 @@ function normalizeClientUrl(value: string): string {
 
 function resolveClientOrigins(clientUrl: string, configuredOrigins: string[]): Set<string> {
   const clientOrigin = new URL(clientUrl).origin;
+  let localDevelopmentOrigin: string | undefined;
+  if (process.env.NODE_ENV !== "production") {
+    if (clientOrigin === "http://127.0.0.1:5173") localDevelopmentOrigin = "http://localhost:5173";
+    else if (clientOrigin === "http://localhost:5173") localDevelopmentOrigin = "http://127.0.0.1:5173";
+  }
   const origins = configuredOrigins.map((origin) => {
     const url = new URL(origin);
     if (!["http:", "https:"].includes(url.protocol) || url.origin !== origin) {
@@ -1080,6 +1085,7 @@ function resolveClientOrigins(clientUrl: string, configuredOrigins: string[]): S
   });
   return new Set([
     clientOrigin,
+    ...(localDevelopmentOrigin ? [localDevelopmentOrigin] : []),
     "http://tauri.localhost",
     "https://tauri.localhost",
     "tauri://localhost",

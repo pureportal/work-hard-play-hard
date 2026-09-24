@@ -737,6 +737,51 @@ describe("application API", () => {
     expect(rejected.json()).toMatchObject({ code: "ORIGIN_FORBIDDEN" });
   });
 
+  it("accepts both loopback names for the local development client", async () => {
+    const context = await createTestApplication({
+      database: new MemoryDatabase(),
+      clientUrl: "http://127.0.0.1:5173",
+    });
+    applications.push(context);
+
+    for (const origin of ["http://127.0.0.1:5173", "http://localhost:5173"]) {
+      const response = await context.app.inject({
+        method: "GET",
+        url: "/v1/auth/session",
+        headers: { origin },
+      });
+      expect(response.statusCode).toBe(200);
+      expect(response.headers["access-control-allow-origin"]).toBe(origin);
+    }
+
+    const rejected = await context.app.inject({
+      method: "GET",
+      url: "/v1/auth/session",
+      headers: { origin: "http://untrusted.example:5173" },
+    });
+    expect(rejected.statusCode).toBe(403);
+  });
+
+  it("does not allow the alternate loopback name in production", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    try {
+      const context = await createTestApplication({
+        database: new MemoryDatabase(),
+        clientUrl: "http://127.0.0.1:5173",
+      });
+      applications.push(context);
+
+      const rejected = await context.app.inject({
+        method: "GET",
+        url: "/v1/auth/session",
+        headers: { origin: "http://localhost:5173" },
+      });
+      expect(rejected.statusCode).toBe(403);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("serves the complete seeded workspace only to an authenticated member", async () => {
     const context = await application();
     const anonymous = await context.app.inject({ method: "GET", url: "/v1/bootstrap" });
