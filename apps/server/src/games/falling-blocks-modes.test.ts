@@ -42,7 +42,7 @@ describe("Falling Blocks modes", () => {
     game.command("pause");
     const paused = game.state;
     game.update(60_000);
-    expect(game.state).toEqual(paused);
+    expect(game.state).toEqual({ ...paused, serverTime: expect.any(Number) });
     game.command("pause");
     game.update(1);
     if (mode === "speed-up") expect(game.state.level).toBe(2);
@@ -50,7 +50,7 @@ describe("Falling Blocks modes", () => {
     game.end();
     const ended = game.state;
     game.update(60_000);
-    expect(game.state).toEqual(ended);
+    expect(game.state).toEqual({ ...ended, serverTime: expect.any(Number) });
   });
 
   it("raises hard rows at each interval and keeps them through line clears", () => {
