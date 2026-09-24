@@ -1583,6 +1583,7 @@ export function Workspace({
     if (request({ type: "economy.claim_daily", requestId: pending.id })) {
       pendingEconomyRequestRef.current = pending;
       setPendingEconomyRequest(pending);
+      setDailyBonusOpen(false);
     }
   };
 

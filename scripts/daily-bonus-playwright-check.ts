@@ -115,13 +115,17 @@ try {
     const balance = store.getPlayerEconomy(userId).coinBalance;
     if (scenario.name === "desktop") {
       await claim.click();
-      await dialog.getByRole("alert").filter({ hasText: "Try again" }).waitFor();
+      await dialog.waitFor({ state: "hidden" });
+      await page.locator(".toast").filter({ hasText: "Try again" }).waitFor();
       assert.equal(store.getPlayerEconomy(userId).coinBalance, balance);
+      await page.getByRole("button", { name: "Daily bonus", exact: true }).click();
     }
     await claim.focus();
     await page.keyboard.press("Enter");
-    await dialog.getByText("In your pocket!", { exact: true }).waitFor();
+    await dialog.waitFor({ state: "hidden" });
     assert.equal(store.getPlayerEconomy(userId).coinBalance, balance + 10);
+    await page.getByRole("button", { name: "Daily bonus", exact: true }).click();
+    await dialog.getByText("In your pocket!", { exact: true }).waitFor();
     assert.equal(await dialog.getByRole("button", { name: /^Claim/ }).count(), 0);
     assert.equal(await dialog.locator(".daily-bonus-reward strong").innerText(), "+10coins", "Shows claimed reward, not tomorrow's 15 coins");
     await page.screenshot({ path: `${output}/${scenario.name}-claimed.png` });
