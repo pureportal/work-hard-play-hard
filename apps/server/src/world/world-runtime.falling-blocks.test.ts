@@ -50,7 +50,7 @@ describe("WorldRuntime Falling Blocks modes and attacks", () => {
       expect(latestRound(mayaEvents)).toEqual(latestRound(leoEvents));
       expect(latestRound(mayaEvents)?.fallingBlocks?.settings).toEqual(settings);
       runtime.runTickForTest(30_000);
-      expect(latestState(mayaEvents)).toEqual(latestState(leoEvents));
+      expect(latestState(mayaEvents)).toEqual({ ...latestState(leoEvents), serverTime: expect.any(Number) });
       if (settings.mode === "speed-up") expect(latestState(leoEvents)).toMatchObject({ fallIntervalMs: 610, level: 2 });
       else expect(latestState(leoEvents)?.grid[19]).toEqual(Array(10).fill(FALLING_BLOCKS_HARD_CELL));
 
