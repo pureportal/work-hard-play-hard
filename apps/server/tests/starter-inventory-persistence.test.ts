@@ -30,8 +30,8 @@ describe("starter inventory PostgreSQL persistence", () => {
       const userId = "starter-player";
       store.addMember({ id: userId, username: "starter", email: "starter@example.com" });
       const inventory = store.getPlayerEconomy(userId).inventory;
-      expect(inventory.map((asset) => asset.assetId)).toEqual(["table-cafe", "chair-office", "decor-monitor", "decor-coffee", "decor-laptop"]);
-      const table = inventory.find((asset) => asset.assetId === "table-cafe")!;
+      expect(inventory.map((asset) => asset.assetId)).toEqual(["desk-straight", "chair-office", "decor-monitor", "decor-coffee", "decor-laptop"]);
+      const desk = inventory.find((asset) => asset.assetId === "desk-straight")!;
       const laptop = inventory.find((asset) => asset.assetId === "decor-laptop")!;
       const saved = { players: [], store: store.exportMutableState() };
       await repository.save(saved);
@@ -47,17 +47,17 @@ describe("starter inventory PostgreSQL persistence", () => {
       restored.restoreMutableState(loaded.store);
       expect(restored.getPlayerEconomy(userId)).toMatchObject({ coinBalance: 250, lifetimeEarned: 250, lifetimeSpent: 0, inventory });
       for (const member of existing.members) expect(restored.getPlayerEconomy(member.id).inventory).toEqual([]);
-      expect(restored.disposeAsset(userId, table.id, "asset_sale", "sell-starter").transaction.amount).toBe(0);
+      expect(restored.disposeAsset(userId, desk.id, "asset_sale", "sell-starter").transaction.amount).toBe(0);
       expect(restored.disposeAsset(userId, laptop.id, "asset_donation", "donate-starter", "workspace").transaction.amount).toBe(0);
       await reconnected.save({ players: [], store: restored.exportMutableState() });
 
       const finalStore = new WorkspaceStore();
       finalStore.restoreMutableState((await reconnected.load())!.store);
-      expect(finalStore.getPlayerEconomy(userId)).toMatchObject({ coinBalance: 250, inventory: inventory.filter((asset) => asset.id !== table.id && asset.id !== laptop.id) });
+      expect(finalStore.getPlayerEconomy(userId)).toMatchObject({ coinBalance: 250, inventory: inventory.filter((asset) => asset.id !== desk.id && asset.id !== laptop.id) });
       expect(finalStore.getPublicEconomy().inventory).toEqual([
         { id: laptop.id, assetId: "decor-laptop", fundId: "workspace", paid: 0 },
       ]);
-      expect(finalStore.disposeAsset(userId, table.id, "asset_sale", "sell-starter").replayed).toBe(true);
+      expect(finalStore.disposeAsset(userId, desk.id, "asset_sale", "sell-starter").replayed).toBe(true);
       expect(await orm.em.fork().count(OwnedAssetEntity, { userId })).toBe(3);
     } finally {
       await orm?.close(true);

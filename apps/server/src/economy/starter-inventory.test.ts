@@ -17,7 +17,7 @@ describe("starter inventory", () => {
       const economy = store.getPlayerEconomy(userId, createdAt);
       expect(economy).toMatchObject({ coinBalance: 250, lifetimeEarned: 250, lifetimeSpent: 0 });
       expect(economy.inventory).toEqual([
-        { id: expect.any(String), assetId: "table-cafe", acquiredAt: createdAt.toISOString(), purchasePrice: 0 },
+        { id: expect.any(String), assetId: "desk-straight", acquiredAt: createdAt.toISOString(), purchasePrice: 0 },
         { id: expect.any(String), assetId: "chair-office", acquiredAt: createdAt.toISOString(), purchasePrice: 0 },
         { id: expect.any(String), assetId: "decor-monitor", acquiredAt: createdAt.toISOString(), purchasePrice: 0 },
         { id: expect.any(String), assetId: "decor-coffee", acquiredAt: createdAt.toISOString(), purchasePrice: 0 },
@@ -47,7 +47,7 @@ describe("starter inventory", () => {
 
     restored.createAccount("new-player", nextDay);
     expect(restored.getPlayerEconomy("existing").inventory).toEqual([]);
-    expect(restored.getPlayerEconomy("new-player").inventory.map((item) => item.assetId)).toEqual(["table-cafe", "chair-office", "decor-monitor", "decor-coffee", "decor-laptop"]);
+    expect(restored.getPlayerEconomy("new-player").inventory.map((item) => item.assetId)).toEqual(["desk-straight", "chair-office", "decor-monitor", "decor-coffee", "decor-laptop"]);
   });
 
   it.each(["asset_sale", "asset_donation"] as const)("does not pay or replenish starter items after %s, retries, and restoration", (kind) => {
@@ -69,7 +69,7 @@ describe("starter inventory", () => {
     expect(restored.disposeAsset("alice", items[0]!.id, kind, `dispose:${items[0]!.id}`, fundId, nextDay).replayed).toBe(true);
   });
 
-  it.each(["table-cafe", "chair-office", "decor-monitor", "decor-coffee", "decor-laptop"])("charges catalog price for another %s and resells that copy at one third", (assetId) => {
+  it.each(["desk-straight", "chair-office", "decor-monitor", "decor-coffee", "decor-laptop"])("charges catalog price for another %s and resells that copy at one third", (assetId) => {
     const store = new EconomyStore(["alice"], createdAt);
     const price = getAssetDefinition(assetId)!.shop!.price;
     const purchase = store.purchaseAsset("alice", assetId, "buy-another", createdAt);
