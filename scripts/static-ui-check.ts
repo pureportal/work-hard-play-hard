@@ -101,21 +101,15 @@ try {
     Object.defineProperty(navigator, "onLine", { configurable: true, value: false });
     window.dispatchEvent(new Event("offline"));
   });
-  await page.waitForSelector(".connection-state.offline", { visible: true });
-  await assertViewport(page, [".connection-state.offline", ".connection-tooltip"]);
-  const connectionTarget = await page.$eval(".connection-state.offline", (element) => ({
-    width: element.getBoundingClientRect().width,
-    height: element.getBoundingClientRect().height,
-  }));
-  assert(connectionTarget.width >= 36 && connectionTarget.height >= 36, "Connection indicator is too small for touch.");
-  await page.focus(".connection-state.offline");
-  await page.waitForFunction(() => getComputedStyle(document.querySelector(".connection-tooltip")!).opacity === "1");
-  assert(await page.$eval(".connection-tooltip", (element) => element.textContent === "Connection Lost"), "Connection tooltip is missing.");
+  await page.waitForSelector(".connection-notice.offline", { visible: true });
+  await assertViewport(page, [".connection-notice.offline"]);
+  assert(await page.$eval(".connection-notice.offline", (element) => element.textContent?.includes("Connection unavailable") ?? false), "Connection notice is missing.");
   await page.evaluate(() => {
     Object.defineProperty(navigator, "onLine", { configurable: true, value: true });
     window.dispatchEvent(new Event("online"));
   });
   await page.waitForFunction(() => document.querySelector('.top-bar [role="status"]')?.textContent === "Connected");
+  await page.waitForSelector(".connection-notice", { hidden: true });
   report("compact connection recovery ready");
   await assertTouchUi(page);
   await page.click('button[aria-label="Close people"]');
@@ -163,22 +157,19 @@ try {
   await assertViewport(page, [".nav-rail", ".top-bar", ".build-panel"]);
   await assertContained(page, ".build-panel", [".panel-header", ".build-tools", ".build-workspace"]);
   assert(!(await page.$(".control-dock")), "Gameplay controls remained visible in Build Mode.");
-  await assertContained(page, ".build-panel", [".asset-category-tabs"]);
-  assert(await page.$eval(".asset-category-tabs", (element) => getComputedStyle(element).overflowX === "auto"), "Compact asset categories must scroll horizontally.");
-  const initialCategory = await page.$('.asset-category-tabs button[aria-selected="true"]');
-  assert(initialCategory, "An asset category must be selected.");
-  for (const category of await page.$$(".asset-category-tabs button")) {
-    await category.evaluate((button) => button.scrollIntoView({ block: "center", inline: "center" }));
-    await category.click();
-    await page.waitForFunction((button) => button.getAttribute("aria-selected") === "true", {}, category);
-    await assertFullyContained(page, ".asset-category-tabs", ['button[aria-selected="true"]']);
+  const categorySelect = ".asset-browser-category-select select";
+  await assertContained(page, ".build-panel", [categorySelect]);
+  const initialCategory = await page.$eval(categorySelect, (select) => (select as HTMLSelectElement).value);
+  const categories = await page.$$eval(`${categorySelect} option`, (options) => options.map((option) => (option as HTMLOptionElement).value));
+  assert(categories.length > 1, "Asset categories are missing.");
+  for (const category of categories) {
+    await page.select(categorySelect, category);
+    assert(await page.$eval(categorySelect, (select) => (select as HTMLSelectElement).value) === category, "Asset category did not update.");
   }
-  await initialCategory.evaluate((button) => button.scrollIntoView({ block: "center", inline: "center" }));
-  await initialCategory.click();
-  await page.waitForFunction((button) => button.getAttribute("aria-selected") === "true", {}, initialCategory);
-  assert(await page.$eval(".asset-category-tabs", (element) => element.textContent?.includes("Outdoor") ?? false), "Outdoor assets are missing.");
+  await page.select(categorySelect, initialCategory);
+  assert(await page.$eval(categorySelect, (select) => select.textContent?.includes("Outdoor") ?? false), "Outdoor assets are missing.");
   await page.screenshot({ path: resolve(artifactDirectory, "iteration-compact-build.png") });
-  const categoryTargetHeight = await page.$$eval(".asset-category-tabs button", (buttons) => Math.min(...buttons.map((button) => button.getBoundingClientRect().height)));
+  const categoryTargetHeight = await page.$eval(categorySelect, (select) => select.getBoundingClientRect().height);
   assert(categoryTargetHeight >= 40, "Compact asset categories have undersized touch targets.");
   await page.click(".build-access-button");
   await page.waitForSelector(".room-permission-editor", { visible: true });
@@ -447,8 +438,12 @@ try {
   assert(browserIssues.length === 0, browserIssues.join("\n"));
   process.stdout.write("Static production UI checks passed at 1440x900, 320x568, and 844x390.\n");
 } catch (error) {
-  const [page] = await browser.pages();
-  await page?.screenshot({ path: resolve(artifactDirectory, "static-ui-failure.png") });
+  try {
+    const [page] = await browser.pages();
+    if (page && !page.isClosed()) await page.screenshot({ path: resolve(artifactDirectory, "static-ui-failure.png") });
+  } catch (screenshotError) {
+    process.stderr.write(`Could not capture UI failure: ${String(screenshotError)}\n`);
+  }
   throw error;
 } finally {
   await browser.close();
@@ -464,7 +459,7 @@ async function verifyDesktopBuildSidebar(page: Page): Promise<void> {
   const metrics = await page.evaluate(() => {
     const panel = document.querySelector<HTMLElement>(".build-panel")!;
     const tools = [...document.querySelectorAll<HTMLElement>(".build-tools button")];
-    const categories = [...document.querySelectorAll<HTMLElement>(".asset-category-tabs button")];
+    const categorySelect = document.querySelector<HTMLSelectElement>(".asset-browser-category-select select")!;
     const assets = [...document.querySelectorAll<HTMLElement>(".asset-browser-grid > button")];
     const activeTool = document.querySelector<HTMLElement>('.build-tools button[aria-pressed="true"]')!;
     return {
@@ -472,9 +467,8 @@ async function verifyDesktopBuildSidebar(page: Page): Promise<void> {
       toolLabels: tools.map((tool) => tool.textContent?.trim()),
       toolRows: new Set(tools.map((tool) => Math.round(tool.getBoundingClientRect().top))).size,
       toolHeight: Math.min(...tools.map((tool) => tool.getBoundingClientRect().height)),
-      categoryCount: categories.length,
-      categoryRows: new Set(categories.map((category) => Math.round(category.getBoundingClientRect().top))).size,
-      categoryHeight: Math.min(...categories.map((category) => category.getBoundingClientRect().height)),
+      categoryCount: categorySelect.options.length,
+      categoryHeight: categorySelect.getBoundingClientRect().height,
       assetHeight: Math.min(...assets.map((asset) => asset.getBoundingClientRect().height)),
       activeTool: activeTool.textContent?.trim(),
     };
@@ -486,28 +480,18 @@ async function verifyDesktopBuildSidebar(page: Page): Promise<void> {
   assert(metrics.toolHeight >= 44, "Build tool targets are undersized.");
   const categoryCount = 1 + ASSET_CATALOG.categories.filter((category) => category.buildable).length;
   assert(metrics.categoryCount === categoryCount, "Build is missing catalog categories.");
-  assert(metrics.categoryRows === 1, "Asset categories are not arranged in one row.");
   assert(metrics.categoryHeight >= 40, "Asset category targets are undersized.");
   assert(metrics.assetHeight >= 60, "Asset cards are undersized.");
   assert(metrics.activeTool === "Select", "Select is not the initial active build tool.");
   await assertViewport(page, [".build-panel"]);
   await assertFullyContained(page, ".build-panel", [".panel-header", ".build-tools", ".build-workspace"]);
-  assert(await page.$eval(".asset-category-tabs", (element) => getComputedStyle(element).overflowX === "auto"), "Desktop asset categories must scroll horizontally.");
-  await page.focus('.asset-category-tabs button[aria-selected="true"]');
-  for (const [key, selector] of [["End", "button:last-child"], ["Home", "button:first-child"]] as const) {
-    await page.keyboard.press(key);
-    await page.waitForFunction((tabSelector) => {
-      const tab = document.querySelector(`.asset-category-tabs ${tabSelector}`);
-      return tab?.getAttribute("aria-selected") === "true" && document.activeElement === tab;
-    }, {}, selector);
-    await assertFullyContained(page, ".asset-category-tabs", ['button[aria-selected="true"]']);
-  }
+  await assertFullyContained(page, ".build-panel", [".asset-browser-category-select select"]);
 
   await page.click('.build-tools button:nth-child(2)');
   assert(await page.$eval('.build-tools button:nth-child(2)', (button) => button.getAttribute("aria-pressed") === "true"), "Wall did not receive the selected state.");
   await page.screenshot({ path: resolve(artifactDirectory, "build-sidebar-light-tools.png") });
 
-  await clickButtonWithText(page, "Storage");
+  await page.select(".asset-browser-category-select select", "storage");
   await clickButtonWithText(page, "Credenza");
   await clickButtonWithText(page, "Ink");
   const frontPreview = getAssetPreviewPath("/world-assets/storage-credenza/ink.png", 0);
@@ -517,13 +501,13 @@ async function verifyDesktopBuildSidebar(page: Page): Promise<void> {
   await page.waitForSelector(`.asset-browser-grid > button.active image[href="${rotatedPreview}"]`);
   await page.screenshot({ path: resolve(artifactDirectory, "build-sidebar-world-assets.png") });
   await page.select(".asset-rarity-filter select", "legendary");
-  await clickButtonWithText(page, "Lighting");
+  await page.select(".asset-browser-category-select select", "lighting");
   assert(await page.$$eval(".asset-browser-grid > button", (buttons) => buttons.length === 1 && buttons[0]?.getAttribute("aria-label") === "Crystal floor lamp"), "Rarity filter did not select the legendary lamp.");
   await page.select(".asset-rarity-filter select", "all");
 
-  await clickButtonWithText(page, "Seating");
+  await page.select(".asset-browser-category-select select", "seating");
   await clickButtonWithText(page, "Office chair");
-  assert(await page.$eval('.asset-category-tabs button[aria-selected="true"]', (button) => button.textContent?.trim() === "Seating"), "Seating did not receive the selected tab state.");
+  assert(await page.$eval('.asset-browser-category-select select', (select) => (select as HTMLSelectElement).value === "seating"), "Seating did not receive the selected category state.");
   assert(await page.$eval('.asset-browser-grid > button[aria-pressed="true"]', (button) => button.getAttribute("aria-label") === "Office chair"), "Office chair did not receive the selected asset state.");
   await page.click('button[aria-label="Use dark mode"]');
   await page.waitForFunction(() => document.documentElement.dataset.theme === "dark");
@@ -908,7 +892,10 @@ async function assertTouchUi(targetPage: Page): Promise<void> {
         const { offsetWidth, offsetHeight } = target as HTMLElement;
         return offsetWidth < 40 || offsetHeight < 40;
       })
-      .map((element) => `${element.tagName}.${element.className}`);
+      .map((element) => {
+        const target = element.closest("label") ?? element;
+        return `${element.tagName}.${element.className} ${target.clientWidth}x${target.clientHeight}`;
+      });
     const smallTextFields = [...document.querySelectorAll('input:not([type="file"]):not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]), textarea')]
       .filter(visible)
       .filter((element) => Number.parseFloat(getComputedStyle(element).fontSize) < 16)

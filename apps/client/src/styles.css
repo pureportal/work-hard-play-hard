@@ -2818,7 +2818,7 @@ button:disabled {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 38px;
+  min-height: 40px;
   padding: 0 12px;
   font-size: 12px;
   font-weight: 750;
@@ -4615,7 +4615,7 @@ button:disabled {
   .nav-rail-items, .nav-rail-bottom { flex: 0 0 auto; flex-direction: row; gap: 0; }
   .nav-rail .nav-item { flex: 0 0 68px; display: flex; flex-direction: column; justify-content: center; gap: 2px; scroll-snap-align: start; }
   .nav-rail .brand-nav-item { flex-basis: 64px; }
-  .nav-rail .icon-button, .nav-rail .brand-mark, .nav-rail .nav-avatar-button { width: 38px; height: 38px; }
+  .nav-rail .icon-button, .nav-rail .brand-mark, .nav-rail .nav-avatar-button { width: 40px; height: 40px; }
   .nav-rail .icon-button.active::before { left: auto; bottom: -3px; width: 22px; height: 3px; border-radius: 3px; }
   .nav-rail .nav-tooltip { position: static; display: block; max-width: 68px; padding: 0; overflow: hidden; border: 0; background: none; box-shadow: none; color: #d6d4e2; font-size: 10px; text-align: center; text-overflow: ellipsis; opacity: 1; transform: none; }
   .nav-rail .nav-item:hover .nav-tooltip, .nav-rail .nav-item:focus-within .nav-tooltip { transform: none; }
