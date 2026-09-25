@@ -9,6 +9,7 @@
 }
 
 .approval-desk-dialog {
+  scroll-padding-top: 88px;
   width: min(1100px, 100%);
   max-height: min(940px, calc(100dvh - 40px));
   overflow: auto;
@@ -20,6 +21,7 @@
   box-shadow: 0 28px 75px rgba(9, 21, 30, .4);
   outline: none;
 }
+.approval-desk-dialog [data-guide="desk-stamp"], .approval-desk-dialog [data-guide="desk-case"] { scroll-margin-top: 88px; }
 .approval-desk-dialog:focus-visible { outline: 3px solid #dfb373; outline-offset: 2px; }
 
 .approval-desk-header {
@@ -29,7 +31,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 68px;
+  min-height: 64px;
   padding: 10px 22px;
   background: #2d4351;
   color: #fff9ec;
@@ -37,7 +39,7 @@
 }
 
 .approval-desk-title { display: flex; align-items: center; gap: 12px; }
-.approval-desk-title h2 { margin: 0; font-size: 21px; font-weight: 800; letter-spacing: -.025em; }
+.approval-desk-title h2 { margin: 0; font-size: 20px; font-weight: 750; letter-spacing: -.025em; }
 .approval-desk-title-icon { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid #f3d39b; border-radius: 11px; background: #e4b873; color: #354957; box-shadow: inset 0 -3px rgba(100, 62, 38, .18); }
 .approval-desk-header .icon-button { color: #fff9ec; }
 .approval-desk-content { display: grid; gap: 16px; padding: 18px 22px 24px; }
@@ -54,6 +56,8 @@
 .approval-desk-milestone { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; color: #526b70; font-size: 12px; font-weight: 700; }
 .approval-desk-milestone strong { font-variant-numeric: tabular-nums; }
 .approval-desk-tally > small, .approval-desk-stat > small { margin-top: 4px; color: #69757b; font-size: 11px; }
+.approval-desk-tally > progress:first-of-type::-webkit-progress-value { background: #5b9888; }
+.approval-desk-tally > progress:first-of-type::-moz-progress-bar { background: #5b9888; }
 .approval-desk-stat > strong { display: flex; align-items: center; gap: 5px; margin-top: 5px; font-size: clamp(18px, 2.2vw, 24px); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .approval-desk-coin-stat strong { color: #925821; }
 .approval-desk-dialog progress { display: block; width: 100%; height: 9px; margin-top: 8px; overflow: hidden; border: 0; border-radius: 999px; background: #e5ddcf; appearance: none; }
@@ -75,6 +79,8 @@
   background: radial-gradient(ellipse at 47% 28%, #7da3ac 0, #577b88 45%, #2c4859 100%);
 }
 .approval-desk-scene::before { position: absolute; inset: 0; content: ""; opacity: .18; background-image: linear-gradient(90deg, transparent 95%, #e6f2e9 96%), linear-gradient(transparent 95%, #e6f2e9 96%); background-size: 30px 30px; mask-image: linear-gradient(to bottom, #000, transparent 90%); }
+.approval-desk-scene.is-expanded { background: radial-gradient(ellipse at 47% 28%, #94b7ad 0, #628f8a 45%, #345565 100%); }
+.approval-desk-scene.is-complete { background: radial-gradient(ellipse at 47% 28%, #d0bd8d 0, #8b907a 45%, #435969 100%); }
 .approval-desk-scene::after { position: absolute; inset: auto 0 0; height: 55px; content: ""; background: linear-gradient(transparent, rgba(14, 31, 40, .28)); pointer-events: none; }
 .approval-desk-art { position: relative; width: min(100%, 560px); height: auto; overflow: visible; }
 .approval-desk-scene.is-working .approval-desk-case-art { animation: approval-case-feed 2.6s ease-in-out infinite; }
@@ -128,6 +134,7 @@
 .approval-desk-case-time { display: flex; align-items: center; gap: 7px; color: #394e5a; font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .approval-desk-reward { color: #566973; font-size: 13px; font-weight: 700; }
 .approval-desk-reward span:last-child { display: flex; align-items: center; gap: 3px; color: #956021; }
+.approval-desk-case-stamps { color: #5b6d72; font-size: 12px; }
 .approval-desk-collect { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; border: 1px solid #3b8368; border-radius: 10px; background: #4d9a78; color: white; font-size: 15px; font-weight: 800; cursor: pointer; touch-action: manipulation; }
 .approval-desk-active-case.is-ready .approval-desk-collect { animation: approval-collect 2s ease-in-out infinite; }
 .approval-desk-stamping { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 15px; border: 1px solid #ded2c2; border-radius: 15px; background: #fffdf7; }
@@ -138,7 +145,10 @@
 .approval-desk-stamp:hover:not(:disabled) { filter: brightness(1.06); }
 .approval-desk-stamp:active:not(:disabled) { transform: translateY(3px); box-shadow: inset 0 -2px rgba(96, 31, 25, .18), 0 1px 0 #883f34; }
 
-.approval-desk-upgrades { display: grid; gap: 10px; }
+.approval-desk-upgrades { padding: 12px 15px; border: 1px solid #ded2c2; border-radius: 13px; background: #fffdf7; }
+.approval-desk-upgrades[open] > summary, .approval-desk-people[open] > summary { margin-bottom: 10px; }
+.approval-desk-upgrades summary, .approval-desk-people summary { cursor: pointer; font-size: 15px; font-weight: 800; }
+details.approval-desk-upgrades:not([open]) > .approval-desk-upgrade-list, details.approval-desk-people:not([open]) > :not(summary) { display: none; }
 .approval-desk-upgrade-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .approval-desk-upgrade { --upgrade-color: #4e8078; --upgrade-tint: #dbe8e2; display: grid; grid-template-columns: 43px minmax(0, 1fr) auto; gap: 11px; min-width: 0; min-height: 106px; padding: 14px; border: 1px solid #ded2c2; border-radius: 13px; background: #fffdf7; }
 .approval-desk-upgrade[data-upgrade="stamp"] { --upgrade-color: #a65141; --upgrade-tint: #f4dcd2; }
@@ -161,10 +171,11 @@
 .approval-desk-upgrade button:not(:disabled):hover { background: #f6dfba; }
 .approval-desk-upgrade button:disabled { border-color: #dcd5c8; background: #eeeae1; color: #777c7c; }
 
-.approval-desk-dialog button:focus-visible { outline: 3px solid #69a89a; outline-offset: 2px; }
+.approval-desk-dialog button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .approval-desk-dialog button:disabled { cursor: default; }
 .approval-desk-cases button:disabled, .approval-desk-stamp:disabled, .approval-desk-collect:disabled { opacity: .62; }
 .approval-desk-people { padding: 13px 16px; border: 1px solid #ded2c2; border-radius: 13px; background: #fffdf7; }
+.approval-desk-people .approval-desk-section-heading { justify-content: flex-end; }
 .approval-desk-section-heading { display: flex; align-items: center; justify-content: space-between; }
 .approval-desk-section-heading button { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 8px; background: transparent; color: #526972; cursor: pointer; }
 .approval-desk-people ol { display: grid; gap: 4px; max-height: 190px; overflow: auto; list-style: none; margin: 0; padding: 0; }

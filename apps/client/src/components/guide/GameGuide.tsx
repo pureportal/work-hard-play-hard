@@ -112,7 +112,7 @@ function PlayerGameGuide(props: GameGuideProps) {
       styles={{ floater: { transition: "none" } }}
       floatingOptions={{ strategy: "fixed", shiftOptions: { boundary: [], rootBoundary: "viewport", crossAxis: true, padding: 12 },
         flipOptions: { boundary: [], rootBoundary: "viewport", crossAxis: true, padding: 12 } }}
-      options={{ skipBeacon: true, blockTargetInteraction: true, closeButtonAction: "skip", dismissKeyAction: false,
+      options={{ skipBeacon: true, blockTargetInteraction: true, closeButtonAction: "skip", dismissKeyAction: false, scrollOffset: 92,
         overlayClickAction: "close", beforeTimeout: 9000, targetWaitTimeout: 8000, scrollDuration: 0, spotlightPadding: 6, spotlightRadius: 12,
         backgroundColor: "var(--panel-strong)", arrowColor: "var(--panel-strong)", primaryColor: "var(--accent)", textColor: "var(--ink)",
         overlayColor: "rgba(18, 17, 25, 0.48)", zIndex: 2000, width: "min(340px, calc(100vw - 24px))", disableFocusTrap: true }}

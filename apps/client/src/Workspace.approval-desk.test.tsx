@@ -1,4 +1,4 @@
-import { APPROVAL_UPGRADES, createOrganisation, createPublicEconomy, DEFAULT_CHARACTER_APPEARANCE, newApprovalDeskPlayer } from "@workhard/shared";
+import { APPROVAL_UPGRADES, approvalStage, createOrganisation, createPublicEconomy, DEFAULT_CHARACTER_APPEARANCE, newApprovalDeskPlayer } from "@workhard/shared";
 import type { ApprovalDeskView, BootstrapData, Member, ServerEvent } from "@workhard/shared";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -67,9 +67,14 @@ function workspace(enabled?: boolean): BootstrapData {
 }
 
 function gameView(forms = 0): ApprovalDeskView {
+  const stage = approvalStage(forms);
   return {
-    goal: 1_000_000,
+    goal: (stage.project + 1) * 1_000_000,
     totalForms: forms,
+    project: stage.project + 1,
+    stageStart: stage.stageStart,
+    milestone: stage.milestone,
+    contributionTarget: stage.target,
     players: [{ userId: member.id, name: member.name, forms, stamps: forms, level: 0 }],
     player: { ...newApprovalDeskPlayer(member.id), forms, stamps: forms },
     balance: 250,
@@ -92,18 +97,48 @@ afterEach(() => {
   realtime.handler = undefined;
 });
 
-describe("Workspace Approval Desk visibility", () => {
+describe("Workspace Stampworks visibility", () => {
+  it("separates project and milestone progress and shows the contribution target", async () => {
+    api.fetchApprovalDesk.mockResolvedValue(gameView(120_438));
+    render(<Workspace initialData={workspace(true)} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Stampworks" }));
+    const overall = await screen.findByRole("progressbar", { name: "Overall project progress" });
+    const milestone = screen.getByRole("progressbar", { name: "Progress toward 250,000 forms" });
+    expect((overall as HTMLProgressElement).value).toBe(120_438);
+    expect((milestone as HTMLProgressElement).value).toBe(70_438);
+    expect(screen.getByText("Stage: 0 / 2,000 for reward")).toBeTruthy();
+  });
+
+  it("shows a new objective after the first project is complete", async () => {
+    api.fetchApprovalDesk.mockResolvedValue(gameView(1_000_000));
+    const { container } = render(<Workspace initialData={workspace(true)} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Stampworks" }));
+    const overall = await screen.findByRole("progressbar", { name: "Overall project progress" });
+    expect((overall as HTMLProgressElement).value).toBe(0);
+    expect(screen.getByText("Shared project 2 · 1 completed")).toBeTruthy();
+    expect(screen.getByRole("progressbar", { name: "Progress toward 1,000,100 forms" })).toBeTruthy();
+    expect(container.querySelector(".approval-desk-scene.is-complete")).toBeTruthy();
+  });
+
+  it("shows the milestone reward when a stamp completes a stage", async () => {
+    api.fetchApprovalDesk.mockResolvedValue(gameView(99));
+    api.sendApprovalDeskAction.mockResolvedValue({ view: { ...gameView(100), balance: 255 } });
+    render(<Workspace initialData={workspace(true)} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Stampworks" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Stamp" }));
+    expect(await screen.findByText("+1 forms · +5 coins")).toBeTruthy();
+  });
   it("keeps the navigation entry and an open, usable panel after a realtime snapshot", async () => {
     api.fetchApprovalDesk.mockResolvedValue(gameView());
     api.sendApprovalDeskAction.mockResolvedValue({ view: gameView(1) });
     render(<Workspace initialData={workspace(true)} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Approval Desk" }));
+    fireEvent.click(screen.getByRole("button", { name: "Stampworks" }));
     expect(await screen.findByRole("button", { name: "Stamp" }, { timeout: 5_000 })).toBeTruthy();
 
     act(() => realtime.handler?.({ type: "workspace.snapshot", data: workspace(true) }));
-    expect(screen.getByRole("button", { name: "Approval Desk" })).toBeTruthy();
-    expect(screen.getByRole("dialog", { name: "Approval Desk" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Stampworks" })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: "Stampworks" })).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Stamp" }));
     await waitFor(() => expect(api.sendApprovalDeskAction).toHaveBeenCalledWith({ action: "stamp" }));
@@ -114,8 +149,8 @@ describe("Workspace Approval Desk visibility", () => {
     render(<Workspace initialData={workspace(false)} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
     act(() => realtime.handler?.({ type: "workspace.snapshot", data: workspace(false) }));
 
-    expect(screen.queryByRole("button", { name: "Approval Desk" })).toBeNull();
-    expect(screen.queryByRole("dialog", { name: "Approval Desk" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Stampworks" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Stampworks" })).toBeNull();
     expect(api.fetchApprovalDesk).not.toHaveBeenCalled();
   });
 
@@ -123,22 +158,22 @@ describe("Workspace Approval Desk visibility", () => {
     api.fetchApprovalDesk.mockResolvedValue(gameView());
     render(<Workspace initialData={workspace(true)} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Approval Desk" }));
-    expect(await screen.findByRole("dialog", { name: "Approval Desk" }, { timeout: 5_000 })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Stampworks" }));
+    expect(await screen.findByRole("dialog", { name: "Stampworks" }, { timeout: 5_000 })).toBeTruthy();
     act(() => realtime.handler?.({ type: "workspace.snapshot", data: workspace(false) }));
 
-    expect(screen.queryByRole("button", { name: "Approval Desk" })).toBeNull();
-    expect(screen.queryByRole("dialog", { name: "Approval Desk" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Stampworks" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Stampworks" })).toBeNull();
   });
 
   it("keeps the entry and panel visible when the game request fails", async () => {
     api.fetchApprovalDesk.mockRejectedValue(new ApiError("Sign in to continue.", 401, "AUTH_REQUIRED"));
     render(<Workspace initialData={workspace(true)} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Approval Desk" }));
+    fireEvent.click(screen.getByRole("button", { name: "Stampworks" }));
     expect((await screen.findByRole("alert")).textContent).toContain("Sign in to continue.");
-    expect(screen.getByRole("button", { name: "Approval Desk" })).toBeTruthy();
-    expect(screen.getByRole("dialog", { name: "Approval Desk" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Stampworks" })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: "Stampworks" })).toBeTruthy();
   });
 
   it("updates each desk asset after its upgrade is purchased", async () => {
@@ -153,8 +188,9 @@ describe("Workspace Approval Desk visibility", () => {
       return { view: state };
     });
     const { container } = render(<Workspace initialData={workspace(true)} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "Approval Desk" }));
+    fireEvent.click(screen.getByRole("button", { name: "Stampworks" }));
     await screen.findByRole("button", { name: "Stamp" }, { timeout: 5_000 });
+    fireEvent.click(screen.getByText("Upgrades", { selector: "summary" }));
 
     for (const upgrade of APPROVAL_UPGRADES) {
       const row = screen.getByText(upgrade.name, { exact: true }).closest(".approval-desk-upgrade");
@@ -180,7 +216,7 @@ describe("Workspace Approval Desk visibility", () => {
       return { view: state, forms: 36, coins: 5 };
     });
     render(<Workspace initialData={workspace(true)} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "Approval Desk" }));
+    fireEvent.click(screen.getByRole("button", { name: "Stampworks" }));
     fireEvent.click(await screen.findByRole("button", { name: /Memo/ }, { timeout: 5_000 }));
     const collect = await screen.findByRole("button", { name: "Collect case" });
     await waitFor(() => expect((collect as HTMLButtonElement).disabled).toBe(false));

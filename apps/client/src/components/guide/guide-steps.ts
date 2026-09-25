@@ -24,8 +24,8 @@ export function createGuideSteps(data: GuideData, floorId: string, grantedRoomId
     || roomAccessAllows(room, data.currentUserId, data.gameSettings, data.organisation) && room.personalAreas?.some(area => area.ownerUserId === data.currentUserId));
   const steps: GuideStep[] = [];
   if (data.features?.approvalDesk) steps.push(
-    { id: "desk-stamp", target: '[data-guide="desk-stamp"]', title: "Stamp a form", content: "Tap Stamp once to add to the team total.", screen: { panel: "approvalDesk" }, placement: "left", blockTargetInteraction: false },
-    { id: "desk-case", target: '[data-guide="desk-case"]', title: "Start a case", content: "Choose a case to process while you play. Memo takes two hours.", screen: { panel: "approvalDesk" }, placement: "left", blockTargetInteraction: false },
+    { id: "desk-stamp", target: '[data-guide="desk-stamp"]', title: "Stamp a form", content: "Stamp to add forms and shorten an active case.", screen: { panel: "approvalDesk" }, placement: "left", blockTargetInteraction: false },
+    { id: "desk-case", target: '[data-guide="desk-case"]', title: "Start a case", content: "Choose a case to process while you play.", screen: { panel: "approvalDesk" }, placement: "left", blockTargetInteraction: false },
   );
   steps.push(
     {

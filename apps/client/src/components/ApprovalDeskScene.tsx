@@ -9,16 +9,18 @@ export interface ApprovalDeskFeedback {
 
 interface ApprovalDeskSceneProps {
   levels: ApprovalDeskPlayer["levels"];
+  sharedMilestones: number;
+  completedProjects: number;
   working: boolean;
   ready: boolean;
   feedback?: ApprovalDeskFeedback | undefined;
 }
 
-export function ApprovalDeskScene({ levels, working, ready, feedback }: ApprovalDeskSceneProps) {
+export function ApprovalDeskScene({ levels, sharedMilestones, completedProjects, working, ready, feedback }: ApprovalDeskSceneProps) {
   const purchase = feedback?.kind === "buy" ? feedback.upgradeId : undefined;
 
-  return <div className={`approval-desk-scene${working ? " is-working" : ""}${ready ? " is-ready" : ""}${feedback?.kind === "stamp" ? " is-stamped" : ""}`}>
-    <svg className="approval-desk-art" viewBox="0 0 560 320" role="img" aria-label={sceneDescription(levels)}>
+  return <div className={`approval-desk-scene${working ? " is-working" : ""}${ready ? " is-ready" : ""}${feedback?.kind === "stamp" ? " is-stamped" : ""}${sharedMilestones >= 3 ? " is-expanded" : ""}${completedProjects > 0 ? " is-complete" : ""}`}>
+    <svg className="approval-desk-art" viewBox="0 0 560 320" role="img" aria-label={sceneDescription(levels, sharedMilestones, completedProjects)}>
       <defs>
         <linearGradient id="approval-wood" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#edc88a" /><stop offset="1" stopColor="#bd8059" /></linearGradient>
         <linearGradient id="approval-paper" x1="0" y1="0" x2="0" y2="1"><stop stopColor="#fffdf4" /><stop offset="1" stopColor="#f1e4ca" /></linearGradient>
@@ -26,6 +28,11 @@ export function ApprovalDeskScene({ levels, working, ready, feedback }: Approval
         <linearGradient id="approval-pad" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#466a70" /><stop offset="1" stopColor="#28444e" /></linearGradient>
         <filter id="approval-shadow" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="6" stdDeviation="5" floodColor="#253344" floodOpacity=".25" /></filter>
       </defs>
+
+      {sharedMilestones > 0 && <g className="approval-desk-shared-art">
+        <rect x="137" y="4" width="286" height="32" rx="8" fill="#315766" stroke="#d7b978" strokeWidth="3" />
+        {Array.from({ length: sharedMilestones }, (_, index) => <circle key={index} cx={171 + index * 36} cy="20" r="7" fill={index === 6 ? "#f6df9c" : "#8ccdb0"} />)}
+      </g>}
 
       <ellipse cx="280" cy="290" rx="246" ry="20" fill="#263846" opacity=".22" />
       <path d="M28 241q0 34 25 43h454q25-9 25-43v21q0 29-25 32H53q-25-3-25-32z" fill="#724c3d" />
@@ -136,7 +143,7 @@ function LevelMedallion({ x, y, level, highlighted }: { x: number; y: number; le
   </g>;
 }
 
-function sceneDescription(levels: ApprovalDeskPlayer["levels"]): string {
+function sceneDescription(levels: ApprovalDeskPlayer["levels"], sharedMilestones: number, completedProjects: number): string {
   const installed = APPROVAL_UPGRADES.filter((item) => levels[item.id] > 0).map((item) => `${item.name} level ${levels[item.id]}`);
-  return installed.length ? `Approval Desk with ${installed.join(", ")}` : "Approval Desk with an in tray, stamp, and printer";
+  return `Stampworks desk${installed.length ? ` with ${installed.join(", ")}` : ""}; ${sharedMilestones} milestones in this project, ${completedProjects} projects complete`;
 }

@@ -40,6 +40,7 @@ export function registerApprovalDeskRoutes(
         INSUFFICIENT_COINS: "You need more coins.",
         APPROVAL_CASE_NOT_READY: "This case is still processing.",
         APPROVAL_CASE_ACTIVE: "Collect your current case first.",
+        APPROVAL_CASE_LOCKED: "This case has not opened yet.",
         APPROVAL_STAMP_WAIT: "Wait a moment before stamping again.",
         APPROVAL_UPGRADE_CHANGED: "Upgrade changed. Refresh progress and try again.",
         APPROVAL_UPGRADE_MAXED: "This upgrade is maxed.",

@@ -3,7 +3,7 @@ import type { ServerEvent } from "@workhard/shared";
 import { createTestApplication } from "../testing/application.js";
 import { MemoryDatabase } from "../persistence/memory-database.js";
 
-describe("Approval Desk routes", () => {
+describe("Stampworks routes", () => {
   it("hides the game and its route when the flag is off", async () => {
     const context = await createTestApplication({ fixture: true, approvalDeskEnabled: false });
     try {

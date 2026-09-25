@@ -301,15 +301,15 @@ export class EconomyStore {
     }));
   }
 
-  rewardApprovalCase(userId: string, caseKey: string, amount: number, now = new Date()): EconomyOperationResult {
+  rewardStampworks(userId: string, rewardKey: string, amount: number, now = new Date()): EconomyOperationResult {
     if (!Number.isSafeInteger(amount) || amount < 0 || amount > 80) throw new Error("APPROVAL_REWARD_INVALID");
-    const operationKey = `approval_reward:${caseKey}`;
+    const operationKey = `approval_reward:${rewardKey}`;
     const operationFingerprint = `approval_reward:${amount}`;
     const replay = this.findOperation(userId, operationKey, operationFingerprint);
     if (replay) return { economy: this.getPlayerEconomy(userId, now), transaction: replay, replayed: true };
     const transaction = this.applyTransaction(this.requireAccount(userId), {
       operationKey, operationFingerprint, kind: "approval_reward", amount,
-      createdAt: isoTimestamp(now), sourceId: caseKey,
+      createdAt: isoTimestamp(now), sourceId: rewardKey,
     });
     return { economy: this.getPlayerEconomy(userId, now), transaction, replayed: false };
   }
