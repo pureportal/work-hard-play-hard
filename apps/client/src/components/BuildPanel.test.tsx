@@ -8,6 +8,63 @@ import { BuildPanel } from "./BuildPanel";
 afterEach(cleanup);
 
 describe("BuildPanel", () => {
+  it("selects layout tools with the numbered shortcuts", () => {
+    const onToolChange = vi.fn();
+    render(<BuildPanel layout={layout([])} tool={null} assetId="desk-straight" assetVariantId="sage" assetRotation={0}
+      onToolChange={onToolChange} onAssetChange={vi.fn()} onAssetVariantChange={vi.fn()} onAssetRotationChange={vi.fn()}
+      onMoveSelected={vi.fn()} onRotateSelected={vi.fn()} onRemoveSelected={vi.fn()} onOpenRooms={vi.fn()} onClose={vi.fn()} />);
+
+    const shortcuts: [string, LayoutTool | null, string][] = [
+      ["1", null, "Select"], ["2", "wall", "Wall"], ["3", "door", "Door"],
+      ["4", "window", "Window"], ["5", "spawn", "Start point"], ["6", "erase", "Erase"],
+    ];
+    for (const [key, tool, label] of shortcuts) {
+      expect(screen.getByRole("button", { name: label }).getAttribute("aria-keyshortcuts")).toBe(key);
+      fireEvent.keyDown(window, { key });
+      expect(onToolChange).toHaveBeenLastCalledWith(tool);
+    }
+    expect(onToolChange).toHaveBeenCalledTimes(shortcuts.length);
+  });
+
+  it("ignores tool shortcuts while typing, in dialogs, and when editing is disabled", () => {
+    const onToolChange = vi.fn();
+    const props = { layout: layout([]), tool: null, assetId: "desk-straight", assetVariantId: "sage", assetRotation: 0 as const,
+      onToolChange, onAssetChange: vi.fn(), onAssetVariantChange: vi.fn(), onAssetRotationChange: vi.fn(),
+      onMoveSelected: vi.fn(), onRotateSelected: vi.fn(), onRemoveSelected: vi.fn(), onOpenRooms: vi.fn(), onClose: vi.fn() };
+    const { rerender } = render(<BuildPanel {...props} />);
+
+    fireEvent.keyDown(screen.getByRole("textbox", { name: "Search assets" }), { key: "6" });
+    fireEvent.keyDown(window, { key: "6", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "6", repeat: true });
+    expect(onToolChange).not.toHaveBeenCalled();
+
+    const dialog = document.createElement("div");
+    dialog.setAttribute("aria-modal", "true");
+    document.body.append(dialog);
+    fireEvent.keyDown(window, { key: "6" });
+    dialog.remove();
+    expect(onToolChange).not.toHaveBeenCalled();
+
+    rerender(<BuildPanel {...props} disabled />);
+    fireEvent.keyDown(window, { key: "6" });
+    expect(onToolChange).not.toHaveBeenCalled();
+  });
+
+  it("collapses the item picker after choosing a mobile tool", () => {
+    const previousWidth = window.innerWidth;
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 390 });
+    try {
+      const { container } = render(<BuildPanel layout={layout([])} tool={null} assetId="desk-straight" assetVariantId="sage" assetRotation={0}
+        onToolChange={vi.fn()} onAssetChange={vi.fn()} onAssetVariantChange={vi.fn()} onAssetRotationChange={vi.fn()}
+        onMoveSelected={vi.fn()} onRotateSelected={vi.fn()} onRemoveSelected={vi.fn()} onOpenRooms={vi.fn()} onClose={vi.fn()} />);
+      fireEvent.click(screen.getByRole("button", { name: "Wall" }));
+      expect(container.querySelector(".build-layout-panel")?.getAttribute("data-compact")).toBe("true");
+      fireEvent.click(screen.getByRole("button", { name: "Show items" }));
+      expect(container.querySelector(".build-layout-panel")?.getAttribute("data-compact")).toBe("false");
+    } finally {
+      Object.defineProperty(window, "innerWidth", { configurable: true, value: previousWidth });
+    }
+  });
   it("keeps placement active when switching directly between assets", () => {
     function Panel() {
       const [tool, setTool] = useState<LayoutTool | null>(null);
@@ -198,6 +255,31 @@ describe("BuildPanel", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Floor decor" }));
     expect(screen.getByRole("button", { name: "Woven rug" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Parquet" })).toBeNull();
+  });
+
+  it("fills a selected room with the chosen tile mode and rotation option", () => {
+    const rooms: Room[] = ["Studio", "Lounge"].map((name, index) => ({
+      id: name.toLowerCase(), floorId: "floor", name, color: "#ffffff", capacity: 4,
+      bounds: { x: index * 128, y: 0, width: 128, height: 128 },
+      footprint: [{ x: index * 128, y: 0, width: 128, height: 128 }],
+      boundary: [], doorIds: [], windowIds: [], privateEligible: false,
+      access: { mode: "open", assignedPersonIds: [], knockable: false },
+    }));
+    const onFillRoom = vi.fn();
+    render(<BuildPanel layout={layout(rooms)} tool="asset" assetId="floor-wood" assetVariantId="oak" assetRotation={90}
+      currentRoomId="lounge" fillableRoomIds={rooms.map((room) => room.id)} onFillRoom={onFillRoom}
+      onToolChange={vi.fn()} onAssetChange={vi.fn()} onAssetVariantChange={vi.fn()} onAssetRotationChange={vi.fn()}
+      onMoveSelected={vi.fn()} onRotateSelected={vi.fn()} onRemoveSelected={vi.fn()} onOpenRooms={vi.fn()} onClose={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Fill room with tiles" }));
+    expect(onFillRoom).toHaveBeenLastCalledWith({ tool: "room.fill_tiles", roomId: "lounge", assetId: "floor-wood",
+      variantId: "oak", mode: "keep", rotation: 90, randomRotation: false });
+    fireEvent.change(screen.getByRole("combobox", { name: "Room" }), { target: { value: "studio" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Existing tiles" }), { target: { value: "replace" } });
+    fireEvent.click(screen.getByRole("checkbox", { name: "Randomize tile rotation" }));
+    fireEvent.click(screen.getByRole("button", { name: "Fill room with tiles" }));
+    expect(onFillRoom).toHaveBeenLastCalledWith({ tool: "room.fill_tiles", roomId: "studio", assetId: "floor-wood",
+      variantId: "oak", mode: "replace", rotation: 90, randomRotation: true });
   });
 
   it("offers Falling Blocks in the equipment build category", () => {

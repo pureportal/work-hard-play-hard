@@ -1,4 +1,4 @@
-import { Archive, Coins, Gift, Move, RotateCw, ShoppingBag } from "lucide-react";
+import { Archive, Coins, Copy, Gift, Move, RotateCw, ShoppingBag } from "lucide-react";
 import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { ASSET_CATALOG, MAX_LAYOUT_OBJECTS_PER_FLOOR, getDefaultAssetVariantId, roomAccessAllows, roomBuildAllows } from "@workhard/shared";
 import type { AssetRotation, Floor, FloorLayout, GameSettings, LayoutItemReference, LayoutTool, OrganisationState, PlayerEconomy } from "@workhard/shared";
@@ -49,6 +49,7 @@ interface PlayerBuildPanelProps {
   onAssetVariantChange: (variantId: string) => void;
   onAssetRotationChange: (rotation: AssetRotation) => void;
   onMoveSelected: () => void;
+  onCopySelected?: () => void;
   onRotateSelected: () => void;
   onRemoveSelected: () => void;
   onClose: () => void;
@@ -85,6 +86,7 @@ export function PlayerBuildPanel({
   onAssetVariantChange,
   onAssetRotationChange,
   onMoveSelected,
+  onCopySelected,
   onRotateSelected,
   onRemoveSelected,
   onClose,
@@ -110,17 +112,24 @@ export function PlayerBuildPanel({
   const inventoryByAssetId = useMemo(() => new Map(inventoryGroups.map((group) => [group.asset.id, group.instances])), [inventoryGroups]);
   const floorFull = layout.objects.length >= MAX_LAYOUT_OBJECTS_PER_FLOOR;
   const viewingPlayerFloor = layout.floorId === playerFloorId;
+  const availableSelectedCopy = selectedObject && economy.inventory.some((asset) => asset.assetId === selectedObject.assetId
+    && !asset.placement && !draftAssetIds.includes(asset.id));
   const selectionControls = <>
     {!viewingPlayerFloor && <p className="personal-floor-notice">Visit this floor to edit or place items.</p>}
     {selectedObject && selectedAsset && (
       <section className="build-selection" aria-label={`Selected ${selectedAsset.name}`}>
         <strong>{selectedObject.label ?? selectedAsset.name}</strong>
         <div>
-          <button className={`inventory-action${selectedItemMatches(selectedItem, movingItem) ? " active" : ""}`} disabled={!viewingPlayerFloor} onClick={onMoveSelected}>
-            <Move size={16} aria-hidden="true" />{selectedItemMatches(selectedItem, movingItem) ? "Cancel move" : "Move"}
+          {availableSelectedCopy && onCopySelected && (
+            <button className="inventory-action" disabled={!viewingPlayerFloor || !canPlaceOnFloor || floorFull || pendingPublicAction || Boolean(pendingEconomyRequest)} onClick={onCopySelected}>
+              <Copy size={16} aria-hidden="true" />Copy
+            </button>
+          )}
+          <button className={`inventory-action${selectedItemMatches(selectedItem, movingItem) ? " active" : ""}`} disabled={!viewingPlayerFloor} aria-keyshortcuts="M" onClick={onMoveSelected}>
+            <Move size={16} aria-hidden="true" />{selectedItemMatches(selectedItem, movingItem) ? "Cancel move" : "Move"}<kbd aria-hidden="true">M</kbd>
           </button>
-          <button className="inventory-action" disabled={!viewingPlayerFloor} onClick={onRotateSelected}><RotateCw size={16} aria-hidden="true" />Rotate</button>
-          <button className="inventory-action inventory-action-store" onClick={onRemoveSelected}><Archive size={16} aria-hidden="true" />Store</button>
+          <button className="inventory-action" disabled={!viewingPlayerFloor} aria-keyshortcuts="R" onClick={onRotateSelected}><RotateCw size={16} aria-hidden="true" />Rotate<kbd aria-hidden="true">R</kbd></button>
+          <button className="inventory-action inventory-action-store" aria-keyshortcuts="D" onClick={onRemoveSelected}><Archive size={16} aria-hidden="true" />Store<kbd aria-hidden="true">D</kbd></button>
         </div>
       </section>
     )}
@@ -166,6 +175,7 @@ export function PlayerBuildPanel({
           } renderAsset={(asset) => {
                 const instances = inventoryByAssetId.get(asset.id)!;
                 const available = instances.filter((instance) => !instance.placement && !draftAssetIds.includes(instance.id));
+                const sellable = available.find((instance) => instance.purchasePrice >= 3);
                 const drafted = instances.filter((instance) => !instance.placement && draftAssetIds.includes(instance.id)).length;
                 const placed = instances.length - available.length - drafted;
                 const counts = [available.length && `${available.length} available`, placed && `${placed} placed`, drafted && `${drafted} in draft`]
@@ -173,18 +183,19 @@ export function PlayerBuildPanel({
                 const placing = instances.some((instance) => instance.id === placingOwnedAssetId);
                 return (
                   <article className={`catalog-asset inventory-asset${placing ? " active" : ""}`} key={asset.id} data-rarity={asset.rarity}
+                    aria-description={`${asset.rarity} rarity`}
                     tabIndex={0} {...contextActions(() => {
                       const first = available[0];
                       const busy = pendingPublicAction || Boolean(pendingEconomyRequest);
                       const actions: ContextAction[] = [
                         { label: "Place", icon: Move, onSelect: () => first && onPlace(first.id, asset.id), disabled: busy || !first || !viewingPlayerFloor || !canPlaceOnFloor || floorFull },
                       ];
-                      if (onSell) actions.push({ label: "Sell", icon: Coins, onSelect: () => first && setDisposition({ assetId: first.id, action: "sell" }), disabled: busy || !first });
+                      if (onSell && sellable) actions.push({ label: "Sell", icon: Coins, onSelect: () => setDisposition({ assetId: sellable.id, action: "sell" }), disabled: busy });
                       if (onDonate) actions.push({ label: "Donate", icon: Gift, onSelect: () => first && setDisposition({ assetId: first.id, action: "donate" }), disabled: busy || !first });
                       return actions;
                     })}>
                     <AssetShape asset={asset} rotation={asset.id === assetId ? assetRotation : 0} variantId={asset.id === assetId ? assetVariantId : getDefaultAssetVariantId(asset)} />
-                    <div className="catalog-asset-details"><strong>{asset.name}</strong><span className="catalog-asset-meta"><span className="catalog-asset-rarity">{asset.rarity}</span><span>{counts}</span></span></div>
+                    <div className="catalog-asset-details"><strong>{asset.name}</strong><span>{counts}</span></div>
                     <span className="catalog-asset-features"><AssetFeatureIndicators asset={asset} /></span>
                     <button
                       disabled={pendingPublicAction || Boolean(pendingEconomyRequest) || available.length === 0 || !viewingPlayerFloor || !canPlaceOnFloor || floorFull}
@@ -192,10 +203,10 @@ export function PlayerBuildPanel({
                     >
                       {placing ? "Placing…" : floorFull ? "Floor full" : "Place"}
                     </button>
-                    {available[0] && (onSell || onDonate) && <div className="inventory-actions">
-                      {onSell && <button className="inventory-action inventory-action-sell" disabled={pendingPublicAction || Boolean(pendingEconomyRequest)}
-                        aria-label={`Sell ${asset.name} for ${Math.floor(available[0]!.purchasePrice / 3)} coins`} onClick={() => setDisposition({ assetId: available[0]!.id, action: "sell" })}>
-                        <Coins size={17} aria-hidden="true" />Sell <span className="inventory-sale-value">{Math.floor(available[0]!.purchasePrice / 3)}</span>
+                    {available[0] && (sellable && onSell || onDonate) && <div className="inventory-actions">
+                      {onSell && sellable && <button className="inventory-action inventory-action-sell" disabled={pendingPublicAction || Boolean(pendingEconomyRequest)}
+                        aria-label={`Sell ${asset.name} for ${Math.floor(sellable.purchasePrice / 3)} coins`} onClick={() => setDisposition({ assetId: sellable.id, action: "sell" })}>
+                        <Coins size={17} aria-hidden="true" />Sell <span className="inventory-sale-value">{Math.floor(sellable.purchasePrice / 3)}</span>
                       </button>}
                       {onDonate && <button className="inventory-action" aria-label={`Donate ${asset.name}`} disabled={pendingPublicAction || Boolean(pendingEconomyRequest)} onClick={() => setDisposition({ assetId: available[0]!.id, action: "donate" })}>
                         <Gift size={16} aria-hidden="true" />Donate

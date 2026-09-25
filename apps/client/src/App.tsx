@@ -2,11 +2,12 @@ import { BuildEconomyNavigation, type BuildView } from "./components/economy/Bui
 import { ProjectToolbar } from "./components/economy/ProjectToolbar";
 import { projectPreviewBounds } from "./project-preview";
 import type { BuildProject } from "@workhard/shared";
-import { isInPersonalSpace, publicFundForUnit, rebaseProjectLayout, roomAccessAllows, snapToAssetRaster, type ProjectEdit } from "@workhard/shared";
+import { isInPersonalSpace, publicFundForUnit, rebaseProjectLayout, roomAccessAllows, roomBuildAllows, snapToAssetRaster, type ProjectEdit } from "@workhard/shared";
 import { useWorkspaceCommand } from "./hooks/useWorkspaceCommand";
 import {
   ArrowRight,
   BellRing,
+  Copy,
   DoorOpen,
   Gift,
   Hand,
@@ -31,6 +32,7 @@ import {
   ASSET_CATALOG,
   DEFAULT_CORPORATE_IDENTITY,
   GONG_INTERACTION_RANGE,
+  MAX_LAYOUT_OBJECTS_PER_FLOOR,
   getAssetDefinition,
   getGameArea,
   PROXIMITY_INTERACTION_RADIUS,
@@ -2231,7 +2233,7 @@ export function Workspace({
     return room && requester ? [{ knock, room, requester }] : [];
   }), [allRooms, data.members, incomingKnocks]);
 
-  const applyBuildEdit = (edit: LayoutEdit, moving = false): boolean => {
+  const applyBuildEdit = (edit: ProjectEdit, moving = false): boolean => {
     if (reviewingProject || publicCommand.pending || pendingProjectEdit.current || buildView === "funds" || buildView === "donate") return false;
     if (!canBuild && pendingPlayerAssetRequest.current) {
       return false;
@@ -2384,6 +2386,38 @@ export function Workspace({
     setMovingBuildItem(item);
   };
 
+  const availablePersonalCopy = (object: WorldObject) => data.economy.inventory.find((asset) => asset.assetId === object.assetId
+    && !asset.placement && !projectDraft?.layout.objects.some((draftObject) => draftObject.ownedAssetId === asset.id));
+
+  const canCopyBuildAsset = (object: WorldObject) => canBuild
+    ? Boolean(getAssetDefinition(object.assetId)?.buildable)
+    : object.ownerUserId === data.currentUserId && floorId === activeFloorIdRef.current
+      && layout.objects.length < MAX_LAYOUT_OBJECTS_PER_FLOOR
+      && layout.rooms.some((room) => roomBuildAllows(room, data.currentUserId, data.gameSettings, data.organisation)
+        || roomAccessAllows(room, data.currentUserId, data.gameSettings, data.organisation)
+          && room.personalAreas?.some((area) => area.ownerUserId === data.currentUserId))
+      && Boolean(availablePersonalCopy(object));
+
+  const copySelectedBuildAsset = (item = buildSelection) => {
+    if (item?.type !== "asset" || reviewingProject || publicCommand.pending || connection !== "online") return;
+    const object = layout.objects.find((candidate) => candidate.id === item.id);
+    if (!object || !canCopyBuildAsset(object)) return;
+    if (canBuild) {
+      setPlacingOwnedAssetId(undefined);
+    } else {
+      const available = availablePersonalCopy(object);
+      if (!available) return;
+      setPlacingOwnedAssetId(available.id);
+    }
+    setPlacingPublicAssetId(undefined);
+    setEditingAssetId(object.assetId);
+    setEditingAssetVariantId(object.variantId);
+    setEditingAssetRotation(object.rotation);
+    setBuildSelection(undefined);
+    setMovingBuildItem(undefined);
+    setEditingTool("asset");
+  };
+
   const rotateSelectedBuildItem = (item = buildSelection) => {
     if (!item) {
       return;
@@ -2421,25 +2455,38 @@ export function Workspace({
   };
 
   useEffect(() => {
-    const rotate = (event: KeyboardEvent) => {
-      if (activePanel !== "build" || event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.key.toLowerCase() !== "r") {
+    const handleBuildShortcut = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+      if (activePanel !== "build" || reviewingProject || publicCommand.pending || event.defaultPrevented || event.repeat
+        || event.altKey || event.ctrlKey || event.metaKey || !["r", "m", "d"].includes(key)
+        || document.querySelector('[aria-modal="true"]')) {
         return;
       }
       const target = event.target;
-      if (target instanceof HTMLElement && (target.isContentEditable || target.matches("input, textarea, select"))) {
+      if (target instanceof HTMLElement && (target.isContentEditable || target.closest("input, textarea, select"))) {
         return;
       }
-      if (movingBuildItem?.type === "asset" || (!movingBuildItem && editingTool === "asset")) {
+      if (key === "r" && (movingBuildItem?.type === "asset" || (!movingBuildItem && editingTool === "asset"))) {
         event.preventDefault();
         setEditingAssetRotation(rotateAssetClockwise);
-      } else if (!movingBuildItem && buildSelection && buildSelection.type !== "opening") {
+        return;
+      }
+      if (!buildSelection || editingTool || movingBuildItem && key === "r") return;
+      if (key === "m" && (canBuild || floorId === activeFloorIdRef.current)) {
+        event.preventDefault();
+        moveSelectedBuildItem();
+      } else if (key === "r" && buildSelection.type !== "opening" && (canBuild || floorId === activeFloorIdRef.current)) {
         event.preventDefault();
         rotateSelectedBuildItem();
+      } else if (key === "d" && (buildSelection.type !== "asset"
+        || getAssetDefinition(layout.objects.find((object) => object.id === buildSelection.id)?.assetId ?? "")?.kind !== "portal")) {
+        event.preventDefault();
+        removeSelectedBuildItem();
       }
     };
-    window.addEventListener("keydown", rotate);
-    return () => window.removeEventListener("keydown", rotate);
-  }, [activePanel, buildSelection, editingTool, layout.objects, layout.openings, layout.revision, layout.walls, movingBuildItem]);
+    window.addEventListener("keydown", handleBuildShortcut);
+    return () => window.removeEventListener("keydown", handleBuildShortcut);
+  }, [activePanel, buildSelection, canBuild, editingTool, floorId, layout.objects, layout.openings, layout.revision, layout.walls, movingBuildItem, publicCommand.pending, reviewingProject]);
 
   const storingPendingRemoval = pendingBuildRemoval?.tool === "item.remove" && pendingBuildRemoval.item.type === "asset"
     && layout.objects.some((object) => object.id === pendingBuildRemoval.item.id && object.ownerUserId === data.currentUserId);
@@ -2613,6 +2660,9 @@ export function Workspace({
               || (!canBuild && object?.ownerUserId !== data.currentUserId)) return;
             setBuildSelection(item);
             const actions: ContextAction[] = [
+              ...(object && canCopyBuildAsset(object)
+                ? [{ label: "Copy", icon: Copy, onSelect: () => copySelectedBuildAsset(item) }]
+                : []),
               { label: "Move", icon: Move, onSelect: () => moveSelectedBuildItem(item) },
               ...(item.type !== "opening" ? [{ label: "Rotate", icon: RotateCw, onSelect: () => rotateSelectedBuildItem(item) }] : []),
               ...(!object || getAssetDefinition(object.assetId)?.kind !== "portal"
@@ -3157,6 +3207,8 @@ export function Workspace({
             assetId={editingAssetId}
             assetVariantId={editingAssetVariantId}
             assetRotation={editingAssetRotation}
+            fillableRoomIds={layout.rooms.filter((room) => roomBuildAllows(room, data.currentUserId, data.gameSettings, data.organisation)).map((room) => room.id)}
+            currentRoomId={currentPlayer?.roomId}
             selectedItem={buildSelection}
             movingItem={movingBuildItem}
             onInspectAccess={data.organisation.ceoIds.includes(currentUser.id) ? () => {
@@ -3168,7 +3220,9 @@ export function Workspace({
             onAssetChange={(assetId) => { setPlacingPublicAssetId(undefined); changeEditingAsset(assetId); }}
             onAssetVariantChange={setEditingAssetVariantId}
             onAssetRotationChange={setEditingAssetRotation}
+            onFillRoom={(edit) => { applyBuildEdit(edit); }}
             onMoveSelected={() => moveSelectedBuildItem()}
+            onCopySelected={() => copySelectedBuildAsset()}
             onRotateSelected={() => rotateSelectedBuildItem()}
             onRemoveSelected={() => removeSelectedBuildItem()}
             onOpenRooms={() => openPanel("rooms")}
@@ -3228,6 +3282,7 @@ export function Workspace({
             onAssetVariantChange={setEditingAssetVariantId}
             onAssetRotationChange={setEditingAssetRotation}
             onMoveSelected={() => moveSelectedBuildItem()}
+            onCopySelected={() => copySelectedBuildAsset()}
             onRotateSelected={() => rotateSelectedBuildItem()}
             onRemoveSelected={() => removeSelectedBuildItem()}
             onClose={() => openPanel(null)}

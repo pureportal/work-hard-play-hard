@@ -1,6 +1,7 @@
 import {
   Archive,
   BrickWall,
+  Copy,
   DoorOpen,
   Diamond,
   KeyRound,
@@ -11,9 +12,9 @@ import {
   RotateCw,
   Trash2,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ASSET_CATALOG, getAssetDefinition, getTeleporterPrice, getDefaultAssetVariantId } from "@workhard/shared";
-import type { AssetRotation, FloorLayout, LayoutItemReference, LayoutTool } from "@workhard/shared";
+import type { AssetRotation, FloorLayout, LayoutItemReference, LayoutTool, ProjectEdit } from "@workhard/shared";
 import type { LucideIcon } from "lucide-react";
 import { getAssetOrientationLabel, rotateAssetClockwise } from "../asset-orientation";
 import { IconButton } from "./IconButton";
@@ -42,7 +43,11 @@ interface BuildPanelProps {
   onAssetChange: (assetId: string) => void;
   onAssetVariantChange: (variantId: string) => void;
   onAssetRotationChange: (rotation: AssetRotation) => void;
+  fillableRoomIds?: readonly string[];
+  currentRoomId?: string | undefined;
+  onFillRoom?: (edit: Extract<ProjectEdit, { tool: "room.fill_tiles" }>) => void;
   onMoveSelected: () => void;
+  onCopySelected?: () => void;
   onRotateSelected: () => void;
   onRemoveSelected: () => void;
   onInspectAccess?: (() => void) | undefined;
@@ -50,13 +55,13 @@ interface BuildPanelProps {
   onClose: () => void;
 }
 
-const tools: { id: LayoutTool | null; label: string; icon: LucideIcon }[] = [
-  { id: null, label: "Select", icon: MousePointer2 },
-  { id: "wall", label: "Wall", icon: BrickWall },
-  { id: "door", label: "Door", icon: DoorOpen },
-  { id: "window", label: "Window", icon: RectangleHorizontal },
-  { id: "spawn", label: "Start point", icon: Diamond },
-  { id: "erase", label: "Erase", icon: Eraser },
+const tools: { id: LayoutTool | null; label: string; icon: LucideIcon; shortcut: string }[] = [
+  { id: null, label: "Select", icon: MousePointer2, shortcut: "1" },
+  { id: "wall", label: "Wall", icon: BrickWall, shortcut: "2" },
+  { id: "door", label: "Door", icon: DoorOpen, shortcut: "3" },
+  { id: "window", label: "Window", icon: RectangleHorizontal, shortcut: "4" },
+  { id: "spawn", label: "Start point", icon: Diamond, shortcut: "5" },
+  { id: "erase", label: "Erase", icon: Eraser, shortcut: "6" },
 ];
 
 const buildableAssets = ASSET_CATALOG.assets.filter((asset) => asset.buildable);
@@ -78,14 +83,47 @@ export function BuildPanel({
   onAssetChange,
   onAssetVariantChange,
   onAssetRotationChange,
+  fillableRoomIds,
+  currentRoomId,
+  onFillRoom,
   onMoveSelected,
+  onCopySelected,
   onRotateSelected,
   onRemoveSelected,
   onInspectAccess,
   onOpenRooms,
   onClose,
 }: BuildPanelProps) {
+  const [pickerOpen, setPickerOpen] = useState(tool === null);
+  const [fillRoomId, setFillRoomId] = useState("");
+  const [fillMode, setFillMode] = useState<"keep" | "replace">("keep");
+  const [randomRotation, setRandomRotation] = useState(false);
+  const [mobile, setMobile] = useState(() => window.innerWidth <= 700);
+  useEffect(() => {
+    const update = () => setMobile(window.innerWidth <= 700);
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+  useEffect(() => {
+    if (reviewing || disabled) return;
+    const selectTool = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey
+        || document.querySelector('[aria-modal="true"]')) return;
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.isContentEditable || target.closest("input, textarea, select"))) return;
+      const selectedTool = tools.find(({ shortcut }) => shortcut === event.key);
+      if (!selectedTool) return;
+      event.preventDefault();
+      onToolChange(selectedTool.id);
+      if (selectedTool.id !== null) setPickerOpen(false);
+    };
+    window.addEventListener("keydown", selectTool);
+    return () => window.removeEventListener("keydown", selectTool);
+  }, [disabled, onToolChange, reviewing]);
   const selectedDefinition = ASSET_CATALOG.assets.find((asset) => asset.id === assetId);
+  const fillableRooms = layout.rooms.filter((room) => !fillableRoomIds || fillableRoomIds.includes(room.id));
+  const selectedFillRoomId = fillableRooms.some((room) => room.id === fillRoomId) ? fillRoomId
+    : fillableRooms.find((room) => room.id === currentRoomId)?.id ?? fillableRooms[0]?.id ?? "";
   const selectedObject = selectedItem?.type === "asset" ? layout.objects.find((object) => object.id === selectedItem.id) : undefined;
   const selectedOpening = selectedItem?.type === "opening" ? layout.openings.find((opening) => opening.id === selectedItem.id) : undefined;
   const selectedItemName = selectedObject
@@ -100,7 +138,7 @@ export function BuildPanel({
   );
 
   return (
-    <aside className="side-panel build-panel build-layout-panel" aria-label="Build">
+    <aside className="side-panel build-panel build-layout-panel" aria-label="Build" data-compact={!pickerOpen}>
       <SurfaceHeader className="panel-header" title="Build" closeLabel="Close build tools" onClose={onClose}
         actions={<>
           <button className="secondary-button build-access-button" onClick={onOpenRooms}>Room settings</button>
@@ -109,32 +147,40 @@ export function BuildPanel({
 
       {accountControls}
       <div className="build-tools layout-tools" role="toolbar" aria-label="Layout tools" inert={disabled}>
-        {tools.map(({ id, label, icon: Icon }) => (
+        {tools.map(({ id, label, icon: Icon, shortcut }) => (
           <button
             key={label}
             className={tool === id ? "active" : ""}
             aria-pressed={tool === id}
-            onClick={() => onToolChange(id)}
+            aria-keyshortcuts={shortcut}
+            onClick={() => { onToolChange(id); if (id !== null) setPickerOpen(false); }}
           >
             <Icon size={19} />
             <span>{label}</span>
+            <kbd aria-hidden="true">{shortcut}</kbd>
           </button>
         ))}
       </div>
+
+      {mobile && <button type="button" className="secondary-button build-picker-toggle" aria-expanded={pickerOpen} aria-controls="build-asset-picker"
+        onClick={() => setPickerOpen((open) => !open)}>{pickerOpen ? "Hide items" : "Show items"}</button>}
 
       {selectedItem && selectedItemName && (
         <section className="build-selection" aria-label={`Selected ${selectedItemName}`} inert={disabled}>
           <strong>{selectedItemName}</strong>
           <div>
-            <button className={itemMatches(selectedItem, movingItem) ? "active" : ""} onClick={onMoveSelected}>
-              <Move size={16} aria-hidden="true" />{itemMatches(selectedItem, movingItem) ? "Cancel move" : "Move"}
+            {selectedObject && getAssetDefinition(selectedObject.assetId)?.buildable && onCopySelected && (
+              <button onClick={onCopySelected}><Copy size={16} aria-hidden="true" />Copy</button>
+            )}
+            <button className={itemMatches(selectedItem, movingItem) ? "active" : ""} aria-keyshortcuts="M" onClick={onMoveSelected}>
+              <Move size={16} aria-hidden="true" />{itemMatches(selectedItem, movingItem) ? "Cancel move" : "Move"}<kbd aria-hidden="true">M</kbd>
             </button>
             {selectedItem.type !== "opening" && (
-              <button onClick={onRotateSelected}><RotateCw size={16} aria-hidden="true" />Rotate</button>
+              <button aria-keyshortcuts="R" onClick={onRotateSelected}><RotateCw size={16} aria-hidden="true" />Rotate<kbd aria-hidden="true">R</kbd></button>
             )}
-            {getAssetDefinition(selectedObject?.assetId ?? "")?.kind !== "portal" && <button className={selectedObject?.ownerUserId ? "" : "danger"} onClick={onRemoveSelected}>
+            {getAssetDefinition(selectedObject?.assetId ?? "")?.kind !== "portal" && <button className={selectedObject?.ownerUserId ? "" : "danger"} aria-keyshortcuts="D" onClick={onRemoveSelected}>
               {selectedObject?.ownerUserId ? <Archive size={16} aria-hidden="true" /> : <Trash2 size={16} aria-hidden="true" />}
-              {selectedObject?.ownerUserId ? "Store" : "Remove"}
+              {selectedObject?.ownerUserId ? "Store" : "Remove"}<kbd aria-hidden="true">D</kbd>
             </button>}
           </div>
         </section>
@@ -142,7 +188,7 @@ export function BuildPanel({
 
       {tool === "asset" && selectedDefinition?.kind === "portal" && <p>Creates a new floor. Cannot be removed.</p>}
 
-      <div className="build-workspace" inert={disabled}>
+      <div className="build-workspace" id="build-asset-picker" inert={disabled}>
         <section className="build-section asset-library" aria-label="Assets">
           <AssetBrowser assets={buildableAssets} categoryLabel="Asset categories"
             renderAsset={(asset) => <button key={asset.id} aria-label={asset.name}
@@ -153,7 +199,7 @@ export function BuildPanel({
                 ...(hasAssetFeature(asset, "animated") ? ["Animated"] : []),
                 ...(hasAssetFeature(asset, "interactive") ? ["Interactive"] : []),
               ].join(" · ")}
-              data-rarity={asset.rarity} onClick={() => { onAssetChange(asset.id); if (tool !== "asset" || asset.id === assetId) onToolChange("asset"); }}>
+              data-rarity={asset.rarity} onClick={() => { onAssetChange(asset.id); if (tool !== "asset" || asset.id === assetId) onToolChange("asset"); setPickerOpen(false); }}>
               <AssetShape asset={asset} rotation={asset.id === assetId ? assetRotation : 0}
                 variantId={asset.id === assetId ? assetVariantId : getDefaultAssetVariantId(asset)} />
               <span className="catalog-asset-details"><strong>{asset.name}</strong>
@@ -172,6 +218,25 @@ export function BuildPanel({
                 <span>Rotate · {getAssetOrientationLabel(assetRotation)}</span>
                 <kbd>R</kbd>
               </button>
+              {selectedDefinition.kind === "floor-tile" && onFillRoom && <div className="room-tile-fill">
+                <label>Room
+                  <select value={selectedFillRoomId} onChange={(event) => setFillRoomId(event.target.value)}>
+                    {fillableRooms.map((room) => <option key={room.id} value={room.id}>{room.name}</option>)}
+                  </select>
+                </label>
+                <label>Existing tiles
+                  <select value={fillMode} onChange={(event) => setFillMode(event.target.value as "keep" | "replace")}>
+                    <option value="keep">Keep Existing Tiles</option>
+                    <option value="replace">Replace Existing Tiles</option>
+                  </select>
+                </label>
+                <label className="room-tile-random"><input type="checkbox" checked={randomRotation}
+                  onChange={(event) => setRandomRotation(event.target.checked)} />Randomize tile rotation</label>
+                <button className="secondary-button" disabled={!selectedFillRoomId} onClick={() => onFillRoom({
+                  tool: "room.fill_tiles", roomId: selectedFillRoomId, assetId, variantId: assetVariantId,
+                  mode: fillMode, rotation: assetRotation, randomRotation,
+                })}>Fill room with tiles</button>
+              </div>}
             </div>
           )} />
         </section>

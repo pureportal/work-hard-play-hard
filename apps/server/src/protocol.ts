@@ -134,6 +134,8 @@ export const clientCommandSchema = z.discriminatedUnion("type", [
   ...publicEconomyCommands(z.union([layoutEdit,
     z.object({ tool: z.literal("public_asset"), publicAssetId: z.string().uuid(), position, variantId: assetVariantId, rotation: assetRotation }).strict(),
     z.object({ tool: z.literal("personal_asset"), ownedAssetId: z.string().uuid(), position, variantId: assetVariantId, rotation: assetRotation }).strict(),
+    z.object({ tool: z.literal("room.fill_tiles"), roomId: z.string().min(1).max(100), assetId: z.string().min(1).max(100),
+      variantId: assetVariantId, mode: z.enum(["keep", "replace"]), rotation: assetRotation, randomRotation: z.boolean() }).strict(),
   ])),
   z.object({ type: z.literal("organisation.edit"), requestId, baseRevision: z.number().int().nonnegative(), edit: organisationEditSchema }).strict(),
   z.object({ type: z.literal("movement.input"), sequence: z.number().int().nonnegative(), dx: z.number().min(-1).max(1), dy: z.number().min(-1).max(1) }),

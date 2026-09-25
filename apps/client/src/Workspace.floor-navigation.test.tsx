@@ -180,6 +180,8 @@ describe("Workspace floor navigation", () => {
 
     fireEvent.keyDown(chairButton, { key: "r" });
     expect(screen.getByTestId("world").getAttribute("data-asset-rotation")).toBe("90");
+    fireEvent.keyDown(chairButton, { key: "R", shiftKey: true });
+    expect(screen.getByTestId("world").getAttribute("data-asset-rotation")).toBe("180");
 
     fireEvent.click(screen.getByRole("radio", { name: "Blue" }));
     expect(screen.getByTestId("world").getAttribute("data-asset-variant")).toBe("blue");
@@ -330,17 +332,44 @@ describe("Workspace floor navigation", () => {
 
     fireEvent.keyDown(window, { key: "r" });
     acknowledgeProjectEdit();
-    fireEvent.click(await screen.findByRole("button", { name: "Move" }));
+    expect((await screen.findByRole("button", { name: "Move" })).getAttribute("aria-keyshortcuts")).toBe("M");
+    fireEvent.keyDown(window, { key: "m" });
     expect(screen.getByTestId("world").getAttribute("data-moving")).toBe("asset:chair");
+    fireEvent.keyDown(window, { key: "m" });
+    expect(screen.getByTestId("world").getAttribute("data-moving")).toBe("");
+    fireEvent.keyDown(window, { key: "m" });
+    fireEvent.keyDown(window, { key: "r" });
+    expect(screen.getByTestId("world").getAttribute("data-asset-rotation")).toBe("90");
     fireEvent.click(screen.getByRole("button", { name: "Place selected item" }));
     acknowledgeProjectEdit();
-    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    expect(screen.getByRole("button", { name: "Remove" }).getAttribute("aria-keyshortcuts")).toBe("D");
+    fireEvent.keyDown(window, { key: "d" });
+    fireEvent.keyDown(window, { key: "d" });
+    expect(screen.getAllByRole("dialog", { name: "Remove item?" })).toHaveLength(1);
     fireEvent.click(within(screen.getByRole("dialog", { name: "Remove item?" })).getByRole("button", { name: "Remove" }));
 
     const edits = realtime.send.mock.calls.flatMap(([command]) => command.type === "project.edit" ? [command.edit] : []);
     expect(edits).toContainEqual({ tool: "asset.move", objectId: "chair", position: { x: 160, y: 160 }, variantId: "white", rotation: 0 });
     expect(edits).toContainEqual({ tool: "asset.move", objectId: "chair", position: { x: 96, y: 96 }, variantId: "white", rotation: 90 });
     expect(edits).toContainEqual({ tool: "item.remove", item: { type: "asset", id: "chair" } });
+  });
+
+  it("ignores selected-item shortcuts while typing or a dialog is open", async () => {
+    renderWorkspace();
+    fireEvent.click(screen.getByRole("button", { name: "Build" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Shared" }, { timeout: 5_000 }));
+    fireEvent.click(screen.getByRole("button", { name: "Select build item" }));
+
+    fireEvent.keyDown(screen.getByRole("textbox", { name: "Search assets" }), { key: "m" });
+    fireEvent.keyDown(window, { key: "m", ctrlKey: true });
+    expect(screen.getByTestId("world").getAttribute("data-moving")).toBe("");
+
+    fireEvent.keyDown(window, { key: "d" });
+    expect(screen.getByRole("dialog", { name: "Remove item?" })).toBeTruthy();
+    fireEvent.keyDown(window, { key: "m" });
+    fireEvent.keyDown(window, { key: "r" });
+    expect(screen.getByTestId("world").getAttribute("data-moving")).toBe("");
+    expect(realtime.send).not.toHaveBeenCalledWith(expect.objectContaining({ type: "project.edit" }));
   });
 });
 

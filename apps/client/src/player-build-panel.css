@@ -64,6 +64,10 @@
   margin-bottom: 4px;
 }
 
+.player-build-panel .build-selection > div {
+  flex-wrap: wrap;
+}
+
 .player-build-panel .inventory-asset > .inventory-actions {
   grid-column: 1 / -1;
   display: flex;
@@ -90,6 +94,10 @@
   border: 1px solid var(--line);
   border-radius: 8px;
   transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.player-build-panel .build-selection button.inventory-action {
+  flex-basis: calc(50% - 3px);
 }
 
 .player-build-panel button.inventory-action-sell {

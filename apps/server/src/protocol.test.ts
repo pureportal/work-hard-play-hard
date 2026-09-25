@@ -365,6 +365,14 @@ describe("asset protocol", () => {
     }
   });
 
+  it("accepts whole-room tile fills with explicit modes and rotation settings", () => {
+    const command = { type: "project.edit", fundId: "workspace", requestId: "fill", baseRevision: 1,
+      edit: { tool: "room.fill_tiles", roomId: "studio", assetId: "floor-wood", variantId: "oak",
+        mode: "replace", rotation: 90, randomRotation: true } };
+    expect(clientCommandSchema.safeParse(command).success).toBe(true);
+    expect(clientCommandSchema.safeParse({ ...command, edit: { ...command.edit, mode: "remove" } }).success).toBe(false);
+  });
+
   it("accepts inventory-instance placement without a client-selected asset definition", () => {
     const command = {
       type: "player_asset.place",

@@ -108,7 +108,7 @@ describe("PlayerBuildPanel", () => {
     expect(screen.queryByRole("button", { name: "Open bonus" })).toBeNull();
   });
 
-  it("buys affordable catalog assets and disables unaffordable or unavailable assets", () => {
+  it("buys affordable assets and directs shared assets to Shared", () => {
     const onPurchase = vi.fn();
     renderPanel({ onPurchase });
     fireEvent.click(screen.getByRole("tab", { name: "Shop" }));
@@ -121,9 +121,13 @@ describe("PlayerBuildPanel", () => {
     expect((screen.getByRole("button", { name: "Need 250 more coins for Pool" }) as HTMLButtonElement).disabled).toBe(true);
 
     fireEvent.click(screen.getByRole("tab", { name: "Equipment" }));
-    const unavailableButton = screen.getByRole("button", { name: "Falling Blocks table unavailable" }) as HTMLButtonElement;
-    expect(unavailableButton.disabled).toBe(true);
-    expect(unavailableButton.textContent).toBe("Unavailable");
+    const sharedOnlyButton = screen.getByRole("button", { name: "Falling Blocks table is available in Shared" }) as HTMLButtonElement;
+    expect(sharedOnlyButton.disabled).toBe(true);
+    expect(sharedOnlyButton.textContent).toBe("Shared only");
+    const sharedOnlyAsset = sharedOnlyButton.closest(".catalog-asset");
+    expect(sharedOnlyAsset?.getAttribute("data-rarity")).toBe("rare");
+    expect(sharedOnlyAsset?.getAttribute("aria-description")).toBe("rare rarity");
+    expect(sharedOnlyAsset?.querySelector(".catalog-asset-rarity")).toBeNull();
   });
 
   it("disables purchases when inventory is full", () => {
@@ -156,7 +160,28 @@ describe("PlayerBuildPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Place" }));
 
     expect(screen.getByText("1 available")).toBeTruthy();
+    const inventoryAsset = within(screen.getByRole("tabpanel", { name: "Inventory" })).getByText("Office chair").closest(".catalog-asset");
+    expect(inventoryAsset?.getAttribute("data-rarity")).toBe("common");
+    expect(inventoryAsset?.getAttribute("aria-description")).toBe("common rarity");
+    expect(inventoryAsset?.querySelector(".catalog-asset-rarity")).toBeNull();
     expect(onPlace).toHaveBeenCalledWith("owned-chair", "chair-office");
+  });
+
+  it("hides selling when an available item has no resale value", () => {
+    const economy = createTestEconomy();
+    economy.inventory = [{ id: "starter", assetId: "chair-office", purchasePrice: 0, acquiredAt: "2026-09-01" }];
+    renderPanel({ economy, onSell: vi.fn() });
+    expect(screen.queryByRole("button", { name: /Sell Office chair/ })).toBeNull();
+  });
+
+  it("offers a paid copy for sale when a free copy has the same asset", () => {
+    const economy = createTestEconomy();
+    economy.inventory = [
+      { id: "starter", assetId: "chair-office", purchasePrice: 0, acquiredAt: "2026-09-01" },
+      { id: "purchased", assetId: "chair-office", purchasePrice: 90, acquiredAt: "2026-09-02" },
+    ];
+    renderPanel({ economy, onSell: vi.fn() });
+    expect(screen.getByRole("button", { name: "Sell Office chair for 30 coins" })).toBeTruthy();
   });
 
   it("shows feature icons in the shop and filters matching assets", () => {

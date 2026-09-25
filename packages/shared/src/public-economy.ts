@@ -190,4 +190,7 @@ export type ProjectEdit = LayoutEdit | {
   tool: "public_asset"; publicAssetId: string; position: { x: number; y: number }; variantId: string; rotation: 0 | 90 | 180 | 270;
 } | {
   tool: "personal_asset"; ownedAssetId: string; position: { x: number; y: number }; variantId: string; rotation: 0 | 90 | 180 | 270;
+} | {
+  tool: "room.fill_tiles"; roomId: string; assetId: string; variantId: string;
+  mode: "keep" | "replace"; rotation: 0 | 90 | 180 | 270; randomRotation: boolean;
 };

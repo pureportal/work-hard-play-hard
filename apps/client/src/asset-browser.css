@@ -279,30 +279,6 @@
   line-height: 1.4;
 }
 
-.catalog-asset-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  column-gap: 7px;
-}
-
-.catalog-asset-rarity {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--muted);
-  text-transform: capitalize;
-  white-space: nowrap;
-}
-
-.catalog-asset-rarity::before {
-  width: 6px;
-  height: 6px;
-  background: var(--asset-rarity-color);
-  border-radius: 50%;
-  content: "";
-}
-
 .asset-browser > .asset-placement-options {
   flex-shrink: 0;
   padding: 8px;

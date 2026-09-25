@@ -5,6 +5,7 @@ import { act, cleanup, fireEvent, render, screen, within } from "@testing-librar
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BootstrapData, BuildProject, ClientCommand, ServerEvent, WorldSnapshot } from "@workhard/shared";
 import { Workspace } from "./App";
+import { ContextMenuProvider } from "./components/ContextMenu";
 import { getServerOrigin } from "./server-url";
 import type { WorldCanvasProps } from "./components/WorldCanvas";
 import { createTestCorporateIdentity, createTestEconomy, createTestGameSettings, createTestKidnappingConfiguration } from "./test-fixtures";
@@ -26,14 +27,16 @@ vi.mock("./components/CharacterPreview", () => ({ CharacterPreview: () => null }
 
 vi.mock("./components/WorldCanvasLoader", () => ({
   preloadWorldCanvas: vi.fn(),
-  WorldCanvas: ({ editing, editingTool, editingAssetVariantId, editingAssetRotation, onEdit, onPlacementBlocked, floor, focusTarget, selectedBuildItem, layout, onBuildItemSelect }: WorldCanvasProps) => (
-    <div data-testid="world" data-floor={floor.id} data-focus={JSON.stringify(focusTarget)} data-selected={selectedBuildItem?.id} data-tool={editingTool ?? ""}>
+  WorldCanvas: ({ editing, editingTool, editingAssetId, editingAssetVariantId, editingAssetRotation, onEdit, onPlacementBlocked, floor, focusTarget, selectedBuildItem, layout, onBuildItemSelect, onContextSelect }: WorldCanvasProps) => (
+    <div data-testid="world" data-floor={floor.id} data-focus={JSON.stringify(focusTarget)} data-selected={selectedBuildItem?.id}
+      data-tool={editingTool ?? ""} data-asset={editingAssetId} data-variant={editingAssetVariantId} data-rotation={editingAssetRotation}>
       {editing && layout.objects.map((object) => <button key={object.id} onClick={() => onBuildItemSelect({ type: "asset", id: object.id })}>Select {object.id}</button>)}
+      {editing && layout.objects.map((object) => <button key={`context-${object.id}`} onClick={() => onContextSelect?.({ type: "build", item: { type: "asset", id: object.id } }, { x: 10, y: 10 })}>Context {object.id}</button>)}
       {editing && editingTool === "erase" && layout.objects.map((object) =>
         <button key={`erase-${object.id}`} onClick={() => onEdit({ tool: "item.remove", item: { type: "asset", id: object.id } })}>Erase {object.id}</button>)}
       {editing && editingTool === "asset" && (
         <>
-          <button onClick={() => onEdit({ tool: "asset", assetId: "chair-office", variantId: editingAssetVariantId, rotation: editingAssetRotation, position: { x: 32, y: 32 } })}>
+          <button onClick={() => onEdit({ tool: "asset", assetId: editingAssetId, variantId: editingAssetVariantId, rotation: editingAssetRotation, position: { x: 32, y: 32 } })}>
             Place on canvas
           </button>
           <button onClick={() => onPlacementBlocked("Place it fully inside a room.")}>Place outside room</button>
@@ -76,6 +79,63 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("Workspace player assets", () => {
+  it("copies a placed shared asset into placement with its variant and rotation", async () => {
+    const data = workspace();
+    data.members[0]!.role = "owner";
+    data.layouts[0]!.objects = [{ id: "shared-chair", floorId: "floor", assetId: "chair-office", x: 32, y: 32, variantId: "blue", rotation: 90 }];
+    render(<Workspace initialData={data} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Build" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Shared" }, { timeout: 5000 }));
+    fireEvent.click(screen.getByRole("button", { name: "Select shared-chair" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Copy" }));
+
+    const world = screen.getByTestId("world");
+    expect(world.getAttribute("data-selected")).toBeNull();
+    expect(world.getAttribute("data-tool")).toBe("asset");
+    expect(world.getAttribute("data-asset")).toBe("chair-office");
+    expect(world.getAttribute("data-variant")).toBe("blue");
+    expect(world.getAttribute("data-rotation")).toBe("90");
+    fireEvent.click(screen.getByRole("button", { name: "Place on canvas" }));
+    expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({ type: "project.edit", edit: expect.objectContaining({
+      tool: "asset", assetId: "chair-office", variantId: "blue", rotation: 90,
+    }) }));
+  });
+
+  it("copies a placed personal asset using an unused inventory item", async () => {
+    const data = workspace();
+    data.economy.inventory = [
+      { ...data.economy.inventory[0]!, id: "placed-chair", placement: { objectId: "my-chair", floorId: "floor", placedAt: "2026-09-02" } },
+      { ...data.economy.inventory[0]!, id: "unused-chair" },
+    ];
+    data.layouts[0]!.objects = [{ id: "my-chair", floorId: "floor", assetId: "chair-office", x: 32, y: 32, variantId: "blue", rotation: 90, ownerUserId: "player", ownedAssetId: "placed-chair" }];
+    render(<Workspace initialData={data} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Build" }));
+    fireEvent.click(screen.getByRole("button", { name: "Select my-chair" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Copy" }));
+
+    const world = screen.getByTestId("world");
+    expect(world.getAttribute("data-tool")).toBe("asset");
+    expect(world.getAttribute("data-variant")).toBe("blue");
+    expect(world.getAttribute("data-rotation")).toBe("90");
+    fireEvent.click(screen.getByRole("button", { name: "Place on canvas" }));
+    expect(realtime.send).toHaveBeenCalledWith(expect.objectContaining({
+      type: "player_asset.place", ownedAssetId: "unused-chair", variantId: "blue", rotation: 90,
+    }));
+  });
+
+  it("offers Copy in the canvas menu for a shared asset", async () => {
+    const data = workspace();
+    data.members[0]!.role = "owner";
+    data.layouts[0]!.objects = [{ id: "shared-chair", floorId: "floor", assetId: "chair-office", x: 32, y: 32, variantId: "blue", rotation: 90 }];
+    render(<ContextMenuProvider><Workspace initialData={data} onSignOut={vi.fn()} onSessionExpired={vi.fn()} /></ContextMenuProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "Build" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Shared" }, { timeout: 5000 }));
+    fireEvent.click(screen.getByRole("button", { name: "Context shared-chair" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Copy" }));
+    expect(screen.getByTestId("world").getAttribute("data-tool")).toBe("asset");
+    expect(screen.getByTestId("world").getAttribute("data-variant")).toBe("blue");
+  });
+
   it("donates coins from Build and returns to personal inventory", async () => {
     const data = workspace();
     render(<Workspace initialData={data} onSignOut={vi.fn()} onSessionExpired={vi.fn()} />);
@@ -236,12 +296,13 @@ describe("Workspace player assets", () => {
     fireEvent.click(screen.getByRole("button", { name: "Build" }));
     fireEvent.click(await screen.findByRole("tab", { name: "Placed" }, { timeout: 10_000 }));
     fireEvent.click(screen.getByRole("button", { name: "Focus Office chair in Room, Floor" }));
-    fireEvent.click(screen.getByRole("button", { name: "Move" }));
+    fireEvent.keyDown(window, { key: "m" });
     expect(screen.getByRole("button", { name: "Cancel move" })).toBeTruthy();
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.getByRole("button", { name: "Move" })).toBeTruthy();
     expect(screen.getByTestId("world").getAttribute("data-selected")).toBe("chair");
-    fireEvent.click(screen.getByRole("button", { name: "Store" }));
+    expect(screen.getByRole("button", { name: "Store" }).getAttribute("aria-keyshortcuts")).toBe("D");
+    fireEvent.keyDown(window, { key: "d" });
     expect(screen.getByRole("dialog", { name: "Store item?" })).toBeTruthy();
     expect(realtime.send).not.toHaveBeenCalledWith(expect.objectContaining({ type: "player_asset.remove" }));
     fireEvent.keyDown(document.activeElement!, { key: "Escape" });

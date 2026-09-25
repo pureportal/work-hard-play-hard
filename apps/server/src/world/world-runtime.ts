@@ -1,6 +1,7 @@
 import { createFloorExpansion } from "./floor-expansion.js";
 import { assertPublicReachability, assertTeleportersRetained, findRescuePosition } from "./public-reachability.js";
 import { ProjectRuntime, type ProjectPeer } from "../economy/project-runtime.js";
+import { fillRoomWithTiles } from "./room-tile-fill.js";
 import { isPermanentAsset, isInPersonalSpace, type ProjectEdit, type PublicAction } from "@workhard/shared";
 import { roomAccessAllows } from "@workhard/shared";
 import { randomUUID } from "node:crypto";
@@ -1951,6 +1952,7 @@ export class WorldRuntime {
       next.openings = normalizedSegments.openings;
     }
     if (edit.tool === "spawn") return next;
+    if (edit.tool === "room.fill_tiles") return detectLayoutRooms(fillRoomWithTiles(next, getOutdoorBounds(floor), edit, fundId), floor);
     if (edit.tool === "wall") {
       const wall = this.createWall(edit.start, edit.end);
       const wallRect = getWallRect(wall);
@@ -4010,6 +4012,7 @@ export class WorldRuntime {
       PROJECT_CONFLICT: "Objects overlap the current layout. Edit the draft to resolve them.",
       PROJECT_LIMIT: "This project is full. Submit it before starting another.",
       PROJECT_EMPTY: "This draft has no changes. Place or remove something before submitting it.",
+      ROOM_FILL_NO_SPACE: "No space for more tiles in this room.",
       PROPOSAL_CLOSED: "This proposal is closed. Create a new proposal.",
       PROPOSAL_ALREADY_VOTED: "Your vote has already been recorded.",
       PROPOSAL_VOTE_FORBIDDEN: "Only the affected team can vote on or apply this proposal.",

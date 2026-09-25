@@ -1,6 +1,6 @@
 import { applyBuildingProject } from "../testing/building-project.js";
 import { createTestData } from "../testing/workspace-data.js";
-import type { ServerEvent } from "@workhard/shared";
+import { detectLayoutRooms, type ServerEvent } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
 import { WorkspaceStore } from "../store.js";
 import { WorldRuntime } from "./world-runtime.js";
@@ -221,6 +221,46 @@ describe("WorldRuntime build editing", () => {
       edit: { tool: "asset", assetId: "floor-grass", variantId: "lava", rotation: 0, position: { x: -160, y: 128 } },
     });
     expect(commandError(events, "invalid-surface")).toMatchObject({ code: "ASSET_VARIANT_NOT_FOUND" });
+    runtime.stop();
+  });
+
+  it("previews a whole-room fill and replaces its existing tiles in one edit", () => {
+    const store = new WorkspaceStore(createTestData());
+    const floor = store.getFloor("floor-studio")!;
+    const layout = store.getLayout(floor.id)!;
+    layout.walls = [
+      { id: "top", start: { x: 96, y: 96 }, end: { x: 224, y: 96 } },
+      { id: "right", start: { x: 224, y: 96 }, end: { x: 224, y: 224 } },
+      { id: "bottom", start: { x: 96, y: 224 }, end: { x: 224, y: 224 } },
+      { id: "left", start: { x: 96, y: 96 }, end: { x: 96, y: 224 } },
+    ];
+    layout.openings = [];
+    layout.objects = [{ id: "original-tile", floorId: floor.id, assetId: "floor-stone-tiles", variantId: "limestone",
+      rotation: 0, x: 96, y: 96 }];
+    layout.rooms = detectLayoutRooms(layout, floor).rooms;
+    store.updateGameSettings({ roomAccess: { mode: "open", assignedPersonIds: [] }, roomBuild: { mode: "open", assignedPersonIds: [] } });
+    const runtime = new WorldRuntime(store);
+    const events: ServerEvent[] = [];
+    const peer = runtime.connect("user-maya", floor.id, (event) => events.push(event));
+    const fill = { tool: "room.fill_tiles" as const, roomId: layout.rooms[0]!.id, assetId: "floor-wood", variantId: "oak",
+      rotation: 0 as const, randomRotation: false };
+
+    runtime.handleCommand(peer, { type: "project.edit", requestId: "keep", baseRevision: layout.revision,
+      fundId: "workspace", edit: { ...fill, mode: "keep" } });
+    const kept = events.find((event) => event.type === "project.preview" && event.requestId === "keep");
+    expect(kept?.type).toBe("project.preview");
+    if (kept?.type !== "project.preview") throw new Error("Missing tile preview");
+    expect(kept.project.layout.objects).toHaveLength(4);
+    expect(kept.project.layout.objects).toContainEqual(layout.objects[0]);
+
+    runtime.handleCommand(peer, { type: "project.edit", requestId: "replace", baseRevision: layout.revision,
+      fundId: "workspace", draftId: kept.project.id, edit: { ...fill, mode: "replace", randomRotation: true } });
+    const replaced = events.find((event) => event.type === "project.preview" && event.requestId === "replace");
+    expect(replaced?.type).toBe("project.preview");
+    if (replaced?.type !== "project.preview") throw new Error("Missing replacement preview");
+    expect(replaced.project.layout.objects).toHaveLength(4);
+    expect(replaced.project.layout.objects.every((object) => object.assetId === "floor-wood" && object.id !== "original-tile")).toBe(true);
+    expect(replaced.project.quote.assetChanges.filter((change) => change.change === "remove")).toHaveLength(1);
     runtime.stop();
   });
 });
