@@ -123,8 +123,9 @@ const layoutEdit = z.discriminatedUnion("tool", [
     position,
   }).strict(),
   z.object({ tool: z.literal("item.remove"), item: layoutItem }).strict(),
+  z.object({ tool: z.literal("erase"), position, wallId: z.string().min(1).max(100).optional() }).strict(),
   z.object({
-    tool: z.enum(["door", "window", "erase", "spawn"]),
+    tool: z.enum(["door", "window", "spawn"]),
     position,
   }).strict(),
 ]);

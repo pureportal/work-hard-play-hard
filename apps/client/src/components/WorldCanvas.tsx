@@ -185,6 +185,7 @@ const TOUCH_DRAG_THRESHOLD = 10;
 const MULTI_POINTER_MOVE_THRESHOLD = 1;
 const MULTI_POINTER_ZOOM_THRESHOLD = 0.002;
 const MIN_TOUCH_TARGET_SIZE = 44;
+const MIN_WALL_TARGET_SCREEN_SIZE = 24;
 const SEATED_CHARACTER_OFFSET = (CHARACTER_FOOT_ANCHOR.y - CHARACTER_SEAT_ANCHOR.y) / CHARACTER_CANVAS_SIZE * CHARACTER_WORLD_SIZE;
 const SEATED_FEET_OFFSET = (CHARACTER_SEATED_FOOT_Y - CHARACTER_SEAT_ANCHOR.y) / CHARACTER_CANVAS_SIZE * CHARACTER_WORLD_SIZE;
 
@@ -1844,7 +1845,8 @@ class OfficeRenderer {
       } else if (this.editingTool === "erase") {
         const target = this.getBuildTarget(point, event.pointerType === "mouse" ? 0 : this.getTouchTargetWorldSize(), true);
         if (target?.type === "wall") {
-          this.callbacks.current.onEdit({ tool: "erase", position: point });
+          const wall = this.placementLayout?.walls.find((candidate) => candidate.id === target.id);
+          if (wall) this.callbacks.current.onEdit({ tool: "erase", wallId: wall.id, position: closestPointOnWall(wall, point).point });
         } else if (target) {
           this.callbacks.current.onEdit({ tool: "item.remove", item: target });
         }
@@ -2604,16 +2606,14 @@ class OfficeRenderer {
       return removing && requireAssetDefinition(object.assetId).kind === "portal" ? undefined : { type: "asset", id: object.id };
     }
     if (personalOnly) return undefined;
-    const wallPoint = removing ? { x: snapToAssetRaster(point.x), y: snapToAssetRaster(point.y) } : point;
-    if (removing && (
-      this.placementLayout.openings.some((candidate) => {
-        const wall = this.placementLayout?.walls.find((item) => item.id === candidate.wallId);
-        return wall && pointInRect(wallPoint.x, wallPoint.y, getOpeningRect(wall, candidate, BUILD_GRID_SIZE));
-      }) || this.placementLayout.objects.some((candidate) => isPointInPlacedAsset(wallPoint.x, wallPoint.y, candidate))
-    )) return undefined;
-    const wall = [...this.placementLayout.walls].reverse().find((candidate) => isPointInWorldTarget(
-      wallPoint.x, wallPoint.y, getWallRect(candidate, BUILD_GRID_SIZE), minimumTargetSize,
-    ));
+    const canvas = this.app.canvas.getBoundingClientRect();
+    const horizontalScale = canvas.width > 0 ? canvas.width / this.app.screen.width : 1;
+    const verticalScale = canvas.height > 0 ? canvas.height / this.app.screen.height : 1;
+    const pixelScale = this.zoom * Math.min(horizontalScale, verticalScale);
+    const wallTargetSize = Math.max(minimumTargetSize, WALL_THICKNESS + 8, MIN_WALL_TARGET_SCREEN_SIZE / pixelScale);
+    const wall = [...this.placementLayout.walls].reverse()
+      .filter((candidate) => isPointInWorldTarget(point.x, point.y, getWallRect(candidate), wallTargetSize))
+      .sort((left, right) => closestPointOnWall(left, point).distance - closestPointOnWall(right, point).distance)[0];
     return wall ? { type: "wall", id: wall.id } : undefined;
   }
 

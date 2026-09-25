@@ -951,7 +951,65 @@ describe("WorldCanvas build targets", () => {
     expect(rectangle.mock.calls).toContainEqual([removedSection.x, removedSection.y, removedSection.width, removedSection.height]);
     dispatchPointer(canvas, "pointerdown", point.x, point.y);
     dispatchPointer(canvas, "pointerup", point.x, point.y);
-    expect(onEdit).toHaveBeenCalledWith({ tool: "erase", position: { x: expect.closeTo(192), y: expect.closeTo(256) } });
+    expect(onEdit).toHaveBeenCalledWith({ tool: "erase", wallId: "horizontal", position: { x: expect.closeTo(192), y: expect.closeTo(256) } });
+  });
+
+  it.each(["horizontal", "vertical"] as const)("targets the visible %s wall evenly on both sides", async (orientation) => {
+    const wall = orientation === "horizontal"
+      ? { id: "wall", start: { x: 128, y: 256 }, end: { x: 384, y: 256 } }
+      : { id: "wall", start: { x: 256, y: 128 }, end: { x: 256, y: 384 } };
+    const neighboringWall = orientation === "horizontal"
+      ? { id: "neighbor", start: { x: 128, y: 288 }, end: { x: 384, y: 288 } }
+      : { id: "neighbor", start: { x: 288, y: 128 }, end: { x: 288, y: 384 } };
+    const onEdit = vi.fn();
+    const { container } = render(<WorldCanvas {...createProps()} editing editingTool="erase" players={[]} members={[]}
+      layout={{ ...layout, walls: [wall, neighboringWall] }} onEdit={onEdit} />);
+    const canvas = await findCanvas(container);
+    const rectangle = vi.spyOn(Graphics.prototype, "rect");
+    const bounds = getWallRect(wall, WALL_THICKNESS + 8);
+    const outline = [bounds.x, bounds.y, bounds.width, bounds.height];
+
+    for (const offset of [-24, -9, 0, 9, 24]) {
+      rectangle.mockClear();
+      onEdit.mockClear();
+      const worldX = orientation === "horizontal" ? 192 : 256 + offset;
+      const worldY = orientation === "horizontal" ? 256 + offset : 192;
+      const point = getScreenPoint(getApplication(), worldX, worldY);
+      dispatchPointer(canvas, "pointermove", point.x, point.y);
+      if (Math.abs(offset) <= 9) expect(rectangle.mock.calls).toContainEqual(outline);
+      else expect(rectangle.mock.calls).not.toContainEqual(outline);
+
+      dispatchPointer(canvas, "pointerdown", point.x, point.y);
+      dispatchPointer(canvas, "pointerup", point.x, point.y);
+      if (Math.abs(offset) <= 9) expect(onEdit).toHaveBeenCalledWith({ tool: "erase", wallId: "wall", position: {
+        x: expect.closeTo(orientation === "horizontal" ? worldX : 256),
+        y: expect.closeTo(orientation === "horizontal" ? 256 : worldY),
+      } });
+      else if (offset > 0) expect(onEdit).toHaveBeenCalledWith({ tool: "erase", wallId: "neighbor", position: {
+        x: expect.closeTo(orientation === "horizontal" ? worldX : 288),
+        y: expect.closeTo(orientation === "horizontal" ? 288 : worldY),
+      } });
+      else expect(onEdit).not.toHaveBeenCalled();
+    }
+  });
+
+  it("targets a visible wall section over a floor tile", async () => {
+    const wall = { id: "wall", start: { x: 128, y: 256 }, end: { x: 384, y: 256 } };
+    const tile = { id: "tile", floorId: "floor", assetId: "floor-ceramic", variantId: "ivory", rotation: 0 as const, x: 160, y: 224 };
+    const onEdit = vi.fn();
+    const { container } = render(<WorldCanvas {...createProps()} editing editingTool="erase" players={[]} members={[]}
+      layout={{ ...layout, walls: [wall], objects: [tile] }} onEdit={onEdit} />);
+    const canvas = await findCanvas(container);
+    const rectangle = vi.spyOn(Graphics.prototype, "rect");
+    const point = getScreenPoint(getApplication(), 192, 256);
+
+    dispatchPointer(canvas, "pointermove", point.x, point.y);
+    const bounds = getWallRect(wall, WALL_THICKNESS + 8);
+    expect(rectangle.mock.calls).toContainEqual([bounds.x, bounds.y, bounds.width, bounds.height]);
+
+    dispatchPointer(canvas, "pointerdown", point.x, point.y);
+    dispatchPointer(canvas, "pointerup", point.x, point.y);
+    expect(onEdit).toHaveBeenCalledWith({ tool: "erase", wallId: wall.id, position: { x: expect.closeTo(192), y: expect.closeTo(256) } });
   });
 });
 

@@ -122,7 +122,8 @@ export type LayoutEdit =
   | { tool: "wall.move"; wallId: string; start: Position; end: Position }
   | { tool: "opening.move"; openingId: string; position: Position }
   | { tool: "item.remove"; item: LayoutItemReference }
-  | { tool: Exclude<LayoutTool, "wall" | "asset">; position: Position };
+  | { tool: "erase"; position: Position; wallId?: string }
+  | { tool: Exclude<LayoutTool, "wall" | "asset" | "erase">; position: Position };
 
 export type LayoutItemReference =
   | { type: "asset"; id: string }

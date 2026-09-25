@@ -1958,7 +1958,15 @@ export class WorldRuntime {
       this.assertWallPlacement(next, floor, wall);
       next.walls.push(wall);
     } else if (edit.tool === "erase") {
-      this.eraseLayoutItem(peer.floorId, next, snapToAssetRaster(edit.position.x), snapToAssetRaster(edit.position.y));
+      const x = snapToAssetRaster(edit.position.x);
+      const y = snapToAssetRaster(edit.position.y);
+      if (edit.wallId) {
+        const wall = next.walls.find((candidate) => candidate.id === edit.wallId);
+        if (!wall) throw new Error("NOTHING_TO_ERASE");
+        this.eraseWallSection(next, wall, x, y);
+      } else {
+        this.eraseLayoutItem(peer.floorId, next, x, y);
+      }
     } else if (edit.tool === "door" || edit.tool === "window") {
       this.addWallOpening(next, edit.tool, edit.position);
     } else if (edit.tool === "asset" || edit.tool === "public_asset" || edit.tool === "personal_asset") {

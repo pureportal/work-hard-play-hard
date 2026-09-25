@@ -32,6 +32,7 @@
     "check": "pnpm release:validate && pnpm assets:world:check && pnpm assets:characters:check && pnpm assets:optimize:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:ui",
     "e2e": "pnpm --filter @workhard/server exec tsx ../../scripts/empty-workspace-browser-check.ts",
     "e2e:building": "pnpm --filter @workhard/server exec tsx ../../scripts/room-building-browser-check.ts",
+    "e2e:walls": "pnpm --filter @workhard/client exec vite build && pnpm --filter @workhard/server exec tsx ../../scripts/wall-removal-playwright-check.ts",
     "e2e:governance": "pnpm build:client && pnpm --filter @workhard/server exec tsx ../../scripts/governance-browser-check.ts",
     "e2e:economy": "pnpm build:client && pnpm --filter @workhard/server exec tsx ../../scripts/economy-browser-check.ts",
     "e2e:chess": "pnpm build:client && pnpm --filter @workhard/server exec tsx ../../scripts/chess-puppeteer-check.ts",

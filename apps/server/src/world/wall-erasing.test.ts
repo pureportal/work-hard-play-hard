@@ -29,12 +29,12 @@ function createEditorSession(walls: Wall[], openings: WallOpening[] = []): Edito
   return { store, runtime, peerId, events };
 }
 
-function erase(session: EditorSession, x: number, y: number): void {
+function erase(session: EditorSession, x: number, y: number, wallId?: string): void {
   const revision = session.store.getLayout("floor-studio")?.revision ?? 0;
   applyBuildingProject(session.runtime, session.store, session.peerId, session.events, {
     requestId: `erase-${x}-${y}`,
     baseRevision: revision,
-    edit: { tool: "erase", position: { x, y } },
+    edit: { tool: "erase", position: { x, y }, ...(wallId ? { wallId } : {}) },
   });
 }
 
@@ -90,6 +90,19 @@ describe("wall erasing at intersections", () => {
       verticalJunction,
       { id: "long-horizontal", start: { x: 448, y: 320 }, end: { x: 800, y: 320 } },
     ]);
+    session.runtime.stop();
+  });
+
+  it("erases the chosen wall section when a floor tile shares its cell", () => {
+    const session = createEditorSession([horizontal]);
+    const layout = session.store.getLayout("floor-studio")!;
+    layout.objects = [{ id: "floor-tile", floorId: layout.floorId, assetId: "floor-ceramic", variantId: "ivory", rotation: 0, x: 384, y: 416 }];
+
+    erase(session, 416, 448, horizontal.id);
+
+    expect(session.events.some((event) => event.type === "command.error")).toBe(false);
+    expect(session.store.getLayout("floor-studio")?.walls).toEqual([]);
+    expect(session.store.getLayout("floor-studio")?.objects.map((object) => object.id)).toEqual(["floor-tile"]);
     session.runtime.stop();
   });
 
