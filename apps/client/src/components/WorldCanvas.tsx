@@ -773,8 +773,7 @@ class OfficeRenderer {
       this.cameraUserId = this.currentUserId;
       this.updateCameraMode("follow");
       if (this.app.screen.width <= 700) {
-        const floorScale = Math.min((this.app.screen.width - 28) / floor.width, (this.app.screen.height - 120) / floor.height);
-        this.zoom = clampCameraZoom(Math.max(0.38, Math.min(0.55, floorScale * 1.8)));
+        this.zoom = clampCameraZoom(0.9);
       }
       for (const view of this.gongCelebrationViews.values()) {
         view.container.destroy({ children: true });

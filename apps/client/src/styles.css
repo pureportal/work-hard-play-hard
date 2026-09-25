@@ -553,6 +553,8 @@ a:focus-visible,
   box-shadow: 6px 0 24px rgba(19, 18, 28, 0.17);
 }
 
+.mobile-nav-items { display: none; }
+
 .brand-mark {
   display: grid;
   place-items: center;
@@ -2384,6 +2386,12 @@ button:disabled {
   color: #a43c3c;
 }
 
+.build-selection button kbd {
+  font-family: inherit;
+  font-size: 10px;
+  opacity: 0.65;
+}
+
 .build-toggle {
   display: flex;
   align-items: center;
@@ -2818,12 +2826,15 @@ button:disabled {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 12px;
   font-size: 12px;
   font-weight: 750;
-  border-radius: 9px;
+  border-radius: 10px;
 }
+
+.primary-button:focus-visible, .secondary-button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.primary-button:disabled, .secondary-button:disabled { opacity: .6; cursor: default; }
 
 .primary-button {
   color: var(--brand-on-primary);
@@ -2852,9 +2863,9 @@ button:disabled {
 }
 
 .secondary-button {
-  color: #5d5865;
-  background: white;
-  border: 1px solid #ddd8d2;
+  color: var(--ink);
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
 }
 
 .score-avatar {
@@ -3828,8 +3839,6 @@ button:disabled {
 :root[data-theme="dark"] .asset-category-tabs button,
 :root[data-theme="dark"] .asset-variants button,
 :root[data-theme="dark"] .build-selection button,
-:root[data-theme="dark"] .shop-asset,
-:root[data-theme="dark"] .inventory-asset,
 :root[data-theme="dark"] .room-control,
 :root[data-theme="dark"] .build-toggle,
 :root[data-theme="dark"] .conversation-tabs button,
@@ -4603,14 +4612,23 @@ button:disabled {
     width: 100%;
     min-height: 0;
     padding: 4px 6px env(safe-area-inset-bottom);
-    overflow-x: auto;
+    overflow-x: visible;
     overflow-y: hidden;
     overscroll-behavior-x: contain;
     scrollbar-width: thin;
     border-top: 1px solid #ffffff16;
     border-right: 0;
-    scroll-snap-type: x proximity;
+    scroll-snap-type: none;
   }
+
+  .nav-rail > .brand-nav-item, .nav-rail > .nav-rail-items, .nav-rail > .nav-rail-bottom { display: none; }
+  .mobile-nav-items { display: flex; width: 100%; justify-content: space-around; }
+  .nav-rail .mobile-nav-items .nav-item { flex: 1 1 0; min-width: 0; }
+  .mobile-nav-menu { position: absolute; right: 8px; bottom: calc(var(--mobile-nav-height) + 8px); z-index: 80; display: grid; width: min(260px, calc(100vw - 16px)); padding: 6px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel-strong); box-shadow: var(--shadow); }
+  .mobile-nav-menu button { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 8px 12px; border: 0; border-radius: 10px; color: var(--ink); background: transparent; text-align: left; }
+  .mobile-nav-menu button:hover, .mobile-nav-menu button[aria-current="page"] { background: var(--accent-soft); }
+  .mobile-nav-menu button span:last-child:not(.avatar) { margin-left: auto; }
+  .mobile-nav-menu .nav-avatar { width: 20px; height: 20px; }
 
   .nav-rail-items, .nav-rail-bottom { flex: 0 0 auto; flex-direction: row; gap: 0; }
   .nav-rail .nav-item { flex: 0 0 68px; display: flex; flex-direction: column; justify-content: center; gap: 2px; scroll-snap-align: start; }

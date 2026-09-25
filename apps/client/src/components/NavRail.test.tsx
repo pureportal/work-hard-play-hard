@@ -1,5 +1,5 @@
 import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { Member } from "@workhard/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NavRail } from "./NavRail";
@@ -22,15 +22,31 @@ const currentUser: Member = {
 afterEach(cleanup);
 
 describe("NavRail", () => {
-  it("shows Approval Desk only when the feature is enabled", () => {
+  it("keeps mobile destinations in a More menu", () => {
+    const previousWidth = window.innerWidth;
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 390 });
+    try {
+      const onChange = vi.fn();
+      render(<NavRail corporateIdentity={createTestCorporateIdentity()} activePanel={null} canUseBuild currentUser={currentUser}
+        unreadMessages={0} onChange={onChange} onAvatarClick={vi.fn()} onSignOut={vi.fn()} approvalDeskEnabled />);
+      expect(screen.getByRole("button", { name: "Stampworks" })).toBeTruthy();
+      expect(screen.queryByRole("button", { name: "Messages" })).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: "More" }));
+      fireEvent.click(screen.getByRole("button", { name: "Messages" }));
+      expect(onChange).toHaveBeenCalledWith("chat");
+    } finally {
+      Object.defineProperty(window, "innerWidth", { configurable: true, value: previousWidth });
+    }
+  });
+  it("shows Stampworks only when the feature is enabled", () => {
     const props = {
       corporateIdentity: createTestCorporateIdentity(), activePanel: null, canUseBuild: true,
       currentUser, unreadMessages: 0, onChange: vi.fn(), onAvatarClick: vi.fn(), onSignOut: vi.fn(),
     } as const;
     const { rerender } = render(<NavRail {...props} />);
-    expect(screen.queryByRole("button", { name: "Approval Desk" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Stampworks" })).toBeNull();
     rerender(<NavRail {...props} approvalDeskEnabled />);
-    expect(screen.getByRole("button", { name: "Approval Desk" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Stampworks" })).toBeTruthy();
   });
 
   it("associates the unread count with Messages without changing its control name", () => {
