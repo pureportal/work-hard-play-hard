@@ -306,6 +306,19 @@ describe("AuthScreen setup", () => {
     expect(onAuthenticated).toHaveBeenCalledWith(true);
   });
 
+  it("requires a valid invitation code before account creation", () => {
+    render(<AuthScreen passwordResetEnabled corporateIdentity={corporateIdentity} setupRequired={false}
+      registrationsEnabled invitationRequired magicLinkEnabled onAuthenticated={vi.fn()} />);
+    fireEvent.click(screen.getByRole("tab", { name: "Create account" }));
+    const code = screen.getByRole("textbox", { name: "Invitation code" }) as HTMLInputElement;
+    expect(code.required).toBe(true);
+    expect(code.checkValidity()).toBe(false);
+    fireEvent.change(code, { target: { value: "short" } });
+    expect(code.checkValidity()).toBe(false);
+    fireEvent.change(code, { target: { value: "a".repeat(43) } });
+    expect(code.checkValidity()).toBe(true);
+  });
+
   it("connects to a custom server before authentication", async () => {
     const onServerChanged = vi.fn();
     render(

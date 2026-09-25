@@ -224,6 +224,7 @@ export function AuthScreen({
                   minLength={43}
                   maxLength={43}
                   pattern="[A-Za-z0-9_-]{43}"
+                  required
                 />
               </label>
             )}

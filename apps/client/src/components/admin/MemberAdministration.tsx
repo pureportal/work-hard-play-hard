@@ -5,9 +5,9 @@ import type { ServerAdminDialogProps } from "./ServerAdminDialog";
 import { Avatar } from "../Avatar";
 import { IconButton } from "../IconButton";
 
-export function MemberAdministration({ members, currentUser, invitations, invitationLinks, onAccessChange, onInvite, onCopyInvite, onRevokeInvite, showInvite = false }: ServerAdminDialogProps) {
+export function MemberAdministration({ members, currentUser, invitations, invitationLinks, onAccessChange, onInvite, onCopyInvite, onRevokeInvite }: ServerAdminDialogProps) {
   const [query, setQuery] = useState("");
-  const [inviting, setInviting] = useState(showInvite);
+  const [inviting, setInviting] = useState(false);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<Exclude<MemberRole, "owner">>("member");
   const [busy, setBusy] = useState<string>();

@@ -112,6 +112,7 @@ import { ConfirmationDialog } from "./components/ConfirmationDialog";
 import { MeetingsPanel } from "./components/MeetingsPanel";
 import { NavRail, type WorkspacePanel } from "./components/NavRail";
 import { PeoplePanel } from "./components/PeoplePanel";
+import { InviteMemberDialog } from "./components/InviteMemberDialog";
 import { ProximityCall } from "./components/ProximityCall";
 import { useProximitySession } from "./hooks/useProximitySession";
 import { InteractionPanel } from "./components/InteractionPanel";
@@ -639,7 +640,7 @@ export function Workspace({
   const [placingOwnedAssetId, setPlacingOwnedAssetId] = useState<string>();
   const [pendingEconomyRequest, setPendingEconomyRequest] = useState<PendingEconomyRequest>();
   const [dailyBonusOpen, setDailyBonusOpen] = useState(false);
-  const [adminInviteOpen, setAdminInviteOpen] = useState(false);
+  const [peopleInviteOpen, setPeopleInviteOpen] = useState(false);
   const [dailyBonusError, setDailyBonusError] = useState<string>();
   const [meetingId, setMeetingId] = useState<string>();
   const [meetingConnection, setMeetingConnection] = useState<MediaConnection>();
@@ -1745,7 +1746,7 @@ export function Workspace({
 
   const openPanel = (panel: WorkspacePanel) => {
     setActivePanel(panel);
-    if (panel !== "admin") setAdminInviteOpen(false);
+    if (panel !== "people") setPeopleInviteOpen(false);
     if (panel === "build") {
       pendingTravelFocus.current = undefined;
       request({ type: "movement.stop", requestId: requestId() });
@@ -3061,14 +3062,15 @@ export function Workspace({
         <PeoplePanel
           members={data.members}
           currentUser={currentUser}
-          onClose={() => setActivePanel(null)}
+          onClose={() => { setPeopleInviteOpen(false); setActivePanel(null); }}
           onWave={(targetUserId) => request({ type: "interaction.wave", requestId: requestId(), targetUserId })}
           onMessage={messageMember}
           onCall={callMember}
           onLocate={locateMember}
-          {...(currentUser.role === "owner" ? { onInvite: () => { setAdminInviteOpen(true); openPanel("admin"); } } : {})}
+          {...(currentUser.role === "owner" ? { onInvite: () => setPeopleInviteOpen(true) } : {})}
         />
       )}
+      {activePanel === "people" && peopleInviteOpen && <InviteMemberDialog onInvite={addInvitation} onClose={() => setPeopleInviteOpen(false)} />}
       {activePanel === "chat" && (
         <ChatPanel
           conversations={visibleConversations}
@@ -3086,11 +3088,11 @@ export function Workspace({
         <MeetingsPanel meetings={visibleMeetings} rooms={allRooms} members={data.members} openingMeetingId={openingMeeting?.meetingId} onJoin={(meeting) => openMeeting(meeting, "full")} onClose={() => setActivePanel(null)} />
       )}
       {activePanel === "admin" && canManageMembers && <DeferredContent onClose={() => openPanel(null)}>
-        <ServerAdminDialog members={data.members} currentUser={currentUser} invitations={data.invitations} invitationLinks={invitationLinks} showInvite={adminInviteOpen}
+        <ServerAdminDialog members={data.members} currentUser={currentUser} invitations={data.invitations} invitationLinks={invitationLinks}
           corporateIdentity={data.corporateIdentity}
           onInvite={addInvitation} onRevokeInvite={removeInvitation} onCopyInvite={copyInvitationLink} onAccessChange={updateMemberAccess}
           onRegistrationSettingsSave={saveRegistrationSettings} onCorporateIdentitySave={saveCorporateIdentity}
-          onCorporateLogoUpload={updateCorporateLogo} onCorporateLogoRemove={removeCorporateIdentityLogo} onClose={() => { setAdminInviteOpen(false); openPanel(null); }} />
+          onCorporateLogoUpload={updateCorporateLogo} onCorporateLogoRemove={removeCorporateIdentityLogo} onClose={() => openPanel(null)} />
       </DeferredContent>}
       {activePanel === "settings" && (
         <DeferredContent sidebar onClose={() => setActivePanel(null)}>
