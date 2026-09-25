@@ -23,7 +23,7 @@
   width: min(520px, calc(100vw - 24px));
   max-height: calc(100dvh - 24px);
   border: 1px solid #f6d897;
-  border-radius: 28px;
+  border-radius: 20px;
   color: #38274b;
   background: #fff8ec;
   box-shadow: 0 26px 100px #18102666, 0 0 0 6px #ffffff12;
@@ -46,15 +46,15 @@
   right: 14px;
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   border: 1px solid #5134571a;
-  border-radius: 50%;
+  border-radius: 10px;
   color: #644f71;
   background: #ffffff9c;
 }
 .daily-bonus-close:hover { background: white; transform: rotate(8deg); }
-.daily-bonus-dialog button:focus-visible { outline: 3px solid #8952ce; outline-offset: 4px; }
+.daily-bonus-dialog button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .daily-bonus-art { position: relative; width: 230px; height: 156px; margin: 0 auto 6px; }
 .daily-bonus-orbit {
   position: absolute;
@@ -105,9 +105,8 @@
 .daily-bonus-days li.is-complete { color: #56816c; background: #eaf2e5; border-color: #c9dcc5; }
 .daily-bonus-days li.is-current { color: #754aa3; border: 2px solid #a37bc7; padding: 10px 0; background: #f3e8fc; box-shadow: 0 3px 0 #b89ace; transform: translateY(-3px); }
 .daily-bonus-days li:last-child:not(.is-current):not(.is-complete) { color: #a06b24; background: #fff0cb; border-color: #efd59a; }
-.daily-bonus-claim { display: flex; justify-content: center; align-items: center; gap: 9px; width: 100%; min-height: 50px; border: 1px solid #72419d; border-radius: 15px; color: white; background: linear-gradient(#a470cd, #8551b5); box-shadow: 0 4px 0 #613b88, inset 0 1px 0 #ffffff55; font-size: 16px; font-weight: 800; transition: transform 160ms, box-shadow 160ms; }
-.daily-bonus-claim:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 0 #613b88, 0 9px 24px #8953b333; }
-.daily-bonus-claim:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 #613b88; }
+.daily-bonus-claim { display: flex; justify-content: center; align-items: center; gap: 9px; width: 100%; min-height: 50px; border: 1px solid var(--accent); border-radius: 10px; color: var(--brand-on-primary); background: var(--accent); font-size: 14px; font-weight: 750; transition: background 160ms; }
+.daily-bonus-claim:hover:not(:disabled) { background: var(--accent-dark); }
 .daily-bonus-claim:disabled { opacity: .65; cursor: wait; }
 .daily-bonus-next { margin: 17px 0 0; color: #76617e; font-size: 12px; }
 .daily-bonus-error { color: #a23048; font-size: 13px; margin: 0 0 12px; }

@@ -20,12 +20,12 @@ export function PlayerAssetShop({ economy, pending, purchasingAssetId, onPurchas
       const unavailable = !asset.shop!.available;
       const insufficient = economy.coinBalance < asset.shop!.price;
       const shortfall = asset.shop!.price - economy.coinBalance;
-      const actionLabel = unavailable ? "Unavailable" : inventoryFull ? "Inventory full" : insufficient ? `Need ${shortfall}` : "Buy";
-      const accessibleActionLabel = unavailable ? `${asset.name} unavailable` : inventoryFull ? `Inventory full for ${asset.name}`
+      const actionLabel = unavailable ? "Shared only" : inventoryFull ? "Inventory full" : insufficient ? `Need ${shortfall}` : "Buy";
+      const accessibleActionLabel = unavailable ? `${asset.name} is available in Shared` : inventoryFull ? `Inventory full for ${asset.name}`
         : insufficient ? `Need ${shortfall} more coins for ${asset.name}` : `Buy ${asset.name}`;
-      return <article className="catalog-asset shop-asset" key={asset.id} data-rarity={asset.rarity}>
+      return <article className="catalog-asset shop-asset" key={asset.id} data-rarity={asset.rarity} aria-description={`${asset.rarity} rarity`}>
         <AssetShape asset={asset} />
-        <div className="catalog-asset-details"><strong>{asset.name}</strong><span className="catalog-asset-meta"><span className="catalog-asset-rarity">{asset.rarity}</span><span>{asset.shop!.price} coins</span></span></div>
+        <div className="catalog-asset-details"><strong>{asset.name}</strong><span>{asset.shop!.price} coins</span></div>
         <span className="catalog-asset-features"><AssetFeatureIndicators asset={asset} /></span>
         <button aria-label={accessibleActionLabel} disabled={unavailable || inventoryFull || insufficient || pending}
           onClick={() => onPurchase(asset.id)}>{purchasingAssetId === asset.id ? "Buying…" : actionLabel}</button>

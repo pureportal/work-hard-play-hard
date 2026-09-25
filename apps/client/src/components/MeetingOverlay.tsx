@@ -111,7 +111,7 @@ export function MeetingOverlay({ small, meeting, connection, members, currentUse
       </header>
 
       <div className={`meeting-main show-${mobileView}${chatOpen ? "" : " without-chat"}`}>
-        <div className="meeting-stage" id="meeting-video-panel">
+        <div className="meeting-stage" id="meeting-video-panel" data-solo={session.participants.length === 1 && screens.length === 0}>
           {(media.errors.length > 0 || failed || !mediaSupported || fullscreenError) && <div className="meeting-media-errors" role="alert">
             {media.errors.map((error) => <p key={error}>{error}</p>)}
             {fullscreenError && <p>{fullscreenError}</p>}
@@ -133,6 +133,7 @@ export function MeetingOverlay({ small, meeting, connection, members, currentUse
               onClick={() => { setSettingsOpen(false); onOpenAsset(object); }}>{object.label ?? "Open board"}</button>)}</div>}
           </div>}
           <CallVideoStage tiles={tiles} expanded={!small} />
+          {!small && session.participants.length === 1 && screens.length === 0 && eligibleInvitees.length > 0 && <button type="button" className="meeting-invite-prompt" onClick={() => setSettingsOpen(true)}><Users size={18} />Invite someone</button>}
         </div>
         <div className="meeting-chat-container" id="meeting-chat-panel" hidden={small}><MeetingChat messages={messages} members={members} currentUserId={currentUserId} disabled={leaving} onSend={onSendMessage} /></div>
       </div>

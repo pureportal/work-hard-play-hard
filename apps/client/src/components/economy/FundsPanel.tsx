@@ -55,7 +55,7 @@ export function FundsPanel({ economy, organisation, members, userId, personalBal
         const definition = getAssetDefinition(asset.assetId)!;
         return <article className="shared-inventory-item" key={asset.id}><AssetShape asset={definition} rotation={0} variantId={getDefaultAssetVariantId(definition)} />
           <strong>{definition.name}</strong>{canPropose && <div className="economy-actions"><button className="primary-button" disabled={pending} onClick={() => onPlace(asset.id, asset.assetId, asset.fundId)}>Place</button>
-            <button className="secondary-button" disabled={pending} onClick={() => propose(`Sell ${definition.name}`, { kind: "asset.sell", publicAssetId: asset.id })}>Propose sale · {Math.floor(asset.paid / 3)} coins</button></div>}</article>;
+            {asset.paid >= 3 && <button className="secondary-button" disabled={pending} onClick={() => propose(`Sell ${definition.name}`, { kind: "asset.sell", publicAssetId: asset.id })}>Propose sale · {Math.floor(asset.paid / 3)} coins</button>}</div>}</article>;
       })}</div> : <div className="dialog-empty"><Archive size={32} /><p>No shared items in storage.</p></div>}</section>}
       {view === "settings" && canPropose && <FundSettings key={`${fund.id}-${economy.revision}`} fund={fund} economy={economy} organisation={organisation} members={members} pending={pending} onPropose={propose} />}
       {view === "activity" && <section aria-label="Transactions">{transactions.length ? <div className="fund-transactions">{transactions.map((entry) => <div className="fund-transaction" key={entry.id}>
