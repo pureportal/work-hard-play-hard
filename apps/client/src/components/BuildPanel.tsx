@@ -12,18 +12,16 @@ import {
   RotateCw,
   Trash2,
 } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
-import { ASSET_CATALOG, getAssetDefinition, getTeleporterPrice, getDefaultAssetVariantId } from "@workhard/shared";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { ASSET_CATALOG, getAssetDefinition, getDefaultAssetVariantId } from "@workhard/shared";
 import type { AssetRotation, FloorLayout, LayoutItemReference, LayoutTool, ProjectEdit } from "@workhard/shared";
 import type { LucideIcon } from "lucide-react";
 import { getAssetOrientationLabel, rotateAssetClockwise } from "../asset-orientation";
 import { IconButton } from "./IconButton";
 import { SurfaceHeader } from "./SurfaceHeader";
-import { AssetShape } from "./AssetShape";
 import { AssetVariantPicker } from "./AssetVariantPicker";
 import { AssetBrowser } from "./AssetBrowser";
-import { AssetFeatureIndicators } from "./AssetFeatureIndicators";
-import { hasAssetFeature } from "../asset-features";
+import { BuildAssetCard } from "./BuildAssetCard";
 import "../build-panel.css";
 
 interface BuildPanelProps {
@@ -99,6 +97,14 @@ export function BuildPanel({
   const [fillMode, setFillMode] = useState<"keep" | "replace">("keep");
   const [randomRotation, setRandomRotation] = useState(false);
   const [mobile, setMobile] = useState(() => window.innerWidth <= 700);
+  const assetSelectionRef = useRef({ assetId, onAssetChange, onToolChange, tool });
+  assetSelectionRef.current = { assetId, onAssetChange, onToolChange, tool };
+  const selectAsset = useCallback((selectedAssetId: string) => {
+    const current = assetSelectionRef.current;
+    current.onAssetChange(selectedAssetId);
+    if (current.tool !== "asset" || selectedAssetId === current.assetId) current.onToolChange("asset");
+    setPickerOpen(false);
+  }, []);
   useEffect(() => {
     const update = () => setMobile(window.innerWidth <= 700);
     window.addEventListener("resize", update);
@@ -191,21 +197,11 @@ export function BuildPanel({
       <div className="build-workspace" id="build-asset-picker" inert={disabled}>
         <section className="build-section asset-library" aria-label="Assets">
           <AssetBrowser assets={buildableAssets} categoryLabel="Asset categories"
-            renderAsset={(asset) => <button key={asset.id} aria-label={asset.name}
-              className={`catalog-asset catalog-selectable${tool === "asset" && asset.id === assetId ? " active" : ""}`}
-              aria-pressed={tool === "asset" && asset.id === assetId}
-              aria-description={[
-                `${asset.rarity[0]!.toUpperCase() + asset.rarity.slice(1)} · ${asset.kind === "portal" ? getTeleporterPrice(floorCount) : asset.shop?.price} coins`,
-                ...(hasAssetFeature(asset, "animated") ? ["Animated"] : []),
-                ...(hasAssetFeature(asset, "interactive") ? ["Interactive"] : []),
-              ].join(" · ")}
-              data-rarity={asset.rarity} onClick={() => { onAssetChange(asset.id); if (tool !== "asset" || asset.id === assetId) onToolChange("asset"); setPickerOpen(false); }}>
-              <AssetShape asset={asset} rotation={asset.id === assetId ? assetRotation : 0}
-                variantId={asset.id === assetId ? assetVariantId : getDefaultAssetVariantId(asset)} />
-              <span className="catalog-asset-details"><strong>{asset.name}</strong>
-                <span>{asset.kind === "portal" ? getTeleporterPrice(floorCount) : asset.shop?.price} coins</span></span>
-              <span className="catalog-asset-features"><AssetFeatureIndicators asset={asset} /></span>
-            </button>}
+            renderAsset={(asset) => <BuildAssetCard key={asset.id} asset={asset} floorCount={floorCount}
+              selected={tool === "asset" && asset.id === assetId}
+              rotation={tool === "asset" && asset.id === assetId ? assetRotation : 0}
+              variantId={tool === "asset" && asset.id === assetId ? assetVariantId : getDefaultAssetVariantId(asset)}
+              onSelect={selectAsset} />}
             footer={(tool === "asset" || movingItem?.type === "asset") && selectedDefinition && (
             <div className="asset-placement-options">
               <AssetVariantPicker asset={selectedDefinition} rotation={assetRotation} value={assetVariantId} onChange={onAssetVariantChange} />
