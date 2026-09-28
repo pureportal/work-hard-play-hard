@@ -61,7 +61,7 @@ export function NavRail({ activePanel, corporateIdentity, canUseBuild, approvalD
     return () => { document.removeEventListener("keydown", close); document.removeEventListener("pointerdown", closeOutside); };
   }, [moreOpen]);
   const availableItems = items.filter(({ panel }) => panel !== "approvalDesk" || approvalDeskEnabled).filter(({ panel }) => panel !== "build" || canUseBuild);
-  const mobilePrimary = availableItems.filter(({ panel }) => panel === "people" || panel === "approvalDesk" || panel === "build");
+  const mobilePrimary = availableItems.filter(({ panel }) => panel === "people" || panel === "approvalDesk" || panel === "build" || panel === "meetings");
   const mobileMore = availableItems.filter(({ panel }) => !mobilePrimary.some((item) => item.panel === panel));
   const navigate = (panel: WorkspacePanel) => { setMoreOpen(false); onChange(activePanel === panel ? null : panel); };
   return (
