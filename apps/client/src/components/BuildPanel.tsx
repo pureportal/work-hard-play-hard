@@ -163,7 +163,7 @@ export function BuildPanel({
           >
             <Icon size={19} />
             <span>{label}</span>
-            <kbd aria-hidden="true">{shortcut}</kbd>
+            <kbd aria-hidden="true" data-shortcut={shortcut} />
           </button>
         ))}
       </div>
