@@ -87,6 +87,15 @@ interface MagicLinkResponse {
 
 export type RegistrationResponse = { user: AuthUser } | { verificationRequired: true; registrationLink?: string };
 
+export async function fetchRegistrationRequirements(email: string): Promise<{ invitationRequired: boolean }> {
+  const response = await fetchWithTimeout("/v1/auth/register/requirements", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  return readResponse(response);
+}
+
 export interface IssuedInvitation extends Invitation {
   inviteLink?: string;
 }

@@ -1,7 +1,7 @@
 import { ArrowLeft, Mail, ServerCog } from "lucide-react";
 import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import type { CorporateIdentity } from "@workhard/shared";
-import { login, registerAccount, requestMagicLink } from "../api";
+import { ApiError, fetchRegistrationRequirements, login, registerAccount, requestMagicLink } from "../api";
 import { getDefaultServerOrigin, getServerOrigin } from "../server-url";
 import { AuthWorldPreview } from "./AuthWorldPreview";
 import { ServerConnectionForm } from "./ServerConnectionForm";
@@ -57,6 +57,10 @@ export function AuthScreen({
   const [magicSent, setMagicSent] = useState(false);
   const [registrationEmail, setRegistrationEmail] = useState<string>();
   const [registrationLink, setRegistrationLink] = useState<string>();
+  const [registrationEmailValue, setRegistrationEmailValue] = useState("");
+  const [invitationCheck, setInvitationCheck] = useState<{ email: string; required: boolean }>();
+  const currentRegistrationEmail = useRef("");
+  const invitationCheckId = useRef(0);
   const [activeServer, setActiveServer] = useState(getServerOrigin);
   const [showServer, setShowServer] = useState(Boolean(initialError));
   const customServerActive = activeServer !== null && activeServer !== getDefaultServerOrigin();
@@ -71,6 +75,26 @@ export function AuthScreen({
     setMagicLink(undefined);
     setRegistrationEmail(undefined);
     setRegistrationLink(undefined);
+    setRegistrationEmailValue("");
+    setInvitationCheck(undefined);
+    currentRegistrationEmail.current = "";
+    invitationCheckId.current += 1;
+  };
+
+  const checkInvitationOnBlur = async (input: HTMLInputElement) => {
+    if (!invitationRequired || invitationToken || setupRequired || !input.validity.valid) return;
+    const email = input.value.trim();
+    if (invitationCheck?.email === email) return;
+    const checkId = ++invitationCheckId.current;
+    try {
+      const requirements = await fetchRegistrationRequirements(email);
+      if (checkId !== invitationCheckId.current || currentRegistrationEmail.current !== email) return;
+      setInvitationCheck({ email, required: requirements.invitationRequired });
+      setError(undefined);
+    } catch (reason) {
+      if (checkId !== invitationCheckId.current || currentRegistrationEmail.current !== email) return;
+      setError(reason instanceof Error ? reason.message : "Registration requirements could not load.");
+    }
   };
 
   const submitLogin = async (event: FormEvent<HTMLFormElement>) => {
@@ -85,21 +109,43 @@ export function AuthScreen({
   const submitRegistration = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    const email = String(form.get("email")).trim();
+    invitationCheckId.current += 1;
+    if (currentRegistrationEmail.current !== email) {
+      currentRegistrationEmail.current = email;
+      setRegistrationEmailValue(email);
+      setInvitationCheck(undefined);
+    }
     await perform(async () => {
       const enteredInvitationCode = String(form.get("invitationCode") ?? "").trim();
       const registrationInvitationToken = (invitationToken ?? enteredInvitationCode) || undefined;
-      const response = await registerAccount(
-        String(form.get("username")),
-        String(form.get("email")),
-        String(form.get("password")),
-        registrationInvitationToken,
-      );
-      if ("verificationRequired" in response) {
-        setRegistrationEmail(String(form.get("email")));
-        setRegistrationLink(response.registrationLink);
-        return;
+      if (!setupRequired && invitationRequired && !registrationInvitationToken) {
+        const required = invitationCheck?.email === email
+          ? invitationCheck.required
+          : (await fetchRegistrationRequirements(email)).invitationRequired;
+        if (currentRegistrationEmail.current !== email) return;
+        setInvitationCheck({ email, required });
+        if (required) return;
       }
-      await onAuthenticated(Boolean(registrationInvitationToken));
+      try {
+        const response = await registerAccount(
+          String(form.get("username")),
+          email,
+          String(form.get("password")),
+          registrationInvitationToken,
+        );
+        if ("verificationRequired" in response) {
+          setRegistrationEmail(email);
+          setRegistrationLink(response.registrationLink);
+          return;
+        }
+        await onAuthenticated(Boolean(registrationInvitationToken));
+      } catch (reason) {
+        if (reason instanceof ApiError && reason.code === "INVITATION_REQUIRED" && !invitationToken) {
+          setInvitationCheck({ email, required: true });
+        }
+        throw reason;
+      }
     });
   };
 
@@ -212,10 +258,17 @@ export function AuthScreen({
             </label>
             <label>
               <span>Email</span>
-              <input name="email" type="email" autoComplete="email" required />
+              <input name="email" type="email" autoComplete="email" required onChange={(event) => {
+                const email = event.currentTarget.value.trim();
+                currentRegistrationEmail.current = email;
+                invitationCheckId.current += 1;
+                setRegistrationEmailValue(email);
+                setInvitationCheck(undefined);
+                setError(undefined);
+              }} onBlur={(event) => { void checkInvitationOnBlur(event.currentTarget); }} />
             </label>
             <PasswordField id="registration-password" autoComplete="new-password" maxLength={128} />
-            {!setupRequired && invitationRequired && !invitationToken && (
+            {!setupRequired && !invitationToken && invitationCheck?.email === registrationEmailValue && invitationCheck.required && (
               <label>
                 <span>Invitation code</span>
                 <input

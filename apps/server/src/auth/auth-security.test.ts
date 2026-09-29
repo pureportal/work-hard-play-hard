@@ -134,6 +134,31 @@ describe("password recovery API", () => {
 });
 
 describe("registration verification", () => {
+  it("checks invitation requirements for an email without exposing the domain list or account existence", async () => {
+    const context = await application();
+    context.store.updateRegistrationSettings({ enabled: true, invitationRequired: true, whitelistedDomains: ["northstar.studio"], defaultRole: "member" });
+    const check = (email: string) => context.app.inject({
+      method: "POST",
+      url: "/v1/auth/register/requirements",
+      payload: { email },
+    });
+
+    const known = await check("maya@northstar.studio");
+    const unknown = await check("NEW@NORTHSTAR.STUDIO");
+    const outside = await check("new@example.com");
+    expect(known.statusCode).toBe(200);
+    expect(known.json()).toEqual({ invitationRequired: false });
+    expect(unknown.json()).toEqual(known.json());
+    expect(outside.json()).toEqual({ invitationRequired: true });
+    expect(outside.headers["cache-control"]).toBe("no-store");
+    expect((await check("invalid-email")).statusCode).toBe(400);
+
+    context.store.updateRegistrationSettings({ enabled: true, invitationRequired: false, whitelistedDomains: [], defaultRole: "member" });
+    expect((await check("new@example.com")).json()).toEqual({ invitationRequired: false });
+    context.store.updateRegistrationSettings({ enabled: false, invitationRequired: true, whitelistedDomains: ["northstar.studio"], defaultRole: "member" });
+    expect((await check("new@northstar.studio")).json()).toEqual({ code: "REGISTRATION_DISABLED", message: "Registration is disabled." });
+  });
+
   it("requires mailbox ownership before granting a domain exemption and uses the policy at verification time", async () => {
     const context = await application();
     context.store.updateRegistrationSettings({ enabled: true, invitationRequired: true, whitelistedDomains: ["trusted.example"], defaultRole: "admin" });

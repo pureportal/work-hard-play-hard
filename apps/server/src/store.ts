@@ -400,13 +400,15 @@ export class WorkspaceStore {
     if (!this.registrationSettings.enabled) {
       throw new Error("REGISTRATION_DISABLED");
     }
-    if (
-      this.registrationSettings.invitationRequired
-      && !invitationProvided
-      && !this.registrationSettings.whitelistedDomains.includes(getEmailDomain(email))
-    ) {
+    if (!invitationProvided && this.isInvitationRequiredForEmail(email)) {
       throw new Error("INVITATION_REQUIRED");
     }
+  }
+
+  isInvitationRequiredForEmail(email: string): boolean {
+    return !this.needsSetup()
+      && this.registrationSettings.invitationRequired
+      && !this.registrationSettings.whitelistedDomains.includes(getEmailDomain(email));
   }
 
   addRegisteredMember(user: AuthUser): Member {

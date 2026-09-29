@@ -6,7 +6,7 @@ import { sendInvitationError, sendRateLimit, setSessionCookie } from "./auth-htt
 import type { AuthRateLimiter } from "./rate-limiter.js";
 import type { WorkspaceStore } from "../store.js";
 import type { WorldRuntime } from "../world/world-runtime.js";
-import { magicLinkVerifyBodySchema, registerBodySchema } from "../protocol.js";
+import { magicLinkVerifyBodySchema, registerBodySchema, registrationRequirementsBodySchema } from "../protocol.js";
 
 export interface RegistrationOptions {
   exposeRegistrationLinks?: boolean;
@@ -47,6 +47,17 @@ export function registerRegistrationRoutes(app: FastifyInstance, options: Regist
     setSessionCookie(reply, registered.sessionToken);
     return reply.code(201).send({ user: registered.user });
   };
+
+  app.post("/v1/auth/register/requirements", async (request, reply) => {
+    const retryAfter = rateLimiter.consume("register-requirements-ip", request.ip, 30, 15 * 60 * 1_000);
+    if (retryAfter) return sendRateLimit(reply, retryAfter);
+    const parsed = registrationRequirementsBodySchema.safeParse(request.body);
+    if (!parsed.success) return reply.code(400).send({ code: "REGISTRATION_INVALID", message: "Enter a valid email address." });
+    if (!store.needsSetup() && !store.getRegistrationSettings().enabled) {
+      return reply.code(403).send({ code: "REGISTRATION_DISABLED", message: "Registration is disabled." });
+    }
+    return { invitationRequired: store.isInvitationRequiredForEmail(parsed.data.email) };
+  });
 
   app.post("/v1/auth/register", async (request, reply) => {
     const retryAfter = rateLimiter.consume("register-ip", request.ip, 10, 60 * 60 * 1_000);
