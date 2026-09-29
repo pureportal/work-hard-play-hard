@@ -10,7 +10,7 @@ export function createUpdaterManifest(assetDirectory, version, repository) {
     throw new Error(`Invalid repository: ${repository}`);
   }
 
-  const assets = readdirSync(assetDirectory);
+  const assets = readdirSync(assetDirectory, { recursive: true });
   const platforms = {};
   for (const [target, match] of [
     ["linux-x86_64-deb", (name) => name.endsWith("_amd64.deb")],
@@ -21,11 +21,12 @@ export function createUpdaterManifest(assetDirectory, version, repository) {
     if (matches.length !== 1) {
       throw new Error(`Expected one ${target} updater package, found ${matches.length}`);
     }
-    const name = matches[0];
+    const path = matches[0];
+    const name = basename(path);
     if (!name.startsWith(`Northstar_${version}_`)) {
       throw new Error(`${name} does not match release ${version}`);
     }
-    const signature = readFileSync(join(assetDirectory, `${name}.sig`), "utf8").trim();
+    const signature = readFileSync(join(assetDirectory, `${path}.sig`), "utf8").trim();
     if (!signature) {
       throw new Error(`Updater signature is empty: ${name}.sig`);
     }
@@ -38,11 +39,12 @@ export function createUpdaterManifest(assetDirectory, version, repository) {
   if (macArchives.length !== 1) {
     throw new Error(`Expected one macOS updater package, found ${macArchives.length}`);
   }
-  const macName = macArchives[0];
+  const macPath = macArchives[0];
+  const macName = basename(macPath);
   if (!macName.startsWith(`Northstar_${version}_`)) {
     throw new Error(`${macName} does not match release ${version}`);
   }
-  const macSignature = readFileSync(join(assetDirectory, `${macName}.sig`), "utf8").trim();
+  const macSignature = readFileSync(join(assetDirectory, `${macPath}.sig`), "utf8").trim();
   if (!macSignature) {
     throw new Error(`Updater signature is empty: ${macName}.sig`);
   }
