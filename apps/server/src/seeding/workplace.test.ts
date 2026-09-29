@@ -52,11 +52,15 @@ describe("workplace seeds", () => {
   it("restores valid relationships, real inventory instances and score-derived rewards", () => {
     const store = new WorkspaceStore();
     store.restoreMutableState(simulation.store);
-    expect(store.getMembers()).toHaveLength(16);
+    expect(store.getMembers()).toHaveLength(17);
     expect(store.getOrganisation().units).toHaveLength(9);
     expect(store.getOrganisation().assignments).toHaveLength(15);
     expect(store.getGameSettings().roomBuild.mode).toBe("none");
-    expect(simulation.store.economy.accounts.flatMap((account) => account.inventory)).toHaveLength(86);
+    expect(simulation.store.economy.accounts.flatMap((account) => account.inventory)).toHaveLength(91);
+    expect(store.getPlayerEconomy("person-rich")).toMatchObject({ coinBalance: 1_000_000, lifetimeEarned: 1_000_000 });
+    expect(simulation.store.economy.transactions).toContainEqual(expect.objectContaining({
+      userId: "person-rich", kind: "seed_grant", amount: 999_750, balanceAfter: 1_000_000,
+    }));
     expect(simulation.store.economy.accounts.flatMap((account) => account.inventory).filter((asset) => asset.placement)).toHaveLength(3);
     expect(simulation.store.scores).toHaveLength(6);
     const runtime = new WorldRuntime(store);
@@ -67,6 +71,10 @@ describe("workplace seeds", () => {
         expect({ x: player.x, y: player.y }).toEqual({ x: seeded.x, y: seeded.y });
         expect(player.proximity).toBeUndefined();
       }
+      const rich = simulation.players.find(({ userId }) => userId === "person-rich")!;
+      const richLayout = simulation.store.layouts.find(({ floorId }) => floorId === rich.floorId)!;
+      const richFloor = simulation.store.floors.find(({ id }) => id === rich.floorId)!;
+      expect(canOccupy(richLayout, richFloor, rich.userId, rich.x, rich.y, rich.x, rich.y)).toBe(true);
     } finally { runtime.stop(); }
     const members = new Set(store.getMembers().map(({ id }) => id));
     for (const conversation of simulation.store.conversations) {
@@ -111,7 +119,7 @@ describe("workplace seeds", () => {
     expect(auth.accounts.map(({ id }) => id)).toEqual(simulation.store.members.map(({ id }) => id));
     expect(credentials.map(({ username }) => username)).toEqual([
       "owner", "admin", "member", "member2", "member3", "member4", "member5", "member6",
-      "member7", "member8", "member9", "admin2", "member10", "member11", "member12", "guest",
+      "member7", "member8", "member9", "admin2", "member10", "member11", "member12", "guest", "rich",
     ]);
     expect(new Set(credentials.map(({ password }) => password))).toEqual(new Set(["password"]));
     expect(auth.sessions).toEqual([]);

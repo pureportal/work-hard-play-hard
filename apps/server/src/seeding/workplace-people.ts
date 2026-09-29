@@ -23,6 +23,7 @@ const people: Person[] = [
   ["nina", "Nina Petrov", "Customer Support Lead", "member", "support", "lead", false, 992, 592, "available"],
   ["felix", "Felix Weber", "Customer Support Specialist", "member", "support", "member", false, 1104, 848, "away"],
   ["tess", "Tess Morgan", "Workplace Consultant", "guest", "workplace", "member", false, 832, 944, "away"],
+  ["rich", "Rich", "Member", "member", null, "member", false, 720, 944, "available"],
 ];
 
 export function createWorkplacePeople(): { members: Member[]; organisation: OrganisationState } {

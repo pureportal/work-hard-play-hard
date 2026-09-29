@@ -119,6 +119,19 @@ export class EconomyStore {
     }
   }
 
+  grantSeedCoins(userId: string, amount: number, now = new Date()): void {
+    if (!Number.isSafeInteger(amount) || amount <= 0) throw new Error("SEED_GRANT_INVALID");
+    const account = this.requireAccount(userId);
+    if (this.transactionsByOperation.get(userId)?.has(`seed_grant:${userId}`)) throw new Error("SEED_GRANT_EXISTS");
+    this.applyTransaction(account, {
+      operationKey: `seed_grant:${userId}`,
+      operationFingerprint: `seed_grant:${amount}`,
+      kind: "seed_grant",
+      amount,
+      createdAt: isoTimestamp(now),
+    });
+  }
+
   removeAccount(userId: string): void {
     this.accounts = this.accounts.filter((account) => account.userId !== userId);
     this.transactions = this.transactions.filter((transaction) => transaction.userId !== userId);
@@ -815,6 +828,14 @@ function isValidUtcDay(value: string): boolean {
 }
 
 function isValidTransaction(transaction: PersistedCoinTransaction): boolean {
+  if (transaction.kind === "seed_grant") {
+    return transaction.amount > 0
+      && transaction.operationKey === `seed_grant:${transaction.userId}`
+      && transaction.operationFingerprint === `seed_grant:${transaction.amount}`
+      && transaction.assetId === undefined
+      && transaction.ownedAssetId === undefined
+      && transaction.sourceId === undefined;
+  }
   if (transaction.kind === "approval_reward") {
     return transaction.amount >= 0 && transaction.amount <= 80
       && transaction.operationKey === `approval_reward:${transaction.sourceId}`

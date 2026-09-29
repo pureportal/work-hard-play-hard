@@ -1,4 +1,4 @@
-import { createPublicEconomy, FALLING_BLOCKS_DEFINITION_ID, type MemberRole, type WorldPlayer } from "@workhard/shared";
+import { createPublicEconomy, FALLING_BLOCKS_DEFINITION_ID, WELCOME_COIN_REWARD, type MemberRole, type WorldPlayer } from "@workhard/shared";
 import { hashPassword } from "../auth/passwords.js";
 import { EconomyStore } from "../economy/economy-store.js";
 import { createInitialData } from "../initial-data.js";
@@ -22,6 +22,7 @@ export function createSimulatedWorkplace(now = new Date()): WorkspacePersistence
   populateWorkplaceActivity(data, now);
   const store = new WorkspaceStore(data);
   const economy = new EconomyStore(data.members.map(({ id }) => id), new Date(now.getTime() - 30 * 86_400_000));
+  economy.grantSeedCoins("person-rich", 1_000_000 - WELCOME_COIN_REWARD, new Date(now.getTime() - 30 * 86_400_000));
   economy.updateGameSettings(data.gameSettings);
   store.restoreMutableState({ ...store.exportMutableState(), economy: economy.exportState() });
   for (const [index, users] of [["soren", "dev", "ines"], ["yuki", "celia"], ["mei"]].entries()) {
@@ -61,7 +62,7 @@ export async function createWorkplaceAccounts(workspace: WorkspacePersistenceSta
   for (const member of workspace.store.members) {
     const roleCount = (roleCounts.get(member.role) ?? 0) + 1;
     roleCounts.set(member.role, roleCount);
-    const username = `${member.role}${roleCount === 1 ? "" : roleCount}`;
+    const username = member.id === "person-rich" ? "rich" : `${member.role}${roleCount === 1 ? "" : roleCount}`;
     const password = "password";
     credentials.push({ username, email: member.email, password });
     accounts.push({ id: member.id, username, email: member.email, passwordHash: await hashPassword(password),

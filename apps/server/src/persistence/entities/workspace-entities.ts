@@ -535,7 +535,7 @@ export const coinTransactionSchema = new EntitySchema({
   },
   uniques: [{ properties: ["userId", "operationKey"] }],
   checks: [
-    { name: "coin_transactions_kind_check", expression: "kind in ('welcome', 'daily_bonus', 'game_reward', 'approval_reward', 'approval_upgrade', 'shop_purchase', 'donation', 'asset_sale', 'asset_donation')" },
+    { name: "coin_transactions_kind_check", expression: "kind in ('welcome', 'seed_grant', 'daily_bonus', 'game_reward', 'approval_reward', 'approval_upgrade', 'shop_purchase', 'donation', 'asset_sale', 'asset_donation')" },
     { name: "coin_transactions_balance_after_check", expression: "balance_after >= 0" },
     { name: "coin_transactions_sort_order_check", expression: "sort_order >= 0" },
   ],

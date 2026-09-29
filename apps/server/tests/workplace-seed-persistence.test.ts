@@ -44,18 +44,19 @@ describe("simulated workplace persistence", () => {
       const database = await PostgreSqlDatabase.connect(environment);
       const application = await createApplication({ database });
       try {
-        for (const role of ["owner", "admin", "member", "guest"]) {
+        for (const username of ["owner", "admin", "member", "guest", "rich"]) {
           const response = await application.app.inject({ method: "POST", url: "/v1/auth/login",
-            payload: { identifier: role, password: "password" } });
+            payload: { identifier: username, password: "password" } });
           expect(response.statusCode).toBe(200);
           const { user } = response.json();
-          expect(user.username).toBe(role);
-          expect(application.store.getMembers().find(({ id }) => id === user.id)?.role).toBe(role);
+          expect(user.username).toBe(username);
+          expect(application.store.getMembers().find(({ id }) => id === user.id)?.role).toBe(username === "rich" ? "member" : username);
+          if (username === "rich") expect(application.store.getPlayerEconomy(user.id).coinBalance).toBe(1_000_000);
         }
-        expect(application.store.getMembers()).toHaveLength(16);
+        expect(application.store.getMembers()).toHaveLength(17);
         expect(application.store.getFloors()).toHaveLength(3);
         expect(application.store.getOrganisation().units).toHaveLength(9);
-        expect(application.runtime.serializePlayers()).toHaveLength(16);
+        expect(application.runtime.serializePlayers()).toHaveLength(17);
         expect(application.store.needsSetup()).toBe(false);
       } finally { await application.app.close(); }
     } finally {
@@ -80,9 +81,9 @@ describe("simulated workplace persistence", () => {
       const result = await run();
       const saved = JSON.parse(await readFile(credentialsPath, "utf8")) as { database: string; accounts: { username: string; password: string }[] };
       expect(saved.database).toBe(databaseName);
-      expect(saved.accounts).toHaveLength(16);
-      expect(saved.accounts.map(({ username }) => username)).toEqual(expect.arrayContaining(["owner", "admin", "member", "guest"]));
-      expect(new Set(saved.accounts.map(({ username }) => username)).size).toBe(16);
+      expect(saved.accounts).toHaveLength(17);
+      expect(saved.accounts.map(({ username }) => username)).toEqual(expect.arrayContaining(["owner", "admin", "member", "guest", "rich"]));
+      expect(new Set(saved.accounts.map(({ username }) => username)).size).toBe(17);
       expect(new Set(saved.accounts.map(({ password }) => password))).toEqual(new Set(["password"]));
       expect(result.stdout).toContain("Created Alder Works");
       for (const account of saved.accounts) expect(result.stdout + result.stderr).not.toContain(account.password);

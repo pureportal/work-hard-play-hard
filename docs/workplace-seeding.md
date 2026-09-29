@@ -13,7 +13,7 @@ pnpm seed:workplace --database alder_simulation --credentials artifacts/alder-cr
 
 The command reads `POSTGRES_DB_HOST`, `POSTGRES_DB_PORT`, `POSTGRES_DB_USERNAME` and `POSTGRES_DB_PASSWORD` from the environment or the repository's `.env.local`. `--database` is required and selects the seed target only. The command prints that target and the server database configured in its environment. It does not change the server configuration. Migrations run before the seed. The database must contain no application records; populated databases cause an error and remain untouched. There is no overwrite mode. Workspace and authentication records are saved in one transaction.
 
-Seeded accounts use their role as the username and `password` as the password:
+Seeded accounts use their role as the username, except Rich. All use `password` as the password:
 
 | Username | Password |
 | --- | --- |
@@ -21,8 +21,9 @@ Seeded accounts use their role as the username and `password` as the password:
 | `admin` | `password` |
 | `member` | `password` |
 | `guest` | `password` |
+| `rich` | `password` |
 
-Additional accounts with the same role use numbered usernames: `admin2` and `member2` through `member12`. The JSON credential file lists all 16 accounts. Relative paths start at the repository root, and the file must not already exist. If seeding fails, the file may remain, but its credentials will not have been installed.
+Additional accounts with the same role use numbered usernames: `admin2` and `member2` through `member12`. Rich starts with 1,000,000 coins. The JSON credential file lists all 17 accounts. Relative paths start at the repository root, and the file must not already exist. If seeding fails, the file may remain, but its credentials will not have been installed.
 
 ## Connect the app
 
@@ -52,7 +53,7 @@ The building has three floors and 21 rooms:
 
 The layout uses more than 200 catalogue assets, including floor materials, supported desk decorations, usable seats, whiteboards, checklists, all three games and paired floor portals. Floors and decorations use catalogue footprints and placement rules.
 
-Sixteen people belong to a nine-unit tree: Engineering (Platform, Web), Product (Design, Research), and Operations (Workplace, Customer Support). Rowan is CEO; department and team leads have appropriate assignments. Rowan, Imani and Lucia have knockable private offices. Team studios allow their department's members to furnish them; shared-space building defaults to Nobody.
+The seed includes seventeen people and a nine-unit tree: Engineering (Platform, Web), Product (Design, Research), and Operations (Workplace, Customer Support). Rowan is CEO; department and team leads have appropriate assignments. Rowan, Imani and Lucia have knockable private offices. Team studios allow their department's members to furnish them; shared-space building defaults to Nobody.
 
 Additional seed content includes 18 chat messages, room and direct conversations, three editable whiteboards, two checklists, two scheduled room meetings, one completed room meeting, six game results and their derived statistics and rewards. Three people have purchased personal plants on their desks and coffee decorations in inventory. Prices, transactions and placement ownership use the existing economy code.
 
