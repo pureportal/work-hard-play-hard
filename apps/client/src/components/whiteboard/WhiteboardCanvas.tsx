@@ -27,6 +27,8 @@ interface Drag {
   preview: WhiteboardCard;
 }
 
+const MAX_WHITEBOARD_ZOOM = 3;
+
 export function WhiteboardCanvas({ ref, cards, disabled, selectedId, onSelect, onChange, onAdd, onDuplicate, onRemove }: Props) {
   const contextActions = useContextActions();
   const viewport = useRef<HTMLDivElement>(null);
@@ -127,7 +129,7 @@ export function WhiteboardCanvas({ ref, cards, disabled, selectedId, onSelect, o
     <div className="whiteboard-zoom" role="group" aria-label="Canvas zoom">
       <IconButton label="Zoom out" icon={Minus} disabled={zoom <= 0.25} onClick={() => setZoom((value) => Math.max(0.25, value - 0.1))} />
       <output aria-label="Zoom">{Math.round(zoom * 100)}%</output>
-      <IconButton label="Zoom in" icon={Plus} disabled={zoom >= 1.5} onClick={() => setZoom((value) => Math.min(1.5, value + 0.1))} />
+      <IconButton label="Zoom in" icon={Plus} disabled={zoom >= MAX_WHITEBOARD_ZOOM} onClick={() => setZoom((value) => Math.min(MAX_WHITEBOARD_ZOOM, value + 0.1))} />
       <IconButton label="Fit canvas" icon={Maximize2} onClick={() => {
         if (viewport.current) {
           const style = getComputedStyle(viewport.current);

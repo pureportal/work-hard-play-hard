@@ -181,7 +181,7 @@ interface ActivePointer {
 }
 
 const MIN_CAMERA_ZOOM = 0.08;
-const MAX_CAMERA_ZOOM = 1.45;
+const MAX_CAMERA_ZOOM = 3;
 const MOUSE_DRAG_THRESHOLD = 6;
 const TOUCH_DRAG_THRESHOLD = 10;
 const MULTI_POINTER_MOVE_THRESHOLD = 1;
