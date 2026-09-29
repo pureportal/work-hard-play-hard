@@ -12,7 +12,7 @@ A room can belong to one person, or contain multiple non-overlapping personal ar
 
 For a building project contained in rooms, the electorate is the people with effective build rights in those rooms. Projects that also affect shared space use the selected fund's electorate. A proposal is cancelled when its builder electorate changes before it is applied.
 
-Private items placed in public areas remain personal property and appear with their owner in the proposal preview. Their owner can recover them at any time without a vote, even without room entry or building rights and while viewing another floor. Other members cannot move, remove or spend another player's inventory through a proposal. Supported objects return to storage when their supporting personal item is recovered.
+Private items placed in public areas remain personal property and appear with their owner in the proposal preview. Their owner can recover them at any time without a vote, even without room entry or building rights and while viewing another floor. Members with build rights can move another player's placed item through a building project; its ownership stays with that player. Other members cannot remove or spend another player's inventory through a proposal. Supported objects return to storage when their supporting personal item is recovered.
 
 Room enclosure protection applies to private rooms and personally assigned spaces. Wall edits cannot silently erase ownership or access restrictions. Releasing the assignment and opening access requires a prior room-settings proposal. Revoked room entry is reconciled for connected players when the approved settings take effect.
 

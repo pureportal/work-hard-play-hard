@@ -2598,10 +2598,8 @@ class OfficeRenderer {
     const object = getBuildSelectionCandidates(this.placementLayout.objects)
       .find((candidate) => this.hitBuildAsset(candidate, point, minimumTargetSize));
     if (object) {
-      if (this.playerAssetPlacement && (
-        personalOnly && object.ownerUserId !== this.playerAssetPlacement.userId
-        || object.ownerUserId && object.ownerUserId !== this.playerAssetPlacement.userId
-      )) return undefined;
+      if (personalOnly && object.ownerUserId !== this.playerAssetPlacement?.userId) return undefined;
+      if (removing && object.ownerUserId && object.ownerUserId !== this.playerAssetPlacement?.userId) return undefined;
       return removing && requireAssetDefinition(object.assetId).kind === "portal" ? undefined : { type: "asset", id: object.id };
     }
     if (personalOnly) return undefined;

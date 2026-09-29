@@ -167,7 +167,42 @@ describe("personal spaces and public approvals", () => {
     expect(current().objects[0]!.x).toBe(128);
   });
 
-  it("rejects overlapping areas, stolen inventory and changes to another owner's assets", () => {
+  it("lets room builders move another player's item through a project without changing its owner", () => {
+    const { store, room, buy, place, current, draft, send, approve } = setup();
+    store.updateRoomSettings(room().id, { ...room(), ownerUserId: "user-jonas" });
+    const owned = buy("user-jonas");
+    place(owned.id, 128, 128, "user-jonas");
+    const object = current().objects[0]!;
+
+    const project = draft({ tool: "asset.move", objectId: object.id, position: { x: 320, y: 128 },
+      variantId: object.variantId, rotation: 90 });
+    expect(project.quote.assetChanges).toEqual([{ change: "move", object: expect.objectContaining({
+      id: object.id, ownerUserId: "user-jonas", ownedAssetId: owned.id, x: 320, y: 128, rotation: 90,
+    }) }]);
+    send({ type: "project.submit", requestId: "move-foreign-item", draftId: project.id, title: "Move plant" });
+    approve(store.getPublicEconomy().proposals[0]!.id);
+
+    expect(current().objects[0]).toMatchObject({ id: object.id, ownerUserId: "user-jonas", ownedAssetId: owned.id,
+      x: 320, y: 128, rotation: 90 });
+    expect(store.getOwnedAsset("user-jonas", owned.id).placement?.objectId).toBe(object.id);
+  });
+
+  it("requires build rights in the room to move another player's item", () => {
+    const { store, room, buy, place, current, send, events } = setup();
+    store.updateRoomSettings(room().id, { ...room(), ownerUserId: "user-jonas" });
+    const owned = buy("user-jonas");
+    place(owned.id, 128, 128, "user-jonas");
+    store.updateRoomSettings(room().id, { ...room(), build: { mode: "assigned", assignedPersonIds: ["user-jonas"] } });
+    const object = current().objects[0]!;
+
+    send({ type: "project.edit", requestId: "move-without-rights", fundId: "workspace", baseRevision: current().revision,
+      edit: { tool: "asset.move", objectId: object.id, position: { x: 320, y: 128 }, variantId: object.variantId, rotation: 0 } });
+
+    expect(events).toContainEqual(expect.objectContaining({ type: "command.error", requestId: "move-without-rights", code: "ASSET_ROOM_FORBIDDEN" }));
+    expect(current().objects[0]).toMatchObject({ id: object.id, x: 128, y: 128 });
+  });
+
+  it("rejects overlapping areas, stolen inventory and removal of another owner's assets", () => {
     const { store, room, buy, place, current, send, events } = setup();
     const area = { id: "one", name: "Desk", ownerUserId: "user-maya", bounds: { x: 96, y: 96, width: 128, height: 128 } };
     expect(() => store.updateRoomSettings(room().id, { ...room(), personalAreas: [area, { ...area, id: "two" }] })).toThrow("PERSONAL_AREA_INVALID");

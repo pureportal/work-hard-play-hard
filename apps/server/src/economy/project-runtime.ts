@@ -253,8 +253,7 @@ export class ProjectRuntime {
       if (!object.ownedAssetId || !object.ownerUserId) continue;
       const original = layout.objects.find((candidate) => candidate.id === object.id);
       if (JSON.stringify(original) === JSON.stringify(object)) continue;
-      if (object.ownerUserId !== userId) throw new Error("PRIVATE_ASSET_PROTECTED");
-      const owned = this.store.getOwnedAsset(userId, object.ownedAssetId);
+      const owned = this.store.getOwnedAsset(object.ownerUserId, object.ownedAssetId);
       if (owned.assetId !== object.assetId || owned.placement && owned.placement.objectId !== object.id) throw new Error("ASSET_ALREADY_PLACED");
     }
     return { ...project, baseRevision: layout.revision, baseLayout: structuredClone(layout), layout: next,
@@ -267,15 +266,7 @@ export class ProjectRuntime {
     const organisation = this.store.getOrganisation();
     const memberIds = this.store.getMembers().map((member) => member.id);
     if (!memberIds.includes(userId)) throw new Error("USER_NOT_FOUND");
-    if (action.kind === "fund.create") {
-      if (!organisation.units.some((unit) => unit.id === action.unitId)) throw new Error("ORGANISATION_UNIT_NOT_FOUND");
-      if (this.store.publicEconomy.view().funds.some((fund) => fund.unitId === action.unitId)) throw new Error("PUBLIC_FUND_EXISTS");
-    } else if (action.kind === "fund.transfer") {
-      this.store.publicEconomy.fund(action.fromFundId);
-      this.store.publicEconomy.fund(action.toFundId);
-      if (action.fromFundId === action.toFundId) throw new Error("PUBLIC_FUND_SCOPE");
-      return action.fromFundId;
-    } else if (action.kind === "governance") {
+    if (action.kind === "governance") {
       if (action.mode === "hierarchical" ? action.ceoIds.length === 0 : action.ceoIds.length !== 0) throw new Error("GOVERNANCE_INVALID");
       if (new Set(action.ceoIds).size !== action.ceoIds.length || action.ceoIds.some((id) => !memberIds.includes(id))) throw new Error("GOVERNANCE_INVALID");
     } else if (action.kind === "organisation") {

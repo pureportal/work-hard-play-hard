@@ -45,6 +45,7 @@ export class PublicEconomyStore {
   }
 
   fund(id: string): PublicFund {
+    if (id !== WORKSPACE_FUND_ID) throw new Error("PUBLIC_FUND_NOT_FOUND");
     const fund = this.state.funds.find((candidate) => candidate.id === id);
     if (!fund) throw new Error("PUBLIC_FUND_NOT_FOUND");
     return fund;
@@ -111,13 +112,11 @@ export class PublicEconomyStore {
     const approvalRate = options.approvalRate ?? approvalRateForAction(this.state.approvalRates, action);
     if (!electorate.length && approvalRate > 0) throw new Error("PROPOSAL_NO_APPROVERS");
     if (this.state.proposals.filter((entry) => entry.proposedBy === userId && ["open", "approved"].includes(entry.status)).length >= 20) throw new Error("PROPOSAL_LIMIT");
-    const reserved = action.kind === "fund.transfer" ? action.amount : 0;
-    if (reserved > availablePublicMoney(this.state, fundId)) throw new Error("PUBLIC_FUNDS_INSUFFICIENT");
     const required = Math.ceil(electorate.length * approvalRate / 100);
     const ballots = approvalRate > 0 && electorate.includes(userId) ? [{ userId, approve: true }] : [];
     const proposal: SpendingProposal = {
       id: randomUUID(), title, proposedBy: userId, fundId, action: structuredClone(action), electorate, approvalRate, required, ballots,
-      status: required === 0 || ballots.length >= required ? "approved" : "open", reserved,
+      status: required === 0 || ballots.length >= required ? "approved" : "open", reserved: 0,
       createdAt: now.toISOString(), expiresAt: new Date(now.getTime() + this.approvalDeadlineMs).toISOString(),
       organisationRevision: organisation.revision, policyRevision: this.state.revision,
     };
@@ -175,15 +174,7 @@ export class PublicEconomyStore {
   }
 
   applyFundAction(userId: string, action: PublicAction, sourceId: string): void {
-    if (action.kind === "fund.create") {
-      if (this.state.funds.some((fund) => fund.unitId === action.unitId)) throw new Error("PUBLIC_FUND_EXISTS");
-      this.state.funds.push({ id: action.unitId, unitId: action.unitId, balance: 0, mode: action.mode });
-    } else if (action.kind === "fund.transfer") {
-      if (action.fromFundId === action.toFundId) throw new Error("PUBLIC_FUND_SCOPE");
-      this.fund(action.toFundId);
-      this.record(action.fromFundId, userId, "transfer", -action.amount, sourceId);
-      this.record(action.toFundId, userId, "transfer", action.amount, sourceId);
-    } else if (action.kind === "governance") {
+    if (action.kind === "governance") {
       this.fund(WORKSPACE_FUND_ID).mode = action.mode;
       this.state.revision += 1;
     } else if (action.kind === "asset.sell") {
@@ -191,6 +182,8 @@ export class PublicEconomyStore {
       if (!asset) throw new Error("PUBLIC_ASSET_UNAVAILABLE");
       this.record(asset.fundId, userId, "asset_sale", Math.floor(asset.paid / 3), sourceId);
       this.state.inventory = this.state.inventory.filter((entry) => entry.id !== asset.id);
+    } else if (action.kind !== "record") {
+      throw new Error("PUBLIC_ACTION_INVALID");
     }
   }
 }
@@ -202,7 +195,7 @@ export function validatePublicEconomy(state: PublicEconomyState): void {
     || !Number.isSafeInteger(state.revision) || state.revision < 0) throw new Error("PUBLIC_ECONOMY_INVALID");
   validateApprovalRates(state.approvalRates);
   const ids = new Set(state.funds.map((fund) => fund.id));
-  if (!ids.has(WORKSPACE_FUND_ID) || ids.size !== state.funds.length) throw new Error("PUBLIC_ECONOMY_INVALID");
+  if (state.funds.length !== 1 || !ids.has(WORKSPACE_FUND_ID) || state.funds[0]!.unitId !== null) throw new Error("PUBLIC_ECONOMY_INVALID");
   for (const fund of state.funds) {
     if (!validMoney(fund.balance) || !["equal", "hierarchical"].includes(fund.mode)
       || availablePublicMoney(state, fund.id) < 0) throw new Error("PUBLIC_ECONOMY_INVALID");

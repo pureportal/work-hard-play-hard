@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Archive, Coins } from "lucide-react";
-import { availablePublicMoney, canManageUnit, getAssetDefinition, getDefaultAssetVariantId, publicFundMemberIds, type BuildProject, type ClientCommand, type Floor, type FloorLayout, type Member, type OrganisationState, type PublicAction, type PublicEconomy, type SpendingProposal } from "@workhard/shared";
+import { WORKSPACE_FUND_ID, availablePublicMoney, canManageUnit, getAssetDefinition, getDefaultAssetVariantId, publicFundMemberIds, type BuildProject, type ClientCommand, type Floor, type FloorLayout, type Member, type OrganisationState, type PublicAction, type PublicEconomy, type SpendingProposal } from "@workhard/shared";
 import { WorkspaceDialog } from "../WorkspaceDialog";
 import { DialogTabs } from "../DialogTabs";
 import { AssetShape } from "../AssetShape";
@@ -13,7 +13,7 @@ import "../../public-economy.css";
 
 type FundsView = "votes" | "inventory" | "activity" | "settings" | "rules";
 
-export function FundsPanel({ economy, organisation, members, userId, personalBalance, pending, error, initialFundId = "workspace", globalSettings, onOpenRooms, onOpenBuild, onCommand, onReview, onEdit, onPlace, onViewChange, onClose, rooms, layouts, floors }: {
+export function FundsPanel({ economy, organisation, members, userId, personalBalance, pending, error, globalSettings, onOpenRooms, onOpenBuild, onCommand, onReview, onEdit, onPlace, onViewChange, onClose, rooms, layouts, floors }: {
   economy: PublicEconomy; organisation: OrganisationState; members: Member[]; userId: string; personalBalance: number; pending: boolean; initialFundId?: string;
   error?: string | undefined;
   globalSettings: GlobalKidnappingSettings; onOpenRooms: () => void;
@@ -22,7 +22,7 @@ export function FundsPanel({ economy, organisation, members, userId, personalBal
   onCommand: (command: ClientCommand) => void; onReview: (project: BuildProject) => void; onEdit: (proposal: SpendingProposal) => void;
   onPlace: (publicAssetId: string, assetId: string, fundId: string) => void; onViewChange: (view: BuildView) => void; onClose: () => void;
 }) {
-  const [fundId, setFundId] = useState(initialFundId);
+  const fundId = WORKSPACE_FUND_ID;
   const [view, setView] = useState<FundsView>("votes");
   const fund = economy.funds.find((entry) => entry.id === fundId)!;
   const canPropose = publicFundMemberIds(fund, organisation, members.map((member) => member.id)).includes(userId) || canManageUnit(organisation, userId, fund.unitId);
@@ -36,14 +36,12 @@ export function FundsPanel({ economy, organisation, members, userId, personalBal
   const transactions = economy.transactions.filter((entry) => entry.fundId === fundId).reverse();
   const transactionNames = { donation: "Donation", purchase: "Building purchase", refund: "Refund", transfer: "Transfer", asset_donation: "Item donated", asset_sale: "Item sold" };
   return <WorkspaceDialog title="Approvals" className={`funds-dialog${view === "votes" && !proposals.some((proposal) => proposal.status === "open" || proposal.status === "approved") ? " is-empty" : ""}`} error={error} onBack={() => onViewChange("shared")} onClose={onClose}>
-    <DialogTabs label="Funds views" value={view} onChange={setView} tabs={[
+    <DialogTabs label="Approvals views" value={view} onChange={setView} tabs={[
       { id: "votes", label: "Proposals", count: waiting }, { id: "inventory", label: "Shared items" },
-      { id: "activity", label: "Activity" }, ...(canPropose ? [{ id: "settings" as const, label: "Funds" }] : []), { id: "rules", label: "Game rules" },
+      { id: "activity", label: "Activity" }, ...(canPropose ? [{ id: "settings" as const, label: "Organisation" }] : []), { id: "rules", label: "Game rules" },
     ]}>
       {view !== "votes" && view !== "rules" && <div className="fund-overview">
-        <div className="fund-picker"><label>Fund<select value={fundId} onChange={(event) => setFundId(event.target.value)}>{economy.funds.map((entry) => <option key={entry.id} value={entry.id}>
-          {entry.unitId ? organisation.units.find((unit) => unit.id === entry.unitId)?.name : "Workspace"}
-        </option>)}</select></label><span className="personal-wallet"><Coins size={17} />Your wallet <strong>{personalBalance.toLocaleString()}</strong></span></div>
+        <div className="fund-picker"><span className="personal-wallet"><Coins size={17} />Personal <strong>{personalBalance.toLocaleString()}</strong></span></div>
         <dl className="fund-balances"><div><dt>Shared balance</dt><dd><Coins size={20} />{fund.balance.toLocaleString()}</dd></div>
           <div><dt>For projects</dt><dd>{availablePublicMoney(economy, fundId).toLocaleString()}</dd></div>
           <div><dt>Reserved</dt><dd>{(fund.balance - availablePublicMoney(economy, fundId)).toLocaleString()}</dd></div></dl>

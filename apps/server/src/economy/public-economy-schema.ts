@@ -12,8 +12,6 @@ export const approvalRatesSchema = z.object({
   funds: approvalRate,
 }).strict();
 export const publicActionSchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("fund.create"), unitId: id, mode }).strict(),
-  z.object({ kind: z.literal("fund.transfer"), fromFundId: id, toFundId: id, amount: money.positive() }).strict(),
   z.object({ kind: z.literal("governance"), mode, ceoIds: z.array(id).max(500) }).strict(),
   z.object({ kind: z.literal("organisation"), baseRevision: z.number().int().nonnegative(), edit: organisationEditSchema }).strict(),
   z.object({ kind: z.literal("room.settings"), roomId: id, baseRevision: z.number().int().nonnegative(),

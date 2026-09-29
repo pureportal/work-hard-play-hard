@@ -19,12 +19,16 @@ import type { LucideIcon } from "lucide-react";
 import { getAssetOrientationLabel, rotateAssetClockwise } from "../asset-orientation";
 import { IconButton } from "./IconButton";
 import { SurfaceHeader } from "./SurfaceHeader";
+import { SharedMoneyButton } from "./economy/SharedMoneyButton";
 import { AssetVariantPicker } from "./AssetVariantPicker";
 import { AssetBrowser } from "./AssetBrowser";
 import { BuildAssetCard } from "./BuildAssetCard";
 import "../build-panel.css";
 
 interface BuildPanelProps {
+  currentUserId?: string;
+  sharedBalance?: number;
+  onOpenSharedTransfer?: () => void;
   floorCount?: number;
   accountControls?: ReactNode;
   projectControls?: ReactNode;
@@ -65,6 +69,9 @@ const tools: { id: LayoutTool | null; label: string; icon: LucideIcon; shortcut:
 const buildableAssets = ASSET_CATALOG.assets.filter((asset) => asset.buildable);
 
 export function BuildPanel({
+  currentUserId,
+  sharedBalance,
+  onOpenSharedTransfer,
   floorCount = 1,
   accountControls,
   projectControls,
@@ -138,7 +145,8 @@ export function BuildPanel({
 
   if (reviewing) return (
     <aside className="side-panel build-panel build-layout-panel" aria-label="Build" data-reviewing>
-      <SurfaceHeader className="panel-header" title="Proposal" closeLabel="Close proposal preview" onClose={onClose} />
+      <SurfaceHeader className="panel-header" title="Proposal" closeLabel="Close proposal preview" onClose={onClose}
+        description={sharedBalance !== undefined && onOpenSharedTransfer && <SharedMoneyButton balance={sharedBalance} onClick={onOpenSharedTransfer} className="build-shared-money" />} />
       {projectControls}
     </aside>
   );
@@ -146,6 +154,7 @@ export function BuildPanel({
   return (
     <aside className="side-panel build-panel build-layout-panel" aria-label="Build" data-compact={!pickerOpen}>
       <SurfaceHeader className="panel-header" title="Build" closeLabel="Close build tools" onClose={onClose}
+        description={sharedBalance !== undefined && onOpenSharedTransfer && <SharedMoneyButton balance={sharedBalance} onClick={onOpenSharedTransfer} className="build-shared-money" />}
         actions={<>
           <button className="secondary-button build-access-button" onClick={onOpenRooms}>Room settings</button>
           {onInspectAccess && <IconButton label="Room access" icon={KeyRound} onClick={onInspectAccess} />}
@@ -184,7 +193,9 @@ export function BuildPanel({
             {selectedItem.type !== "opening" && (
               <button aria-keyshortcuts="R" onClick={onRotateSelected}><RotateCw size={16} aria-hidden="true" />Rotate<kbd aria-hidden="true">R</kbd></button>
             )}
-            {getAssetDefinition(selectedObject?.assetId ?? "")?.kind !== "portal" && <button className={selectedObject?.ownerUserId ? "" : "danger"} aria-keyshortcuts="D" onClick={onRemoveSelected}>
+            {getAssetDefinition(selectedObject?.assetId ?? "")?.kind !== "portal"
+              && (!selectedObject?.ownerUserId || selectedObject.ownerUserId === currentUserId)
+              && <button className={selectedObject?.ownerUserId ? "" : "danger"} aria-keyshortcuts="D" onClick={onRemoveSelected}>
               {selectedObject?.ownerUserId ? <Archive size={16} aria-hidden="true" /> : <Trash2 size={16} aria-hidden="true" />}
               {selectedObject?.ownerUserId ? "Store" : "Remove"}<kbd aria-hidden="true">D</kbd>
             </button>}

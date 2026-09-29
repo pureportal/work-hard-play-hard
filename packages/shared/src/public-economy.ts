@@ -3,7 +3,7 @@ import type { WorldObject } from "./assets.js";
 import type { FloorLayout, LayoutEdit, RoomSettings } from "./building.js";
 import type { GameSettings } from "./economy.js";
 import type { GlobalKidnappingSettings } from "./kidnapping.js";
-import { isUnitWithin, type OrganisationEdit, type OrganisationState } from "./organisation.js";
+import type { OrganisationEdit, OrganisationState } from "./organisation.js";
 
 export const WORKSPACE_FUND_ID = "workspace";
 export const BUILD_PRICES = { wall: 12, door: 40, window: 60 } as const;
@@ -76,8 +76,6 @@ export interface BuildProject {
 export type PublicAction =
   | { kind: "record"; summary: string }
   | { kind: "project"; project: BuildProject }
-  | { kind: "fund.create"; unitId: string; mode: DecisionMode }
-  | { kind: "fund.transfer"; fromFundId: string; toFundId: string; amount: number }
   | { kind: "governance"; mode: DecisionMode; ceoIds: string[] }
   | { kind: "organisation"; baseRevision: number; edit: OrganisationEdit }
   | { kind: "room.settings"; roomId: string; baseRevision: number; settings: RoomSettings }
@@ -96,8 +94,6 @@ export function approvalRateForAction(rates: ApprovalRates, action: PublicAction
     case "organisation":
     case "governance":
       return rates.organisation;
-    case "fund.create":
-    case "fund.transfer":
     case "asset.sell":
     case "record":
       return rates.funds;
@@ -151,18 +147,11 @@ export function createPublicEconomy(mode: DecisionMode = "equal"): PublicEconomy
   };
 }
 
-export function publicFundMemberIds(fund: PublicFund, organisation: OrganisationState, memberIds: string[]): string[] {
-  return fund.unitId === null ? memberIds : memberIds.filter((userId) => organisation.assignments.some((assignment) =>
-    assignment.userId === userId && isUnitWithin(organisation, assignment.unitId, fund.unitId!)));
+export function publicFundMemberIds(_fund: PublicFund, _organisation: OrganisationState, memberIds: string[]): string[] {
+  return memberIds;
 }
 
-export function publicFundForUnit(economy: PublicEconomy, organisation: OrganisationState, unitId?: string): PublicFund {
-  let current = unitId;
-  while (current) {
-    const fund = economy.funds.find((entry) => entry.unitId === current);
-    if (fund) return fund;
-    current = organisation.units.find((unit) => unit.id === current)?.parentId ?? undefined;
-  }
+export function publicFundForUnit(economy: PublicEconomy, _organisation: OrganisationState, _unitId?: string): PublicFund {
   return economy.funds.find((fund) => fund.id === WORKSPACE_FUND_ID)!;
 }
 

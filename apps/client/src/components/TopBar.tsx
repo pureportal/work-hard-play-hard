@@ -3,6 +3,7 @@ import type { ConnectionState } from "../hooks/useRealtime";
 import type { ColorTheme } from "../theme";
 import type { Floor } from "@workhard/shared";
 import { IconButton } from "./IconButton";
+import { SharedMoneyButton } from "./economy/SharedMoneyButton";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 
@@ -14,12 +15,14 @@ interface TopBarProps {
   roomName?: string | undefined;
   connection: ConnectionState;
   coinBalance?: number | undefined;
+  sharedBalance?: number | undefined;
+  onOpenSharedTransfer?: (() => void) | undefined;
   colorTheme?: ColorTheme;
   onColorThemeChange?: (theme: ColorTheme) => void;
   onFloorChange: (floorId: string) => void;
 }
 
-export function TopBar({ guide, officeName, floors, floorId, roomName, connection, coinBalance, colorTheme = "light", onColorThemeChange, onFloorChange }: TopBarProps) {
+export function TopBar({ guide, officeName, floors, floorId, roomName, connection, coinBalance, sharedBalance, onOpenSharedTransfer, colorTheme = "light", onColorThemeChange, onFloorChange }: TopBarProps) {
   const connectionLabel = connection === "online" ? "Connected" : connection === "connecting" ? "Connecting…" : "Connection unavailable";
   const selectedFloor = floors.find((floor) => floor.id === floorId);
 
@@ -46,11 +49,12 @@ export function TopBar({ guide, officeName, floors, floorId, roomName, connectio
             />
           )}
           {coinBalance !== undefined && (
-            <span className="top-bar-coins" aria-label={`${coinBalance.toLocaleString()} coins`}>
+            <span className="top-bar-coins" aria-label={`Personal balance ${coinBalance.toLocaleString()} coins`}>
               <Coins size={15} aria-hidden="true" />
-              {coinBalance.toLocaleString()}
+              <span>Personal</span><strong>{coinBalance.toLocaleString()}</strong>
             </span>
           )}
+          {sharedBalance !== undefined && onOpenSharedTransfer && <SharedMoneyButton balance={sharedBalance} onClick={onOpenSharedTransfer} className="top-bar-shared-money" />}
           <span className="sr-only" role="status" aria-live="polite">{connectionLabel}</span>
           <label className="floor-picker">
             <select aria-label="Floor" value={floorId} onChange={(event) => onFloorChange(event.target.value)}>

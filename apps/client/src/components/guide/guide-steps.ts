@@ -30,7 +30,7 @@ export function createGuideSteps(data: GuideData, floorId: string, grantedRoomId
   steps.push(
     {
       id: "coins", target: '[data-guide="wallet"]', title: "Pocket money",
-      content: `Finish Falling Blocks rounds or play Tic-Tac-Toe against another player to earn up to ${GAME_REWARD_DAILY_CAP} coins a day. Spend them in the Shop or donate to a shared fund for construction.`,
+      content: `Finish Falling Blocks rounds or play Tic-Tac-Toe against another player to earn up to ${GAME_REWARD_DAILY_CAP} coins a day. Spend them in the Shop or transfer them to Shared for construction.`,
       screen: { panel: "build" }, placement: "right",
     },
     {

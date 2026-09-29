@@ -220,12 +220,11 @@ describe("Shared building protocol", () => {
     expect(restored.getPublicEconomy().proposals[0]).toMatchObject({ status: "approved", required: 1 });
   });
 
-  it.each(["fund", "room", "permission"])("rejects deleting a unit used by a %s before requesting votes", (use) => {
+  it.each(["room", "permission"])("rejects deleting a unit used by a %s before requesting votes", (use) => {
     const { store, send, events } = setup();
     const organisation = store.getOrganisation();
     organisation.units.push({ id: "design", name: "Design", kind: "department", parentId: null });
-    if (use === "fund") store.publicEconomy.applyFundAction("user-maya", { kind: "fund.create", unitId: "design", mode: "equal" }, "fund");
-    else if (use === "permission") store.updateGameSettings({ ...store.getGameSettings(), roomBuild: {
+    if (use === "permission") store.updateGameSettings({ ...store.getGameSettings(), roomBuild: {
       mode: "assigned", assignedPersonIds: [], unitGrants: [{ unitId: "design", rank: "members", descendants: false }],
     } });
     else store.getLayout("floor-studio")!.rooms.push({
@@ -257,15 +256,14 @@ describe("Shared building protocol", () => {
     expect(store.getPublicEconomy().funds[0]!.balance).toBe(0);
   });
 
-  it("uses an equal department's vote for subteam rooms and blocks a direct CEO override", () => {
+  it("uses the global electorate for subteam rooms and blocks a direct override", () => {
     const { store, runtime, events, send, jonas } = setup();
     const organisation = store.getOrganisation();
     organisation.ceoIds = ["user-maya"];
     organisation.units = [{ id: "design", name: "Design", kind: "department", parentId: null },
       { id: "studio", name: "Studio", kind: "team", parentId: "design" }];
     organisation.assignments = ["user-jonas", "user-priya"].map((userId) => ({ userId, unitId: "studio", rank: "member" }));
-    store.publicEconomy.fund("workspace").mode = "hierarchical";
-    store.publicEconomy.applyFundAction("user-maya", { kind: "fund.create", unitId: "design", mode: "equal" }, "department");
+    store.publicEconomy.fund("workspace").mode = "equal";
     const room = { id: "studio-room", floorId: "floor-studio", name: "Studio", color: "#ffffff", capacity: 4,
       bounds: { x: 96, y: 96, width: 64, height: 64 }, footprint: [{ x: 96, y: 96, width: 64, height: 64 }],
       boundary: [], doorIds: [], windowIds: [], privateEligible: false, organisationUnitId: "studio",
@@ -277,9 +275,9 @@ describe("Shared building protocol", () => {
     send({ type: "public_economy.propose", requestId: "propose", title: "Studio name",
       action: { kind: "room.settings", roomId: room.id, baseRevision: 0, settings } }, jonas);
     const proposal = store.getPublicEconomy().proposals[0]!;
-    expect(proposal).toMatchObject({ fundId: "design", electorate: ["user-jonas", "user-priya"], required: 2 });
+    expect(proposal).toMatchObject({ fundId: "workspace", electorate: ["user-maya", "user-jonas", "user-priya"], required: 2 });
     send({ type: "public_economy.vote", requestId: "ceo-vote", proposalId: proposal.id, approve: true });
-    expect(events).toContainEqual(expect.objectContaining({ type: "command.error", requestId: "ceo-vote", code: "PROPOSAL_VOTE_FORBIDDEN" }));
+    expect(store.getPublicEconomy().proposals[0]?.status).toBe("approved");
     const priya = runtime.connect("user-priya", "floor-studio", (event) => events.push(event));
     send({ type: "public_economy.vote", requestId: "team-vote", proposalId: proposal.id, approve: true }, priya);
     send({ type: "public_economy.execute", requestId: "apply", proposalId: proposal.id }, jonas);

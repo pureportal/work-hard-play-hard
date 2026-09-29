@@ -3,6 +3,7 @@ import { availablePublicMoney, createOrganisation, createPublicEconomy, type Pub
 import { PublicEconomyStore } from "./public-economy-store.js";
 import { EconomyStore } from "./economy-store.js";
 import { quoteProject } from "./project-quote.js";
+import { publicActionSchema } from "./public-economy-schema.js";
 
 const now = new Date("2026-09-16T12:00:00.000Z");
 const organisation = createOrganisation();
@@ -12,6 +13,16 @@ const rules: PublicAction = { kind: "governance", mode: "equal", ceoIds: [] };
 afterEach(() => vi.unstubAllEnvs());
 
 describe("Public economy", () => {
+  it("accepts only the global shared pot", () => {
+    const economy = new PublicEconomyStore();
+    expect(() => economy.fund("design")).toThrow("PUBLIC_FUND_NOT_FOUND");
+    expect(publicActionSchema.safeParse({ kind: "fund.create", unitId: "design", mode: "equal" }).success).toBe(false);
+    expect(publicActionSchema.safeParse({ kind: "fund.transfer", fromFundId: "workspace", toFundId: "design", amount: 1 }).success).toBe(false);
+    const state = economy.exportState();
+    state.funds.push({ id: "design", unitId: "design", balance: 0, mode: "equal" });
+    expect(() => economy.restoreState(state)).toThrow("PUBLIC_ECONOMY_INVALID");
+  });
+
   it("uses the configured rate for each category and keeps it with the proposal", () => {
     const economy = new PublicEconomyStore();
     economy.updateApprovalRates({ serverSettings: 75, building: 25, organisation: 100, funds: 0 });
@@ -21,7 +32,7 @@ describe("Public economy", () => {
     expect(building).toMatchObject({ approvalRate: 25, required: 1, status: "approved" });
     const organisationProposal = economy.propose("alice", "Rules", rules, "workspace", organisation, members, now);
     expect(organisationProposal).toMatchObject({ approvalRate: 100, required: 3, status: "open" });
-    const funds = economy.propose("alice", "Fund", { kind: "fund.create", unitId: "design", mode: "equal" }, "workspace", organisation, members, now);
+    const funds = economy.propose("alice", "Fund", { kind: "record", summary: "Shared funds" }, "workspace", organisation, members, now);
     expect(funds).toMatchObject({ approvalRate: 0, required: 0, status: "approved", ballots: [] });
     economy.updateApprovalRates({ serverSettings: 51, building: 51, organisation: 51, funds: 51 });
     expect(economy.proposal(server.id)).toMatchObject({ approvalRate: 75, required: 3 });
@@ -78,14 +89,10 @@ describe("Public economy", () => {
   });
 
   it("expires a proposal with no votes", () => {
-    const company = createOrganisation("alice");
-    company.units = [{ id: "design", name: "Design", kind: "team", parentId: null }];
-    company.assignments = [{ userId: "bob", unitId: "design", rank: "member" }];
     const economy = new PublicEconomyStore();
-    economy.applyFundAction("alice", { kind: "fund.create", unitId: "design", mode: "equal" }, "create");
-    const proposal = economy.propose("alice", "Wall", purchase(0), "design", company, members, now);
+    const proposal = economy.propose("alice", "Wall", purchase(0), "workspace", organisation, members, now, { electorate: ["bob", "carol"] });
     expect(proposal.ballots).toEqual([]);
-    economy.refresh(company, members, new Date(proposal.expiresAt));
+    economy.refresh(organisation, members, new Date(proposal.expiresAt));
     expect(economy.proposal(proposal.id).status).toBe("expired");
   });
 
@@ -166,16 +173,14 @@ describe("Public economy", () => {
     expect(economy.fund("workspace").balance).toBe(40);
   });
 
-  it("keeps fund electorates scoped to their teams", () => {
+  it("uses one global fund electorate across organisation units", () => {
     const company = createOrganisation("alice");
     company.units = [{ id: "design", name: "Design", kind: "team", parentId: null }];
     company.assignments = ["bob", "carol"].map((userId) => ({ userId, unitId: "design", rank: "member" }));
     const economy = new PublicEconomyStore();
-    economy.applyFundAction("alice", { kind: "fund.create", unitId: "design", mode: "equal" }, "create");
-    const proposal = economy.propose("bob", "Design", purchase(0), "design", company, members, now);
-    expect(proposal.electorate).toEqual(["bob", "carol"]);
-    expect(() => economy.vote("alice", proposal.id, true, now)).toThrow("PROPOSAL_VOTE_FORBIDDEN");
-    economy.vote("carol", proposal.id, true, now);
+    const proposal = economy.propose("bob", "Design", purchase(0), "workspace", company, members, now);
+    expect(proposal.electorate).toEqual(members);
+    economy.vote("alice", proposal.id, true, now);
     expect(economy.proposal(proposal.id).status).toBe("approved");
   });
 

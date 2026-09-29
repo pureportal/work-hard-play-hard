@@ -61,9 +61,9 @@ export function SpendingProposals({ proposals, economy, organisation, members, u
       <ProposalDetails action={proposal.action} economy={economy} organisation={organisation} members={members} rooms={rooms} />
       {current && proposal.required > 0 && <div className="proposal-progress"><progress value={approvals} max={proposal.required} aria-label={`${approvals} of ${proposal.required} approvals`} />
         <span>{approvals} / {proposal.required} approvals</span>{ballot && <span>{ballot.approve ? "You approved" : "You rejected"}</span>}</div>}
-      {proposal.status === "approved" && shortfall > 0 && <p role="status">Needs {shortfall.toLocaleString()} more coins in this fund.</p>}
+      {proposal.status === "approved" && shortfall > 0 && <p role="status">Needs {shortfall.toLocaleString()} more shared coins.</p>}
       {current && conflicts.length > 0 && <p role="status">{conflicts.some((conflict) => conflict.reason === "overlap") ? "Overlaps" : "Conflicts"}: {conflictNames.join(", ")}. {proposal.proposedBy === userId ? "Edit the draft to apply it." : "The creator must edit the draft."}</p>}
-      <footer><span>{members.find((member) => member.id === proposal.proposedBy)?.name} · {proposal.fundId === "workspace" ? "Workspace" : organisation.units.find((unit) => unit.id === proposal.fundId)?.name}</span>
+      <footer><span>{members.find((member) => member.id === proposal.proposedBy)?.name}</span>
         {proposal.status === "open" && !votingClosed && <time dateTime={proposal.expiresAt} title={new Date(proposal.expiresAt).toLocaleString()}>
           {Date.parse(proposal.expiresAt) - now < 60_000 ? `${Math.ceil((Date.parse(proposal.expiresAt) - now) / 1_000)}s left` : `Until ${new Date(proposal.expiresAt).toLocaleString()}`}
         </time>}</footer>

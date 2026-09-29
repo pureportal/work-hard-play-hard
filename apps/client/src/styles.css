@@ -823,6 +823,32 @@ button:disabled {
   border-radius: 9px;
 }
 
+.shared-money-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid #8ec8ae;
+  border-radius: 9px;
+  background: #dff8e9;
+  color: #176349;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.shared-money-button:hover { background: #c9f2dc; transform: translateY(-1px); }
+.shared-money-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.shared-money-button strong { font-variant-numeric: tabular-nums; }
+.build-shared-money { min-height: 25px; padding: 1px 7px; }
+
+:root[data-theme="dark"] .shared-money-button { background: #173d31; border-color: #397b5e; color: #adf5cf; }
+:root[data-theme="dark"] .shared-money-button:hover { background: #22523f; }
+
 .connection-notice {
   position: fixed;
   z-index: 110;
@@ -4044,6 +4070,9 @@ button:disabled {
     flex-shrink: 1;
     gap: 6px;
   }
+
+  .top-bar-coins > span,
+  .top-bar-shared-money > span { display: none; }
 
   .top-bar .floor-picker {
     min-width: 44px;

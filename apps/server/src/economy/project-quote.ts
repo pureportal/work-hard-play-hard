@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import {
   BUILD_GRID_SIZE, BUILD_PRICES, WORKSPACE_FUND_ID, assetResaleValue, getAssetDefinition, getTeleporterPrice,
   getPlacedAssetBounds, getOpeningRect, getWallLength, getWallRect, isInPersonalSpace, isPermanentAsset, isUnitWithin, normalizeWall, roomBuildAllows, roomAccessAllows, roomContainsBounds,
@@ -106,7 +107,14 @@ export function assertProjectScope(previous: FloorLayout, next: FloorLayout, fun
     for (const object of source.objects) {
       const other = target.objects.find((candidate) => candidate.id === object.id);
       if (JSON.stringify(object) === JSON.stringify(other)) continue;
-      if (object.ownerUserId && object.ownerUserId !== userId) throw new Error("PRIVATE_ASSET_PROTECTED");
+      if (object.ownerUserId && object.ownerUserId !== userId
+        && (!other || !isDeepStrictEqual(object, {
+          ...other,
+          x: object.x,
+          y: object.y,
+          rotation: object.rotation,
+          variantId: object.variantId,
+        }))) throw new Error("PRIVATE_ASSET_PROTECTED");
       impacted.push(getPlacedAssetBounds(object));
       if (object.ownerUserId === userId && isInPersonalSpace(previous, object, userId)) {
         const bounds = getPlacedAssetBounds(object);
