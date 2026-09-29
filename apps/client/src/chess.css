@@ -386,6 +386,28 @@
   cursor: default;
 }
 
+.chess-square.is-draggable {
+  cursor: grab;
+  touch-action: none;
+}
+
+.chess-square.is-drag-source .chess-piece {
+  visibility: hidden;
+}
+
+.chess-square.is-preview {
+  box-shadow: inset 0 0 0 3px #fff1c4;
+}
+
+.chess-drag-piece {
+  position: fixed;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
 .chess-square.is-light {
   background: #f0e3ce;
 }

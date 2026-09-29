@@ -67,10 +67,6 @@ export function ChessGame({
     () => new Map(match.board.map((piece) => [piece.square, piece])),
     [match.board],
   );
-  const legalDestinations = useMemo(
-    () => new Set(selectableMoves.filter((move) => move.from === selectedSquare).map((move) => move.to)),
-    [selectableMoves, selectedSquare],
-  );
   const lastMove = match.moves.at(-1);
   const checkedKingSquare = match.inCheck
     ? match.board.find((piece) => piece.color === match.turn && piece.type === "king")?.square
@@ -92,33 +88,30 @@ export function ChessGame({
     }
   }, [match.moves.length]);
 
-  const selectSquare = (square: ChessSquare) => {
-    if (!canMove) {
-      return;
+  const submitMove = (from: ChessSquare, to: ChessSquare) => {
+    if (!canMove) return false;
+    const candidates = selectableMoves.filter((move) => move.from === from && move.to === to);
+    if (candidates.length === 0) return false;
+    const promotions = candidates.filter((move) => move.promotion);
+    if (promotions.length > 0) {
+      setPromotionMoves(promotions);
+    } else {
+      const move = { from, to };
+      if (claimingDraw) onClaimDraw(move);
+      else onMove(move);
+      setSelectedSquare(undefined);
     }
+    return true;
+  };
+
+  const selectSquare = (square: ChessSquare) => {
+    if (!canMove) return;
     if (selectedSquare === square) {
       setSelectedSquare(undefined);
       return;
     }
     const piece = pieceBySquare.get(square);
-    if (selectedSquare) {
-      const candidates = selectableMoves.filter((move) => move.from === selectedSquare && move.to === square);
-      if (candidates.length > 0) {
-        const promotions = candidates.filter((move) => move.promotion);
-        if (promotions.length > 0) {
-          setPromotionMoves(promotions);
-        } else {
-          const move = { from: selectedSquare, to: square };
-          if (claimingDraw) {
-            onClaimDraw(move);
-          } else {
-            onMove(move);
-          }
-          setSelectedSquare(undefined);
-        }
-        return;
-      }
-    }
+    if (selectedSquare && submitMove(selectedSquare, square)) return;
     if (piece?.color === ownColor && selectableMoves.some((move) => move.from === square)) {
       setSelectedSquare(square);
     } else {
@@ -166,8 +159,8 @@ export function ChessGame({
             />
 
             <ChessBoard key={ownColor} color={ownColor} board={match.board} lastMove={lastMove}
-              checkedSquare={checkedKingSquare} selectedSquare={selectedSquare} legalDestinations={legalDestinations}
-              canMove={canMove} promotionMoves={promotionMoves} onSelect={selectSquare}
+              checkedSquare={checkedKingSquare} selectedSquare={selectedSquare} legalMoves={selectableMoves}
+              canMove={canMove} promotionMoves={promotionMoves} onSelect={selectSquare} onDrop={submitMove}
               onPromote={choosePromotion} onCancelPromotion={() => setPromotionMoves(undefined)} />
 
             <PlayerBar

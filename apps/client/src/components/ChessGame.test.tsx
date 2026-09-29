@@ -1,10 +1,34 @@
 import { DEFAULT_CHARACTER_APPEARANCE } from "@workhard/shared";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChessMatchView, Member } from "@workhard/shared";
 import { ChessGame } from "./ChessGame";
 
-afterEach(cleanup);
+vi.mock("./Avatar", () => ({ Avatar: () => null }));
+
+class TestPointerEvent extends MouseEvent {
+  readonly pointerId: number;
+  readonly isPrimary: boolean;
+
+  constructor(type: string, init: PointerEventInit = {}) {
+    super(type, init);
+    this.pointerId = init.pointerId ?? 1;
+    this.isPrimary = init.isPrimary ?? true;
+  }
+}
+
+beforeEach(() => {
+  vi.stubGlobal("PointerEvent", TestPointerEvent);
+  HTMLElement.prototype.setPointerCapture = vi.fn();
+  document.elementFromPoint = vi.fn();
+});
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+  Reflect.deleteProperty(HTMLElement.prototype, "setPointerCapture");
+  Reflect.deleteProperty(document, "elementFromPoint");
+});
 
 describe("ChessGame", () => {
   it("orients the board and submits only a selected legal move", () => {
@@ -20,6 +44,157 @@ describe("ChessGame", () => {
 
     rerender(game(initialMatch(), "user-leo", { onMove }));
     expect(container.querySelector<HTMLElement>(".chess-square")?.dataset.square).toBe("h1");
+  });
+
+  it("previews and submits a legal drag while preserving click selection", () => {
+    const onMove = vi.fn();
+    const { container } = render(game(initialMatch(), "user-maya", { onMove }));
+    const pawn = screen.getByRole("gridcell", { name: "white pawn on e2" });
+    const destination = screen.getByRole("gridcell", { name: "e4" });
+    document.elementFromPoint = vi.fn(() => destination);
+
+    fireEvent.pointerDown(pawn, { button: 0, clientX: 10, clientY: 10 });
+    fireEvent.pointerMove(pawn, { clientX: 12, clientY: 12 });
+    expect(container.querySelector(".chess-square.is-drag-source")).toBeNull();
+    fireEvent.pointerMove(pawn, { clientX: 40, clientY: 40 });
+    expect(container.querySelector('[data-square="e2"]')?.classList.contains("is-selected")).toBe(true);
+    expect(container.querySelector('[data-square="e3"]')?.classList.contains("is-legal")).toBe(true);
+    expect(destination.classList.contains("is-preview")).toBe(true);
+    expect(destination.getAttribute("aria-label")).toBe("Preview white pawn on e4");
+    expect(onMove).not.toHaveBeenCalled();
+
+    fireEvent.pointerUp(pawn, { clientX: 40, clientY: 40 });
+    fireEvent.click(pawn);
+    expect(onMove).toHaveBeenCalledExactlyOnceWith({ from: "e2", to: "e4" });
+    expect(destination.classList.contains("is-preview")).toBe(false);
+    expect(container.querySelector(".chess-square.is-selected")).toBeNull();
+  });
+
+  it("leaves the board unchanged after illegal and off-board drops", () => {
+    const onMove = vi.fn();
+    const { container } = render(game(initialMatch(), "user-maya", { onMove }));
+    const pawn = screen.getByRole("gridcell", { name: "white pawn on e2" });
+    const illegal = screen.getByRole("gridcell", { name: "e5" });
+
+    for (const target of [illegal, null]) {
+      document.elementFromPoint = vi.fn(() => target);
+      fireEvent.pointerDown(pawn, { button: 0, clientX: 10, clientY: 10 });
+      fireEvent.pointerMove(pawn, { clientX: 40, clientY: 40 });
+      expect(container.querySelector(".chess-square.is-preview")).toBeNull();
+      expect(document.querySelector(".chess-drag-piece")).not.toBeNull();
+      fireEvent.pointerUp(pawn, { clientX: 40, clientY: 40 });
+      fireEvent.click(pawn);
+      expect(container.querySelector(".chess-square.is-selected")).toBeNull();
+      expect(screen.getByRole("gridcell", { name: "white pawn on e2" })).toBe(pawn);
+      expect(document.querySelector(".chess-drag-piece")).toBeNull();
+    }
+    expect(onMove).not.toHaveBeenCalled();
+  });
+
+  it("does not move when released away from a previously previewed legal square", () => {
+    const onMove = vi.fn();
+    const { container } = render(game(initialMatch(), "user-maya", { onMove }));
+    const pawn = screen.getByRole("gridcell", { name: "white pawn on e2" });
+    const destination = screen.getByRole("gridcell", { name: "e4" });
+    document.elementFromPoint = vi.fn(() => destination);
+
+    fireEvent.pointerDown(pawn, { button: 0, clientX: 10, clientY: 10 });
+    fireEvent.pointerMove(pawn, { clientX: 40, clientY: 40 });
+    expect(destination.classList.contains("is-preview")).toBe(true);
+    document.elementFromPoint = vi.fn(() => null);
+    fireEvent.pointerUp(pawn, { clientX: 80, clientY: 80 });
+    expect(onMove).not.toHaveBeenCalled();
+    expect(container.querySelector(".chess-square.is-preview")).toBeNull();
+    expect(screen.getByRole("gridcell", { name: "white pawn on e2" })).toBe(pawn);
+  });
+
+  it("cannot start a drag while waiting for the opponent or a pending move", () => {
+    const onMove = vi.fn();
+    const { container, rerender } = render(game({ ...initialMatch(), turn: "black" }, "user-maya", { onMove }));
+    const pawn = screen.getByRole("gridcell", { name: "white pawn on e2" });
+    const destination = screen.getByRole("gridcell", { name: "e4" });
+    document.elementFromPoint = vi.fn(() => destination);
+
+    fireEvent.pointerDown(pawn, { button: 0, clientX: 10, clientY: 10 });
+    fireEvent.pointerMove(pawn, { clientX: 40, clientY: 40 });
+    fireEvent.pointerUp(pawn, { clientX: 40, clientY: 40 });
+    expect(container.querySelector(".chess-square.is-preview")).toBeNull();
+
+    rerender(game(initialMatch(), "user-maya", { onMove, pending: true }));
+    fireEvent.pointerDown(pawn, { button: 0, clientX: 10, clientY: 10 });
+    fireEvent.pointerMove(pawn, { clientX: 40, clientY: 40 });
+    fireEvent.pointerUp(pawn, { clientX: 40, clientY: 40 });
+    expect(container.querySelector(".chess-square.is-preview")).toBeNull();
+    expect(onMove).not.toHaveBeenCalled();
+  });
+
+  it("previews captures and submits a legal drag from the black side", () => {
+    const onMove = vi.fn();
+    const match = {
+      ...initialMatch(),
+      turn: "black" as const,
+      board: [
+        { square: "e7" as const, color: "black" as const, type: "rook" as const },
+        { square: "e4" as const, color: "white" as const, type: "knight" as const },
+      ],
+      legalMoves: [{ from: "e7" as const, to: "e4" as const }],
+    };
+    const { container } = render(game(match, "user-leo", { onMove }));
+    const rook = screen.getByRole("gridcell", { name: "black rook on e7" });
+    const destination = screen.getByRole("gridcell", { name: "white knight on e4" });
+    expect(container.querySelector<HTMLElement>(".chess-square")?.dataset.square).toBe("h1");
+    document.elementFromPoint = vi.fn(() => destination);
+
+    fireEvent.pointerDown(rook, { button: 0, clientX: 10, clientY: 10 });
+    fireEvent.pointerMove(rook, { clientX: 40, clientY: 40 });
+    expect(destination.getAttribute("aria-label")).toBe("Preview black rook on e4");
+    expect(destination.querySelectorAll(".chess-piece")).toHaveLength(1);
+    fireEvent.pointerUp(rook, { clientX: 40, clientY: 40 });
+    expect(onMove).toHaveBeenCalledExactlyOnceWith({ from: "e7", to: "e4" });
+  });
+
+  it("opens promotion choice after a pawn is dropped on its legal promotion square", () => {
+    const onMove = vi.fn();
+    render(game({
+      ...initialMatch(),
+      board: [{ square: "b7", color: "white", type: "pawn" }],
+      legalMoves: ["queen", "rook", "bishop", "knight"].map((promotion) => ({
+        from: "b7" as const,
+        to: "b8" as const,
+        promotion: promotion as "queen" | "rook" | "bishop" | "knight",
+      })),
+    }, "user-maya", { onMove }));
+    const pawn = screen.getByRole("gridcell", { name: "white pawn on b7" });
+    const destination = screen.getByRole("gridcell", { name: "b8" });
+    document.elementFromPoint = vi.fn(() => destination);
+
+    fireEvent.pointerDown(pawn, { button: 0, clientX: 10, clientY: 10 });
+    fireEvent.pointerMove(pawn, { clientX: 40, clientY: 40 });
+    fireEvent.pointerUp(pawn, { clientX: 40, clientY: 40 });
+    expect(onMove).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Promote to knight" }));
+    expect(onMove).toHaveBeenCalledExactlyOnceWith({ from: "b7", to: "b8", promotion: "knight" });
+  });
+
+  it("uses claimable moves for drag destinations while claiming a draw", () => {
+    const onClaimDraw = vi.fn();
+    const onMove = vi.fn();
+    const { container } = render(game({
+      ...initialMatch(),
+      drawClaims: [{ result: "threefold_repetition", move: { from: "e2", to: "e3" } }],
+    }, "user-maya", { onClaimDraw, onMove }));
+    fireEvent.click(screen.getByRole("button", { name: "Claim draw" }));
+    const pawn = screen.getByRole("gridcell", { name: "white pawn on e2" });
+    const destination = screen.getByRole("gridcell", { name: "e3" });
+    document.elementFromPoint = vi.fn(() => destination);
+
+    fireEvent.pointerDown(pawn, { button: 0, clientX: 10, clientY: 10 });
+    fireEvent.pointerMove(pawn, { clientX: 40, clientY: 40 });
+    expect(container.querySelector('[data-square="e3"]')?.classList.contains("is-legal")).toBe(true);
+    expect(container.querySelector('[data-square="e4"]')?.classList.contains("is-legal")).toBe(false);
+    fireEvent.pointerUp(pawn, { clientX: 40, clientY: 40 });
+    expect(onClaimDraw).toHaveBeenCalledExactlyOnceWith({ from: "e2", to: "e3" });
+    expect(onMove).not.toHaveBeenCalled();
   });
 
   it("requires a promotion choice", () => {
