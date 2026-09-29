@@ -88,6 +88,7 @@ export class PostgreSqlWorkspaceRepository {
         availability: player.availability,
         connected: player.connected,
         ...(player.roomId ? { roomId: player.roomId } : {}),
+        ...(player.seat ? { seat: player.seat } : {}),
         ...(player.wavingUntil ? { wavingUntil: player.wavingUntil.getTime() } : {}),
       })),
       store: {
@@ -387,6 +388,7 @@ export class PostgreSqlWorkspaceRepository {
         facing: player.facing,
         availability: player.availability,
         roomId: player.roomId ?? null,
+        seat: player.seat ?? null,
         connected: player.connected,
         wavingUntil: player.wavingUntil ? new Date(player.wavingUntil) : null,
         sortOrder,

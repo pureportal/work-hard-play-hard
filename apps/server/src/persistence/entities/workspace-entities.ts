@@ -208,6 +208,7 @@ export class WorldPlayerEntity {
   facing!: WorldPlayer["facing"];
   availability!: Availability;
   roomId!: string | null;
+  seat!: WorldPlayer["seat"] | null;
   connected!: boolean;
   wavingUntil!: Date | null;
   sortOrder!: number;
@@ -578,6 +579,7 @@ export const worldPlayerSchema = new EntitySchema({
     facing: { type: String },
     availability: { type: String },
     roomId: { type: String, fieldName: "room_id", nullable: true },
+    seat: { type: "json", nullable: true },
     connected: { type: Boolean },
     wavingUntil: { type: Date, fieldName: "waving_until", nullable: true },
     sortOrder: { type: Number, fieldName: "sort_order" },
