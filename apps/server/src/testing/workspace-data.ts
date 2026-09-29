@@ -16,6 +16,7 @@ import {
   DEFAULT_CORPORATE_IDENTITY,
   DEFAULT_PLAYER_KIDNAPPING_SETTINGS,
   CHESS_DEFINITION_ID,
+  ARCADE_GAMES,
   FALLING_BLOCKS_DEFINITION_ID,
   TIC_TAC_TOE_DEFINITION_ID,
   WELCOME_COIN_REWARD,
@@ -278,6 +279,7 @@ const miniGames: MiniGameDefinition[] = [
   { id: FALLING_BLOCKS_DEFINITION_ID, name: "Falling Blocks", accent: "#ff7a66", assetId: "equipment-falling-blocks" },
   { id: TIC_TAC_TOE_DEFINITION_ID, name: "Tic-Tac-Toe", accent: "#5b8def", assetId: "equipment-tic-tac-toe" },
   { id: CHESS_DEFINITION_ID, name: "Chess", accent: "#79664f", assetId: "equipment-chess" },
+  ...ARCADE_GAMES.map(({ id, name, accent, assetId }) => ({ id, name, accent, assetId })),
 ];
 
 function createScores(now: Date): GameScore[] {

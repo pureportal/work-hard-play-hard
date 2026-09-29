@@ -5,6 +5,7 @@ import { meetingCommands } from "./meetings/meeting-protocol.js";
 import { mediaSignalSchema } from "./media/media-protocol.js";
 import { workObjectEditSchema } from "./work/work-object-state.js";
 import {
+  ARCADE_GAMES,
   BOT_DIFFICULTIES,
   CHESS_ACCESS_MODES,
   CHESS_PROMOTION_PIECES,
@@ -35,11 +36,20 @@ const ticTacToeCommand = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("stacking.place"), cell: ticTacToeCell, size: z.enum(TIC_TAC_TOE_PIECE_SIZES) }).strict(),
   z.object({ kind: z.literal("stacking.move"), fromCell: ticTacToeCell, toCell: ticTacToeCell }).strict(),
 ]);
+const arcadeDirection = z.enum(["up", "down", "left", "right"]);
+const arcadeCommand = z.discriminatedUnion("kind", [
+  z.object({ kind: z.enum(["reveal", "claim", "memory"]), cell: z.number().int().min(0).max(191) }).strict(),
+  z.object({ kind: z.enum(["move", "turn"]), direction: arcadeDirection }).strict(),
+  z.object({ kind: z.enum(["bomb", "shoot"]) }).strict(),
+  z.object({ kind: z.literal("stroke"), points: z.array(z.number().int().min(0).max(100)).min(4).max(128), color: z.string().regex(/^#[0-9a-f]{6}$/i) }).strict(),
+  z.object({ kind: z.literal("guess"), text: z.string().min(1).max(40) }).strict(),
+  z.object({ kind: z.literal("shot"), dx: z.number().finite().min(-1).max(1), dy: z.number().finite().min(-1).max(1), power: z.number().finite().gt(0).max(1) }).strict(),
+]);
 const gameBot = z.object({ difficulty: z.enum(BOT_DIFFICULTIES) }).strict();
 const gameStart = z.object({
   type: z.literal("game.start"),
   requestId,
-  definitionId: z.enum([FALLING_BLOCKS_DEFINITION_ID, TIC_TAC_TOE_DEFINITION_ID]),
+  definitionId: z.enum([FALLING_BLOCKS_DEFINITION_ID, TIC_TAC_TOE_DEFINITION_ID, ...ARCADE_GAMES.map((game) => game.id)]),
   objectId: z.string().min(1).max(128),
   variantId: z.enum(TIC_TAC_TOE_VARIANTS.map((variant) => variant.id)).optional(),
   bot: gameBot.optional(),
@@ -52,7 +62,7 @@ const gameStart = z.object({
   if ((definitionId === TIC_TAC_TOE_DEFINITION_ID) !== (variantId !== undefined)) {
     context.addIssue({ code: "custom", message: "Variant does not match the game." });
   }
-  if ((bot && definitionId !== TIC_TAC_TOE_DEFINITION_ID) || (solo !== undefined && definitionId !== FALLING_BLOCKS_DEFINITION_ID)) {
+  if ((bot && definitionId !== TIC_TAC_TOE_DEFINITION_ID) || (solo !== undefined && definitionId === TIC_TAC_TOE_DEFINITION_ID)) {
     context.addIssue({ code: "custom", message: "Opponent does not match the game." });
   }
   if (settings && definitionId !== FALLING_BLOCKS_DEFINITION_ID) {
@@ -222,7 +232,7 @@ export const clientCommandSchema = z.discriminatedUnion("type", [
     type: z.literal("game.command"),
     requestId,
     roundId: z.string().uuid(),
-    command: z.union([z.enum(FALLING_BLOCKS_COMMANDS), ticTacToeCommand]),
+    command: z.union([z.enum(FALLING_BLOCKS_COMMANDS), ticTacToeCommand, arcadeCommand]),
     sequence: z.number().int().positive().safe().optional(),
     inputSessionId: z.string().uuid().optional(),
   }).strict().refine((value) => typeof value.command === "string"

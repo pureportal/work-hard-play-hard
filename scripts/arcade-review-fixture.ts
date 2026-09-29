@@ -35,7 +35,11 @@ export function createArcadeReviewFixture() {
         await route.fulfill({ json: { user: { id: userId, username: "arcade-review", email: "arcade-review@example.test" }, setupRequired: false,
           registration: { enabled: false, invitationRequired: true }, magicLinkEnabled: false, corporateIdentity: store.getCorporateIdentity() }, headers });
       } else if (path === "/v1/bootstrap") {
-        await route.fulfill({ json: store.getBootstrap(userId), headers });
+        const bootstrap = store.getBootstrap(userId);
+        bootstrap.economy.dailyReward.claimable = false;
+        await route.fulfill({ json: bootstrap, headers });
+      } else if (path === "/v1/me/game-guide") {
+        await route.fulfill({ json: { status: "completed" }, headers });
       } else {
         throw new Error(`Unexpected arcade review request: ${path}`);
       }

@@ -51,7 +51,7 @@ The building has three floors and 21 rooms:
 | Library & Leadership | Three private offices, workshop, library, tea room, gallery and terraces |
 | Maker Studios | Animation, sound, materials, craft, project library, winter garden, gallery and roof garden |
 
-The layout uses more than 200 catalogue assets, including floor materials, supported desk decorations, usable seats, whiteboards, checklists, all three games and paired floor portals. Floors and decorations use catalogue footprints and placement rules.
+The layout uses more than 200 catalogue assets, including floor materials, supported desk decorations, usable seats, whiteboards, checklists, all eleven games and paired floor portals. The eight newer game tables sit on the Maker Studios arcade patio. Floors and decorations use catalogue footprints and placement rules.
 
 The seed includes seventeen people and a nine-unit tree: Engineering (Platform, Web), Product (Design, Research), and Operations (Workplace, Customer Support). Rowan is CEO; department and team leads have appropriate assignments. Rowan, Imani and Lucia have knockable private offices. Team studios allow their department's members to furnish them; shared-space building defaults to Nobody.
 

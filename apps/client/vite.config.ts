@@ -33,6 +33,8 @@ export default defineConfig({
     setupFiles: ["./src/test-setup.ts"],
     include: [
       "src/api.test.ts",
+      "src/components/ArcadeGame.test.tsx",
+      "src/components/ChessGame.test.tsx",
       "src/falling-blocks-prediction.test.ts",
       "src/falling-blocks-spectating.test.ts",
       "src/image-cache.test.ts",

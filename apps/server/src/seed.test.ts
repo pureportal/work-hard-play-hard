@@ -244,7 +244,10 @@ describe("development seed", () => {
     }
 
     for (const game of data.miniGames) {
-      expect(data.layouts.some((layout) => layout.objects.some((object) => object.assetId === game.assetId))).toBe(true);
+      expect(getAssetDefinition(game.assetId)?.kind).toBe("game");
+      if (["game-falling-blocks", "game-tic-tac-toe", "game-chess"].includes(game.id)) {
+        expect(data.layouts.some((layout) => layout.objects.some((object) => object.assetId === game.assetId))).toBe(true);
+      }
     }
     for (const score of data.scores) {
       expect(gameIds.has(score.definitionId)).toBe(true);

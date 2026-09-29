@@ -1,5 +1,22 @@
 # Arcade
 
+## New table games
+
+Eight additional tables use the existing nearby lobby, server owned round, saved scores, and coin reward flow. Solo play is available except for Sketch & Guess, which needs at least two players. Multiplayer rounds gather up to four nearby players. Minefield Relay and Space Defense have shared team outcomes and reward each player for a multiplayer team win. Closing an active game forfeits that player. A server restart ends in-progress rounds.
+
+| Game | Shared table price | Round |
+| --- | ---: | --- |
+| Minefield Relay | 350 | Reveal an 8×8 field with ten mines and three lives; clear safe cells or score until 75 seconds. |
+| Memory Sprint | 350 | Watch a sequence of lit pads, then repeat it through six stages, with three lives and a 75-second limit. |
+| Territory Rush | 450 | Claim neutral cells adjacent to your territory for 75 seconds. Claims received in the same 200 ms window compete for a cell. |
+| Sketch & Guess | 550 | Each player draws once for 45 seconds. The prompt is visible only to the drawer; correct guesses score for both. |
+| Snake Scramble | 600 | Turn a moving snake, collect food and avoid trails and walls for up to 75 seconds. |
+| Bomb Arena | 650 | Move through a breakable maze, place one bomb at a time, and survive three hits or 75 seconds. |
+| Mini Golf | 700 | Putt through three courses with server simulated ball motion and stroke based scoring, within 150 seconds. |
+| Space Defense | 800 | Move and fire through three waves for 90 seconds; stop enemies before they deplete the station's 24 health. |
+
+The new tables retain the existing shared placement model and are seeded on the Maker Studios arcade patio. Their catalog prices apply to public build projects; personal shop purchases remain unavailable. All 24 material models and 96 directional frames are generated in Blockbench and imported through the world asset pipeline. Tile boards support arrow-key focus navigation, Mini Golf supports keyboard aiming and shooting, and the action games support arrow or WASD movement and Space actions. Touch controls support held movement and firing.
+
 Game entry uses the asset's circular interaction radius on both the server and the canvas. Only the selected interaction has a thin, unfilled outline; idle equipment and people do not draw radius indicators. Build placement and selection still show equipment reach. The nearby action panel retains a selected area while it remains in range, selects newly entered areas, and offers previous/next buttons and a keyboard-accessible area selector. Meetings, doors, and nearby people participate in the same selection.
 
 Game definitions identify equipment by asset type. Every placed Falling Blocks cabinet has its own lobby, keyed by its object ID. Starting a round includes that ID, so saved IDs and additional cabinets work without renaming layout objects. Multiplayer gathers participants from the selected cabinet; entering a round removes them from overlapping lobbies. Replays return to the same cabinet.

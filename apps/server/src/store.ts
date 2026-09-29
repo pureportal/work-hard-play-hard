@@ -16,6 +16,7 @@ import {
   DEFAULT_PLAYER_KIDNAPPING_SETTINGS,
   GAME_BOT_USER_ID,
   FALLING_BLOCKS_DEFINITION_ID,
+  TEAM_ARCADE_GAME_IDS,
   KIDNAPPING_POLICY_MODES,
   MAX_LAYOUT_OBJECTS_PER_FLOOR,
   MAX_LAYOUT_OPENINGS_PER_FLOOR,
@@ -955,7 +956,7 @@ export class WorkspaceStore {
           definitionId !== FALLING_BLOCKS_DEFINITION_ID || !validFallingBlocksCounts(result.fallingBlocks)
         ))
       )
-      || results.filter((result) => result.won).length > 1
+      || (results.filter((result) => result.won).length > 1 && !TEAM_ARCADE_GAME_IDS.some((id) => id === definitionId))
       || (results.length === 1 && results[0]!.won)
       || !isIsoTimestamp(playedAt)
       || !this.getMiniGame(definitionId)
@@ -1001,7 +1002,7 @@ export class WorkspaceStore {
       }
       playerStatistics.gamesPlayed += 1;
       playerStatistics.multiplayerGamesPlayed += mode === "multiplayer" ? 1 : 0;
-      playerStatistics.multiplayerWins += score.won ? 1 : 0;
+      playerStatistics.multiplayerWins += mode === "multiplayer" && score.won ? 1 : 0;
       playerStatistics.highestScore = Math.max(playerStatistics.highestScore, score.score);
       playerStatistics.highestLines = Math.max(playerStatistics.highestLines, score.lines);
       playerStatistics.totalScore += score.score;

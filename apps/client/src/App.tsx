@@ -30,6 +30,7 @@ import {
 import { lazy, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   ASSET_CATALOG,
+  ARCADE_GAMES,
   DEFAULT_CORPORATE_IDENTITY,
   GONG_INTERACTION_RANGE,
   MAX_LAYOUT_OBJECTS_PER_FLOOR,
@@ -72,6 +73,7 @@ import type {
   GameLobbyState,
   GameRoundState,
   GameState,
+  ArcadeGameState,
   FallingBlocksSettings,
   FallingBlocksSpectatorState,
   GameBot,
@@ -127,6 +129,7 @@ import { useInteractionAreas, type InteractionArea } from "./hooks/useInteractio
 import { FallingBlocksLobby } from "./components/FallingBlocksLobby";
 import { ChessLobby } from "./components/ChessLobby";
 import { TicTacToeLobby } from "./components/TicTacToeLobby";
+import { ArcadeLobby } from "./components/ArcadeLobby";
 import { TopBar } from "./components/TopBar";
 import type { ContextAnchor, WorldContextTarget, WorldFocusTarget } from "./components/WorldCanvas";
 import { WorldActionMenu } from "./components/WorldActionMenu";
@@ -161,9 +164,11 @@ const GitHubMailroom = lazy(() => import("./github/GitHubMailroom").then((module
 const loadFallingBlocksGame = () => import("./components/FallingBlocksGame").then((module) => ({ default: module.FallingBlocksGame }));
 const loadChessGame = () => import("./components/ChessGame").then((module) => ({ default: module.ChessGame }));
 const loadTicTacToeGame = () => import("./components/TicTacToeGame").then((module) => ({ default: module.TicTacToeGame }));
+const loadArcadeGame = () => import("./components/ArcadeGame").then((module) => ({ default: module.ArcadeGame }));
 const FallingBlocksGame = lazy(loadFallingBlocksGame);
 const ChessGame = lazy(loadChessGame);
 const TicTacToeGame = lazy(loadTicTacToeGame);
+const ArcadeGame = lazy(loadArcadeGame);
 
 type WorldSelection =
   | { type: "object"; object: WorldObject; interactionId?: string; anchor?: ContextAnchor }
@@ -2308,7 +2313,8 @@ export function Workspace({
   useEffect(() => {
     const load = lobbyGame === FALLING_BLOCKS_DEFINITION_ID ? loadFallingBlocksGame
       : lobbyGame === TIC_TAC_TOE_DEFINITION_ID ? loadTicTacToeGame
-        : lobbyGame === CHESS_DEFINITION_ID ? loadChessGame : undefined;
+        : lobbyGame === CHESS_DEFINITION_ID ? loadChessGame
+          : ARCADE_GAMES.some((game) => game.id === lobbyGame) ? loadArcadeGame : undefined;
     if (load) void load().catch((error: unknown) => console.error("Game could not preload.", error));
   }, [lobbyGame]);
   const visibleMeetingEntry = enteredMeetings.find((meeting) => meeting.id === activeInteraction?.id);
@@ -2824,6 +2830,13 @@ export function Workspace({
               ...(bot ? { bot } : {}),
             })}
           />
+        )}
+
+        {visibleGameLobby && ARCADE_GAMES.some((game) => game.id === visibleGameLobby.definitionId) && (
+          <ArcadeLobby key={visibleGameLobby.objectId} lobby={visibleGameLobby} members={data.members}
+            currentUserId={data.currentUserId} pending={lobbyRequest.pending}
+            onStart={(solo) => lobbyRequest.run(request, { type: "game.start", requestId: requestId(),
+              definitionId: visibleGameLobby.definitionId as ArcadeGameState["definitionId"], objectId: visibleGameLobby.objectId, solo })} />
         )}
 
         {visibleChessLobby && (
@@ -3538,6 +3551,18 @@ export function Workspace({
             } : undefined}
             onClose={closeGame}
           />
+        </DeferredContent>
+      )}
+      {activePanel !== "build" && gameOpen && gameRound && ARCADE_GAMES.some((game) => game.id === gameRound.definitionId)
+        && gameState && ARCADE_GAMES.some((game) => game.id === gameState.definitionId) && (
+        <DeferredContent key={gameRound.id} onClose={closeGame}>
+          <ArcadeGame state={gameState as ArcadeGameState} members={data.members} currentUserId={data.currentUserId}
+            onCommand={(command) => send({ type: "game.command", requestId: requestId(), roundId: gameRound.id, command })}
+            onPlayAgain={gameRound.participants.length === 1 && gameRound.definitionId !== "game-sketch-guess" ? () => {
+              closeGame();
+              lobbyRequest.run(request, { type: "game.start", requestId: requestId(), definitionId: gameRound.definitionId as ArcadeGameState["definitionId"], objectId: gameRound.objectId, solo: true });
+            } : undefined}
+            onClose={closeGame} />
         </DeferredContent>
       )}
       {activePanel !== "build" && chessOpen && chessMatch && (

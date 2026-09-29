@@ -1,4 +1,4 @@
-import { getAssetRasterSize, requireAssetDefinition, type FloorLayout, type RoomTemplate } from "@workhard/shared";
+import { ARCADE_GAMES, getAssetRasterSize, requireAssetDefinition, type FloorLayout, type RoomTemplate } from "@workhard/shared";
 import type { LayoutPlan } from "../world/layout-plan.js";
 
 export function createMakerStudios(plan: LayoutPlan): FloorLayout {
@@ -19,11 +19,15 @@ export function createMakerStudios(plan: LayoutPlan): FloorLayout {
   plan.flooring("winter-display-floor", "floor-glass", "crafted", 1152, 896, 512, 128);
   plan.flooring("gallery-floor", "floor-terrazzo", "fine", 128, 512, 1536, 128);
   plan.flooring("roof-deck", "floor-decking", "cedar", 640, 1024, 512, 256);
+  plan.flooring("arcade-patio", "floor-rubber", "crumb", 1728, 128, 256, 896);
   plan.flooring("potting-bed", "floor-earth", "classic", 1216, 1088, 448, 192);
   plan.object("stairs", "infrastructure-portal", 1536, 544, "blue").label = "2";
   rooms.push({ id: "room-makers-gallery", name: "Gallery", color: "#e8e3da", capacity: 16,
     anchor: { x: 896, y: 576 }, access: { mode: "open", assignedPersonIds: [], knockable: false }, build: { mode: "default", assignedPersonIds: [] } });
   furnishStudios(plan);
+  ARCADE_GAMES.forEach((game, index) => {
+    plan.object(game.id, game.assetId, 1728 + index % 2 * 160, [176, 368, 656, 848][Math.floor(index / 2)]!, "violet");
+  });
   return plan.finish(rooms);
 }
 

@@ -1,5 +1,6 @@
 import {
   CHESS_DEFINITION_ID,
+  ARCADE_GAMES,
   DEFAULT_CORPORATE_IDENTITY,
   DEFAULT_GAME_SETTINGS,
   DEFAULT_GLOBAL_KIDNAPPING_SETTINGS,
@@ -34,6 +35,7 @@ export function createInitialData(now = new Date()): BootstrapData {
       { id: FALLING_BLOCKS_DEFINITION_ID, name: "Falling Blocks", accent: "#ff7a66", assetId: "equipment-falling-blocks" },
       { id: TIC_TAC_TOE_DEFINITION_ID, name: "Tic-Tac-Toe", accent: "#5b8def", assetId: "equipment-tic-tac-toe" },
       { id: CHESS_DEFINITION_ID, name: "Chess", accent: "#79664f", assetId: "equipment-chess" },
+      ...ARCADE_GAMES.map(({ id, name, accent, assetId }) => ({ id, name, accent, assetId })),
     ],
     scores: [],
     gameStatistics: [],

@@ -1,5 +1,5 @@
 import {
-  ASSET_CATALOG, canUseWorkObject, detectRooms, getAssetPlacementError, getFloorPortals, getOpeningCenter,
+  ARCADE_GAMES, ASSET_CATALOG, canUseWorkObject, detectRooms, getAssetPlacementError, getFloorPortals, getOpeningCenter,
   getOutdoorBounds, getPlacedAssetBounds, getPlacedAssetInteractions, getRoomDoorPosition, getSpawnPlacementError,
   getWallLength, isPointInRoom, requireAssetDefinition, roomAccessAllows, roomBuildAllows,
   type Floor, type FloorLayout, type Position,
@@ -24,6 +24,15 @@ describe("workplace seeds", () => {
     expect(assetIds.size).toBeGreaterThan(200);
     expect([...assetIds].every((id) => ASSET_CATALOG.assets.some((asset) => asset.id === id))).toBe(true);
     for (const id of ["equipment-falling-blocks", "equipment-tic-tac-toe", "equipment-chess"]) expect(assetIds.has(id)).toBe(true);
+    const gameDefinitions = createInitialData().miniGames;
+    for (const game of ARCADE_GAMES) {
+      const tables = layouts.flatMap((layout) => layout.objects).filter((object) => object.assetId === game.assetId);
+      expect(tables).toHaveLength(1);
+      expect(tables[0]?.id).toContain(game.id);
+      expect(requireAssetDefinition(game.assetId)).toMatchObject({ kind: "game", buildable: true });
+      expect(requireAssetDefinition(game.assetId).shop?.price).toBeGreaterThan(0);
+      expect(gameDefinitions).toContainEqual(expect.objectContaining({ id: game.id, assetId: game.assetId }));
+    }
     expect(layouts.flatMap((layout) => layout.rooms)).toHaveLength(21);
     for (const floor of floors) verifyLayout(floor, layouts.find((layout) => layout.floorId === floor.id)!);
     expect(new Set(getFloorPortals(floors, layouts).map((portal) => portal.destinationFloorId))).toEqual(new Set(floors.map((floor) => floor.id)));

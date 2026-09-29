@@ -394,8 +394,8 @@ export interface RoomKnock {
 
 export type RoomKnockState = "pending" | "accepted" | "declined" | "expired";
 
-export type GameState = FallingBlocksGameState | TicTacToeGameState;
-export type GameCommand = FallingBlocksCommand | TicTacToeCommand;
+export type GameState = FallingBlocksGameState | TicTacToeGameState | import("./arcade-games.js").ArcadeGameState;
+export type GameCommand = FallingBlocksCommand | TicTacToeCommand | import("./arcade-games.js").ArcadeCommand;
 
 export type ServerEvent =
   | { type: "organisation.updated"; organisation: OrganisationState }
@@ -521,9 +521,11 @@ export type ClientCommand =
   | { type: "meeting.lock"; requestId: string; sessionId: string; locked: boolean }
   | { type: "game.start"; requestId: string; definitionId: typeof FALLING_BLOCKS_DEFINITION_ID; objectId: string; solo?: boolean; settings?: FallingBlocksSettings }
   | { type: "game.start"; requestId: string; definitionId: typeof TIC_TAC_TOE_DEFINITION_ID; objectId: string; variantId: TicTacToeVariantId; bot?: GameBot }
+  | { type: "game.start"; requestId: string; definitionId: import("./arcade-games.js").ArcadeGameId; objectId: string; solo?: boolean }
   | { type: "game.end"; requestId: string; roundId: string }
   | { type: "game.command"; requestId: string; roundId: string; command: FallingBlocksCommand; sequence: number; inputSessionId: string }
   | { type: "game.command"; requestId: string; roundId: string; command: TicTacToeCommand }
+  | { type: "game.command"; requestId: string; roundId: string; command: import("./arcade-games.js").ArcadeCommand }
   | { type: "chess.match_create"; requestId: string; settings: ChessMatchSettings }
   | { type: "chess.match_join"; requestId: string; matchId: string }
   | { type: "chess.match_open"; requestId: string; matchId: string }
@@ -538,3 +540,4 @@ export type ClientCommand =
 export type KidnappingEndReason = "cancelled" | "interrupted" | "access_revoked";
 export * from "./media.js";
 export * from "./game-guide.js";
+export * from "./arcade-games.js";

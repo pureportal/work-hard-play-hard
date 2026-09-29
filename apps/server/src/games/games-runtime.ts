@@ -4,6 +4,7 @@ import {
   TIC_TAC_TOE_DEFINITION_ID,
   TIC_TAC_TOE_VARIANTS,
   type FallingBlocksCommand,
+  type ArcadeCommand,
   type FallingBlocksSettings,
   type GameCommand,
   type GameBot,
@@ -16,14 +17,18 @@ import { WorkspaceStore } from "../store.js";
 import { FallingBlocksMultiplayerRuntime } from "./falling-blocks-multiplayer.js";
 import type { GameEventDelivery } from "./game-event-delivery.js";
 import { TicTacToeMultiplayerRuntime } from "./tic-tac-toe-multiplayer.js";
+import { ArcadeRuntime } from "./arcade-runtime.js";
+import { isArcadeGameId } from "./arcade-engine.js";
 
 export class GamesRuntime {
   private readonly fallingBlocks: FallingBlocksMultiplayerRuntime;
   private readonly ticTacToe: TicTacToeMultiplayerRuntime;
+  private readonly arcade: ArcadeRuntime;
 
   constructor(store: WorkspaceStore) {
     this.fallingBlocks = new FallingBlocksMultiplayerRuntime(store);
     this.ticTacToe = new TicTacToeMultiplayerRuntime(store);
+    this.arcade = new ArcadeRuntime(store);
   }
 
   hasFallingBlocksRound(userId: string): boolean {
@@ -45,6 +50,7 @@ export class GamesRuntime {
     return [
       ...this.fallingBlocks.syncLobbies(availablePlayers, connectedUserIds),
       ...this.ticTacToe.syncLobbies(availablePlayers, connectedUserIds),
+      ...this.arcade.syncLobbies(availablePlayers, connectedUserIds),
     ];
   }
 
@@ -58,24 +64,34 @@ export class GamesRuntime {
       if (variantId !== undefined) {
         throw new Error("GAME_VARIANT_INVALID");
       }
-      if (this.ticTacToe.getRoundId(userId)) {
+      if (this.ticTacToe.getRoundId(userId) || this.arcade.getRoundId(userId)) {
         throw new Error("GAME_IN_PROGRESS");
       }
       if (!options.objectId) throw new Error("GAME_NOT_FOUND");
       const started = this.fallingBlocks.start(userId, options.objectId, options.solo, options.settings);
       started.deliveries.push(...this.ticTacToe.removeFromLobbies(started.participantIds));
+      started.deliveries.push(...this.arcade.removeFromLobbies(started.participantIds));
       return started;
     }
     if (definitionId === TIC_TAC_TOE_DEFINITION_ID) {
       if (!variantId || !isTicTacToeVariantId(variantId)) {
         throw new Error("GAME_VARIANT_INVALID");
       }
-      if (this.fallingBlocks.getRoundId(userId)) {
+      if (this.fallingBlocks.getRoundId(userId) || this.arcade.getRoundId(userId)) {
         throw new Error("GAME_IN_PROGRESS");
       }
       if (!options.objectId) throw new Error("GAME_NOT_FOUND");
       const started = this.ticTacToe.start(userId, options.objectId, variantId, options.bot);
       started.deliveries.push(...this.fallingBlocks.removeFromLobbies(started.participantIds));
+      started.deliveries.push(...this.arcade.removeFromLobbies(started.participantIds));
+      return started;
+    }
+    if (isArcadeGameId(definitionId)) {
+      if (this.fallingBlocks.getRoundId(userId) || this.ticTacToe.getRoundId(userId)) throw new Error("GAME_IN_PROGRESS");
+      if (!options.objectId) throw new Error("GAME_NOT_FOUND");
+      const started = this.arcade.start(userId, definitionId, options.objectId, options.solo ?? false);
+      started.deliveries.push(...this.fallingBlocks.removeFromLobbies(started.participantIds));
+      started.deliveries.push(...this.ticTacToe.removeFromLobbies(started.participantIds));
       return started;
     }
     throw new Error("GAME_NOT_FOUND");
@@ -97,15 +113,19 @@ export class GamesRuntime {
       }
       return this.ticTacToe.command(userId, command);
     }
+    if (this.arcade.isPlaying(userId)) {
+      if (typeof command !== "object" || command === null || !("kind" in command)) throw new Error("GAME_COMMAND_INVALID");
+      return this.arcade.command(userId, command as ArcadeCommand);
+    }
     throw new Error("GAME_NOT_STARTED");
   }
 
   update(deltaMs: number): GameEventDelivery[] {
-    return [...this.fallingBlocks.update(deltaMs), ...this.ticTacToe.update(deltaMs)];
+    return [...this.fallingBlocks.update(deltaMs), ...this.ticTacToe.update(deltaMs), ...this.arcade.update(deltaMs)];
   }
 
   leave(userId: string): GameEventDelivery[] {
-    return [...this.fallingBlocks.leave(userId), ...this.ticTacToe.leave(userId)];
+    return [...this.fallingBlocks.leave(userId), ...this.ticTacToe.leave(userId), ...this.arcade.leave(userId)];
   }
 
   end(userId: string, roundId: string): GameEventDelivery[] {
@@ -116,17 +136,18 @@ export class GamesRuntime {
   }
 
   getRoundId(userId: string): string | undefined {
-    return this.fallingBlocks.getRoundId(userId) ?? this.ticTacToe.getRoundId(userId);
+    return this.fallingBlocks.getRoundId(userId) ?? this.ticTacToe.getRoundId(userId) ?? this.arcade.getRoundId(userId);
   }
 
   isPlaying(userId: string): boolean {
-    return this.fallingBlocks.isPlaying(userId) || this.ticTacToe.isPlaying(userId);
+    return this.fallingBlocks.isPlaying(userId) || this.ticTacToe.isPlaying(userId) || this.arcade.isPlaying(userId);
   }
 
   getSessionEvents(userId: string): ServerEvent[] {
     return [
       ...this.fallingBlocks.getSessionEvents(userId),
       ...this.ticTacToe.getSessionEvents(userId),
+      ...this.arcade.getSessionEvents(userId),
     ];
   }
 }
