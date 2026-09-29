@@ -36,6 +36,11 @@ expectEqual(tauriConfig.productName, "Northstar", "Tauri product name");
 expectEqual(tauriConfig.mainBinaryName, "Northstar", "Tauri main binary name");
 expectEqual(tauriConfig.identifier, "io.pureportal.northstar", "Tauri application identifier");
 expectEqual(tauriConfig.bundle?.android?.minSdkVersion, 24, "Android minimum SDK");
+expectEqual(tauriConfig.bundle?.createUpdaterArtifacts, true, "Tauri updater artifacts");
+expectEqual(tauriConfig.plugins?.updater?.requireSignedVersion, true, "Tauri signed updater version");
+if (!tauriConfig.plugins?.updater?.pubkey) {
+  throw new Error("Tauri updater public key is missing");
+}
 const downloadUrl = readFile("apps/landing/index.html").match(/data-download-link href="([^"]+)"/)?.[1];
 expectEqual(downloadUrl, `${tauriConfig.bundle.homepage}/releases/latest`, "Landing download destination");
 
@@ -69,6 +74,7 @@ for (const relativePath of [
   "apps/client/scripts/configure-android.mjs",
   "apps/client/scripts/prepare-native-assets.mjs",
   "apps/client/scripts/sign-android-apk.mjs",
+  "scripts/create-updater-manifest.mjs",
   "apps/landing/Dockerfile",
   "apps/server/Dockerfile",
   "compose.yaml",

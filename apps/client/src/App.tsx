@@ -102,6 +102,7 @@ import { AuthScreen } from "./components/AuthScreen";
 import { ServerScreen } from "./components/ServerScreen";
 import { getServerOrigin } from "./server-url";
 import { isNativeClient } from "./native-client";
+import { DesktopUpdater } from "./components/DesktopUpdater";
 import { CallNotice, type ActiveCall } from "./components/CallNotice";
 import { CallRequestNotice } from "./components/CallRequestNotice";
 import { useCallRequest } from "./hooks/useCallRequest";
@@ -296,9 +297,12 @@ export function App() {
     setConnectionVersion((current) => current + 1);
   };
 
-  return server
-    ? <ConnectedApp key={connectionVersion} onServerChanged={changeServer} />
-    : <ServerScreen onConnected={changeServer} />;
+  return <>
+    {server && <DesktopUpdater key={`${server}:${connectionVersion}`} />}
+    {server
+      ? <ConnectedApp key={connectionVersion} onServerChanged={changeServer} />
+      : <ServerScreen onConnected={changeServer} />}
+  </>;
 }
 
 function ConnectedApp({ onServerChanged }: { onServerChanged: () => void }) {

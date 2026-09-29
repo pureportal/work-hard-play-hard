@@ -29,7 +29,7 @@
     "test": "pnpm -r --if-present test",
     "test:ui": "pnpm --filter @workhard/server exec tsx ../../scripts/static-ui-check.ts && node scripts/static-landing-check.mjs",
     "test:native-client": "pnpm --filter @workhard/server exec tsx ../../scripts/native-client-browser-check.ts",
-    "check": "pnpm release:validate && pnpm assets:world:check && pnpm assets:characters:check && pnpm assets:optimize:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "check": "pnpm release:validate && node --test scripts/create-updater-manifest.test.mjs && pnpm assets:world:check && pnpm assets:characters:check && pnpm assets:optimize:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "e2e": "pnpm --filter @workhard/server exec tsx ../../scripts/empty-workspace-browser-check.ts",
     "e2e:building": "pnpm --filter @workhard/server exec tsx ../../scripts/room-building-browser-check.ts",
     "e2e:walls": "pnpm --filter @workhard/client exec vite build && pnpm --filter @workhard/server exec tsx ../../scripts/wall-removal-playwright-check.ts",

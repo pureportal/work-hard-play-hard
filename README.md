@@ -213,6 +213,10 @@ Pull requests run the full workspace checks; relevant client changes also packag
 
 When the workspace version changes, the release workflow also publishes versioned container images and creates a GitHub release containing Windows, macOS, and Linux desktop packages, a signed universal Android APK, and SHA-256 checksums. Versions in the root packages, workspace packages, Tauri configuration, Cargo manifest, and Cargo lockfile must match.
 
+Desktop clients check the connected server's version on launch, reconnect, when the app returns to the foreground, and every five minutes. When it differs, they install the signed package from that exact version's GitHub release and restart. The release is published before the versioned server container image. Updates need a reachable public release, and clients installed before updater support need a manual reinstall once. Rolling back to v11.1.0 or earlier also needs a manual reinstall because those releases have no signed updater package. Linux DEB updates may request administrator authentication.
+
+The updater signing key is stored as the `TAURI_SIGNING_PRIVATE_KEY` GitHub Actions secret. Back up the private key from `artifacts/updater-signing/northstar.key` securely; losing it prevents updates to installations using the embedded public key. Packaging checks use a temporary key and do not produce installable updates for release clients.
+
 Release maintainers configure `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD` as GitHub Actions secrets. Preserve this keystore for future APK updates. Pull-request and manual packaging runs use a temporary test key; those APKs cannot update a release installation or another run's test installation. Windows installers are unsigned unless Windows code signing is configured in Tauri; production distribution should use an Authenticode certificate. Linux packages target Ubuntu 24.04 or newer distributions with compatible WebKitGTK. The release workflow needs permission to write repository contents and GHCR packages; releases appear after a version bump on `main` passes validation and packaging.
 
 ## Help

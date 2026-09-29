@@ -1602,6 +1602,89 @@ button:disabled {
   font-size: 12px;
 }
 
+.desktop-update {
+  position: fixed;
+  z-index: 111;
+  top: max(16px, env(safe-area-inset-top));
+  left: 50%;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  width: min(380px, calc(100vw - 24px));
+  padding: 14px;
+  color: var(--ink);
+  background: linear-gradient(135deg, var(--panel-strong), color-mix(in srgb, var(--accent) 5%, var(--panel-strong)));
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  transform: translateX(-50%);
+}
+
+.desktop-update__icon {
+  display: grid;
+  flex: 0 0 38px;
+  place-items: center;
+  height: 38px;
+  color: var(--accent-text);
+  background: var(--accent-soft);
+  border-radius: 11px;
+}
+
+.desktop-update--installing .desktop-update__icon svg { animation: spin 1.5s linear infinite; }
+.desktop-update--failed .desktop-update__icon {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, var(--panel-strong));
+}
+
+.desktop-update__body { flex: 1; min-width: 0; padding-top: 2px; }
+.desktop-update__heading { display: flex; justify-content: space-between; gap: 12px; }
+.desktop-update__heading strong { font-size: 13px; font-weight: 700; }
+.desktop-update__heading span { color: var(--accent-text); font-size: 12px; font-variant-numeric: tabular-nums; }
+.desktop-update__track {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  margin-top: 12px;
+  overflow: hidden;
+  background: var(--line);
+  border-radius: 999px;
+}
+
+.desktop-update__track > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 65%, white));
+  border-radius: inherit;
+  transition: width 160ms ease-out;
+}
+.desktop-update__track.is-indeterminate > span { width: 38%; animation: desktop-update-sweep 1.3s ease-in-out infinite; }
+@keyframes desktop-update-sweep {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(275%); }
+}
+.desktop-update__received { display: block; margin-top: 7px; color: var(--muted); font-size: 11px; }
+.desktop-update__body p { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+.desktop-update__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.desktop-update__actions button {
+  padding: 6px 10px;
+  color: var(--accent-text);
+  background: var(--accent-soft);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+}
+.desktop-update__actions button:hover { border-color: var(--accent); }
+.desktop-update__actions button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .desktop-update--installing .desktop-update__icon svg { animation: none; }
+  .desktop-update__track.is-indeterminate > span { animation: none; }
+  .desktop-update__track > span { transition: none; }
+}
+
 .settings-versions dd { margin: 0; font-variant-numeric: tabular-nums; }
 
 .settings-section {

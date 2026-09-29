@@ -181,6 +181,7 @@ export function useRealtime({ floorId, onEvent, onUnauthorized }: UseRealtimeOpt
           socketRef.current = socket;
           setSnapshot(latestSnapshot);
           setConnection("online");
+          window.dispatchEvent(new Event("northstar:server-reconnected"));
         }
         eventHandlerRef.current(event);
       });

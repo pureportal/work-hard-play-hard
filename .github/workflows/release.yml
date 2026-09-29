@@ -90,18 +90,20 @@ jobs:
             bundle: deb,appimage
             artifact: northstar-linux
             path: |
-              apps/client/src-tauri/target/release/bundle/deb/*.deb
-              apps/client/src-tauri/target/release/bundle/appimage/*.AppImage
+              apps/client/src-tauri/target/release/bundle/deb/*.deb*
+              apps/client/src-tauri/target/release/bundle/appimage/*.AppImage*
           - name: Windows desktop
             runner: windows-latest
             bundle: nsis
             artifact: northstar-windows
-            path: apps/client/src-tauri/target/release/bundle/nsis/*.exe
+            path: apps/client/src-tauri/target/release/bundle/nsis/*.exe*
           - name: macOS desktop
             runner: macos-latest
             bundle: dmg
             artifact: northstar-macos
-            path: apps/client/src-tauri/target/release/bundle/dmg/*.dmg
+            path: |
+              apps/client/src-tauri/target/release/bundle/dmg/*.dmg
+              apps/client/src-tauri/target/release/bundle/macos/*.app.tar.gz*
 
     steps:
       - name: Checkout repository
@@ -142,7 +144,31 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build desktop package
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         run: pnpm --filter @workhard/client tauri build --bundles ${{ matrix.bundle }}
+
+      - name: Name macOS updater package
+        if: runner.os == 'macOS'
+        env:
+          RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
+        run: |
+          case "$(uname -m)" in
+            arm64) architecture=aarch64 ;;
+            x86_64) architecture=x86_64 ;;
+            *) echo "::error::Unsupported macOS architecture"; exit 1 ;;
+          esac
+          package_dir=apps/client/src-tauri/target/release/bundle/macos
+          shopt -s nullglob
+          packages=("$package_dir"/*.app.tar.gz)
+          if [ "${#packages[@]}" -ne 1 ]; then
+            echo "::error::Expected one macOS updater package"
+            exit 1
+          fi
+          package="${packages[0]}"
+          named="$package_dir/Northstar_${RELEASE_VERSION}_${architecture}.app.tar.gz"
+          mv "$package" "$named"
+          mv "$package.sig" "$named.sig"
 
       - name: Upload desktop package
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -313,7 +339,7 @@ jobs:
         needs.validation.result == 'success' &&
         (
           needs.metadata.outputs.release != 'true' ||
-          (needs.desktop.result == 'success' && needs.android.result == 'success')
+          (needs.desktop.result == 'success' && needs.android.result == 'success' && needs.publish.result == 'success')
         )
       }}
     needs:
@@ -321,6 +347,7 @@ jobs:
       - validation
       - desktop
       - android
+      - publish
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
@@ -444,7 +471,6 @@ jobs:
       - metadata
       - desktop
       - android
-      - containers
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -465,6 +491,12 @@ jobs:
           pattern: northstar-*
           path: release-assets
           merge-multiple: true
+
+      - name: Create updater manifest
+        env:
+          RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
+          RELEASE_REPOSITORY: ${{ github.repository }}
+        run: node scripts/create-updater-manifest.mjs release-assets "$RELEASE_VERSION" "$RELEASE_REPOSITORY"
 
       - name: Create checksum manifest
         working-directory: release-assets

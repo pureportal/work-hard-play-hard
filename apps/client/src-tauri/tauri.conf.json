@@ -41,6 +41,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": "all",
     "publisher": "PurePortal",
     "homepage": "https://github.com/pureportal/work-hard-play-hard",
@@ -55,6 +56,13 @@
     ],
     "android": {
       "minSdkVersion": 24
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDc0NUY3OTZGMzQ4QTZCQzgKUldUSWE0bzBiM2xmZEd1Sk1pKzlZOXpLbHZXS0ZlaGV3bzFaamNRaU1JNlgzOEs3NGt0a1NGUVcK",
+      "requireSignedVersion": true,
+      "endpoints": []
     }
   }
 }

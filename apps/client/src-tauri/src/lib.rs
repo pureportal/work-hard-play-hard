@@ -1,7 +1,19 @@
+#[cfg(desktop)]
+mod desktop_updater;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
+    let builder = tauri::Builder::default().plugin(tauri_plugin_opener::init());
+    #[cfg(desktop)]
+    let builder = builder
+        .manage(desktop_updater::UpdateSession::default())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .invoke_handler(tauri::generate_handler![
+            desktop_updater::update_desktop,
+            desktop_updater::cancel_desktop_update
+        ]);
+
+    builder
         .setup(|_app| {
             #[cfg(target_os = "linux")]
             {

@@ -15,6 +15,8 @@ on:
       - .github/workflows/client-packaging.yml
       - .github/workflows/release.yml
       - scripts/validate-release.mjs
+      - scripts/create-updater-manifest.mjs
+      - scripts/create-updater-manifest.test.mjs
       - scripts/native-client-browser-check.ts
   workflow_dispatch:
 
@@ -102,8 +104,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Create test updater signing key
+        run: |
+          mkdir -p artifacts
+          pnpm --filter @workhard/client tauri signer generate --ci --password '' --write-keys ../../artifacts/updater-test.key
+
       - name: Build desktop package
-        run: pnpm --filter @workhard/client tauri build --bundles ${{ matrix.bundle }}
+        run: TAURI_SIGNING_PRIVATE_KEY="$(cat artifacts/updater-test.key)" pnpm --filter @workhard/client tauri build --bundles ${{ matrix.bundle }}
 
       - name: Upload desktop package
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
