@@ -74,7 +74,7 @@ describe("FallingBlocksGame", () => {
     while (game.command("down")) {
       continue;
     }
-    game.update(499);
+    game.update(249);
     expect(game.state.activePiece).toBe(activePiece);
 
     game.update(1);

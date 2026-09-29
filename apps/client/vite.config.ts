@@ -31,5 +31,15 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test-setup.ts"],
+    include: [
+      "src/api.test.ts",
+      "src/falling-blocks-prediction.test.ts",
+      "src/falling-blocks-spectating.test.ts",
+      "src/image-cache.test.ts",
+      "src/media-connection.test.ts",
+      "src/server-url.test.ts",
+      "src/workspace-state.test.ts",
+      "src/components/whiteboard/whiteboard-merge.test.ts",
+    ],
   },
 });
