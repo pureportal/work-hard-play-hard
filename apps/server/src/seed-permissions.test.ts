@@ -137,7 +137,7 @@ describe("seeded organisation and permissions", () => {
           runtime.handleCommand(peer, { type: "project.edit", fundId: "workspace", requestId: `move-${peer}`, baseRevision: revision(),
             edit: { tool: "asset.move", objectId: placed.id, position: { x: 128, y: 304 }, variantId: "sage", rotation: 0 } });
         }
-        expect(events.at(-1)).toMatchObject({ type: "command.error", code: peer === jonas ? "ASSET_ROOM_FORBIDDEN" : "PRIVATE_ASSET_PROTECTED" });
+        expect(events.at(-1)).toMatchObject({ type: "command.error", code: "ASSET_ROOM_FORBIDDEN" });
       }
       const room = store.getRoom("room-product")!;
       store.updateRoomSettings(room.id, { name: room.name, color: room.color,
