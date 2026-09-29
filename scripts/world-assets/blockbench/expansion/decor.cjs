@@ -2,7 +2,7 @@ const { expansionRing } = require("./joinery.cjs");
 
 const expandedDecor = ["decor-typewriter", "decor-radio", "decor-record-player", "decor-camera", "decor-succulents", "decor-pencil-cup", "decor-candles", "decor-aquarium"];
 
-function buildExpandedDecor(kit, asset, width, depth) {
+function buildExpandedDecor(api, kit, asset, width, depth) {
   const { box, roundedBox, cylinder, ellipsoid, branch, shape, THREE } = kit;
   const id = asset.id;
   if (id === "decor-typewriter") {
@@ -22,13 +22,28 @@ function buildExpandedDecor(kit, asset, width, depth) {
     branch("Aerial",[-10,15,-3],[-5,31,-3],0.4,"gold");
   } else if (id === "decor-record-player") {
     roundedBox("Turntable cabinet", [0,4,0], [width-1,8,depth-2], "main");
+    const recordStart = kit.parts.length;
     cylinder("Vinyl record",[-3,8.3,0],10,0.5,"ink");
     for(const radius of [5,7.3,9]) expansionRing(kit,"Record groove",[-3,8.65,0],radius,0.12,"shade");
+    shape("Vinyl light sweep",new THREE.TorusGeometry(7.4,0.35,6,24,0.7),[-3,8.7,0],"light",[1,1,1],[90,0,0]);
     cylinder("Record label",[-3,8.7,0],3,0.2,"pink");
+    ellipsoid("Record label mark",[-1.6,8.85,1.2],[0.7,0.08,0.45],"paper");
+    const record = new api.Group({ name: "Record platter", origin: [-3, 8.3, 0] }).init();
+    for (const part of kit.parts.slice(recordStart)) part.element.addTo(record);
+    const clip = new api.Animation({ name: "Record spin", length: 1.2, loop: "loop", snapping: 20 }).add();
+    const animator = clip.getBoneAnimator(record);
+    for (const [time, turn] of [[0, 0], [1.2, 360]]) {
+      animator.addKeyframe({ channel: "rotation", time, interpolation: "linear", data_points: [{ x: 0, y: turn, z: 0 }] });
+    }
     cylinder("Tonearm pivot",[11,9,-9],2,2,"gold");
     branch("Tonearm",[11,10,-9],[8,10,6],0.55,"gold");
     box("Cartridge",[7.5,9.7,7],[3,2,4],"cream");
-    box("Open dust cover",[0,21,-depth/2+1],[width-2,26,1],"waterLight");
+    const coverZ = -depth / 2 + 1;
+    box("Dust cover top rail",[0,33,coverZ],[width-2,1.3,1],"waterLight");
+    box("Dust cover bottom rail",[0,9,coverZ],[width-2,1,1],"waterLight");
+    for (const x of [-width / 2 + 1.5, width / 2 - 1.5]) box("Dust cover side rail",[x,21,coverZ],[1.2,24,1],"waterLight");
+    box("Dust cover reflection",[-7,25,coverZ+0.55],[0.55,10,0.15],"highlight",[0,0,-18]);
+    return { animation: { clip, group: record, frames: 12, frameDuration: 100 } };
   } else if (id === "decor-camera") {
     roundedBox("Camera body",[0,6,0],[15,10,8],"main");
     cylinder("Camera lens",[0,6,5],4,5,"shade",4,[90,0,0]);

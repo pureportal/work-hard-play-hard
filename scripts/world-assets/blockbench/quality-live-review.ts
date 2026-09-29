@@ -32,6 +32,8 @@ const slots = [[320, 320], [640, 320], [960, 320], [320, 576], [960, 576], [320,
 try {
   await page.goto("http://127.0.0.1:5173", { waitUntil: "domcontentloaded" });
   await page.getByRole("status").filter({ hasText: /^Connected$/ }).waitFor();
+  const closeBonus = page.getByRole("button", { name: "Close daily bonus" });
+  if (await closeBonus.isVisible()) await closeBonus.click();
   const closePeople = page.getByRole("button", { name: "Close people", exact: true });
   if (await closePeople.isVisible()) await closePeople.click();
   await page.waitForFunction(() => Boolean(globalThis.avatarWorld?.stage.children?.length));

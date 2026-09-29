@@ -40,6 +40,8 @@ page.on("response", response => {
 try {
   await page.goto("http://127.0.0.1:5173", { waitUntil: "domcontentloaded" });
   await page.getByRole("status").filter({ hasText: /^Connected$/ }).waitFor();
+  const dailyBonus = page.getByRole("button", { name: "Close daily bonus", exact: true });
+  if (await dailyBonus.isVisible()) await dailyBonus.click();
   const people = page.getByRole("button", { name: "Close people", exact: true });
   if (await people.isVisible()) await people.click();
   await page.waitForFunction(() => Boolean(globalThis.avatarWorld?.stage.children?.length));

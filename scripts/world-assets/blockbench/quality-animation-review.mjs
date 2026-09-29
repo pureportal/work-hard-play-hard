@@ -1,9 +1,13 @@
 import assert from "node:assert/strict";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { chromium } from "playwright-core";
 import puppeteer from "puppeteer";
 
 const output = process.argv.find(value => value.startsWith("--output="))?.slice(9) ?? "artifacts/asset-quality-2026-09-15/after/animations";
+const artwork = JSON.parse(await readFile("apps/client/src/world-asset-artwork.json", "utf8"));
+const requested = process.argv.find(value => value.startsWith("--asset="))?.slice(8).split(",");
+const assets = requested ?? ["decor-wind-chimes", "decor-pinwheel", "outdoor-pool", "outdoor-fountain", "outdoor-koi-pond"];
+assert(assets.every(id => artwork[id]), `Unknown animation asset: ${JSON.stringify(requested)}`);
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ headless: true, executablePath: puppeteer.executablePath() });
 const context = await browser.newContext({ viewport: { width: 1080, height: 1000 }, recordVideo: { dir: `${output}/video`, size: { width: 1080, height: 1000 } } });
@@ -53,9 +57,9 @@ try {
     };
     globalThis.animationQuality = { app, shared, label, draw, ready };
   });
-  for (const id of ["decor-wind-chimes", "decor-pinwheel", "outdoor-pool", "outdoor-fountain", "outdoor-koi-pond"]) {
-    const native = id.startsWith("decor-");
-    const times = native ? Array.from({ length: 16 }, (_, index) => index * 100) : [0, 600, 1200, 1800, 2400, 3000, 3600, 4200];
+  for (const id of assets) {
+    const native = Boolean(artwork[id].animation);
+    const times = native ? Array.from({ length: artwork[id].animation.frames }, (_, index) => index * artwork[id].animation.frameDuration) : [0, 600, 1200, 1800, 2400, 3000, 3600, 4200];
     const columns = native ? 8 : 4;
     const evidence = [];
     for (let start = 0; start < times.length; start += columns) {
@@ -114,7 +118,7 @@ try {
       }
       return { durationMs: performance.now() - start, uniqueFrames: native ? observedFrames.map(frames => frames.size) : null };
     }, { id, native });
-    if (native) assert(playback.uniqueFrames.every(count => count === 16), `${id}: playback skipped an animation frame`);
+    if (native) assert(playback.uniqueFrames.every(count => count === artwork[id].animation.frames), `${id}: playback skipped an animation frame`);
     report.assets.push({ id, variants: 3, directions: [0, 90, 180, 270], sampleTimes: times, evidence, playback });
     console.log(`Validated playback and captured all designs/directions: ${id}`);
   }

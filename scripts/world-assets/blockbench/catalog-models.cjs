@@ -19,6 +19,8 @@ const { indoorPlants, buildIndoorPlant } = require("./garden/indoor.cjs");
 const { outdoorPlants, buildOutdoorPlant } = require("./garden/outdoor.cjs");
 const { foodAssets, foodPalette, buildFood } = require("./food.cjs");
 const { playfulAssets, buildPlayful } = require("./playful.cjs");
+const { buildAsiaSuite } = require("./asia-suite.cjs");
+const { buildCuteSuite } = require("./cute-suite.cjs");
 
 function getCatalogFootprint(asset, rasterSize) {
   const cells = asset.footprint.flatMap(region => region.cells ?? [{ x: region.range.x + region.range.width - 1, y: region.range.y + region.range.height - 1 }]);
@@ -55,6 +57,12 @@ async function createCatalogModel(api, asset, variant, rasterSize) {
     light: blend(palette.main, palette.light, 0.18),
     highlight: blend(palette.main, palette.light, 0.27),
   });
+  if (asset.themeSetId === "asia") Object.assign(palette, { stone: "#aaa4a0", stoneLight: "#d8d0c4" });
+  if (asset.themeSetId === "cute") Object.assign(palette, {
+    cream: "#fff4e8", paper: "#fffaf2", gold: "#f4c76b", pink: "#ef9bb9", rose: "#df6f93",
+    green: "#85ba91", mint: "#a8dac4", water: "#86c9db", waterLight: "#d4f0ef",
+    lavender: "#b8a1d7", soil: "#775e6e", ink: "#50445b",
+  });
   if (asset.id === "floor-earth" && variant.id === "crafted") palette.grain = blend(palette.main, palette.light, 0.12);
   if (asset.id === "plant-bamboo") Object.assign(palette, { leafLight: "#b7caa0", leafShade: "#527f67" });
   if (["equipment-chess", "equipment-falling-blocks"].includes(asset.id)) Object.assign(palette, gameTablePalette);
@@ -81,16 +89,18 @@ async function createCatalogModel(api, asset, variant, rasterSize) {
   await Promise.all(Object.values(kit.textures).map(texture => texture.img.decode()));
   const { width, depth } = getCatalogFootprint(asset, rasterSize);
   let metadata;
-  if (indoorPlants.includes(asset.id)) buildIndoorPlant(kit, asset, variant, width, depth);
+  if (asset.themeSetId === "asia") metadata = buildAsiaSuite(kit, asset, width, depth);
+  else if (asset.themeSetId === "cute") metadata = buildCuteSuite(kit, asset, width, depth);
+  else if (indoorPlants.includes(asset.id)) buildIndoorPlant(kit, asset, variant, width, depth);
   else if (outdoorPlants.includes(asset.id)) buildOutdoorPlant(kit, asset, variant, width, depth);
   else if (foodAssets.includes(asset.id)) buildFood(kit, asset, variant, width, depth);
   else if (playfulAssets.includes(asset.id)) metadata = buildPlayful(api, kit, asset);
-  else if (tabletopElectronics.includes(asset.id)) buildTabletopElectronics(api, kit, asset, width, depth);
+  else if (tabletopElectronics.includes(asset.id)) metadata = buildTabletopElectronics(api, kit, asset, width, depth);
   else if (tabletopOrnaments.includes(asset.id)) buildTabletopOrnament(api, kit, asset, width, depth);
   else if (expandedDesks[asset.id]) metadata = buildExpandedDesk(kit, asset, width, depth);
   else if (expandedSeating[asset.id]) metadata = buildExpandedSeating(kit, asset, width, depth);
   else if (expandedTables[asset.id]) metadata = buildExpandedTable(kit, asset, width, depth);
-  else if (expandedDecor.includes(asset.id)) buildExpandedDecor(kit, asset, width, depth);
+  else if (expandedDecor.includes(asset.id)) metadata = buildExpandedDecor(api, kit, asset, width, depth);
   else if (expandedFixtures.includes(asset.id)) buildExpandedFixture(kit, asset, width, depth);
   else if (expandedEquipment.includes(asset.id)) buildExpandedEquipment(kit, asset, width, depth);
   else if (expandedLandscape.includes(asset.id)) buildExpandedLandscape(kit, asset, width, depth);

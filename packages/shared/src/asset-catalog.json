@@ -1222,6 +1222,44 @@
           "accentColor": "#99764f"
         }
       ]
+    },
+    {
+      "id": "asia",
+      "variants": [
+        {
+          "id": "jade",
+          "name": "Jade",
+          "color": "#477e72",
+          "secondaryColor": "#c4dec5",
+          "accentColor": "#234b48"
+        },
+        {
+          "id": "vermilion",
+          "name": "Vermilion",
+          "color": "#b85145",
+          "secondaryColor": "#f2c696",
+          "accentColor": "#742f38"
+        }
+      ]
+    },
+    {
+      "id": "cute",
+      "variants": [
+        {
+          "id": "blush",
+          "name": "Blush",
+          "color": "#e7a5bd",
+          "secondaryColor": "#ffe6db",
+          "accentColor": "#aa708f"
+        },
+        {
+          "id": "mint",
+          "name": "Mint",
+          "color": "#99cdbb",
+          "secondaryColor": "#e9f4d9",
+          "accentColor": "#6e9a91"
+        }
+      ]
     }
   ],
   "categories": [
@@ -11445,6 +11483,2748 @@
             "x": 0,
             "y": 0,
             "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-scholar-desk",
+      "name": "Scholar writing desk",
+      "category": "desks",
+      "kind": "desk",
+      "themeSetId": "asia",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 55,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "surface",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 3
+          },
+          "allows": [
+            "decoration"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "asia-bamboo-workstation",
+      "name": "Bamboo workstation",
+      "category": "desks",
+      "kind": "desk",
+      "themeSetId": "asia",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 120,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "surface",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 5,
+            "height": 3
+          },
+          "allows": [
+            "decoration"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "asia-lacquer-console",
+      "name": "Lacquer console desk",
+      "category": "desks",
+      "kind": "desk",
+      "themeSetId": "asia",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 240,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "surface",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 3
+          },
+          "allows": [
+            "decoration"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "asia-carved-drafting-desk",
+      "name": "Carved drafting desk",
+      "category": "desks",
+      "kind": "desk",
+      "themeSetId": "asia",
+      "rarity": "epic",
+      "buildable": true,
+      "shop": {
+        "price": 500,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "surface",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 3
+          },
+          "allows": [
+            "decoration"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "asia-zaisu-chair",
+      "name": "Zaisu floor chair",
+      "category": "seating",
+      "kind": "chair",
+      "themeSetId": "asia",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 55,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "seat",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ],
+      "interactions": [
+        {
+          "id": "seat-1",
+          "name": "Sit",
+          "type": "seat",
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          },
+          "direction": "down"
+        }
+      ]
+    },
+    {
+      "id": "asia-woven-stool",
+      "name": "Woven stool",
+      "category": "seating",
+      "kind": "chair",
+      "themeSetId": "asia",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 120,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "seat",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ],
+      "interactions": [
+        {
+          "id": "seat-1",
+          "name": "Sit",
+          "type": "seat",
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          },
+          "direction": "down"
+        }
+      ]
+    },
+    {
+      "id": "asia-palace-bench",
+      "name": "Palace bench",
+      "category": "seating",
+      "kind": "sofa",
+      "themeSetId": "asia",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 240,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "seat",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 2
+          }
+        }
+      ],
+      "interactions": [
+        {
+          "id": "seat-1",
+          "name": "Sit",
+          "type": "seat",
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          },
+          "direction": "down"
+        },
+        {
+          "id": "seat-2",
+          "name": "Sit",
+          "type": "seat",
+          "range": {
+            "x": 2,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          },
+          "direction": "down"
+        }
+      ]
+    },
+    {
+      "id": "asia-silk-daybed",
+      "name": "Silk daybed",
+      "category": "seating",
+      "kind": "sofa",
+      "themeSetId": "asia",
+      "rarity": "legendary",
+      "buildable": true,
+      "shop": {
+        "price": 950,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "seat",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 3
+          }
+        }
+      ],
+      "interactions": [
+        {
+          "id": "seat-1",
+          "name": "Sit",
+          "type": "seat",
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          },
+          "direction": "down"
+        },
+        {
+          "id": "seat-2",
+          "name": "Sit",
+          "type": "seat",
+          "range": {
+            "x": 2,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          },
+          "direction": "down"
+        },
+        {
+          "id": "seat-3",
+          "name": "Sit",
+          "type": "seat",
+          "range": {
+            "x": 4,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          },
+          "direction": "down"
+        }
+      ]
+    },
+    {
+      "id": "asia-chabudai",
+      "name": "Chabudai table",
+      "category": "tables",
+      "kind": "table",
+      "themeSetId": "asia",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 55,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "surface",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 4
+          },
+          "allows": [
+            "decoration"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "asia-dim-sum-table",
+      "name": "Dim sum table",
+      "category": "tables",
+      "kind": "table",
+      "themeSetId": "asia",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 120,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "surface",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 5,
+            "height": 5
+          },
+          "allows": [
+            "decoration"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "asia-go-table",
+      "name": "Go table",
+      "category": "tables",
+      "kind": "table",
+      "themeSetId": "asia",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 240,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "surface",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 4
+          },
+          "allows": [
+            "decoration"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "asia-banquet-table",
+      "name": "Banquet table",
+      "category": "tables",
+      "kind": "table",
+      "themeSetId": "asia",
+      "rarity": "epic",
+      "buildable": true,
+      "shop": {
+        "price": 500,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "surface",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 8,
+            "height": 3
+          },
+          "allows": [
+            "decoration"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "asia-bamboo-cluster",
+      "name": "Bamboo cluster",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "asia",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 55,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-bonsai",
+      "name": "Bonsai tree",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "asia",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 120,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-lotus-planter",
+      "name": "Lotus planter",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "asia",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 240,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-orchid",
+      "name": "Orchid arrangement",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "asia",
+      "rarity": "legendary",
+      "buildable": true,
+      "shop": {
+        "price": 950,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-stone-pagoda",
+      "name": "Stone pagoda",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "asia",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 55,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-moon-gate",
+      "name": "Moon gate",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "asia",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 120,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "support",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 2
+          }
+        },
+        {
+          "type": "passage",
+          "solid": false,
+          "range": {
+            "x": 1,
+            "y": 0,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "type": "support",
+          "solid": true,
+          "range": {
+            "x": 4,
+            "y": 0,
+            "width": 1,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-koi-pond",
+      "name": "Koi pond",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "asia",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 240,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-torii-gate",
+      "name": "Torii gate",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "asia",
+      "rarity": "epic",
+      "buildable": true,
+      "shop": {
+        "price": 500,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "support",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 2
+          }
+        },
+        {
+          "type": "passage",
+          "solid": false,
+          "range": {
+            "x": 1,
+            "y": 0,
+            "width": 4,
+            "height": 2
+          }
+        },
+        {
+          "type": "support",
+          "solid": true,
+          "range": {
+            "x": 5,
+            "y": 0,
+            "width": 1,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-folding-fan",
+      "name": "Folding fan",
+      "category": "decor",
+      "kind": "decoration",
+      "themeSetId": "asia",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 55,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-celadon-vase",
+      "name": "Celadon vase",
+      "category": "decor",
+      "kind": "decoration",
+      "themeSetId": "asia",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 120,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-origami-cranes",
+      "name": "Origami cranes",
+      "category": "decor",
+      "kind": "decoration",
+      "themeSetId": "asia",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 240,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-ink-scroll",
+      "name": "Ink scroll",
+      "category": "decor",
+      "kind": "decoration",
+      "themeSetId": "asia",
+      "rarity": "legendary",
+      "buildable": true,
+      "shop": {
+        "price": 950,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-go-stand",
+      "name": "Go board stand",
+      "category": "equipment",
+      "kind": "decoration",
+      "themeSetId": "asia",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 55,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-mahjong-cabinet",
+      "name": "Mahjong cabinet",
+      "category": "equipment",
+      "kind": "decoration",
+      "themeSetId": "asia",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 120,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-calligraphy-easel",
+      "name": "Calligraphy easel",
+      "category": "equipment",
+      "kind": "decoration",
+      "themeSetId": "asia",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 240,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-astrolabe",
+      "name": "Brass astrolabe",
+      "category": "equipment",
+      "kind": "decoration",
+      "themeSetId": "asia",
+      "rarity": "epic",
+      "buildable": true,
+      "shop": {
+        "price": 500,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-bamboo-floor",
+      "name": "Bamboo strip floor",
+      "category": "floor-types",
+      "kind": "floor-tile",
+      "themeSetId": "asia",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 55,
+        "available": true
+      },
+      "placement": {
+        "layer": "ground",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "flooring",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-star-tile",
+      "name": "Star tile floor",
+      "category": "floor-types",
+      "kind": "floor-tile",
+      "themeSetId": "asia",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 120,
+        "available": true
+      },
+      "placement": {
+        "layer": "ground",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "flooring",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-jade-mosaic",
+      "name": "Jade mosaic floor",
+      "category": "floor-types",
+      "kind": "floor-tile",
+      "themeSetId": "asia",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 240,
+        "available": true
+      },
+      "placement": {
+        "layer": "ground",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "flooring",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-clay-brick",
+      "name": "Clay brick floor",
+      "category": "floor-types",
+      "kind": "floor-tile",
+      "themeSetId": "asia",
+      "rarity": "legendary",
+      "buildable": true,
+      "shop": {
+        "price": 950,
+        "available": true
+      },
+      "placement": {
+        "layer": "ground",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "flooring",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-prayer-rug",
+      "name": "Geometric prayer rug",
+      "category": "floor-decorations",
+      "kind": "rug",
+      "themeSetId": "asia",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 55,
+        "available": true
+      },
+      "placement": {
+        "layer": "ground",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "flooring",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-silk-runner",
+      "name": "Silk runner",
+      "category": "floor-decorations",
+      "kind": "rug",
+      "themeSetId": "asia",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 120,
+        "available": true
+      },
+      "placement": {
+        "layer": "ground",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "flooring",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-mandala-rug",
+      "name": "Mandala rug",
+      "category": "floor-decorations",
+      "kind": "rug",
+      "themeSetId": "asia",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 240,
+        "available": true
+      },
+      "placement": {
+        "layer": "ground",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "flooring",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-indigo-rug",
+      "name": "Indigo knot rug",
+      "category": "floor-decorations",
+      "kind": "rug",
+      "themeSetId": "asia",
+      "rarity": "epic",
+      "buildable": true,
+      "shop": {
+        "price": 500,
+        "available": true
+      },
+      "placement": {
+        "layer": "ground",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "flooring",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-tansu-chest",
+      "name": "Tansu chest",
+      "category": "storage",
+      "kind": "storage",
+      "themeSetId": "asia",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 55,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-bamboo-shelves",
+      "name": "Bamboo shelves",
+      "category": "storage",
+      "kind": "storage",
+      "themeSetId": "asia",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 120,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-lacquer-trunk",
+      "name": "Lacquer trunk",
+      "category": "storage",
+      "kind": "storage",
+      "themeSetId": "asia",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 240,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-jar-stand",
+      "name": "Ceramic jar stand",
+      "category": "storage",
+      "kind": "storage",
+      "themeSetId": "asia",
+      "rarity": "legendary",
+      "buildable": true,
+      "shop": {
+        "price": 950,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-standing-lantern",
+      "name": "Standing lantern",
+      "category": "lighting",
+      "kind": "lamp",
+      "themeSetId": "asia",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 55,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-lotus-lamp",
+      "name": "Lotus lamp",
+      "category": "lighting",
+      "kind": "lamp",
+      "themeSetId": "asia",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 120,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-star-lantern",
+      "name": "Star lantern",
+      "category": "lighting",
+      "kind": "lamp",
+      "themeSetId": "asia",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 240,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-pagoda-lantern",
+      "name": "Pagoda lantern",
+      "category": "lighting",
+      "kind": "lamp",
+      "themeSetId": "asia",
+      "rarity": "epic",
+      "buildable": true,
+      "shop": {
+        "price": 500,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-tea-station",
+      "name": "Tea station",
+      "category": "breakroom",
+      "kind": "appliance",
+      "themeSetId": "asia",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 55,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-rice-cooker",
+      "name": "Rice cooker",
+      "category": "breakroom",
+      "kind": "appliance",
+      "themeSetId": "asia",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 120,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-spice-counter",
+      "name": "Spice counter",
+      "category": "breakroom",
+      "kind": "appliance",
+      "themeSetId": "asia",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 240,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-water-urn",
+      "name": "Water urn",
+      "category": "breakroom",
+      "kind": "appliance",
+      "themeSetId": "asia",
+      "rarity": "legendary",
+      "buildable": true,
+      "shop": {
+        "price": 950,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-mooncakes",
+      "name": "Mooncakes",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "asia",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 55,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-dumplings",
+      "name": "Dumpling plate",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "asia",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 120,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-mango-rice",
+      "name": "Mango sticky rice",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "asia",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 240,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-curry-bowl",
+      "name": "Curry bowl",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "asia",
+      "rarity": "epic",
+      "buildable": true,
+      "shop": {
+        "price": 500,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-shoji-divider",
+      "name": "Shoji divider",
+      "category": "infrastructure",
+      "kind": "storage",
+      "themeSetId": "asia",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 55,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 5,
+            "height": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-bamboo-screen",
+      "name": "Bamboo screen",
+      "category": "infrastructure",
+      "kind": "storage",
+      "themeSetId": "asia",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 120,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 5,
+            "height": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-carved-gate",
+      "name": "Carved gate",
+      "category": "infrastructure",
+      "kind": "storage",
+      "themeSetId": "asia",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 240,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "support",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "type": "passage",
+          "solid": false,
+          "range": {
+            "x": 2,
+            "y": 0,
+            "width": 1,
+            "height": 2
+          }
+        },
+        {
+          "type": "support",
+          "solid": true,
+          "range": {
+            "x": 3,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "asia-wayfinding-pillar",
+      "name": "Wayfinding pillar",
+      "category": "infrastructure",
+      "kind": "storage",
+      "themeSetId": "asia",
+      "rarity": "legendary",
+      "buildable": true,
+      "shop": {
+        "price": 950,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-bunny-desk",
+      "name": "Bunny writing desk",
+      "category": "desks",
+      "kind": "desk",
+      "themeSetId": "cute",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 55,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "surface",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 3
+          },
+          "allows": [
+            "decoration"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cute-cloud-desk",
+      "name": "Cloud art desk",
+      "category": "desks",
+      "kind": "desk",
+      "themeSetId": "cute",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 120,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "surface",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 5,
+            "height": 3
+          },
+          "allows": [
+            "decoration"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cute-bear-pouf",
+      "name": "Bear pouf",
+      "category": "seating",
+      "kind": "chair",
+      "themeSetId": "cute",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 240,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "seat",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ],
+      "interactions": [
+        {
+          "id": "seat-1",
+          "name": "Sit",
+          "type": "seat",
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          },
+          "direction": "down"
+        }
+      ]
+    },
+    {
+      "id": "cute-kitten-loveseat",
+      "name": "Kitten loveseat",
+      "category": "seating",
+      "kind": "sofa",
+      "themeSetId": "cute",
+      "rarity": "epic",
+      "buildable": true,
+      "shop": {
+        "price": 500,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "seat",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 2
+          }
+        }
+      ],
+      "interactions": [
+        {
+          "id": "seat-1",
+          "name": "Sit",
+          "type": "seat",
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          },
+          "direction": "down"
+        },
+        {
+          "id": "seat-2",
+          "name": "Sit",
+          "type": "seat",
+          "range": {
+            "x": 2,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          },
+          "direction": "down"
+        }
+      ]
+    },
+    {
+      "id": "cute-daisy-table",
+      "name": "Daisy cafe table",
+      "category": "tables",
+      "kind": "table",
+      "themeSetId": "cute",
+      "rarity": "legendary",
+      "buildable": true,
+      "shop": {
+        "price": 950,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "surface",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 4
+          },
+          "allows": [
+            "decoration"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cute-rainbow-table",
+      "name": "Rainbow picnic table",
+      "category": "tables",
+      "kind": "table",
+      "themeSetId": "cute",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 55,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "surface",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 4
+          },
+          "allows": [
+            "decoration"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cute-heart-topiary",
+      "name": "Heart topiary",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "cute",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 120,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-smiley-succulent",
+      "name": "Smiley succulent",
+      "category": "plants",
+      "kind": "plant",
+      "themeSetId": "cute",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 240,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-mushroom-cottage",
+      "name": "Mushroom cottage",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "cute",
+      "rarity": "epic",
+      "buildable": true,
+      "shop": {
+        "price": 500,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-duck-pond",
+      "name": "Duck pond",
+      "category": "outdoor",
+      "kind": "garden",
+      "themeSetId": "cute",
+      "rarity": "legendary",
+      "buildable": true,
+      "shop": {
+        "price": 950,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-teddy-figurine",
+      "name": "Teddy figurine",
+      "category": "decor",
+      "kind": "decoration",
+      "themeSetId": "cute",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 55,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-star-mobile",
+      "name": "Star mobile",
+      "category": "decor",
+      "kind": "decoration",
+      "themeSetId": "cute",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 120,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-gift-stack",
+      "name": "Gift stack",
+      "category": "decor",
+      "kind": "decoration",
+      "themeSetId": "cute",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 240,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-claw-machine",
+      "name": "Plush claw machine",
+      "category": "equipment",
+      "kind": "decoration",
+      "themeSetId": "cute",
+      "rarity": "epic",
+      "buildable": true,
+      "shop": {
+        "price": 500,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-drawing-easel",
+      "name": "Flower drawing easel",
+      "category": "equipment",
+      "kind": "decoration",
+      "themeSetId": "cute",
+      "rarity": "legendary",
+      "buildable": true,
+      "shop": {
+        "price": 950,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-confetti-floor",
+      "name": "Confetti floor",
+      "category": "floor-types",
+      "kind": "floor-tile",
+      "themeSetId": "cute",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 55,
+        "available": true
+      },
+      "placement": {
+        "layer": "ground",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "flooring",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-candy-checker-floor",
+      "name": "Candy checker floor",
+      "category": "floor-types",
+      "kind": "floor-tile",
+      "themeSetId": "cute",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 120,
+        "available": true
+      },
+      "placement": {
+        "layer": "ground",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "flooring",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-cloud-rug",
+      "name": "Cloud rug",
+      "category": "floor-decorations",
+      "kind": "rug",
+      "themeSetId": "cute",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 240,
+        "available": true
+      },
+      "placement": {
+        "layer": "ground",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "flooring",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-flower-rug",
+      "name": "Flower rug",
+      "category": "floor-decorations",
+      "kind": "rug",
+      "themeSetId": "cute",
+      "rarity": "epic",
+      "buildable": true,
+      "shop": {
+        "price": 500,
+        "available": true
+      },
+      "placement": {
+        "layer": "ground",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "flooring",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-toy-chest",
+      "name": "Toy chest",
+      "category": "storage",
+      "kind": "storage",
+      "themeSetId": "cute",
+      "rarity": "legendary",
+      "buildable": true,
+      "shop": {
+        "price": 950,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-bunny-bookshelf",
+      "name": "Bunny bookshelf",
+      "category": "storage",
+      "kind": "storage",
+      "themeSetId": "cute",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 55,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-moon-nightlight",
+      "name": "Moon nightlight",
+      "category": "lighting",
+      "kind": "lamp",
+      "themeSetId": "cute",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 120,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-strawberry-lamp",
+      "name": "Strawberry lamp",
+      "category": "lighting",
+      "kind": "lamp",
+      "themeSetId": "cute",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 240,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-cupcake-kiosk",
+      "name": "Cupcake kiosk",
+      "category": "breakroom",
+      "kind": "appliance",
+      "themeSetId": "cute",
+      "rarity": "epic",
+      "buildable": true,
+      "shop": {
+        "price": 500,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-milkshake-machine",
+      "name": "Milkshake machine",
+      "category": "breakroom",
+      "kind": "appliance",
+      "themeSetId": "cute",
+      "rarity": "legendary",
+      "buildable": true,
+      "shop": {
+        "price": 950,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-frosted-cupcake",
+      "name": "Frosted cupcake",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "cute",
+      "rarity": "common",
+      "buildable": true,
+      "shop": {
+        "price": 55,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-fruit-parfait",
+      "name": "Fruit parfait",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "cute",
+      "rarity": "uncommon",
+      "buildable": true,
+      "shop": {
+        "price": 120,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-bear-cookies",
+      "name": "Bear cookies",
+      "category": "food",
+      "kind": "decoration",
+      "themeSetId": "cute",
+      "rarity": "rare",
+      "buildable": true,
+      "shop": {
+        "price": 240,
+        "available": true
+      },
+      "placement": {
+        "layer": "surface",
+        "requires": "decoration"
+      },
+      "footprint": [
+        {
+          "type": "decoration",
+          "solid": false,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-picket-fence",
+      "name": "Pastel picket fence",
+      "category": "infrastructure",
+      "kind": "storage",
+      "themeSetId": "cute",
+      "rarity": "epic",
+      "buildable": true,
+      "shop": {
+        "price": 500,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "body",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 5,
+            "height": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "cute-rainbow-arch",
+      "name": "Rainbow arch",
+      "category": "infrastructure",
+      "kind": "storage",
+      "themeSetId": "cute",
+      "rarity": "legendary",
+      "buildable": true,
+      "shop": {
+        "price": 950,
+        "available": true
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "type": "support",
+          "solid": true,
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 2
+          }
+        },
+        {
+          "type": "passage",
+          "solid": false,
+          "range": {
+            "x": 1,
+            "y": 0,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "type": "support",
+          "solid": true,
+          "range": {
+            "x": 4,
+            "y": 0,
+            "width": 1,
             "height": 2
           }
         }

@@ -38,7 +38,7 @@ try {
     }
     return results;
   }, models);
-  assert(reopened.every(model => model.animated && model.closed));
+  assert(reopened.every(model => model.animated && model.closed), JSON.stringify(reopened.filter(model => !model.animated || !model.closed)));
   assert.deepEqual(errors, []);
   await writeFile(`${output}/native-animation-review.json`, JSON.stringify({ reopened, errors }, null, 2));
   console.log(`Reopened ${reopened.length} animated map models; all native loops move and close.`);

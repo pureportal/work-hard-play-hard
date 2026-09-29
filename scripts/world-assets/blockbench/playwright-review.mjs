@@ -42,6 +42,7 @@ try {
   const selection = requested ? assetIds.length === 1 ? assetIds[0] : "selected" : "";
   const reviewPrefix = `catalog-${selection ? `${selection}-` : ""}${process.argv.includes("--base") ? "base-" : ""}`;
   await audit.evaluate(value => { globalThis.reviewBaseOnly = value; }, process.argv.includes("--base"));
+  let reviewedViews = 0;
   for (let start = 0; start < assetIds.length; start += 8) {
     const report = await audit.evaluate(async ids => {
       const { getWorldAssetArtwork } = await import("/src/world-asset-artwork.ts");
@@ -98,8 +99,9 @@ try {
     }, assetIds.slice(start, start + 8));
     await audit.setViewportSize({ width: report.width, height: report.height });
     await audit.screenshot({ path: `${output}/${reviewPrefix}${String(start / 8 + 1).padStart(2, "0")}.png`, fullPage: true });
+    reviewedViews += report.views;
     console.log(`Reviewed ${report.assets} assets, ${report.views} material/direction views`);
   }
-  await writeFile(`${output}/${reviewPrefix}review.json`, JSON.stringify({ assets: assetIds.length, views: assetIds.length * (process.argv.includes("--base") ? 4 : 12), errors }, null, 2));
+  await writeFile(`${output}/${reviewPrefix}review.json`, JSON.stringify({ assets: assetIds.length, views: reviewedViews, errors }, null, 2));
   assert.deepEqual(errors, []);
 } finally { await browser.close(); }

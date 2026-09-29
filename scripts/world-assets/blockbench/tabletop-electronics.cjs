@@ -52,7 +52,7 @@ function buildHeadphones(kit) {
   }
 }
 
-function buildDeskFan(kit) {
+function buildDeskFan(api, kit) {
   const { roundedBox, cylinder, ellipsoid, branch, shape, THREE } = kit;
   roundedBox("Fan weighted base", [0, 1, 1.5], [18, 2, 14], "main");
   roundedBox("Base control inset", [0, 2.06, 5], [7, 0.2, 2.8], "shade");
@@ -62,27 +62,36 @@ function buildDeskFan(kit) {
   shape("Continuous fan support yoke", new THREE.TubeGeometry(new THREE.CatmullRomCurve3(yoke), 40, 0.8, 8, false), [0, 0, 0], "main");
   cylinder("Fan motor housing", [0, 22, -4.1], 3.6, 5.4, "main", 3.6, [90, 0, 0]);
   for (const z of [-3.2, 1.2]) shape("Fan cage rim", new THREE.TorusGeometry(10, 0.55, 8, 48), [0, 22, z], "main");
-  for (let index = 0; index < 8; index++) {
-    const angle = index * Math.PI / 4;
+  for (let index = 0; index < 6; index++) {
+    const angle = index * Math.PI / 3;
     const x = Math.cos(angle) * 10, y = 22 + Math.sin(angle) * 10;
     branch("Front guard spoke", [0, 22, 2], [x, y, 1.2], 0.16, "gold");
     branch("Rear guard spoke", [0, 22, -4], [x, y, -3.2], 0.16, "shade");
     branch("Cage depth rail", [x, y, -3.2], [x, y, 1.2], 0.22, "main");
   }
   shape("Concentric safety guard", new THREE.TorusGeometry(6.8, 0.18, 6, 40), [0, 22, 1.6], "gold");
+  const rotorStart = kit.parts.length;
   for (let index = 0; index < 3; index++) {
     const angle = index * Math.PI * 2 / 3 + 0.4;
     ellipsoid("Broad fan blade", [Math.cos(angle) * 4, 22 + Math.sin(angle) * 4, -0.7], [4.5, 2.3, 0.5], "light", [0, 0, angle * 180 / Math.PI - 18]);
   }
   cylinder("Rotor axle", [0, 22, -0.5], 1.3, 5, "gold", 1.3, [90, 0, 0]);
+  const rotor = new api.Group({ name: "Fan rotor", origin: [0, 22, -0.7] }).init();
+  for (const part of kit.parts.slice(rotorStart)) part.element.addTo(rotor);
+  const clip = new api.Animation({ name: "Fan spin", length: 1.6, loop: "loop", snapping: 20 }).add();
+  const animator = clip.getBoneAnimator(rotor);
+  for (const [time, turn] of [[0, 0], [1.6, 360]]) {
+    animator.addKeyframe({ channel: "rotation", time, interpolation: "linear", data_points: [{ x: 0, y: 0, z: turn }] });
+  }
   cylinder("Front fan hub", [0, 22, 2], 2, 1, "main", 2, [90, 0, 0]);
   for (const side of [-1, 1]) cylinder("Fan tilt pivot", [side * 10.5, 22, -2], 1.25, 1.5, "gold", 1.25, [0, 0, 90]);
+  return { animation: { clip, group: rotor, frames: 16, frameDuration: 100 } };
 }
 
 function buildTabletopElectronics(api, kit, asset, width, depth) {
   if (asset.id === "decor-laptop") buildLaptop(api, kit, width, depth);
   else if (asset.id === "decor-headphones") buildHeadphones(kit);
-  else if (asset.id === "decor-desk-fan") buildDeskFan(kit);
+  else if (asset.id === "decor-desk-fan") return buildDeskFan(api, kit);
   else throw new Error(`Missing tabletop electronics model: ${asset.id}`);
 }
 

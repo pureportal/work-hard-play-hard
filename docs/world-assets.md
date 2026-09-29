@@ -1,6 +1,6 @@
 # World assets
 
-Every catalog asset uses native Blockbench artwork. The catalog contains 87 assets, 261 material designs and 1,404 rendered frames, including animation samples in four directions. This includes desks, seating, tables, plants, ground surfaces, outdoor objects, equipment, tabletop decorations, storage, lighting, breakroom furnishings and portals. Reading benches, low tea tables, bamboo planters, stone lanterns, wind chimes and desk pinwheels extend the Sakura, Matcha and Indigo material set.
+Every catalog asset uses native Blockbench artwork. The catalog contains 381 assets, 1,057 material designs and 5,620 rendered frames, including animation samples in four directions. This includes desks, seating, tables, plants, ground surfaces, outdoor objects, equipment, tabletop decorations, storage, lighting, breakroom furnishings and portals. The Asia suite adds 56 pieces and the Cute suite adds 30, each covering all 14 categories and five rarity tiers.
 
 Walls, open door thresholds and windows have three additional native atlases and 12 directional views in `public/world-architecture`. They use the same renderer and importer, with their own manifest and model catalog.
 
