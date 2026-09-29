@@ -1,4 +1,4 @@
-import { ArrowRight, Coins, Sparkles } from "lucide-react";
+import { ArrowRight, Coins } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ConfirmationDialog } from "../ConfirmationDialog";
 
@@ -16,16 +16,16 @@ export function DonateCoins({ balance, sharedBalance, pending, disabled = false,
     if (valid && !pending && !disabled) setReviewing(true);
   }}>
     <div className="shared-transfer-route">
-      <div className="shared-transfer-wallet"><Coins size={24} aria-hidden="true" /><span>Personal</span><strong>{balance.toLocaleString()}</strong></div>
-      <span className="shared-transfer-arrow" aria-hidden="true"><ArrowRight size={22} /><Sparkles size={15} /></span>
-      <div className="shared-transfer-pot"><Coins size={24} aria-hidden="true" /><span>Shared</span><strong>{sharedBalance.toLocaleString()}</strong></div>
+      <div className="shared-transfer-wallet"><Coins size={22} aria-hidden="true" /><span>Personal</span><strong>{balance.toLocaleString()}</strong></div>
+      <span className="shared-transfer-arrow" aria-hidden="true"><ArrowRight size={20} /></span>
+      <div className="shared-transfer-pot"><Coins size={22} aria-hidden="true" /><span>Shared</span><strong>{sharedBalance.toLocaleString()}</strong></div>
     </div>
     <fieldset disabled={pending || disabled}>
       <label>Amount<input type="number" name="amount" min={1} max={balance} step={1} required value={amount} readOnly={reviewing}
         onChange={(event) => setAmount(event.target.value)} /></label>
       <div className="shared-transfer-presets">{[25, 50, 100].filter((value) => value < balance).map((value) =>
-        <button key={value} type="button" className="secondary-button" onClick={() => setAmount(String(value))}>{value}</button>)}
-        <button type="button" className="secondary-button" disabled={balance === 0} onClick={() => setAmount(String(balance))}>Max</button></div>
+        <button key={value} type="button" className="secondary-button" aria-pressed={amount === String(value)} onClick={() => setAmount(String(value))}>{value}</button>)}
+        <button type="button" className="secondary-button" aria-pressed={balance > 0 && amount === String(balance)} disabled={balance === 0} onClick={() => setAmount(String(balance))}>Max</button></div>
       {reviewing && valid && <ConfirmationDialog
         title={`Transfer ${coins.toLocaleString()} coins to Shared?`}
         description="Shared money cannot be returned to your personal wallet."

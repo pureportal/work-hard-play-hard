@@ -6,6 +6,7 @@ export function useWorkspaceCommand() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string>();
   const clear = useCallback(() => { requestId.current = undefined; setPending(false); setError(undefined); }, []);
+  const clearError = useCallback(() => setError(undefined), []);
   const handleEvent = useCallback((event: ServerEvent) => {
     if ((event.type === "command.ack" || event.type === "command.error" || event.type === "layout.conflict" || event.type === "layout.updated"
       || event.type === "public_economy.updated" || event.type === "project.preview" || event.type === "project.submitted" || event.type === "economy.updated") && event.requestId && event.requestId === requestId.current) {
@@ -22,5 +23,5 @@ export function useWorkspaceCommand() {
     if (!send(command)) { clear(); setError("Connection unavailable. Reconnect and try again."); return false; }
     return true;
   };
-  return { pending, error, clear, handleEvent, run };
+  return { pending, error, clear, clearError, handleEvent, run };
 }

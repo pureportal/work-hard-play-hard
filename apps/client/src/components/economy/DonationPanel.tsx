@@ -12,7 +12,7 @@ export function DonationPanel({ economy, balance, pending, disabled = false, err
   onViewChange: (view: BuildView) => void; onClose: () => void;
 }) {
   const sharedBalance = economy.funds.find((fund) => fund.id === WORKSPACE_FUND_ID)!.balance;
-  return <WorkspaceDialog title="Transfer to Shared" className="shared-transfer-dialog" error={error} onClose={onClose}>
+  return <WorkspaceDialog title="Transfer to Shared" className="shared-transfer-dialog" onClose={onClose}>
     <DonateCoins balance={balance} sharedBalance={sharedBalance} pending={pending} disabled={disabled} error={error}
       onDonate={(amount) => onCommand({ type: "economy.donate", requestId: crypto.randomUUID(), fundId: WORKSPACE_FUND_ID, amount })} />
   </WorkspaceDialog>;

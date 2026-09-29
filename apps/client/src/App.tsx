@@ -623,6 +623,7 @@ export function Workspace({
   const [reviewingProject, setReviewingProject] = useState<BuildProject>();
   const [placingPublicAssetId, setPlacingPublicAssetId] = useState<string>();
   const publicCommand = useWorkspaceCommand();
+  const transferCommand = useWorkspaceCommand();
   const pendingProjectEdit = useRef<string | undefined>(undefined);
   const pendingApprovalSubmission = useRef<string | undefined>(undefined);
   const [floorId, setFloorId] = useState(initialData.members.find((member) => member.id === initialData.currentUserId)?.floorId ?? initialData.floors[0]!.id);
@@ -899,6 +900,7 @@ export function Workspace({
     const callErrorHandled = callRequest.handle(event);
     workspaceCommand.handleEvent(event);
     publicCommand.handleEvent(event);
+    transferCommand.handleEvent(event);
     lobbyRequest.handleEvent(event);
     turnRequest.handleEvent(event);
     handleSpotifyEvent(event);
@@ -1573,6 +1575,7 @@ export function Workspace({
     setPendingEconomyRequest(undefined);
     pendingEconomyRequestRef.current = undefined;
     publicCommand.clear();
+    transferCommand.clear();
     pendingProjectEdit.current = undefined;
     setProjectDraft(undefined);
     setReviewingProject(undefined);
@@ -1647,6 +1650,10 @@ export function Workspace({
     return sent;
   }, [send, showToast, callRequest.status, callRequest.clear]);
   const requestId = () => crypto.randomUUID();
+  const openSharedTransfer = () => {
+    transferCommand.clearError();
+    setSharedTransferOpen(true);
+  };
 
   const callMember = (targetUserId: string, type: "call.request" | "movement.approach_user" = "call.request") => {
     if (callRequest.pending) return;
@@ -2648,7 +2655,7 @@ export function Workspace({
           connection={connection}
           coinBalance={data.economy.coinBalance}
           sharedBalance={data.publicEconomy.funds.find((fund) => fund.id === publicFundId)!.balance}
-          onOpenSharedTransfer={() => setSharedTransferOpen(true)}
+          onOpenSharedTransfer={openSharedTransfer}
           colorTheme={colorTheme}
           onColorThemeChange={onColorThemeChange}
           onFloorChange={viewFloor}
@@ -3271,7 +3278,7 @@ export function Workspace({
           <BuildPanel
             currentUserId={data.currentUserId}
             sharedBalance={data.publicEconomy.funds.find((fund) => fund.id === publicFundId)!.balance}
-            onOpenSharedTransfer={() => setSharedTransferOpen(true)}
+            onOpenSharedTransfer={openSharedTransfer}
             floorCount={data.floors.length + (preview?.quote.assetChanges.filter(({ object, change }) => change === "place" && getAssetDefinition(object.assetId)?.kind === "portal").length ?? 0)}
             reviewing={Boolean(reviewingProject)}
             accountControls={<BuildEconomyNavigation view={buildView} onChange={changeBuildView} />}
@@ -3383,8 +3390,8 @@ export function Workspace({
 
       {sharedTransferOpen && <DeferredContent onClose={() => setSharedTransferOpen(false)}>
         <DonationPanel economy={data.publicEconomy} organisation={data.organisation} balance={data.economy.coinBalance}
-          initialFundId={publicFundId} pending={publicCommand.pending} disabled={connection !== "online"} error={publicCommand.error}
-          onCommand={(command) => publicCommand.run(request, command)} onViewChange={changeBuildView} onClose={() => setSharedTransferOpen(false)} />
+          initialFundId={publicFundId} pending={transferCommand.pending} disabled={connection !== "online"} error={transferCommand.error}
+          onCommand={(command) => transferCommand.run(request, command)} onViewChange={changeBuildView} onClose={() => setSharedTransferOpen(false)} />
       </DeferredContent>}
 
       {activePanel === "approvals" && <DeferredContent onClose={() => openPanel(null)}><FundsPanel economy={data.publicEconomy} organisation={data.organisation}

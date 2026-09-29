@@ -53,27 +53,25 @@
 .fund-transaction > div { display: grid; gap: 5px; }
 .fund-transaction span { color: var(--muted); font-size: 12px; }
 .transaction-credit { color: var(--accent-text); }
-.shared-transfer-dialog { width: min(500px, 100%); height: auto; max-height: min(720px, 100%); }
-.shared-transfer-form { display: grid; gap: 22px; overflow: auto; padding: 24px; }
-.shared-transfer-route { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; }
-.shared-transfer-route > div { display: grid; justify-items: center; gap: 6px; min-width: 0; padding: 18px 8px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel-strong); }
-.shared-transfer-route > div svg { color: var(--coin-text); }
-.shared-transfer-route .shared-transfer-pot { border-color: #8ec8ae; background: linear-gradient(145deg, #dff8e9, #bbebd1); color: #176349; }
-.shared-transfer-route .shared-transfer-pot svg { color: #176349; }
-.shared-transfer-route span { font-size: 12px; font-weight: 700; }
-.shared-transfer-route strong { font-size: 24px; font-variant-numeric: tabular-nums; }
-.shared-transfer-arrow { position: relative; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: #fff2ba; color: #9a6216; }
-.shared-transfer-arrow svg:last-child { position: absolute; top: -11px; right: -5px; color: #df9a2e; animation: shared-transfer-sparkle 2.2s ease-in-out infinite; }
-@keyframes shared-transfer-sparkle { 50% { transform: translate(2px, -3px) rotate(16deg); } }
-@media (prefers-reduced-motion: reduce) { .shared-transfer-arrow svg:last-child { animation: none; } }
-.shared-transfer-form fieldset { display: grid; gap: 14px; border: 0; padding: 0; margin: 0; min-width: 0; }
-.shared-transfer-form label { display: grid; gap: 7px; font-size: 13px; font-weight: 700; }
-.shared-transfer-form input { width: 100%; min-height: 48px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-strong); color: var(--ink); font: inherit; font-size: 18px; font-variant-numeric: tabular-nums; }
-.shared-transfer-presets { display: flex; gap: 8px; }
-.shared-transfer-presets button { flex: 1; min-width: 0; }
-.shared-transfer-form > fieldset > .primary-button { width: 100%; min-height: 44px; }
-:root[data-theme="dark"] .shared-transfer-route .shared-transfer-pot { background: linear-gradient(145deg, #173d31, #22523f); color: #adf5cf; border-color: #397b5e; }
-:root[data-theme="dark"] .shared-transfer-route .shared-transfer-pot svg { color: #adf5cf; }
+.workspace-dialog.shared-transfer-dialog { width: min(480px, 100%); height: fit-content; max-height: calc(100dvh - 32px); }
+.shared-transfer-dialog .workspace-dialog-header { padding: 20px 24px; }
+.shared-transfer-form { display: grid; gap: 24px; overflow-y: auto; padding: 24px; }
+.shared-transfer-route { display: grid; grid-template-columns: minmax(0, 1fr) 32px minmax(0, 1fr); align-items: center; gap: 8px; }
+.shared-transfer-route > div { display: grid; grid-template-columns: 38px minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; column-gap: 10px; min-width: 0; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel-strong); }
+.shared-transfer-route > div svg { grid-row: 1 / 3; width: 38px; height: 38px; padding: 8px; border-radius: 11px; color: var(--coin-text); background: color-mix(in srgb, var(--coin-text) 11%, var(--panel-strong)); }
+.shared-transfer-route .shared-transfer-pot { border-color: color-mix(in srgb, var(--success) 35%, var(--line)); background: color-mix(in srgb, var(--success) 9%, var(--panel-strong)); }
+.shared-transfer-route .shared-transfer-pot svg { color: var(--success); background: color-mix(in srgb, var(--success) 15%, var(--panel-strong)); }
+.shared-transfer-route > div span { color: var(--muted); font-size: 12px; font-weight: 600; }
+.shared-transfer-route strong { font-size: 23px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.shared-transfer-arrow { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 50%; background: var(--panel); color: var(--muted); }
+.shared-transfer-form fieldset { display: grid; gap: 12px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.shared-transfer-form label { display: grid; gap: 8px; font-size: 13px; font-weight: 700; }
+.shared-transfer-form input { width: 100%; min-height: 54px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-strong); color: var(--ink); font: inherit; font-size: 20px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.shared-transfer-form input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.shared-transfer-presets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.shared-transfer-presets button { min-width: 0; min-height: 42px; }
+.shared-transfer-presets button[aria-pressed="true"] { color: var(--accent-text); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); background: var(--accent-soft); }
+.shared-transfer-form > fieldset > .primary-button { width: 100%; min-height: 50px; margin-top: 4px; font-size: 14px; }
 .shared-inventory { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .shared-inventory-item { display: grid; justify-items: center; gap: 14px; padding: 20px; border: 1px solid var(--line); border-radius: 16px; text-align: center; font-size: 14px; }
 .shared-inventory-item .asset-shape { width: 72px; height: 72px; }
@@ -89,7 +87,7 @@
 .world-project-state span::before { content: ""; width: 10px; height: 10px; border: 2px solid #edb34f; border-radius: 2px; background: #edb34f40; }
 .world-project-state .project-removal-key::before { border-color: #ef6666; background: #ef666640; }
 @media (max-width: 700px) {
-  .workspace-dialog.shared-transfer-dialog { height: auto; max-height: calc(100dvh - 24px); }
+  .workspace-dialog.shared-transfer-dialog { max-height: calc(100dvh - 24px); }
   .funds-dialog .dialog-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .funds-dialog .dialog-tabs button { padding-inline: 6px; }
   .fund-overview { padding-bottom: 20px; }
@@ -103,8 +101,13 @@
   .fund-balances svg { width: 15px; }
   .proposal-grid, .fund-settings, .shared-inventory { grid-template-columns: 1fr; }
   .funds-dialog input, .funds-dialog select { font-size: 16px; }
+  .shared-transfer-dialog .workspace-dialog-header { padding: 16px 18px; }
   .shared-transfer-form { padding: 18px; }
-  .shared-transfer-route strong { font-size: 20px; }
+}
+@media (max-width: 400px) {
+  .shared-transfer-route > div { grid-template-columns: 1fr; justify-items: start; gap: 5px; padding: 13px; }
+  .shared-transfer-route > div svg { grid-row: auto; margin-bottom: 5px; }
+  .shared-transfer-route strong { font-size: 21px; }
 }
 .proposal-project-details { display: grid; gap: 14px; }
 .spending-proposal .proposal-costs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 12px; border-radius: 10px; background: var(--panel); }
