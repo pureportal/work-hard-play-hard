@@ -47499,5 +47499,861 @@
       ],
       "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
     }
+  },
+  "equipment-minefield-relay": {
+    "graphite": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-minefield-relay-graphite.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/graphite/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/graphite/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/graphite/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/graphite/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    },
+    "white": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-minefield-relay-white.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/white/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/white/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/white/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/white/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    },
+    "violet": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-minefield-relay-violet.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/violet/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/violet/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/violet/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/violet/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    }
+  },
+  "equipment-memory-sprint": {
+    "graphite": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-memory-sprint-graphite.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/graphite/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/graphite/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/graphite/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/graphite/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    },
+    "white": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-memory-sprint-white.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/white/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/white/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/white/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/white/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    },
+    "violet": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-memory-sprint-violet.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/violet/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/violet/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/violet/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/violet/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    }
+  },
+  "equipment-territory-rush": {
+    "graphite": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-territory-rush-graphite.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/graphite/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/graphite/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/graphite/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/graphite/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    },
+    "white": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-territory-rush-white.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/white/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/white/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/white/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/white/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    },
+    "violet": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-territory-rush-violet.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/violet/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/violet/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/violet/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/violet/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    }
+  },
+  "equipment-sketch-guess": {
+    "graphite": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-sketch-guess-graphite.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/graphite/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/graphite/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/graphite/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/graphite/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    },
+    "white": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-sketch-guess-white.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/white/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/white/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/white/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/white/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    },
+    "violet": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-sketch-guess-violet.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/violet/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/violet/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/violet/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/violet/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    }
+  },
+  "equipment-bomb-arena": {
+    "graphite": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-bomb-arena-graphite.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/graphite/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/graphite/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/graphite/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/graphite/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    },
+    "white": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-bomb-arena-white.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/white/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/white/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/white/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/white/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    },
+    "violet": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-bomb-arena-violet.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/violet/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/violet/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/violet/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/violet/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    }
+  },
+  "equipment-snake-scramble": {
+    "graphite": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-snake-scramble-graphite.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/graphite/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/graphite/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/graphite/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/graphite/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    },
+    "white": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-snake-scramble-white.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/white/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/white/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/white/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/white/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    },
+    "violet": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-snake-scramble-violet.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/violet/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/violet/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/violet/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/violet/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    }
+  },
+  "equipment-mini-golf": {
+    "graphite": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-mini-golf-graphite.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/graphite/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/graphite/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/graphite/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/graphite/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    },
+    "white": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-mini-golf-white.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/white/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/white/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/white/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/white/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    },
+    "violet": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-mini-golf-violet.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/violet/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/violet/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/violet/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/violet/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    }
+  },
+  "equipment-space-defense": {
+    "graphite": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-space-defense-graphite.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/graphite/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/graphite/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/graphite/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/graphite/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    },
+    "white": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-space-defense-white.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/white/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/white/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/white/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/white/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    },
+    "violet": {
+      "generator": "blockbench",
+      "model": "scripts/world-assets/blockbench/models/equipment-space-defense-violet.bbmodel",
+      "frames": [
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/violet/south.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/violet/west.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/violet/north.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        },
+        {
+          "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/violet/east.png",
+          "x": 0,
+          "y": 0,
+          "width": 1536,
+          "height": 1536
+        }
+      ],
+      "review": "One editable model, four cardinal rotations, fixed scale and raster-aligned floor projection; transparent cel-shaded render."
+    }
   }
 }

@@ -80818,6 +80818,1446 @@
           ]
         }
       }
+    },
+    {
+      "assetId": "equipment-minefield-relay",
+      "pixelsPerUnit": 6,
+      "variants": {
+        "graphite": {
+          "model": "scripts/world-assets/blockbench/models/equipment-minefield-relay-graphite.bbmodel",
+          "parts": 65,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/graphite/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/graphite/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/graphite/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/graphite/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "white": {
+          "model": "scripts/world-assets/blockbench/models/equipment-minefield-relay-white.bbmodel",
+          "parts": 65,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/white/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/white/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/white/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/white/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "violet": {
+          "model": "scripts/world-assets/blockbench/models/equipment-minefield-relay-violet.bbmodel",
+          "parts": 65,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/violet/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/violet/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/violet/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-minefield-relay/violet/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        }
+      }
+    },
+    {
+      "assetId": "equipment-memory-sprint",
+      "pixelsPerUnit": 6,
+      "variants": {
+        "graphite": {
+          "model": "scripts/world-assets/blockbench/models/equipment-memory-sprint-graphite.bbmodel",
+          "parts": 55,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/graphite/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/graphite/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/graphite/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/graphite/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "white": {
+          "model": "scripts/world-assets/blockbench/models/equipment-memory-sprint-white.bbmodel",
+          "parts": 55,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/white/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/white/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/white/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/white/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "violet": {
+          "model": "scripts/world-assets/blockbench/models/equipment-memory-sprint-violet.bbmodel",
+          "parts": 55,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/violet/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/violet/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/violet/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-memory-sprint/violet/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        }
+      }
+    },
+    {
+      "assetId": "equipment-territory-rush",
+      "pixelsPerUnit": 6,
+      "variants": {
+        "graphite": {
+          "model": "scripts/world-assets/blockbench/models/equipment-territory-rush-graphite.bbmodel",
+          "parts": 74,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/graphite/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/graphite/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/graphite/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/graphite/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "white": {
+          "model": "scripts/world-assets/blockbench/models/equipment-territory-rush-white.bbmodel",
+          "parts": 74,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/white/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/white/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/white/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/white/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "violet": {
+          "model": "scripts/world-assets/blockbench/models/equipment-territory-rush-violet.bbmodel",
+          "parts": 74,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/violet/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/violet/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/violet/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-territory-rush/violet/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        }
+      }
+    },
+    {
+      "assetId": "equipment-sketch-guess",
+      "pixelsPerUnit": 6,
+      "variants": {
+        "graphite": {
+          "model": "scripts/world-assets/blockbench/models/equipment-sketch-guess-graphite.bbmodel",
+          "parts": 31,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/graphite/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/graphite/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/graphite/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/graphite/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "white": {
+          "model": "scripts/world-assets/blockbench/models/equipment-sketch-guess-white.bbmodel",
+          "parts": 31,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/white/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/white/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/white/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/white/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "violet": {
+          "model": "scripts/world-assets/blockbench/models/equipment-sketch-guess-violet.bbmodel",
+          "parts": 31,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/violet/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/violet/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/violet/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-sketch-guess/violet/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        }
+      }
+    },
+    {
+      "assetId": "equipment-bomb-arena",
+      "pixelsPerUnit": 6,
+      "variants": {
+        "graphite": {
+          "model": "scripts/world-assets/blockbench/models/equipment-bomb-arena-graphite.bbmodel",
+          "parts": 92,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/graphite/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/graphite/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/graphite/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/graphite/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "white": {
+          "model": "scripts/world-assets/blockbench/models/equipment-bomb-arena-white.bbmodel",
+          "parts": 92,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/white/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/white/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/white/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/white/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "violet": {
+          "model": "scripts/world-assets/blockbench/models/equipment-bomb-arena-violet.bbmodel",
+          "parts": 92,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/violet/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/violet/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/violet/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-bomb-arena/violet/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        }
+      }
+    },
+    {
+      "assetId": "equipment-snake-scramble",
+      "pixelsPerUnit": 6,
+      "variants": {
+        "graphite": {
+          "model": "scripts/world-assets/blockbench/models/equipment-snake-scramble-graphite.bbmodel",
+          "parts": 80,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/graphite/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/graphite/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/graphite/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/graphite/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "white": {
+          "model": "scripts/world-assets/blockbench/models/equipment-snake-scramble-white.bbmodel",
+          "parts": 80,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/white/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/white/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/white/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/white/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "violet": {
+          "model": "scripts/world-assets/blockbench/models/equipment-snake-scramble-violet.bbmodel",
+          "parts": 80,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/violet/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/violet/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/violet/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-snake-scramble/violet/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        }
+      }
+    },
+    {
+      "assetId": "equipment-mini-golf",
+      "pixelsPerUnit": 6,
+      "variants": {
+        "graphite": {
+          "model": "scripts/world-assets/blockbench/models/equipment-mini-golf-graphite.bbmodel",
+          "parts": 33,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/graphite/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/graphite/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/graphite/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/graphite/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "white": {
+          "model": "scripts/world-assets/blockbench/models/equipment-mini-golf-white.bbmodel",
+          "parts": 33,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/white/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/white/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/white/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/white/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "violet": {
+          "model": "scripts/world-assets/blockbench/models/equipment-mini-golf-violet.bbmodel",
+          "parts": 33,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/violet/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/violet/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/violet/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-mini-golf/violet/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        }
+      }
+    },
+    {
+      "assetId": "equipment-space-defense",
+      "pixelsPerUnit": 6,
+      "variants": {
+        "graphite": {
+          "model": "scripts/world-assets/blockbench/models/equipment-space-defense-graphite.bbmodel",
+          "parts": 38,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/graphite/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/graphite/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/graphite/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/graphite/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "white": {
+          "model": "scripts/world-assets/blockbench/models/equipment-space-defense-white.bbmodel",
+          "parts": 38,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/white/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/white/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/white/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/white/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        },
+        "violet": {
+          "model": "scripts/world-assets/blockbench/models/equipment-space-defense-violet.bbmodel",
+          "parts": 38,
+          "footprint": {
+            "width": 96,
+            "height": 96
+          },
+          "frames": [
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/violet/south.png",
+              "direction": "south",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/violet/west.png",
+              "direction": "west",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/violet/north.png",
+              "direction": "north",
+              "groundFootprint": {
+                "x": 480,
+                "y": 632.7350647362941,
+                "width": 576,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            },
+            {
+              "path": "scripts/world-assets/blockbench/renders/equipment-space-defense/violet/east.png",
+              "direction": "east",
+              "groundFootprint": {
+                "x": 479.9999999999999,
+                "y": 632.7350647362941,
+                "width": 576.0000000000001,
+                "height": 576.0000000000002
+              },
+              "width": 1536,
+              "height": 1536
+            }
+          ]
+        }
+      }
     }
   ]
 }

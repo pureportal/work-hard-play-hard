@@ -32493,6 +32493,138 @@
     ],
     "layoutHash": "5061752a35d3baf33c0c7be6b16c7d658711a9e54419d34fa45b0a0f161e4f1a"
   },
+  "/world-assets/equipment-bomb-arena/graphite.png": {
+    "group": "world",
+    "sourceHash": "6233e1a27d27ef2d96f0eb187d7bb905d1a7a62c2c23a75c68e3dddc7f68aa0a",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 108034,
+    "image": {
+      "id": "86271081fc783bef40b11d8b",
+      "sha256": "86271081fc783bef40b11d8b8b92109c7177646bf39b3ce0a8d1029393c5a84a",
+      "bytes": 23180,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "3b38edd83675b085c76f6316",
+        "sha256": "3b38edd83675b085c76f6316bbc89ca434c9ecda34468917a7378d03a7464bc5",
+        "bytes": 8188,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "3d4dd0673d575d5bc7c25c77",
+        "sha256": "3d4dd0673d575d5bc7c25c774be03fd15573e2e3b88e00845f6427df01d28fcf",
+        "bytes": 7984,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "51a74b85a6427260d598dc6c",
+        "sha256": "51a74b85a6427260d598dc6c336a148f452da790818a50ee4e8bdea3de550d40",
+        "bytes": 8310,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "2d9bd39027d0d77315aef5c8",
+        "sha256": "2d9bd39027d0d77315aef5c8d876bf41b1b5a22845302307b817965c656976a6",
+        "bytes": 8104,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
+  "/world-assets/equipment-bomb-arena/violet.png": {
+    "group": "world",
+    "sourceHash": "1a2cec69e44845919af0113a2738254931a6b0e41c7941c47cc9b3d74b106e87",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 108487,
+    "image": {
+      "id": "41b9d0877f8c9b927ef6d6ee",
+      "sha256": "41b9d0877f8c9b927ef6d6eedcf5ef851455b603030f41883f3fa3c88467ae29",
+      "bytes": 23156,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "a7fe1080ee74d7b971de8d03",
+        "sha256": "a7fe1080ee74d7b971de8d03ed4fc36380ffaeaf9a71d3e37f0b1cffc8bcf483",
+        "bytes": 8612,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "d7209e10d4989ae16fe8866e",
+        "sha256": "d7209e10d4989ae16fe8866e2cc12ed91081dc147ff9d0058943e8e240240155",
+        "bytes": 8350,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "540c4322e39dc0c70646f65c",
+        "sha256": "540c4322e39dc0c70646f65cad243508b894f41f49ef024cc3061d3ed80726f6",
+        "bytes": 8886,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "aacb065b9df19746d2836686",
+        "sha256": "aacb065b9df19746d2836686a65133c9fbe20a57921ac4d7a0835290e825f7a8",
+        "bytes": 8410,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
+  "/world-assets/equipment-bomb-arena/white.png": {
+    "group": "world",
+    "sourceHash": "a35beb36669399804f47a1c857dedcc44d4988e83fcf5fd02a47b5b4b3a05890",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 108681,
+    "image": {
+      "id": "c7578c0192f1a321d5862f0f",
+      "sha256": "c7578c0192f1a321d5862f0fe86a04e4dbf5ab909a8ed692d3188b8b1e0a7fcd",
+      "bytes": 23154,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "66d9301517f81b8cf89bf613",
+        "sha256": "66d9301517f81b8cf89bf613ce85bf6bfd15910f32c15b45973fff0ef2115005",
+        "bytes": 8948,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "5678f9d224507bfc111ce8d8",
+        "sha256": "5678f9d224507bfc111ce8d8783158d31300fa65cb0366e8973ef12f2c32f256",
+        "bytes": 8702,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "5e2efc21765f0f290f496959",
+        "sha256": "5e2efc21765f0f290f496959db543cc88811ac02fc78666bef4b4ee41e692bbd",
+        "bytes": 9108,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "3b6ba8da81e010ae8b795574",
+        "sha256": "3b6ba8da81e010ae8b795574d6b8a16265cc8fcf2ac4d342b3566a42117bc896",
+        "bytes": 8806,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
   "/world-assets/equipment-bookshelf/graphite.png": {
     "group": "world",
     "sourceHash": "f90579c487855b4a8f2d6bd80ff54bd90b1d44a15cbeb345a285b521063b304a",
@@ -33153,6 +33285,402 @@
     ],
     "layoutHash": "9342d7c7e501543e121e996c100616c6bfdfbd560197b5a4913e57124bb9be04"
   },
+  "/world-assets/equipment-memory-sprint/graphite.png": {
+    "group": "world",
+    "sourceHash": "fdb322c7d700730959dd7f4ec59165797056b3df087e68aa342f888dfa693866",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 93621,
+    "image": {
+      "id": "3ada834fd1eb85de46d924c2",
+      "sha256": "3ada834fd1eb85de46d924c20885b7e8eb602a3bab4444141a65521864abb191",
+      "bytes": 17358,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "866303663dab4f69723927a7",
+        "sha256": "866303663dab4f69723927a71bf51022c2236a55233ef2804f650bf77275a709",
+        "bytes": 6818,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "a391ab2e126dcfcd46ddae54",
+        "sha256": "a391ab2e126dcfcd46ddae5412b0fafd225c4ecbe726ae3a514fc12d301c537e",
+        "bytes": 7074,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "f68ebdd5d2828a00eb9c5e85",
+        "sha256": "f68ebdd5d2828a00eb9c5e856b3b910bfa618f2820f24b5774d86086553caa51",
+        "bytes": 6974,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "a0d9eae0fd13d95cbccfb0d3",
+        "sha256": "a0d9eae0fd13d95cbccfb0d3b006abe6b769bd371c478fee9096eb84f302259f",
+        "bytes": 7034,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
+  "/world-assets/equipment-memory-sprint/violet.png": {
+    "group": "world",
+    "sourceHash": "eba8f4387b0f3c367e157b33e0119574b946ec2a0dc58cdf16626ab629a06571",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 93573,
+    "image": {
+      "id": "79d4678f5f119715f30382ea",
+      "sha256": "79d4678f5f119715f30382eabc3660bcc2107ed387becec499864eae839d71ad",
+      "bytes": 17486,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "72ffa647ac15898d7b6af207",
+        "sha256": "72ffa647ac15898d7b6af207732c82741c80de0cb11812dd8b81d6afae66033a",
+        "bytes": 7262,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "574615ef47e1d44a6971a288",
+        "sha256": "574615ef47e1d44a6971a288eed8249788cc660d774a1f35e6d30422a2c8357f",
+        "bytes": 7204,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "427458549b0b82df3f8761c3",
+        "sha256": "427458549b0b82df3f8761c31ee6b4f206d293aed5156b8df8887eb6b6f52fa4",
+        "bytes": 7132,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "ff1d02a364f0b40f9bf8b289",
+        "sha256": "ff1d02a364f0b40f9bf8b289e27ba0d92222cf0fec4ecc1e1fd588088ace15ba",
+        "bytes": 7174,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
+  "/world-assets/equipment-memory-sprint/white.png": {
+    "group": "world",
+    "sourceHash": "f09c8338a39297c9463486a2b91bb50623da677d6180f4606d37c8df1e5ca6dc",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 93621,
+    "image": {
+      "id": "e755b51f6c1a4b498fa3b4f9",
+      "sha256": "e755b51f6c1a4b498fa3b4f9d24de5f4f59c158731ea1a8ef370b6d5be541f75",
+      "bytes": 17442,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "7327b1d83772c69614230e8d",
+        "sha256": "7327b1d83772c69614230e8d975618243466978dc4f5482c66c8694927b96b6a",
+        "bytes": 7062,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "fc61d6314cc86676952979d5",
+        "sha256": "fc61d6314cc86676952979d55fbe30b667abc7c2fd8af18234bb41cf00ee99aa",
+        "bytes": 7008,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "acd5fe67fa7aa5b5db3b6505",
+        "sha256": "acd5fe67fa7aa5b5db3b65056ce15bcdef6218dfab4147cac4dd4514c9b439ef",
+        "bytes": 7282,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "23a87971e46f3e70872bdf5d",
+        "sha256": "23a87971e46f3e70872bdf5d0163405f1d1f12ba1be6f40a37c57da228ab3e0d",
+        "bytes": 7038,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
+  "/world-assets/equipment-minefield-relay/graphite.png": {
+    "group": "world",
+    "sourceHash": "9fa603af007a25b6f4999dc499251a32c54494a9dc3787b969e44c083f0b5588",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 85310,
+    "image": {
+      "id": "64fe8993b7eccecb4b5f6535",
+      "sha256": "64fe8993b7eccecb4b5f65355e7e31f7309a3fef1fab82aaf43b08f54ecaf3c8",
+      "bytes": 16536,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "44f8fb38220a05915f5db3d3",
+        "sha256": "44f8fb38220a05915f5db3d3fc2a023dbfa4b221e216cc561f6d76d55042601f",
+        "bytes": 7920,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "8a51748f641b8e4249d21887",
+        "sha256": "8a51748f641b8e4249d21887b4c2057bdde0b1ce09d8c1d1097fd8a2855c5eb2",
+        "bytes": 7980,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "193f38bec1c561bcc616ed28",
+        "sha256": "193f38bec1c561bcc616ed28c114b636779ee801a78078a7fd5835c2625e2af8",
+        "bytes": 7906,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "bcc19e32f38beb47099f08ee",
+        "sha256": "bcc19e32f38beb47099f08eec13cc5f9d8668882c71a94a7756255a930fe7693",
+        "bytes": 7956,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
+  "/world-assets/equipment-minefield-relay/violet.png": {
+    "group": "world",
+    "sourceHash": "5852a1257ffb2dbaa0eb99afa022bf989936d5b1a8f91e71ddfc887f453a0867",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 85239,
+    "image": {
+      "id": "cff185f21f8b12bd9a1864d1",
+      "sha256": "cff185f21f8b12bd9a1864d12b4013cce557178e1917e69c978173f74e2f427e",
+      "bytes": 16704,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "0971f41a9a36b50e3cec2943",
+        "sha256": "0971f41a9a36b50e3cec2943708b2d96cdc2c281a7e084953e6b10e1e212ca2a",
+        "bytes": 8088,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "339b3ce8509249378f86fad5",
+        "sha256": "339b3ce8509249378f86fad598d24026903920a5a54c46d40902d28b0e96d53c",
+        "bytes": 8162,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "0613e296d7f1397479c15bac",
+        "sha256": "0613e296d7f1397479c15bac006430f9f2d0fb6edef488aa88c8f39088830156",
+        "bytes": 8152,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "33297291379d8286ab0a354d",
+        "sha256": "33297291379d8286ab0a354d3306fb1edb271bcf41402e51318c57adbb6abaa9",
+        "bytes": 8070,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
+  "/world-assets/equipment-minefield-relay/white.png": {
+    "group": "world",
+    "sourceHash": "704bd29e5cf7ce7b87494c77cb32203a3860df2ca9caf40fabd7924e443c72e0",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 85389,
+    "image": {
+      "id": "de58576ec9e198b52b2b3526",
+      "sha256": "de58576ec9e198b52b2b3526930c2110d4325b7bd0b8a8136073cf422fa2367e",
+      "bytes": 16678,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "ba265e700e89be2420d96908",
+        "sha256": "ba265e700e89be2420d969088e5804445a7f9901b5b04de90f9c261746186ece",
+        "bytes": 8042,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "e1582d303369764eac4adca1",
+        "sha256": "e1582d303369764eac4adca15ecdaedc1401f5b89896fef2305c1351d211e220",
+        "bytes": 8212,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "7577c6277f44cdaad3d3e6a2",
+        "sha256": "7577c6277f44cdaad3d3e6a2b11ce5b599d49bf7fa279f5f101f5bb9f218df4b",
+        "bytes": 8088,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "60ccd198b5d6a4911024d5fa",
+        "sha256": "60ccd198b5d6a4911024d5fabd4e5976cb895a5e6bf7b3724c5465efb3262029",
+        "bytes": 8154,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
+  "/world-assets/equipment-mini-golf/graphite.png": {
+    "group": "world",
+    "sourceHash": "3a96783a4e82d38f8368bbf9d081f357ea5eb2275ba996793b94a60e2a3b44ae",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 77966,
+    "image": {
+      "id": "0765f1ded1307ddd7c7adbd6",
+      "sha256": "0765f1ded1307ddd7c7adbd68601932cca2495fa409cfc4877b9f36015575033",
+      "bytes": 15904,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "6ea2c93293be7d960f2755fb",
+        "sha256": "6ea2c93293be7d960f2755fbbd7fec30efdeaf68b5c94e35ec0fdbdbdcf0db99",
+        "bytes": 4886,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "3e5d667e4babcd69790de3d3",
+        "sha256": "3e5d667e4babcd69790de3d301b5a1286ecff833c45f368b68247d038ee57683",
+        "bytes": 5064,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "b0300d8ab0fb19d0d6b569f1",
+        "sha256": "b0300d8ab0fb19d0d6b569f1bb191d0b4f1a56abc07c9d52da89d895eb7b291c",
+        "bytes": 4988,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "a2d5013f3c55436bc0a7d65b",
+        "sha256": "a2d5013f3c55436bc0a7d65b27fdcbe343f19760abb11b57d6e2b10854bf1995",
+        "bytes": 4858,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
+  "/world-assets/equipment-mini-golf/violet.png": {
+    "group": "world",
+    "sourceHash": "721c2b80c426cda921424209c8ddd9844444a56843144841daa8a89ed4d8feda",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 77945,
+    "image": {
+      "id": "f765929d31a0868bde6ac696",
+      "sha256": "f765929d31a0868bde6ac6962d87c029531dbd01ffa98208c1f573f08ee4d856",
+      "bytes": 16060,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "a4a059b7ba9e8a7e4871b820",
+        "sha256": "a4a059b7ba9e8a7e4871b8201f0d0f1c9c6f8a63afa64fc62e6f46a5245e21ed",
+        "bytes": 5046,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "96b65db2f96413ab141c1b47",
+        "sha256": "96b65db2f96413ab141c1b47e2c3c641f36791f896acebec8d2ac6dcaa9e54f7",
+        "bytes": 5050,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "9b6bf839e3ed578f6ca764cd",
+        "sha256": "9b6bf839e3ed578f6ca764cdabf773c8e4cf69e9c28cecc52bf4ca7d82f4cb63",
+        "bytes": 5144,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "b7bef119d54e72e1eb55db42",
+        "sha256": "b7bef119d54e72e1eb55db42b66ab04f95d070a65eaee5fdf135082c490b1893",
+        "bytes": 5010,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
+  "/world-assets/equipment-mini-golf/white.png": {
+    "group": "world",
+    "sourceHash": "b2d34dbd66ea55e767ec2c19ed5461b23786ba8f376764a10bd6f63f82f60189",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 78062,
+    "image": {
+      "id": "25c1929a242f77d6895b6a71",
+      "sha256": "25c1929a242f77d6895b6a71301c5be07342bcfce50e91de754551cf8ac9605a",
+      "bytes": 15972,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "1aaadf0457558e47f241eb8d",
+        "sha256": "1aaadf0457558e47f241eb8d65c5c5f79d41d1227b3090e78c1fec1b6f63ecf2",
+        "bytes": 5162,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "b417179d6a4fcd11b35a78b7",
+        "sha256": "b417179d6a4fcd11b35a78b7f8400cd2fdf1fe8769f4c61a59b2c710a9312faa",
+        "bytes": 5126,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "1411f0247a1b0ae924ab08c1",
+        "sha256": "1411f0247a1b0ae924ab08c1d2c067cf1afbdbc5de8260296fc59e83539795b5",
+        "bytes": 5358,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "6e30dd75452455e60274d430",
+        "sha256": "6e30dd75452455e60274d430f5ba8c1144e3850d961f15586066b748117faaae",
+        "bytes": 5116,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
   "/world-assets/equipment-projector/graphite.png": {
     "group": "world",
     "sourceHash": "6264dc349fa46bb824b9041b24a048cda200bf370b85cfb8b0f81150bb71c054",
@@ -33285,6 +33813,402 @@
     ],
     "layoutHash": "b7804910688bb0b0783e29dc0bbded0789456fb6fcedf3602deb78a2639075ea"
   },
+  "/world-assets/equipment-sketch-guess/graphite.png": {
+    "group": "world",
+    "sourceHash": "477e535fabede0fabc5718d4cdd29a094193f7d9a5fb478aa214458049f1f9d5",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 100267,
+    "image": {
+      "id": "96ce912285201c2b509225e5",
+      "sha256": "96ce912285201c2b509225e5123659b0a0b54af463b3d4bf14a4a1e2e13f9d3f",
+      "bytes": 28110,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "4ba36649878fb198abba33a0",
+        "sha256": "4ba36649878fb198abba33a0a3c35bed96a5b1169812f34dc5eb90e482afec1a",
+        "bytes": 7798,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "29c5fdaf0ff2190da6d8ad6b",
+        "sha256": "29c5fdaf0ff2190da6d8ad6bf7a37232761f1656a787746e949a445c4da751ae",
+        "bytes": 7876,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "96ed762bc30c726bba70a0a8",
+        "sha256": "96ed762bc30c726bba70a0a89e17dcfdc029faa4d0e403ea90ffb1acc9464ed3",
+        "bytes": 7660,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "d0117dd183452231a86b58c4",
+        "sha256": "d0117dd183452231a86b58c47d524d69cc4db8478822a67af5711c2d9091fb88",
+        "bytes": 7890,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
+  "/world-assets/equipment-sketch-guess/violet.png": {
+    "group": "world",
+    "sourceHash": "8084a3c91dc7256265d9f6f4b22a4beda696cd48c0d62be7634976054fbffca5",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 100268,
+    "image": {
+      "id": "bd8328bd327106e83685cdae",
+      "sha256": "bd8328bd327106e83685cdae7930517aea8d4c475b6cba3a4016cfaa517988cd",
+      "bytes": 27762,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "86ec7257f647dac78658b1db",
+        "sha256": "86ec7257f647dac78658b1db05ff1d25342d5bd26bf712c4eae675ed362802e7",
+        "bytes": 7994,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "66eac420b378a415a8057243",
+        "sha256": "66eac420b378a415a8057243b995e5acc2a5c7e080a3d1d76b79903786cca0c2",
+        "bytes": 8046,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "6ea3ac700dcc8c9b82b61235",
+        "sha256": "6ea3ac700dcc8c9b82b61235e73428ed80b639d91ef88e3449207c49469e08e8",
+        "bytes": 7956,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "b24ec18072dd239a6e30bca6",
+        "sha256": "b24ec18072dd239a6e30bca6275c35625934865b3f9c7ffa79f5fb5d6c4eccc6",
+        "bytes": 8030,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
+  "/world-assets/equipment-sketch-guess/white.png": {
+    "group": "world",
+    "sourceHash": "b5bdfd3d18e8621fa36e116dfcf337e1a31dcceb20fc58182369ebe32df342b7",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 100174,
+    "image": {
+      "id": "1beeb33877e5adf599d4e74c",
+      "sha256": "1beeb33877e5adf599d4e74c71cea283124d4ac889dee3e0de6a89c598336194",
+      "bytes": 28142,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "1fe8cb50a5d9f107250bffa9",
+        "sha256": "1fe8cb50a5d9f107250bffa923c50675aed667383b04b15d34b6bd0a8c1984ad",
+        "bytes": 6670,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "a09b5ca1d827a315a3b65c18",
+        "sha256": "a09b5ca1d827a315a3b65c18286fbe3f386609f47d509ab242f9fdb2ba4cd907",
+        "bytes": 6594,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "22c572ad956a1481b37c43db",
+        "sha256": "22c572ad956a1481b37c43dbe4498de535e310876abb9b63cec84701ac5820f3",
+        "bytes": 6590,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "70fdb2f450c38a166b9ff87b",
+        "sha256": "70fdb2f450c38a166b9ff87b0c77f5466c32c7d37dab54fd098ea51d863d4c17",
+        "bytes": 6644,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
+  "/world-assets/equipment-snake-scramble/graphite.png": {
+    "group": "world",
+    "sourceHash": "72ca67c5e9e7f9b79295718e716ef620d9bea9cd00d0e80e67006eaa0e2169e3",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 90670,
+    "image": {
+      "id": "f3e24cbceeb7fce9b0b72948",
+      "sha256": "f3e24cbceeb7fce9b0b7294877c2bea1d53226244caac42d72a975070f53056c",
+      "bytes": 18770,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "bd6f8f4dbdf52914cd825ee7",
+        "sha256": "bd6f8f4dbdf52914cd825ee7e71b955d4ce3a02305b265ed1bc689880f7028d8",
+        "bytes": 6342,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "629e6e62c653f59b2a89c4f5",
+        "sha256": "629e6e62c653f59b2a89c4f57efb092b35bc6ec98d3d1ff3e582a6e63844b18d",
+        "bytes": 6382,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "0f2a071167961ecab48af510",
+        "sha256": "0f2a071167961ecab48af510a10bf2c889611a4019d51f92c292529147469976",
+        "bytes": 6262,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "36ee3c1f8db5efb7b92c87fa",
+        "sha256": "36ee3c1f8db5efb7b92c87fab773524a4f6b30e9e03f5f8ee15f48c7224b0be4",
+        "bytes": 6462,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
+  "/world-assets/equipment-snake-scramble/violet.png": {
+    "group": "world",
+    "sourceHash": "d5e4822ce42fc6778ac952b6b7f09784674dd4d0277060abfa8e92a0de97c2b4",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 90811,
+    "image": {
+      "id": "1fcc6c415cb47c9025510627",
+      "sha256": "1fcc6c415cb47c9025510627d55b347d5c754ec82235c4b34e8d948f63ffc6b9",
+      "bytes": 18930,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "dda5a422a1abc2da40ca76f1",
+        "sha256": "dda5a422a1abc2da40ca76f1e4a47dcf0a1c6b89fa7da932d4c0c5b82ea3506f",
+        "bytes": 6872,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "f47c030b3236d5b9cc2b5ba1",
+        "sha256": "f47c030b3236d5b9cc2b5ba1e7a8af1b65d3bdaf9be7dc71f2b273c897a5db1a",
+        "bytes": 6966,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "1a58f14dcc4d70870fa32d05",
+        "sha256": "1a58f14dcc4d70870fa32d05e2929d3b9cd8d3034b1867b476468f12a131dc55",
+        "bytes": 7030,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "65a9fc9c9e65f2c95ae30485",
+        "sha256": "65a9fc9c9e65f2c95ae304858463e1b48dc2bf1d9432d2681a0aa3cf88b1a608",
+        "bytes": 6932,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
+  "/world-assets/equipment-snake-scramble/white.png": {
+    "group": "world",
+    "sourceHash": "65fb9f63c66ad6684d3a6cb2ff44e0daa1eaf883f821409d9b3435eabb62be00",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 90940,
+    "image": {
+      "id": "3db7e177ccc0bae31ec1baba",
+      "sha256": "3db7e177ccc0bae31ec1baba28782e27fd8e519d06c26457c5b6c3dadffddf4e",
+      "bytes": 18836,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "dac47b53ddad9b922b4200dc",
+        "sha256": "dac47b53ddad9b922b4200dc65cbfb207341affc07b1be0ff51eed2881459e63",
+        "bytes": 7394,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "1d6ec226ef625ee47adcb5f8",
+        "sha256": "1d6ec226ef625ee47adcb5f8fcb2c25b7d5e9e6e6d0e93e6b2acc73a34e43303",
+        "bytes": 7256,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "6febc55ae384c0ae5d63a2ef",
+        "sha256": "6febc55ae384c0ae5d63a2ef823b25f01b4b0916d29b78f312f191e81aa8a487",
+        "bytes": 7492,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "29403e0f8f39e143ac51e470",
+        "sha256": "29403e0f8f39e143ac51e470a70745ecfc5a5f9a4a0fe3c8c1ae4012ceffe58d",
+        "bytes": 7430,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
+  "/world-assets/equipment-space-defense/graphite.png": {
+    "group": "world",
+    "sourceHash": "0e4a35e66c8e0a4ab50063b4c32185ba96ced57b0e2dd2c469ab3b362a3591d4",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 78806,
+    "image": {
+      "id": "cfe9bb4e3f5045e414a6bcb7",
+      "sha256": "cfe9bb4e3f5045e414a6bcb7efbe31943e3c1205c65b801865362fd532c288e7",
+      "bytes": 16468,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "05e9fc17eaf30255933b195f",
+        "sha256": "05e9fc17eaf30255933b195f9bbcd0e05b4fd45c5dba35647197dafa985c67cd",
+        "bytes": 5912,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "74ba837ca2b6ceeb731adffa",
+        "sha256": "74ba837ca2b6ceeb731adffa311c8375ada87fad4e772e5643abc8a72531e828",
+        "bytes": 5954,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "4abc512004345683217d6ab4",
+        "sha256": "4abc512004345683217d6ab4b36000958833036ad4ca4512ca2a96b708832fcd",
+        "bytes": 5980,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "38705319f3a7a18849327d7a",
+        "sha256": "38705319f3a7a18849327d7abca568255692fc4a664ea4c3cd679b1f86214d3b",
+        "bytes": 5926,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
+  "/world-assets/equipment-space-defense/violet.png": {
+    "group": "world",
+    "sourceHash": "0f3aba06475b0428a6f402fc6648b30aa7a0393ed2d99ae11410af33270950e0",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 78733,
+    "image": {
+      "id": "bc0f0723a742e330afcf8d31",
+      "sha256": "bc0f0723a742e330afcf8d31552f02f9e60bd93dd093877ce05c10aadb5d8867",
+      "bytes": 16512,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "cd451fb32dadba4f19d65be1",
+        "sha256": "cd451fb32dadba4f19d65be1ac050f6ca9e7df6006b2c840355a697153ccdf8b",
+        "bytes": 5254,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "c43e1dcb38dfa7de6fc46f0c",
+        "sha256": "c43e1dcb38dfa7de6fc46f0c8a50713d01b9d4054ed6f153bae57821c332b4cf",
+        "bytes": 6182,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "bd85b2c85041627020792956",
+        "sha256": "bd85b2c8504162702079295671f4feb10adcf4885295c15fd8cbb351d4787d72",
+        "bytes": 5278,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "0a10ac6ba3073f3fb7ee99bf",
+        "sha256": "0a10ac6ba3073f3fb7ee99bf999881476bfffadc32ab2e7be41ff69ed4b28717",
+        "bytes": 6162,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
+  "/world-assets/equipment-space-defense/white.png": {
+    "group": "world",
+    "sourceHash": "0f042df7208170d2d58f022dabac4a34d061dbbe155b3dbca3019a89d0d9a25f",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 78898,
+    "image": {
+      "id": "af82046ad9c618e72b0657e0",
+      "sha256": "af82046ad9c618e72b0657e0b07e9184abfa722d64c95e1f8dc210ea8bd45feb",
+      "bytes": 16542,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "b3d482ace9bcd095c16fb1ae",
+        "sha256": "b3d482ace9bcd095c16fb1ae808daf250de6cd3e6df62cb36c9e616b0e1fe7af",
+        "bytes": 5356,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "efe27665767df62679062058",
+        "sha256": "efe27665767df62679062058e1a497cf02d0c263f669d028104a01208f2c9459",
+        "bytes": 6264,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "e3a01559a6d589ea4cbeb617",
+        "sha256": "e3a01559a6d589ea4cbeb6174cf25e1769907f5046ab90e9858183edb4cb7b2d",
+        "bytes": 6162,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "f1bbc878515551d416044bf0",
+        "sha256": "f1bbc878515551d416044bf09235e999f92c80993f41f676d8388974cf0d520d",
+        "bytes": 6236,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
   "/world-assets/equipment-speakers/graphite.png": {
     "group": "world",
     "sourceHash": "54a89a8b5446d6cba1838e3ab63d45829499027f0ae3cee76028949af9a57d39",
@@ -33416,6 +34340,138 @@
       }
     ],
     "layoutHash": "02cf81ff1a5bb080ca1a866ca5da513bc03305b0874a2ec3bf242476ca4d2c54"
+  },
+  "/world-assets/equipment-territory-rush/graphite.png": {
+    "group": "world",
+    "sourceHash": "26f4a6062e43c0783ae18fc953238d96f43fb95f6ec251f292d8505b0cc4f19c",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 90152,
+    "image": {
+      "id": "327d9989b85592292bd20f33",
+      "sha256": "327d9989b85592292bd20f33bf9b9ddc82c98746d7d548f36a2ca996b2f41962",
+      "bytes": 17104,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "5348369ec9b8084bec4981ea",
+        "sha256": "5348369ec9b8084bec4981ea93b279c7a585bc6b55604f6d1bbeb4ad6f87241d",
+        "bytes": 6876,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "c6cd130e1a92bff55123f5c3",
+        "sha256": "c6cd130e1a92bff55123f5c3fbb68bfc5a7208145e341f97cd301c14cb0f8394",
+        "bytes": 6996,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "10390ca55ce00fcb6f4981de",
+        "sha256": "10390ca55ce00fcb6f4981de778165bc430487d000645a77cc23351b05fe9efd",
+        "bytes": 6962,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "badbc2e66f960b61c3d5ca8e",
+        "sha256": "badbc2e66f960b61c3d5ca8e81e55768ebf7a17159ae983f9b40fab56594f05f",
+        "bytes": 6978,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
+  "/world-assets/equipment-territory-rush/violet.png": {
+    "group": "world",
+    "sourceHash": "7f50af9ec386e31fe0c8d883120663b29a92442a57f107d3bdc3c21e0e8006f7",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 90043,
+    "image": {
+      "id": "4e6266391cedd99b53809a1a",
+      "sha256": "4e6266391cedd99b53809a1aaf589e55cf3c5762755aadc242c2bf3f24563bbc",
+      "bytes": 17196,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "8a25a34b6350e84df6430f5a",
+        "sha256": "8a25a34b6350e84df6430f5a30fa85a3641354651d4df5cfce86dfd553e231fe",
+        "bytes": 7018,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "f4411b8360ed96fa6b70d9f8",
+        "sha256": "f4411b8360ed96fa6b70d9f88166d0fe0a4052598ebc73cf91737f4ff8a5485a",
+        "bytes": 7146,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "0eddff6b088746ba1faf56d1",
+        "sha256": "0eddff6b088746ba1faf56d1b697ec77b589295ca0f70c04aa893e1407b647fe",
+        "bytes": 7148,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "3651ace329f7d7a38154b99e",
+        "sha256": "3651ace329f7d7a38154b99eb83bfec06b1fd532c09bb12c9f302bdcf8af443b",
+        "bytes": 7090,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
+  },
+  "/world-assets/equipment-territory-rush/white.png": {
+    "group": "world",
+    "sourceHash": "09f6bbfd3000bf3ce013b6138bb867c4911f97860a88d09beddccee2c5604799",
+    "recipe": "98193d88537d9ad3b3964cfa7640ea6a9bf82d20bfd918ed19fefcd5029fa3be",
+    "originalBytes": 90140,
+    "image": {
+      "id": "bae9c2a4561f68ed503ff6b7",
+      "sha256": "bae9c2a4561f68ed503ff6b7a98aa08924de26ef1e88949264aeefaa03d4a416",
+      "bytes": 17154,
+      "width": 2320,
+      "height": 724
+    },
+    "previews": [
+      {
+        "id": "7890ede591602430015a2104",
+        "sha256": "7890ede591602430015a2104eb29032e91214bedda836f8681e89981540173b8",
+        "bytes": 7154,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "d7cf608f9f13f37c28e92c7e",
+        "sha256": "d7cf608f9f13f37c28e92c7e2e7f2da542ff723ab584849eb3f4a08ba72c37c8",
+        "bytes": 7188,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "c7d8a7d3841f4e1127a1f5f1",
+        "sha256": "c7d8a7d3841f4e1127a1f5f18a6b73e7917bdea396ee798654e897aac55e2aad",
+        "bytes": 7294,
+        "width": 102,
+        "height": 128
+      },
+      {
+        "id": "ea3445925f9d4a648bf9a22a",
+        "sha256": "ea3445925f9d4a648bf9a22aa39625a4022c104b168e8d99b8b6bf0011804494",
+        "bytes": 7312,
+        "width": 102,
+        "height": 128
+      }
+    ],
+    "layoutHash": "e34771d4eac9a9cd13788b0ff0c03740af98d77481e9bd8af3585fbb57d58ca3"
   },
   "/world-assets/equipment-tic-tac-toe/graphite.png": {
     "group": "world",

@@ -79037,5 +79037,1413 @@
         ]
       }
     }
+  },
+  "equipment-minefield-relay": {
+    "elevation": 27.28917745604902,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/equipment-minefield-relay/graphite.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/equipment-minefield-relay/white.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      },
+      "violet": {
+        "path": "/world-assets/equipment-minefield-relay/violet.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      }
+    }
+  },
+  "equipment-memory-sprint": {
+    "elevation": 27.28917745604902,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/equipment-memory-sprint/graphite.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/equipment-memory-sprint/white.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      },
+      "violet": {
+        "path": "/world-assets/equipment-memory-sprint/violet.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      }
+    }
+  },
+  "equipment-territory-rush": {
+    "elevation": 27.28917745604902,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/equipment-territory-rush/graphite.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/equipment-territory-rush/white.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      },
+      "violet": {
+        "path": "/world-assets/equipment-territory-rush/violet.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      }
+    }
+  },
+  "equipment-sketch-guess": {
+    "elevation": 27.28917745604902,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/equipment-sketch-guess/graphite.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/equipment-sketch-guess/white.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      },
+      "violet": {
+        "path": "/world-assets/equipment-sketch-guess/violet.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      }
+    }
+  },
+  "equipment-bomb-arena": {
+    "elevation": 27.28917745604902,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/equipment-bomb-arena/graphite.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/equipment-bomb-arena/white.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      },
+      "violet": {
+        "path": "/world-assets/equipment-bomb-arena/violet.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      }
+    }
+  },
+  "equipment-snake-scramble": {
+    "elevation": 27.28917745604902,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/equipment-snake-scramble/graphite.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/equipment-snake-scramble/white.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      },
+      "violet": {
+        "path": "/world-assets/equipment-snake-scramble/violet.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      }
+    }
+  },
+  "equipment-mini-golf": {
+    "elevation": 27.28917745604902,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/equipment-mini-golf/graphite.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/equipment-mini-golf/white.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      },
+      "violet": {
+        "path": "/world-assets/equipment-mini-golf/violet.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      }
+    }
+  },
+  "equipment-space-defense": {
+    "elevation": 27.28917745604902,
+    "variants": {
+      "graphite": {
+        "path": "/world-assets/equipment-space-defense/graphite.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      },
+      "white": {
+        "path": "/world-assets/equipment-space-defense/white.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      },
+      "violet": {
+        "path": "/world-assets/equipment-space-defense/violet.png",
+        "width": 2320,
+        "height": 724,
+        "frames": [
+          {
+            "x": 2,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 582,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1162,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          },
+          {
+            "x": 1742,
+            "y": 2,
+            "width": 576,
+            "height": 720
+          }
+        ],
+        "bounds": [
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 0,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          },
+          {
+            "x": 1.8947806286936004e-14,
+            "y": -27.28917745604902,
+            "width": 96,
+            "height": 120
+          }
+        ]
+      }
+    }
   }
 }

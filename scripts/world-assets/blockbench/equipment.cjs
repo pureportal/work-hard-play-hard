@@ -1,4 +1,5 @@
 const { buildChessTable, buildFallingBlocksTable } = require("./game-tables.cjs");
+const { buildArcadeGameTable } = require("./arcade-tables.cjs");
 const { buildCelebrationGong } = require("./celebration-gong.cjs");
 const { buildArcadeCabinet } = require("./arcade-cabinet.cjs");
 
@@ -7,6 +8,7 @@ function buildEquipment(kit, asset, width, depth) {
   const id = asset.id;
   if (id === "equipment-chess") return buildChessTable(kit, width, depth);
   if (id === "equipment-falling-blocks") return buildFallingBlocksTable(kit, width, depth);
+  if (["equipment-minefield-relay", "equipment-memory-sprint", "equipment-territory-rush", "equipment-sketch-guess", "equipment-bomb-arena", "equipment-snake-scramble", "equipment-mini-golf", "equipment-space-defense"].includes(id)) return buildArcadeGameTable(kit, asset, width, depth);
   if (id === "equipment-arcade") return buildArcadeCabinet(kit, width, depth);
   if (asset.kind === "whiteboard") {
     const height = 56;

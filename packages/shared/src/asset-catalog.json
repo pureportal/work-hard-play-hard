@@ -2173,6 +2173,246 @@
       "rarity": "rare"
     },
     {
+      "id": "equipment-minefield-relay",
+      "name": "Minefield Relay table",
+      "category": "equipment",
+      "kind": "game",
+      "themeSetId": "equipment",
+      "buildable": true,
+      "radius": 124,
+      "shop": {
+        "price": 350,
+        "available": false
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 6
+          },
+          "type": "body",
+          "solid": true
+        }
+      ],
+      "rarity": "rare"
+    },
+    {
+      "id": "equipment-memory-sprint",
+      "name": "Memory Sprint table",
+      "category": "equipment",
+      "kind": "game",
+      "themeSetId": "equipment",
+      "buildable": true,
+      "radius": 124,
+      "shop": {
+        "price": 350,
+        "available": false
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 6
+          },
+          "type": "body",
+          "solid": true
+        }
+      ],
+      "rarity": "rare"
+    },
+    {
+      "id": "equipment-territory-rush",
+      "name": "Territory Rush table",
+      "category": "equipment",
+      "kind": "game",
+      "themeSetId": "equipment",
+      "buildable": true,
+      "radius": 124,
+      "shop": {
+        "price": 450,
+        "available": false
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 6
+          },
+          "type": "body",
+          "solid": true
+        }
+      ],
+      "rarity": "rare"
+    },
+    {
+      "id": "equipment-sketch-guess",
+      "name": "Sketch & Guess table",
+      "category": "equipment",
+      "kind": "game",
+      "themeSetId": "equipment",
+      "buildable": true,
+      "radius": 124,
+      "shop": {
+        "price": 550,
+        "available": false
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 6
+          },
+          "type": "body",
+          "solid": true
+        }
+      ],
+      "rarity": "rare"
+    },
+    {
+      "id": "equipment-bomb-arena",
+      "name": "Bomb Arena table",
+      "category": "equipment",
+      "kind": "game",
+      "themeSetId": "equipment",
+      "buildable": true,
+      "radius": 124,
+      "shop": {
+        "price": 650,
+        "available": false
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 6
+          },
+          "type": "body",
+          "solid": true
+        }
+      ],
+      "rarity": "epic"
+    },
+    {
+      "id": "equipment-snake-scramble",
+      "name": "Snake Scramble table",
+      "category": "equipment",
+      "kind": "game",
+      "themeSetId": "equipment",
+      "buildable": true,
+      "radius": 124,
+      "shop": {
+        "price": 600,
+        "available": false
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 6
+          },
+          "type": "body",
+          "solid": true
+        }
+      ],
+      "rarity": "rare"
+    },
+    {
+      "id": "equipment-mini-golf",
+      "name": "Mini Golf table",
+      "category": "equipment",
+      "kind": "game",
+      "themeSetId": "equipment",
+      "buildable": true,
+      "radius": 124,
+      "shop": {
+        "price": 700,
+        "available": false
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 6
+          },
+          "type": "body",
+          "solid": true
+        }
+      ],
+      "rarity": "epic"
+    },
+    {
+      "id": "equipment-space-defense",
+      "name": "Space Defense table",
+      "category": "equipment",
+      "kind": "game",
+      "themeSetId": "equipment",
+      "buildable": true,
+      "radius": 124,
+      "shop": {
+        "price": 800,
+        "available": false
+      },
+      "placement": {
+        "layer": "floor",
+        "requires": "floor"
+      },
+      "footprint": [
+        {
+          "range": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 6
+          },
+          "type": "body",
+          "solid": true
+        }
+      ],
+      "rarity": "epic"
+    },
+    {
       "id": "equipment-chess",
       "name": "Chess table",
       "category": "equipment",

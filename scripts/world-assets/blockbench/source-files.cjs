@@ -1,5 +1,5 @@
 const worldAssetSourceFiles = [
-  "model-kit.cjs", "lounge-models.cjs", "furniture.cjs", "botanical.cjs", "objects.cjs", "game-tables.cjs",
+  "model-kit.cjs", "lounge-models.cjs", "furniture.cjs", "botanical.cjs", "objects.cjs", "game-tables.cjs", "arcade-tables.cjs",
   "celebration-gong.cjs", "arcade-cabinet.cjs", "desktop-monitor.cjs", "tabletop-electronics.cjs", "tabletop-ornaments.cjs", "equipment.cjs", "architecture.cjs", "courtyard.cjs", "surfaces.cjs",
   "flooring/geometry.cjs", "flooring/wood.cjs", "flooring/mineral.cjs", "flooring/textile.cjs",
   "flooring/resilient.cjs", "flooring/landscape.cjs", "flooring/collection.cjs", "flooring/index.cjs",
