@@ -40,6 +40,7 @@ import {
   getCorrespondingFloorPortals,
   getFloorPortals,
   getPlacedAssetBounds,
+  getMovedAssetCandidates,
   getPlacedAssetInteraction,
   getPlacedAssetInteractions,
   getRoomDoorPosition,
@@ -2325,11 +2326,18 @@ export function Workspace({
       ? { id: "preview", floorId, assetId: edit.assetId, variantId: edit.variantId, rotation: edit.rotation, x: snapToAssetRaster(edit.position.x), y: snapToAssetRaster(edit.position.y) }
       : edit.tool === "asset.move" && movingObject?.ownerUserId === data.currentUserId
         ? { ...movingObject, variantId: edit.variantId, rotation: edit.rotation, x: snapToAssetRaster(edit.position.x), y: snapToAssetRaster(edit.position.y) } : undefined;
+    const personalMoveItems = personalCandidate && movingObject
+      ? getMovedAssetCandidates(savedLayout, personalCandidate) : [];
     const personalRemoval = edit.tool === "item.remove" && edit.item.type === "asset"
       && savedLayout.objects.some((object) => object.id === edit.item.id && object.ownerUserId === data.currentUserId);
     if (!personalRemoval && !canBuild && floorId !== activeFloorIdRef.current) return false;
     const directPersonal = !projectDraft && personalCandidate && isInPersonalSpace(savedLayout, personalCandidate, data.currentUserId)
-      && (!movingObject || isInPersonalSpace(savedLayout, movingObject, data.currentUserId));
+      && (!movingObject || personalMoveItems.every((candidate) => {
+        const original = savedLayout.objects.find((object) => object.id === candidate.id);
+        return original?.ownerUserId === data.currentUserId
+          && isInPersonalSpace(savedLayout, original, data.currentUserId)
+          && isInPersonalSpace(savedLayout, candidate, data.currentUserId);
+      }));
     if (!personalRemoval && !directPersonal) {
       const projectEdit: ProjectEdit = edit.tool === "asset" && placingOwnedAssetId
         ? { tool: "personal_asset", ownedAssetId: placingOwnedAssetId, position: edit.position, variantId: edit.variantId, rotation: edit.rotation }

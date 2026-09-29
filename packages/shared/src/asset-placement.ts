@@ -97,9 +97,10 @@ export function getAssetsSupportedBy(layout: FloorLayout, supportingObject: Worl
   }
   const supportedKeys = new Set(
     getPlacedAssetCells(supportingObject)
-      .filter((cell) => cell.allows.length > 0)
+      .filter((cell) => cell.allows.includes("decoration"))
       .map(worldCellKey),
   );
+  if (supportedKeys.size === 0) return [];
   return layout.objects.filter((object) => {
     if (object.id === supportingObject.id || requireAssetDefinition(object.assetId).placement.layer !== "surface") {
       return false;

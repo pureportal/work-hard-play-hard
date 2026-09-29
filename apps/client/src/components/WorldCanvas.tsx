@@ -31,6 +31,8 @@ import {
   getAssetDefinition,
   getAssetPlacementError,
   getAssetsSupportedBy,
+  getMovedAssetCandidates,
+  getMovedAssetPlacementError,
   getFlooringVisibleRects,
   getOpeningCenter,
   getOpeningRect,
@@ -644,7 +646,7 @@ class OfficeRenderer {
   private readonly buildPreview = new Graphics();
   private readonly assetPreviewLayer = new Container();
   private readonly assetTextures = new WorldAssetTextures();
-  private assetPreview: { key: string; container: Container } | undefined;
+  private assetPreview: { key: string; containers: Map<string, Container> } | undefined;
   private readonly depth = new WorldDepth();
   private readonly objectViews = new Map<string, Container>();
   private readonly waitingChessHighlights = new Map<string, Graphics>();
@@ -2295,40 +2297,59 @@ class OfficeRenderer {
       this.updatePlacementPreviewState(false, false);
       return false;
     }
-    const cells = getPlacedAssetCells(candidate);
-    const blockedReason = getAssetPlacementError(this.placementLayout ?? this.layout, getOutdoorBounds(this.floor), candidate)
-      ?? (this.playerAssetPlacement && getPlayerAssetRoomError(
-        this.placementLayout ?? this.layout,
-        candidate,
-        this.playerAssetPlacement.userId,
-        this.playerAssetPlacement.settings,
-        this.playerAssetPlacement.organisation,
-        this.playerAssetPlacement.officeBuilder,
-      ))
-      ?? (this.placementOverlapsPlayers(cells.filter((cell) => cell.solid).map((cell) => ({
-        x: cell.worldX,
-        y: cell.worldY,
-        width: ASSET_RASTER_SIZE,
-        height: ASSET_RASTER_SIZE,
-      })), candidate.id === "preview" ? undefined : candidate.id) ? "PLAYER_IN_THE_WAY" : undefined);
+    const placementLayout = this.placementLayout ?? this.layout;
+    const moving = this.movingBuildItem?.type === "asset";
+    const moved = moving ? getMovedAssetCandidates(this.layout, candidate) : [candidate];
+    let previewLayout = placementLayout;
+    if (moved.length > 1) {
+      const replacements = new Map(moved.map((object) => [object.id, object]));
+      previewLayout = { ...placementLayout, objects: placementLayout.objects.map((object) => replacements.get(object.id) ?? object) };
+    }
+    const playerAssetPlacement = this.playerAssetPlacement;
+    const blockedReason = (moving
+      ? getMovedAssetPlacementError(placementLayout, getOutdoorBounds(this.floor), moved)
+      : getAssetPlacementError(placementLayout, getOutdoorBounds(this.floor), candidate))
+      ?? (playerAssetPlacement && moved.map((object) => getPlayerAssetRoomError(
+        placementLayout,
+        object,
+        playerAssetPlacement.userId,
+        playerAssetPlacement.settings,
+        playerAssetPlacement.organisation,
+        playerAssetPlacement.officeBuilder,
+      )).find(Boolean))
+      ?? (moved.some((object) => this.placementOverlapsPlayers(getPlacedAssetCells(object)
+        .filter((cell) => cell.solid).map((cell) => ({
+          x: cell.worldX,
+          y: cell.worldY,
+          width: ASSET_RASTER_SIZE,
+          height: ASSET_RASTER_SIZE,
+        })), object.id === "preview" ? undefined : object.id)) ? "PLAYER_IN_THE_WAY" : undefined);
     const blocked = Boolean(blockedReason);
-    this.buildPreview.clear();
     const definition = requireAssetDefinition(candidate.assetId);
     const bounds = getPlacedAssetBounds(candidate);
     const indicatorColor = blocked ? "#b12f2f" : "#5143bd";
+    const key = [this.layout.revision, this.colorTheme, ...moved.flatMap((object) => [
+      object.id, object.assetId, object.variantId, object.rotation, getWorldAssetSurfaceOffset(previewLayout, object),
+      ...(requireAssetDefinition(object.assetId).kind === "floor-tile" ? [object.x, object.y] : []),
+    ])].join(":");
+    if (this.assetPreview?.key !== key) {
+      this.clearBuildPreview();
+      const containers = new Map(moved.map((object) => {
+        const view = createWorldAssetView(this.assetTextures, object, previewLayout, this.colorTheme, this.callbacks.current.onArtworkError);
+        this.assetPreviewLayer.addChild(view.container);
+        return [object.id, view.container];
+      }));
+      this.assetPreview = { key, containers };
+    }
+    this.buildPreview.clear();
+    for (const object of moved) {
+      const container = this.assetPreview.containers.get(object.id)!;
+      container.position.set(object.x, object.y);
+      container.alpha = blocked ? 0.4 : 0.76;
+    }
     if (definition.radius) {
       drawAssetRadius(this.buildPreview, bounds, definition.radius, indicatorColor, 0.06, 0.62);
     }
-    const key = [candidate.assetId, candidate.variantId, candidate.rotation, this.colorTheme, getWorldAssetSurfaceOffset(this.layout, candidate),
-      ...(definition.kind === "floor-tile" ? [candidate.x, candidate.y, this.layout.revision] : [])].join(":");
-    if (this.assetPreview?.key !== key) {
-      this.assetPreview?.container.destroy({ children: true });
-      const view = createWorldAssetView(this.assetTextures, candidate, this.layout, this.colorTheme, this.callbacks.current.onArtworkError);
-      this.assetPreviewLayer.addChild(view.container);
-      this.assetPreview = { key, container: view.container };
-    }
-    this.assetPreview.container.position.set(candidate.x, candidate.y);
-    this.assetPreview.container.alpha = blocked ? 0.4 : 0.76;
     if (definition.placement.layer === "surface") {
       const artworkBounds = getPlacedWorldAssetBounds(this.layout, candidate);
       this.buildPreview
@@ -2351,7 +2372,7 @@ class OfficeRenderer {
   }
 
   private clearBuildPreview(): Graphics {
-    this.assetPreview?.container.destroy({ children: true });
+    for (const container of this.assetPreview?.containers.values() ?? []) container.destroy({ children: true });
     this.assetPreview = undefined;
     return this.buildPreview.clear();
   }

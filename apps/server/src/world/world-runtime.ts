@@ -22,6 +22,8 @@ import {
   getAssetDefinition,
   getAssetPlacementError,
   getAssetsSupportedBy,
+  getMovedAssetCandidates,
+  getMovedAssetPlacementError,
   getCorrespondingFloorPortals,
   getFloorPortals,
   getOutdoorBounds,
@@ -2209,14 +2211,20 @@ export class WorldRuntime {
     if (!isInPersonalSpace(layout, object, peer.userId)) throw new Error("PROJECT_APPROVAL_REQUIRED");
     this.assertPlayerAssetRoom(layout, object, peer.userId);
     const next = structuredClone(layout);
-    this.moveAsset(peer.floorId, next, floor, objectId, position, variantId, rotation, (candidate) => {
+    const movedIds = this.moveAsset(peer.floorId, next, floor, objectId, position, variantId, rotation, (candidate, original) => {
+      if (!original.ownedAssetId || original.ownerUserId !== peer.userId) throw new Error("PROJECT_APPROVAL_REQUIRED");
+      const owned = this.store.getOwnedAsset(peer.userId, original.ownedAssetId);
+      if (owned.assetId !== original.assetId || owned.placement?.objectId !== original.id
+        || owned.placement.floorId !== original.floorId) throw new Error("ASSET_OWNERSHIP_INVALID");
+      this.assertPlayerAssetRoom(layout, original, peer.userId);
+      if (!isInPersonalSpace(layout, original, peer.userId)) throw new Error("PROJECT_APPROVAL_REQUIRED");
       this.assertPlayerAssetRoom(next, candidate, peer.userId);
       if (!isInPersonalSpace(next, candidate, peer.userId)) throw new Error("PROJECT_APPROVAL_REQUIRED");
     });
     next.revision += 1;
     assertPublicReachability(floor, next, this.store.getGameSettings());
     const replacement = this.store.replaceLayout(next);
-    this.releaseSeatsForObject(objectId);
+    for (const id of movedIds) this.releaseSeatsForObject(id);
     this.broadcastLayout(replacement.layout, { userId: peer.userId, requestId });
     this.publishEconomy(peer.userId, requestId);
   }
@@ -2365,14 +2373,11 @@ export class WorldRuntime {
     position: { x: number; y: number },
     variantId: string,
     rotation: AssetRotation,
-    authorize?: (candidate: WorldObject) => void,
-  ): void {
+    authorize?: (candidate: WorldObject, original: WorldObject) => void,
+  ): string[] {
     const object = layout.objects.find((candidate) => candidate.id === objectId);
     if (!object) {
       throw new Error("NOTHING_TO_ERASE");
-    }
-    if (getAssetsSupportedBy(layout, object).length > 0) {
-      throw new Error("ASSET_SUPPORT_OCCUPIED");
     }
     requireAssetVariant(requireAssetDefinition(object.assetId), variantId);
     const candidate = {
@@ -2382,10 +2387,17 @@ export class WorldRuntime {
       variantId,
       rotation,
     };
-    this.assertAssetPlacement(layout, floor, candidate);
-    this.assertNoPlayerOverlap(floorId, getPlacedAssetCellRects(candidate, true), objectId);
-    authorize?.(candidate);
-    layout.objects = layout.objects.map((current) => current.id === objectId ? candidate : current);
+    const moved = getMovedAssetCandidates(layout, candidate);
+    const error = getMovedAssetPlacementError(layout, getOutdoorBounds(floor), moved);
+    if (error) throw new Error(error);
+    const originalById = new Map(layout.objects.map((current) => [current.id, current]));
+    for (const item of moved) {
+      this.assertNoPlayerOverlap(floorId, getPlacedAssetCellRects(item, true), item.id);
+      authorize?.(item, originalById.get(item.id)!);
+    }
+    const replacements = new Map(moved.map((item) => [item.id, item]));
+    layout.objects = layout.objects.map((current) => replacements.get(current.id) ?? current);
+    return moved.map((item) => item.id);
   }
 
   private moveWall(

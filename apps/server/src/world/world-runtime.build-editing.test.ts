@@ -1,11 +1,43 @@
 import { applyBuildingProject } from "../testing/building-project.js";
 import { createTestData } from "../testing/workspace-data.js";
-import { detectLayoutRooms, type ServerEvent } from "@workhard/shared";
+import { detectLayoutRooms, getDefaultAssetVariantId, requireAssetDefinition, type ServerEvent } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
 import { WorkspaceStore } from "../store.js";
 import { WorldRuntime } from "./world-runtime.js";
 
 describe("WorldRuntime build editing", () => {
+  it("moves public tabletop items with their table through a project", () => {
+    const store = new WorkspaceStore(createTestData());
+    const layout = store.getLayout("floor-studio")!;
+    layout.walls = [];
+    layout.openings = [];
+    layout.rooms = [];
+    layout.objects = [
+      { id: "table", floorId: layout.floorId, assetId: "table-meeting", x: 256, y: 256, rotation: 0,
+        variantId: getDefaultAssetVariantId(requireAssetDefinition("table-meeting")), publicFundId: "workspace" },
+      { id: "laptop", floorId: layout.floorId, assetId: "decor-laptop", x: 272, y: 272, rotation: 0,
+        variantId: getDefaultAssetVariantId(requireAssetDefinition("decor-laptop")), publicFundId: "workspace" },
+    ];
+    const runtime = new WorldRuntime(store);
+    const events: ServerEvent[] = [];
+    const peer = runtime.connect("user-maya", "floor-studio", (event) => events.push(event));
+    try {
+      applyBuildingProject(runtime, store, peer, events, {
+        requestId: "move-furnished-table",
+        baseRevision: layout.revision,
+        edit: { tool: "asset.move", objectId: "table", position: { x: 448, y: 320 },
+          variantId: layout.objects[0]!.variantId, rotation: 90 },
+      });
+      expect(commandError(events, "move-furnished-table")).toBeUndefined();
+      expect(store.getLayout("floor-studio")!.objects).toEqual([
+        expect.objectContaining({ id: "table", x: 448, y: 320, rotation: 90 }),
+        expect.objectContaining({ id: "laptop", x: 480, y: 336, rotation: 90 }),
+      ]);
+    } finally {
+      runtime.stop();
+    }
+  });
+
   it("merges adjacent walls into a continuous segment", () => {
     const store = new WorkspaceStore(createTestData());
     const layout = store.getLayout("floor-studio")!;

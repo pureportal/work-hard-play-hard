@@ -9,6 +9,29 @@ afterEach(() => {
 });
 
 describe("WorldRuntime player-owned assets", () => {
+  it("requires a project before carrying a public item on a personal desk", () => {
+    const store = new WorkspaceStore(workspace(room("assigned", ["user-jonas"])));
+    const desk = store.getPlayerEconomy("user-jonas").inventory.find((asset) => asset.assetId === "desk-straight")!;
+    const runtime = new WorldRuntime(store);
+    const events: ServerEvent[] = [];
+    const peer = runtime.connect("user-jonas", "floor-player", (event) => events.push(event));
+    try {
+      send(runtime, peer, { type: "player_asset.place", requestId: "place-desk", baseRevision: 1,
+        ownedAssetId: desk.id, position: { x: 16, y: 16 }, variantId: "oak", rotation: 0 });
+      const layout = store.getLayout("floor-player")!;
+      const placedDesk = layout.objects[0]!;
+      layout.objects.push({ id: "public-lamp", floorId: layout.floorId, assetId: "decor-lamp",
+        x: 32, y: 32, rotation: 0, variantId: "graphite", publicFundId: "workspace" });
+
+      send(runtime, peer, { type: "player_asset.move", requestId: "move-public-lamp", baseRevision: layout.revision,
+        objectId: placedDesk.id, position: { x: 16, y: 48 }, variantId: "oak", rotation: 0 });
+      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "PROJECT_APPROVAL_REQUIRED" });
+      expect(store.getLayout("floor-player")!.objects).toEqual(layout.objects);
+    } finally {
+      runtime.stop();
+    }
+  });
+
   it("places the starter laptop on its desk, moves both, and stores them across reloads", () => {
     const store = new WorkspaceStore(workspace(room("assigned", ["user-jonas"])));
     const inventory = store.getPlayerEconomy("user-jonas").inventory;
@@ -41,11 +64,13 @@ describe("WorldRuntime player-owned assets", () => {
         type: "player_asset.move", requestId: "move-occupied-desk", baseRevision: 4,
         objectId: placedDesk.id, position: { x: 16, y: 16 }, variantId: "navy", rotation: 0,
       });
-      expect(events.at(-1)).toMatchObject({ type: "command.error", code: "ASSET_SUPPORT_OCCUPIED" });
+      expect(events.filter((event) => event.type === "command.error" && event.requestId === "move-occupied-desk")).toEqual([]);
+      expect(store.getObject(placedDesk.id)).toMatchObject({ x: 16, y: 16 });
+      expect(store.getObject(placedLaptop.id)).toMatchObject({ x: 64, y: 32, variantId: "graphite" });
       events.length = 0;
       send(runtime, peer, {
-        type: "player_asset.move", requestId: "rotate-starter-laptop", baseRevision: 4,
-        objectId: placedLaptop.id, position: { x: 64, y: 48 }, variantId: "ivory", rotation: 90,
+        type: "player_asset.move", requestId: "rotate-starter-laptop", baseRevision: 5,
+        objectId: placedLaptop.id, position: { x: 64, y: 16 }, variantId: "ivory", rotation: 90,
       });
       expect(events.filter((event) => event.type === "command.error")).toEqual([]);
       expect(store.getObject(placedLaptop.id)).toMatchObject({ variantId: "ivory", rotation: 90 });
@@ -58,17 +83,17 @@ describe("WorldRuntime player-owned assets", () => {
       try {
         const restoredPeer = restoredRuntime.connect("user-jonas", "floor-player", (event) => restoredEvents.push(event));
         send(restoredRuntime, restoredPeer, {
-          type: "player_asset.remove", requestId: "store-starter-desk", baseRevision: 5, objectId: placedDesk.id,
+          type: "player_asset.remove", requestId: "store-starter-desk", baseRevision: 6, objectId: placedDesk.id,
         });
         expect(restoredEvents.filter((event) => event.type === "command.error")).toEqual([]);
         expect(restored.getLayout("floor-player")!.objects).toEqual([]);
         expect(restored.getPlayerEconomy("user-jonas").inventory).toEqual(inventory);
         send(restoredRuntime, restoredPeer, {
-          type: "player_asset.place", requestId: "replace-starter-desk", baseRevision: 6,
+          type: "player_asset.place", requestId: "replace-starter-desk", baseRevision: 7,
           ownedAssetId: desk.id, position: { x: 16, y: 16 }, variantId: "sage", rotation: 90,
         });
         send(restoredRuntime, restoredPeer, {
-          type: "player_asset.place", requestId: "replace-starter-laptop", baseRevision: 7,
+          type: "player_asset.place", requestId: "replace-starter-laptop", baseRevision: 8,
           ownedAssetId: laptop.id, position: { x: 32, y: 32 }, variantId: "coral", rotation: 0,
         });
         expect(restoredEvents.filter((event) => event.type === "command.error")).toEqual([]);

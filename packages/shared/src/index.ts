@@ -43,6 +43,7 @@ export * from "./assets.js";
 export * from "./work-objects.js";
 export * from "./whiteboard.js";
 export * from "./asset-placement.js";
+export * from "./asset-move.js";
 export * from "./asset-placement-messages.js";
 export * from "./flooring.js";
 export * from "./layout-placement.js";
