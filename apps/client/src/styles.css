@@ -1591,6 +1591,19 @@ button:disabled {
 .settings-panel-scroll .settings-save { justify-self: end; }
 .settings-panel-scroll .settings-section > p { margin: 0; line-height: 1.5; }
 
+.settings-versions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 16px;
+  margin: 0;
+  padding: 12px 16px max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.settings-versions dd { margin: 0; font-variant-numeric: tabular-nums; }
+
 .settings-section {
   display: grid;
   gap: 16px;

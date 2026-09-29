@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import websocket from "@fastify/websocket";
 import { FALLING_BLOCKS_DEFINITION_ID, type AuthUser, type ClientCommand, type MemberRole, type ServerEvent } from "@workhard/shared";
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyRequest } from "fastify";
+import serverPackage from "../package.json" with { type: "json" };
 import { characterAppearanceSchema } from "./avatar/character-schema.js";
 import { AuthStore } from "./auth/auth-store.js";
 import { AuthRateLimiter } from "./auth/rate-limiter.js";
@@ -189,6 +190,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     if (
       request.url.startsWith("/v1/auth/")
       || request.url === "/v1/bootstrap"
+      || request.url === "/v1/version"
       || request.url === "/v1/admin/registration-settings"
       || request.url === "/v1/admin/approval-rates"
       || request.url.startsWith("/v1/admin/corporate-identity")
@@ -263,7 +265,7 @@ export async function createApplication(options: ApplicationOptions = {}): Promi
     }
     return reply.code(503).send({ status: "unavailable", database: false });
   });
-  app.get("/v1/version", async () => ({ version: "11.0.0", protocol: 13 }));
+  app.get("/v1/version", async () => ({ version: serverPackage.version, protocol: 13 }));
 
   app.get("/v1/auth/session", async (request) => {
     const user = getAuthenticatedUser(auth, request);

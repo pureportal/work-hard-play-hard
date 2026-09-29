@@ -113,6 +113,12 @@ export async function fetchSession(): Promise<AuthSession> {
   };
 }
 
+export async function fetchServerVersion(signal: AbortSignal): Promise<string> {
+  const response = await fetchWithTimeout("/v1/version", { cache: "no-store", signal });
+  const { version } = await readResponse<{ version: string }>(response);
+  return version;
+}
+
 export async function registerAccount(
   username: string,
   email: string,
