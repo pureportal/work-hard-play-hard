@@ -72,6 +72,7 @@ import type {
   GameRoundState,
   GameState,
   FallingBlocksSettings,
+  FallingBlocksSpectatorState,
   GameBot,
   TicTacToeVariantId,
   LayoutEdit,
@@ -173,6 +174,8 @@ type PendingEconomyRequest =
 type MeetingView = "full" | "small";
 
 const REACTION_DURATION_MS = 3_200;
+const AFK_TIMEOUT_MS = 5 * 60_000;
+const AFK_CHECK_INTERVAL_MS = 15_000;
 const GROUP_REACTION_DURATION_MS = 2_200;
 const OFFLINE_RECOVERY_PROBE_MS = 30_000;
 const DEFAULT_ASSET = ASSET_CATALOG.assets.find((asset) => asset.buildable)!;
@@ -655,6 +658,9 @@ export function Workspace({
   const [gameLobbies, setGameLobbies] = useState<Record<string, GameLobbyState>>({});
   const [gameRound, setGameRound] = useState<GameRoundState>();
   const [gameState, setGameState] = useState<GameState>();
+  const [spectatorBoards, setSpectatorBoards] = useState<Record<string, FallingBlocksSpectatorState>>({});
+  const rejoiningFallingBlocks = useRef(false);
+  const pendingFallingBlocksExit = useRef<string | undefined>(undefined);
   const activeGameRound = useRef<{ id: string; objectId: string } | undefined>(undefined);
   const gamePreferences = useRef(new Map<string, { mode: "solo" | "multiplayer"; settings?: FallingBlocksSettings; variantId?: TicTacToeVariantId; bot?: GameBot }>());
   const workspaceCommand = useWorkspaceCommand();
@@ -928,10 +934,18 @@ export function Workspace({
       }
     } else if (event.type === "session.synced") {
       synchronizingSession.current = false;
-      if (gameOpen && !activeGameRound.current) {
+      if (pendingFallingBlocksExit.current) {
+        if (realtimeSendRef.current({ type: "game.end", requestId: requestId(), roundId: pendingFallingBlocksExit.current })) {
+          pendingFallingBlocksExit.current = undefined;
+        }
+      }
+      if (rejoiningFallingBlocks.current || gameOpen && !activeGameRound.current) {
+        rejoiningFallingBlocks.current = false;
+        activeGameRound.current = undefined;
         setGameOpen(false);
         setGameRound(undefined);
         setGameState(undefined);
+        setSpectatorBoards({});
       }
     } else if (event.type === "workspace.snapshot") {
       onCorporateIdentityChange(event.data.corporateIdentity);
@@ -1243,14 +1257,20 @@ export function Workspace({
     } else if (event.type === "game.lobby_updated") {
       setGameLobbies((current) => ({ ...current, [event.lobby.objectId]: event.lobby }));
     } else if (event.type === "game.round_started") {
-      if (event.round.participants.some((participant) => participant.userId === data.currentUserId)) {
+      if (event.round.id !== pendingFallingBlocksExit.current
+        && event.round.participants.some((participant) => participant.userId === data.currentUserId)) {
+        const sameRound = activeGameRound.current?.id === event.round.id;
+        rejoiningFallingBlocks.current = false;
         activeGameRound.current = event.round;
         gamePreferences.current.set(event.round.objectId, {
           mode: event.round.participants.length > 1 ? "multiplayer" : "solo",
           ...(event.round.fallingBlocks ? { settings: event.round.fallingBlocks.settings } : {}),
         });
         setGameRound(event.round);
-        setGameState(undefined);
+        if (!sameRound) {
+          setGameState(undefined);
+          setSpectatorBoards({});
+        }
         setGameOpen(true);
       }
     } else if (event.type === "game.round_updated") {
@@ -1263,6 +1283,10 @@ export function Workspace({
             mode: event.bot ? "solo" : "multiplayer", variantId: event.variantId, ...(event.bot ? { bot: event.bot } : {}),
           });
         }
+      }
+    } else if (event.type === "game.spectator_state") {
+      if (event.roundId === activeGameRound.current?.id) {
+        setSpectatorBoards(Object.fromEntries(event.boards.map((board) => [board.userId, board.state])));
       }
     } else if (event.type === "game.round_completed") {
       setData((current) => ({
@@ -1383,6 +1407,49 @@ export function Workspace({
     onUnauthorized: onSessionExpired,
   });
   realtimeSendRef.current = send;
+  const lastActivityAt = useRef(Date.now());
+  const idlePresence = useRef(false);
+
+  useEffect(() => {
+    const reportActivity = () => {
+      if (document.visibilityState === "hidden") return;
+      lastActivityAt.current = Date.now();
+      if (!idlePresence.current) return;
+      idlePresence.current = false;
+      send({ type: "presence.set_idle", requestId: crypto.randomUUID(), idle: false });
+    };
+    const checkIdle = () => {
+      if (idlePresence.current || Date.now() - lastActivityAt.current < AFK_TIMEOUT_MS) return;
+      idlePresence.current = true;
+      send({ type: "presence.set_idle", requestId: crypto.randomUUID(), idle: true });
+    };
+    for (const event of ["pointermove", "pointerdown", "keydown", "wheel", "touchstart"] as const) {
+      window.addEventListener(event, reportActivity, { passive: true });
+    }
+    document.addEventListener("visibilitychange", checkIdle);
+    const timer = window.setInterval(checkIdle, AFK_CHECK_INTERVAL_MS);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", checkIdle);
+      for (const event of ["pointermove", "pointerdown", "keydown", "wheel", "touchstart"] as const) {
+        window.removeEventListener(event, reportActivity);
+      }
+    };
+  }, [send]);
+
+  useEffect(() => {
+    if (connection !== "online") return;
+    const idle = Date.now() - lastActivityAt.current >= AFK_TIMEOUT_MS;
+    idlePresence.current = idle;
+    send({ type: "presence.set_idle", requestId: crypto.randomUUID(), idle });
+  }, [connection, send]);
+
+  useEffect(() => {
+    if (connection !== "online" || !pendingFallingBlocksExit.current) return;
+    if (send({ type: "game.end", requestId: requestId(), roundId: pendingFallingBlocksExit.current })) {
+      pendingFallingBlocksExit.current = undefined;
+    }
+  }, [connection, send]);
   useEffect(() => {
     if (connection !== "online") callRequest.fail("Connection lost. Reconnect and try again.");
   }, [connection, callRequest.fail]);
@@ -1458,11 +1525,16 @@ export function Workspace({
     setMeetingId(undefined);
     setMuted(true);
     setCameraOn(false);
-    setGameOpen(false);
+    if (gameRound?.definitionId === FALLING_BLOCKS_DEFINITION_ID && gameRound.status === "playing") {
+      rejoiningFallingBlocks.current = true;
+    } else {
+      setGameOpen(false);
+      setGameRound(undefined);
+      setGameState(undefined);
+      setSpectatorBoards({});
+      activeGameRound.current = undefined;
+    }
     setGameLobbies({});
-    setGameRound(undefined);
-    setGameState(undefined);
-    activeGameRound.current = undefined;
     lobbyRequest.clear();
     turnRequest.clear();
     setChessLobby(undefined);
@@ -1988,12 +2060,18 @@ export function Workspace({
   };
 
   const closeGame = () => {
-    if (gameRound) request({ type: "game.end", requestId: requestId(), roundId: gameRound.id });
+    const ended = gameRound && connection === "online"
+      ? request({ type: "game.end", requestId: requestId(), roundId: gameRound.id }) : false;
+    if (!ended && gameRound?.definitionId === FALLING_BLOCKS_DEFINITION_ID && gameRound.status === "playing") {
+      pendingFallingBlocksExit.current = gameRound.id;
+    }
     activeGameRound.current = undefined;
     turnRequest.clear();
     setGameOpen(false);
     setGameRound(undefined);
     setGameState(undefined);
+    setSpectatorBoards({});
+    rejoiningFallingBlocks.current = false;
   };
 
   const createChessMatch = (settings: ChessMatchSettings) => {
@@ -3411,6 +3489,7 @@ export function Workspace({
         <DeferredContent key={gameRound.id} onClose={closeGame}>
           <FallingBlocksGame
             state={gameState?.definitionId === FALLING_BLOCKS_DEFINITION_ID ? gameState : undefined}
+            spectatorBoards={spectatorBoards}
             round={gameRound}
             members={data.members}
             currentUserId={data.currentUserId}

@@ -1,4 +1,4 @@
-import { FALLING_BLOCKS_GARBAGE_CELL, FALLING_BLOCKS_HARD_CELL, type FallingBlocksMode } from "@workhard/shared";
+import { FALLING_BLOCKS_GARBAGE_CELL, FALLING_BLOCKS_HARD_CELL, FALLING_BLOCKS_SPEED_STEP_MS, type FallingBlocksMode } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
 import { FallingBlocksGame } from "@workhard/shared";
 import { prepareLineClear, setFallingBlocksBoard } from "./testing/falling-blocks.js";
@@ -12,7 +12,7 @@ describe("Falling Blocks modes", () => {
     game.update(1);
     expect(game.state.activeCells).toEqual(firstCells.map((cell) => ({ ...cell, row: cell.row + 1 })));
 
-    game.update(30_000 - 665);
+    game.update(FALLING_BLOCKS_SPEED_STEP_MS - 665);
     expect(game.state).toMatchObject({ level: 2, lines: 0, fallIntervalMs: 610 });
     game.command("hold");
     const nextCells = game.state.activeCells;
@@ -20,7 +20,7 @@ describe("Falling Blocks modes", () => {
     expect(game.state.activeCells).toEqual(nextCells);
     game.update(1);
     expect(game.state.activeCells).toEqual(nextCells.map((cell) => ({ ...cell, row: cell.row + 1 })));
-    game.update(30_000 - 610);
+    game.update(FALLING_BLOCKS_SPEED_STEP_MS - 610);
     expect(game.state).toMatchObject({ level: 3, fallIntervalMs: 555, running: true });
   });
 
@@ -38,7 +38,7 @@ describe("Falling Blocks modes", () => {
 
   it.each<FallingBlocksMode>(["speed-up", "sudden-death"])("freezes %s timing while paused or finished", (mode) => {
     const game = new FallingBlocksGame("pause", mode);
-    game.update(29_999);
+    game.update(mode === "speed-up" ? FALLING_BLOCKS_SPEED_STEP_MS - 1 : 29_999);
     game.command("pause");
     const paused = game.state;
     game.update(60_000);

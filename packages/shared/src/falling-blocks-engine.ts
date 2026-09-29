@@ -6,6 +6,7 @@ import {
   TETROMINO_SHAPES,
   TETROMINO_TYPES,
   type FallingBlocksGameState,
+  type FallingBlocksSpectatorState,
   type TetrominoType,
   type FallingBlocksCellPosition,
   type FallingBlocksCommand,
@@ -34,7 +35,7 @@ interface Piece {
 }
 
 const NEXT_PREVIEW_COUNT = 5;
-const LOCK_DELAY_MS = 500;
+const LOCK_DELAY_MS = 250;
 const MAX_LOCK_RESETS = 15;
 
 export class FallingBlocksGame {
@@ -193,6 +194,20 @@ export class FallingBlocksGame {
   }
 
   get state(): FallingBlocksGameState {
+    return {
+      type: "game.state",
+      roundId: this.roundId,
+      definitionId: FALLING_BLOCKS_DEFINITION_ID,
+      ...this.spectatorState,
+      fallIntervalMs: this.fallIntervalMs,
+      specials: { ...this.scoring.specials },
+      simulation: this.snapshot,
+      acknowledgedSequences: {},
+      serverTime: Date.now(),
+    };
+  }
+
+  get spectatorState(): FallingBlocksSpectatorState {
     const grid = this.board.map((row) => [...row]);
     const activeCells = this.piece ? this.cellPositions(this.piece) : [];
     if (this.piece) {
@@ -203,14 +218,10 @@ export class FallingBlocksGame {
       }
     }
     return {
-      type: "game.state",
-      roundId: this.roundId,
-      definitionId: FALLING_BLOCKS_DEFINITION_ID,
       grid,
       score: this.score,
       lines: this.lines,
       level: this.level,
-      fallIntervalMs: this.fallIntervalMs,
       running: this.running,
       paused: this.paused,
       activePiece: this.piece?.type ?? null,
@@ -221,11 +232,7 @@ export class FallingBlocksGame {
       heldPiece: this.heldPiece ?? null,
       nextPieces: this.pieceQueue.slice(0, NEXT_PREVIEW_COUNT),
       canHold: this.holdAvailable && this.running,
-      specials: { ...this.scoring.specials },
       lastClear: this.scoring.lastClear ? { ...this.scoring.lastClear } : null,
-      simulation: this.snapshot,
-      acknowledgedSequences: {},
-      serverTime: Date.now(),
     };
   }
 

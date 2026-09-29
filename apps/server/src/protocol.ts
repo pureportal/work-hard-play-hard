@@ -154,6 +154,7 @@ export const clientCommandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("kidnapping.global_settings_update"), requestId, settings: globalKidnappingSettings }).strict(),
   z.object({ type: z.literal("kidnapping.player_settings_update"), requestId, settings: playerKidnappingSettings }).strict(),
   z.object({ type: z.literal("presence.set_availability"), requestId, availability: z.enum(["available", "busy", "dnd", "away"]) }),
+  z.object({ type: z.literal("presence.set_idle"), requestId, idle: z.boolean() }),
   z.object({ type: z.literal("proximity.set_media"), requestId, sessionId: z.string().uuid(), microphone: z.boolean(), camera: z.boolean() }).strict(),
   z.object({ type: z.literal("proximity.leave"), requestId, sessionId: z.string().uuid() }).strict(),
   z.object({ type: z.literal("proximity.signal"), requestId, sessionId: z.string().uuid(), targetSessionId: z.string().uuid(), signal: mediaSignalSchema }).strict(),

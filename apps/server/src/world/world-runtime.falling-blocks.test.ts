@@ -25,7 +25,7 @@ describe("WorldRuntime Falling Blocks modes and attacks", () => {
       const secondPeer = runtime.connect("user-maya", "floor-studio", (event) => restoredEvents.push(event));
       expect(latestRound(restoredEvents)?.id).toBe(roundId);
       runtime.disconnect(secondPeer);
-      runtime.runTickForTest(15_000);
+      runtime.runTickForTest(60_000);
       expect(store.getScores().some((score) => score.roundId === roundId)).toBe(true);
     } finally {
       runtime.stop();
@@ -51,7 +51,7 @@ describe("WorldRuntime Falling Blocks modes and attacks", () => {
       expect(latestRound(mayaEvents)?.fallingBlocks?.settings).toEqual(settings);
       runtime.runTickForTest(30_000);
       expect(latestState(mayaEvents)).toEqual({ ...latestState(leoEvents), serverTime: expect.any(Number) });
-      if (settings.mode === "speed-up") expect(latestState(leoEvents)).toMatchObject({ fallIntervalMs: 610, level: 2 });
+      if (settings.mode === "speed-up") expect(latestState(leoEvents)).toMatchObject({ fallIntervalMs: 555, level: 3 });
       else expect(latestState(leoEvents)?.grid[19]).toEqual(Array(10).fill(FALLING_BLOCKS_HARD_CELL));
 
       const gamesRuntime = Reflect.get(runtime, "gameRuntime");
@@ -80,7 +80,7 @@ describe("WorldRuntime Falling Blocks modes and attacks", () => {
       prepareLineClear(games.get("user-maya")!, 4, settings.mode === "sudden-death" ? 1 : 0);
       runtime.handleCommand(maya, { type: "game.command", roundId: latestRound(mayaEvents)!.id, requestId: "second-attack", command: "drop", sequence: 2, inputSessionId: "11111111-1111-4111-8111-111111111111" });
       runtime.disconnect(restoredPeer);
-      runtime.runTickForTest(15_000);
+      runtime.runTickForTest(60_000);
       expect(latestRound(mayaEvents)?.fallingBlocks?.attacks).toEqual([]);
       expect(latestRound(mayaEvents)?.participants.find((player) => player.userId === "user-leo")?.status).toBe("finished");
     } finally {

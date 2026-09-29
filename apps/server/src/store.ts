@@ -137,6 +137,7 @@ const DEFAULT_REGISTRATION_SETTINGS: RegistrationSettings = {
 
 export class WorkspaceStore {
   private data: BootstrapData;
+  private readonly derivedAwayUserIds = new Set<string>();
   private messageSequenceByConversation: Map<string, number>;
   private readonly economy: EconomyStore;
   private readonly approvalDesk: ApprovalDeskStore;
@@ -187,6 +188,7 @@ export class WorkspaceStore {
     const access = this.getWorkspaceAccess(currentUserId);
     return structuredClone({
       ...this.data,
+      members: this.data.members.map((member) => this.presentMember(member)),
       currentUserId,
       layouts,
       economy: this.economy.getPlayerEconomy(currentUserId),
@@ -216,6 +218,25 @@ export class WorkspaceStore {
 
   getMember(userId: string): Member | undefined {
     return this.data.members.find((member) => member.id === userId);
+  }
+
+  getVisibleMember(userId: string): Member | undefined {
+    const member = this.getMember(userId);
+    return member ? this.presentMember(member) : undefined;
+  }
+
+  private presentMember(member: Member): Member {
+    return {
+      ...member,
+      availability: this.derivedAwayUserIds.has(member.id) && member.availability === "available" ? "away" : member.availability,
+    };
+  }
+
+  setDerivedAway(userId: string, away: boolean): boolean {
+    const wasAway = this.derivedAwayUserIds.has(userId);
+    if (away) this.derivedAwayUserIds.add(userId);
+    else this.derivedAwayUserIds.delete(userId);
+    return wasAway !== away;
   }
 
   getFloor(floorId: string) {
@@ -491,6 +512,7 @@ export class WorkspaceStore {
       }
     }
     this.data.members = this.data.members.filter((member) => member.id !== userId);
+    this.derivedAwayUserIds.delete(userId);
     const defaults = this.getGameSettings();
     for (const permission of [defaults.roomAccess, defaults.roomBuild]) {
       permission.assignedPersonIds = permission.assignedPersonIds.filter((id) => id !== userId);

@@ -17,20 +17,23 @@ export function useFallingBlocksPrediction(
     if (!authoritativeState) return;
     if (!prediction.current || prediction.current.state.roundId !== authoritativeState.roundId) {
       prediction.current = new FallingBlocksPrediction(authoritativeState, mode);
+      prediction.current.setConnected(connected);
       setState(prediction.current.state);
       return;
     }
+    prediction.current.setConnected(connected);
     const corrected = prediction.current.reconcile(authoritativeState);
     if (corrected) setState(corrected);
   }, [authoritativeState, mode]);
 
   useEffect(() => {
+    prediction.current?.setConnected(connected);
     if (connected) prediction.current?.resendPending((command, sequence, inputSessionId) => onCommandRef.current(command, sequence, inputSessionId));
   }, [connected]);
 
   useEffect(() => {
     const tick = () => {
-      const updated = prediction.current?.tick();
+      const updated = connected ? prediction.current?.tick() : undefined;
       if (updated) setState(updated);
     };
     const interval = window.setInterval(tick, 50);
@@ -39,7 +42,7 @@ export function useFallingBlocksPrediction(
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", tick);
     };
-  }, []);
+  }, [connected]);
 
   const command = (input: FallingBlocksCommand) => {
     const updated = prediction.current?.command(input, (value, sequence, inputSessionId) => onCommandRef.current(value, sequence, inputSessionId));

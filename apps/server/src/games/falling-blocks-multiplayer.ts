@@ -20,6 +20,7 @@ export type { GameEventDelivery } from "./game-event-delivery.js";
 const LOBBY_CAPACITY = 8;
 const SIMULATION_STEP_MS = 50;
 const MAX_INPUT_SESSIONS_PER_PLAYER = 16;
+const SPECTATOR_UPDATE_MS = 250;
 
 type GameCommand = Parameters<FallingBlocksGame["command"]>[0];
 
@@ -40,6 +41,8 @@ interface ActiveRound {
   attacks: FallingBlocksAttacks;
   completions: Map<string, PlayerCompletion>;
   completionCount: number;
+  suspendedUserIds: Set<string>;
+  spectatorElapsedMs: number;
   publishedState?: string;
 }
 
@@ -102,6 +105,7 @@ export class FallingBlocksMultiplayerRuntime {
     const participantIds = solo ? [userId] : [...nearbyUserIds];
     if (!solo && participantIds.length < 2) throw new Error("GAME_PLAYERS_REQUIRED");
     const games = new Map<string, FallingBlocksGame>();
+    const suspendedUserIds = new Set<string>();
 
     const round: ActiveRound = {
       id: randomUUID(),
@@ -113,7 +117,9 @@ export class FallingBlocksMultiplayerRuntime {
       games,
       sequences: new Map(),
       settings: { ...settings },
-      attacks: new FallingBlocksAttacks(games, settings.attackTarget, this.random),
+      suspendedUserIds,
+      spectatorElapsedMs: 0,
+      attacks: new FallingBlocksAttacks(games, settings.attackTarget, this.random, (participantId) => suspendedUserIds.has(participantId)),
       completions: new Map(),
       completionCount: 0,
     };
@@ -162,6 +168,7 @@ export class FallingBlocksMultiplayerRuntime {
     if (round.completions.has(userId)) {
       throw new Error("GAME_ALREADY_FINISHED");
     }
+    if (round.suspendedUserIds.has(userId)) return [];
     if (command === "pause" && round.participantIds.length > 1) {
       throw new Error("GAME_PAUSE_MULTIPLAYER");
     }
@@ -192,7 +199,9 @@ export class FallingBlocksMultiplayerRuntime {
       let remainingMs = deltaMs;
       while (remainingMs > 0) {
         const stepMs = Math.min(remainingMs, SIMULATION_STEP_MS);
-        for (const game of round.games.values()) game.update(stepMs);
+        for (const [userId, game] of round.games) {
+          if (!round.suspendedUserIds.has(userId)) game.update(stepMs);
+        }
         changed = round.attacks.advance(stepMs) || changed;
         for (const [userId, game] of round.games) {
           round.attacks.enqueue(userId, game.consumeClears());
@@ -216,6 +225,11 @@ export class FallingBlocksMultiplayerRuntime {
       if (changed) {
         this.appendRoundUpdate(round, deliveries);
       }
+      round.spectatorElapsedMs += deltaMs;
+      if (round.spectatorElapsedMs >= SPECTATOR_UPDATE_MS) {
+        round.spectatorElapsedMs %= SPECTATOR_UPDATE_MS;
+        deliveries.push(...this.spectatorDeliveries(round));
+      }
     }
     return deliveries;
   }
@@ -224,6 +238,7 @@ export class FallingBlocksMultiplayerRuntime {
     const round = this.getRoundForUser(userId);
     if (!round) return [];
     this.roundIdByUser.delete(userId);
+    round.suspendedUserIds.delete(userId);
     if (round.completions.has(userId)) return [];
     const game = round.games.get(userId)!;
     game.end();
@@ -257,8 +272,32 @@ export class FallingBlocksMultiplayerRuntime {
       if (game) {
         events.push(this.gameState(round, userId));
       }
+      if (round.completions.has(userId)) {
+        events.push(...this.spectatorDeliveries(round).map((delivery) => delivery.event));
+      }
     }
     return events;
+  }
+
+  suspend(userId: string): void {
+    const round = this.getRoundForUser(userId);
+    if (!round) return;
+    round.suspendedUserIds.add(userId);
+    if (!round.completions.has(userId)) round.attacks.removeTarget(userId);
+  }
+
+  resume(userId: string): void {
+    this.getRoundForUser(userId)?.suspendedUserIds.delete(userId);
+  }
+
+  private spectatorDeliveries(round: ActiveRound): GameEventDelivery[] {
+    const viewers = round.participantIds.filter((userId) => round.completions.has(userId)
+      && !round.suspendedUserIds.has(userId) && this.roundIdByUser.get(userId) === round.id);
+    if (viewers.length === 0) return [];
+    const boards = round.participantIds.filter((userId) => !round.completions.has(userId)).map((userId) => {
+      return { userId, state: round.games.get(userId)!.spectatorState };
+    });
+    return boards.length > 0 ? [{ scope: "users", userIds: viewers, event: { type: "game.spectator_state", roundId: round.id, boards } }] : [];
   }
 
   private lobbyDelivery(lobby: GameLobbyState): GameEventDelivery {

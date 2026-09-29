@@ -1,6 +1,6 @@
 import { Check, Crown, Gamepad2, Pause, X } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react";
-import type { FallingBlocksGameState, GameRoundState, Member, FallingBlocksCommand } from "@workhard/shared";
+import type { FallingBlocksGameState, FallingBlocksSpectatorState, GameRoundState, Member, FallingBlocksCommand } from "@workhard/shared";
 import { FALLING_BLOCKS_HARD_CELL, FALLING_BLOCKS_MODE_LABELS } from "@workhard/shared";
 import { GameResultActions } from "./GameResultActions";
 import { GameExitPrompt } from "./GameExitPrompt";
@@ -10,6 +10,7 @@ import { useFallingBlocksPrediction } from "../hooks/useFallingBlocksPrediction"
 import { IconButton } from "./IconButton";
 import { FallingBlocksMark } from "./FallingBlocksMark";
 import { FallingBlocksControls } from "./FallingBlocksControls";
+import { selectSpectatorUserId } from "../falling-blocks-spectating";
 import { FallingBlocksClearNotice } from "./FallingBlocksClearNotice";
 import {
   FallingBlocksPiecePreview,
@@ -19,6 +20,7 @@ import {
 
 interface FallingBlocksGameProps {
   state: FallingBlocksGameState | undefined;
+  spectatorBoards?: Record<string, FallingBlocksSpectatorState>;
   round: GameRoundState;
   members: Member[];
   currentUserId: string;
@@ -30,18 +32,34 @@ interface FallingBlocksGameProps {
 
 const EMPTY_GRID = Array.from({ length: 20 }, () => Array<number>(10).fill(0));
 
-export function FallingBlocksGame({ state: authoritativeState, round, members, currentUserId, connected = true, onCommand, onClose, onPlayAgain }: FallingBlocksGameProps) {
-  const { state, command } = useFallingBlocksPrediction(authoritativeState, round.fallingBlocks?.settings.mode ?? "classic", onCommand, connected);
+export function FallingBlocksGame({ state: authoritativeState, spectatorBoards = {}, round, members, currentUserId, connected = true, onCommand, onClose, onPlayAgain }: FallingBlocksGameProps) {
+  const { state: ownState, command } = useFallingBlocksPrediction(authoritativeState, round.fallingBlocks?.settings.mode ?? "classic", onCommand, connected);
   const [confirmingExit, setConfirmingExit] = useState(false);
   const [showControls, setShowControls] = useState(() => window.matchMedia("(pointer: coarse)").matches);
   const controlsId = useId();
   const currentPlayer = round.participants.find((participant) => participant.userId === currentUserId);
+  const [spectatorReady, setSpectatorReady] = useState(false);
+  const [preferredSpectatorUserId, setPreferredSpectatorUserId] = useState<string>();
+  useEffect(() => {
+    if (currentPlayer?.status !== "finished" || round.status !== "playing") {
+      setSpectatorReady(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setSpectatorReady(true), 3_000);
+    return () => window.clearTimeout(timer);
+  }, [currentPlayer?.status, round.status]);
+  const selectedSpectatorUserId = spectatorReady && round.status === "playing"
+    ? selectSpectatorUserId(round.participants, preferredSpectatorUserId) : undefined;
+  const watchingUserId = selectedSpectatorUserId && spectatorBoards[selectedSpectatorUserId] ? selectedSpectatorUserId : undefined;
+  const watchedPlayer = round.participants.find((participant) => participant.userId === watchingUserId);
+  const watchedName = members.find((member) => member.id === watchingUserId)?.name ?? "Player";
+  const state = watchingUserId ? spectatorBoards[watchingUserId] : ownState;
   const closeGame = () => currentPlayer?.status === "playing" ? setConfirmingExit(true) : onClose();
   const dialogRef = useModalFocus<HTMLElement>(closeGame);
   const multiplayer = round.participants.length > 1;
   const gameMode = round.fallingBlocks?.settings.mode;
-  const incomingRows = round.fallingBlocks?.attacks.reduce((rows, attack) => rows + (attack.targetUserId === currentUserId ? attack.rows : 0), 0) ?? 0;
-  const canControl = !confirmingExit && round.status === "playing" && currentPlayer?.status === "playing" && state?.running === true;
+  const incomingRows = round.fallingBlocks?.attacks.reduce((rows, attack) => rows + (attack.targetUserId === (watchingUserId ?? currentUserId) ? attack.rows : 0), 0) ?? 0;
+  const canControl = connected && !confirmingExit && round.status === "playing" && currentPlayer?.status === "playing" && ownState?.running === true;
   const activeCellKeys = useMemo(
     () => new Set(state?.activeCells.map(({ row, column }) => `${row}-${column}`) ?? []),
     [state?.activeCells],
@@ -63,13 +81,17 @@ export function FallingBlocksGame({ state: authoritativeState, round, members, c
   });
 
   useEffect(() => {
+    if (watchingUserId) {
+      previousLinesRef.current = currentLines;
+      return;
+    }
     if (currentLines > previousLinesRef.current) {
       setLineClearSequence((current) => current + 1);
     }
     previousLinesRef.current = currentLines;
-  }, [currentLines]);
+  }, [currentLines, watchingUserId]);
 
-  const boardStatus = getBoardStatus(round, currentPlayer, state, multiplayer);
+  const boardStatus = !connected && round.status === "playing" ? "Reconnecting" : getBoardStatus(round, watchedPlayer ?? currentPlayer, state, multiplayer);
   const grid = state?.grid ?? EMPTY_GRID;
   const stackIsHigh = grid.slice(0, 5).some((row, rowIndex) =>
     row.some((cell, columnIndex) => cell > 0 && !activeCellKeys.has(`${rowIndex}-${columnIndex}`)),
@@ -109,6 +131,7 @@ export function FallingBlocksGame({ state: authoritativeState, round, members, c
           </aside>
 
           <div className="falling-blocks-playfield">
+            {watchingUserId && <div className="falling-blocks-watching">Watching {watchedName}</div>}
             <div className={`falling-blocks-board-frame${stackIsHigh ? " is-danger" : ""}`}>
               <div className="falling-blocks-board" role="img" aria-label="Falling Blocks board">
                 {grid.flatMap((row, rowIndex) =>
@@ -157,9 +180,9 @@ export function FallingBlocksGame({ state: authoritativeState, round, members, c
             </section>
 
             <dl className="falling-blocks-stats" aria-label="Game statistics">
-              <div className="score"><dt>Score</dt><dd key={state?.score ?? currentPlayer?.score ?? 0}>{(state?.score ?? currentPlayer?.score ?? 0).toLocaleString()}</dd></div>
-              <div><dt>Lines</dt><dd key={state?.lines ?? currentPlayer?.lines ?? 0}>{state?.lines ?? currentPlayer?.lines ?? 0}</dd></div>
-              <div><dt>Level</dt><dd key={state?.level ?? currentPlayer?.level ?? 1}>{state?.level ?? currentPlayer?.level ?? 1}</dd></div>
+              <div className="score"><dt>Score</dt><dd key={state?.score ?? watchedPlayer?.score ?? currentPlayer?.score ?? 0}>{(state?.score ?? watchedPlayer?.score ?? currentPlayer?.score ?? 0).toLocaleString()}</dd></div>
+              <div><dt>Lines</dt><dd key={state?.lines ?? watchedPlayer?.lines ?? currentPlayer?.lines ?? 0}>{state?.lines ?? watchedPlayer?.lines ?? currentPlayer?.lines ?? 0}</dd></div>
+              <div><dt>Level</dt><dd key={state?.level ?? watchedPlayer?.level ?? currentPlayer?.level ?? 1}>{state?.level ?? watchedPlayer?.level ?? currentPlayer?.level ?? 1}</dd></div>
             </dl>
 
             {multiplayer && (
@@ -175,7 +198,11 @@ export function FallingBlocksGame({ state: authoritativeState, round, members, c
                           <span>{participant.userId === round.fallingBlocks?.crownUserId
                             ? <Crown size={14} className="falling-blocks-crown-icon" aria-label="Crown holder" />
                             : participant.placement ?? (participant.status === "finished" ? <Check size={13} /> : "\u2022")}</span>
-                          <span>{participant.userId === currentUserId ? "You" : member?.name ?? "Player"}</span>
+                          <span>{spectatorReady && currentPlayer?.status === "finished" && participant.status === "playing"
+                            ? <button type="button" className="falling-blocks-watch-button" aria-label={`Watch ${member?.name ?? "Player"}`}
+                              aria-pressed={participant.userId === watchingUserId}
+                              onClick={() => setPreferredSpectatorUserId(participant.userId)}>{member?.name ?? "Player"}</button>
+                            : participant.userId === currentUserId ? "You" : member?.name ?? "Player"}</span>
                           <strong>{participant.score.toLocaleString()}</strong>
                         </li>
                       );
@@ -185,8 +212,8 @@ export function FallingBlocksGame({ state: authoritativeState, round, members, c
             )}
           </aside>
 
-          {canControl && showControls && (
-            <FallingBlocksControls id={controlsId} paused={state.paused} canHold={state.canHold} multiplayer={multiplayer} onCommand={command} />
+          {canControl && showControls && ownState && (
+            <FallingBlocksControls id={controlsId} paused={ownState.paused} canHold={ownState.canHold} multiplayer={multiplayer} onCommand={command} />
           )}
         </div>
         {currentPlayer?.status === "finished" && <GameResultActions onClose={onClose} onPlayAgain={round.status === "completed" ? onPlayAgain : undefined} />}
@@ -198,7 +225,7 @@ export function FallingBlocksGame({ state: authoritativeState, round, members, c
 function getBoardStatus(
   round: GameRoundState,
   player: GameRoundState["participants"][number] | undefined,
-  state: FallingBlocksGameState | undefined,
+  state: FallingBlocksSpectatorState | undefined,
   multiplayer: boolean,
 ): string | undefined {
   if (!state) {

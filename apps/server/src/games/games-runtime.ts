@@ -26,8 +26,16 @@ export class GamesRuntime {
     this.ticTacToe = new TicTacToeMultiplayerRuntime(store);
   }
 
-  isPlayingFallingBlocks(userId: string): boolean {
-    return this.fallingBlocks.isPlaying(userId);
+  hasFallingBlocksRound(userId: string): boolean {
+    return this.fallingBlocks.getRoundId(userId) !== undefined;
+  }
+
+  suspendFallingBlocks(userId: string): void {
+    this.fallingBlocks.suspend(userId);
+  }
+
+  resumeFallingBlocks(userId: string): void {
+    this.fallingBlocks.resume(userId);
   }
 
   syncLobbies(players: Iterable<WorldPlayer>, connectedUserIds: ReadonlySet<string>): GameEventDelivery[] {

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { FallingBlocksCommand } from "@workhard/shared";
+import { HORIZONTAL_REPEAT_DELAY_MS, HORIZONTAL_REPEAT_INTERVAL_MS, SOFT_DROP_REPEAT_INTERVAL_MS } from "../falling-blocks-input";
 
 interface FallingBlocksKeyboardOptions {
   enabled: boolean;
@@ -13,10 +14,6 @@ interface PressedDirection {
   command: "left" | "right";
   order: number;
 }
-
-const HORIZONTAL_REPEAT_DELAY_MS = 110;
-const HORIZONTAL_REPEAT_INTERVAL_MS = 32;
-const SOFT_DROP_REPEAT_INTERVAL_MS = 36;
 
 const lateralCommands: Partial<Record<string, PressedDirection["command"]>> = {
   ArrowLeft: "left",
@@ -94,7 +91,10 @@ export function useFallingBlocksKeyboard({ enabled, paused, allowPause, allowHol
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.target instanceof HTMLElement && event.target.closest("button, input, select, textarea, [contenteditable='true']")) return;
+      if (event.target instanceof HTMLElement) {
+        if (event.target.closest("input, select, textarea, [contenteditable='true']")) return;
+        if (event.code === "Space" && event.target.closest("button")) return;
+      }
       const lateralCommand = lateralCommands[event.code];
       const actionCommand = actionCommands[event.code];
       const isSoftDrop = event.code === "ArrowDown";
@@ -150,7 +150,7 @@ export function useFallingBlocksKeyboard({ enabled, paused, allowPause, allowHol
         .sort(([, left], [, right]) => right.order - left.order)[0];
       if (remainingDirection) {
         const [code, direction] = remainingDirection;
-        startHorizontalRepeat(code, direction.command, true);
+        startHorizontalRepeat(code, direction.command, false);
       } else {
         activeDirectionCode = undefined;
       }

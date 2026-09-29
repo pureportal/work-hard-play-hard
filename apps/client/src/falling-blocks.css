@@ -178,8 +178,10 @@
 
 .falling-blocks-playfield {
   grid-area: board;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   min-width: 0;
   min-height: 0;
   container-type: size;
@@ -430,6 +432,31 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.falling-blocks-watching {
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.falling-blocks-playfield:has(.falling-blocks-watching) .falling-blocks-board-frame {
+  width: min(100cqw, calc((100cqh - 24px) / 2));
+}
+
+.falling-blocks-watch-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.falling-blocks-watch-button[aria-pressed="true"] {
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .falling-blocks-round-players strong {

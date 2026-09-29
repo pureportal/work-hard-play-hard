@@ -5,6 +5,7 @@ import type { ServerEvent, WorldPlayer } from "@workhard/shared";
 import { describe, expect, it } from "vitest";
 import { WorkspaceStore } from "../store.js";
 import { FallingBlocksMultiplayerRuntime } from "./falling-blocks-multiplayer.js";
+import { prepareLineClear } from "./testing/falling-blocks.js";
 
 describe("FallingBlocksMultiplayerRuntime", () => {
   it("deduplicates retried inputs independently for each connection", () => {
@@ -108,6 +109,55 @@ describe("FallingBlocksMultiplayerRuntime", () => {
       expect.objectContaining({ type: "game.state" }),
     ]));
     expect(() => runtime.command("user-maya", "pause")).toThrow("GAME_PAUSE_MULTIPLAYER");
+  });
+
+  it("freezes a disconnected player and resumes their board after rejoining", () => {
+    const runtime = new FallingBlocksMultiplayerRuntime(new WorkspaceStore(createTestData()));
+    const players = [nearbyPlayer("user-maya", 1_050, 620), nearbyPlayer("user-leo", 1_250, 620)];
+    runtime.syncLobbies(players, new Set(players.map((player) => player.userId)));
+    runtime.start("user-maya", "object-falling-blocks");
+    const before = runtime.getSessionEvents("user-maya").find((event) => event.type === "game.state" && event.definitionId === FALLING_BLOCKS_DEFINITION_ID);
+    runtime.suspend("user-maya");
+    runtime.update(2_000);
+    const frozen = runtime.getSessionEvents("user-maya").find((event) => event.type === "game.state" && event.definitionId === FALLING_BLOCKS_DEFINITION_ID);
+    expect(frozen?.simulation).toEqual(before?.simulation);
+    runtime.resume("user-maya");
+    runtime.update(665);
+    const resumed = runtime.getSessionEvents("user-maya").find((event) => event.type === "game.state" && event.definitionId === FALLING_BLOCKS_DEFINITION_ID);
+    expect(resumed?.activeCells[0]!.row).toBeGreaterThan(frozen?.activeCells[0]!.row ?? Infinity);
+  });
+
+  it("does not target a disconnected player with new attacks", () => {
+    const runtime = new FallingBlocksMultiplayerRuntime(new WorkspaceStore(createTestData()));
+    const players = [nearbyPlayer("user-maya", 1_050, 620), nearbyPlayer("user-leo", 1_250, 620)];
+    runtime.syncLobbies(players, new Set(players.map((player) => player.userId)));
+    runtime.start("user-maya", "object-falling-blocks");
+    const rounds = Reflect.get(runtime, "rounds") as Map<string, { games: Map<string, import("@workhard/shared").FallingBlocksGame> }>;
+    prepareLineClear(rounds.values().next().value!.games.get("user-maya")!, 4);
+    runtime.suspend("user-leo");
+    const deliveries = runtime.command("user-maya", "drop");
+    const round = events(deliveries).find((event) => event.type === "game.round_updated");
+    expect(round?.type === "game.round_updated" && round.round.fallingBlocks?.attacks).toEqual([]);
+  });
+
+  it("sends finished players a lower-rate view of active boards", () => {
+    const runtime = new FallingBlocksMultiplayerRuntime(new WorkspaceStore(createTestData()));
+    const players = [nearbyPlayer("user-maya", 1_050, 620), nearbyPlayer("user-leo", 1_250, 620)];
+    runtime.syncLobbies(players, new Set(players.map((player) => player.userId)));
+    runtime.start("user-maya", "object-falling-blocks");
+    const rounds = Reflect.get(runtime, "rounds") as Map<string, { games: Map<string, import("@workhard/shared").FallingBlocksGame> }>;
+    rounds.values().next().value!.games.get("user-maya")!.end();
+    runtime.update(50);
+    expect(events(runtime.update(199)).filter((event) => event.type === "game.spectator_state")).toEqual([]);
+    const spectator = runtime.update(1).find((delivery) => delivery.event.type === "game.spectator_state");
+    expect(spectator).toMatchObject({ scope: "users", userIds: ["user-maya"], event: {
+      type: "game.spectator_state", boards: [{ userId: "user-leo", state: { running: true } }],
+    } });
+    expect(spectator?.event.type === "game.spectator_state" && spectator.event.boards[0]?.state).not.toHaveProperty("simulation");
+    runtime.suspend("user-maya");
+    expect(events(runtime.update(250)).some((event) => event.type === "game.spectator_state")).toBe(false);
+    runtime.resume("user-maya");
+    expect(runtime.getSessionEvents("user-maya")).toContainEqual(expect.objectContaining({ type: "game.spectator_state" }));
   });
 
   it("records authoritative multiplayer scores and awards exactly one non-solo win", () => {

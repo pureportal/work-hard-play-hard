@@ -137,6 +137,10 @@ export interface FallingBlocksGameState {
   serverTime: number;
 }
 
+export type FallingBlocksSpectatorState = Pick<FallingBlocksGameState,
+  "grid" | "score" | "lines" | "level" | "running" | "paused" | "activePiece" | "activeCells"
+  | "ghostCells" | "heldPiece" | "nextPieces" | "canHold" | "lastClear">;
+
 export const FALLING_BLOCKS_SPECIAL_LABELS = {
   singles: "Singles",
   doubles: "Doubles",

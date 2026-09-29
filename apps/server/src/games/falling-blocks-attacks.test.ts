@@ -92,7 +92,7 @@ describe("Falling Blocks multiplayer attacks", () => {
     const sender = games.get("user-maya")!;
     prepareLineClear(sender, 4);
     while (sender.command("down")) continue;
-    runtime.update(499);
+    runtime.update(249);
     expect(snapshot(runtime).attacks).toEqual([]);
     runtime.update(1);
     expect(snapshot(runtime).attacks[0]).toMatchObject({ rows: 4, remainingMs: 3_000 });
@@ -183,8 +183,8 @@ describe("Falling Blocks multiplayer attacks", () => {
 
   it("keeps attacks inside a round and starts solo replays with empty queues and reset timers", () => {
     const { runtime, games, players } = setup({ mode: "speed-up", attackTarget: "random" });
-    runtime.update(30_000);
-    expect([...games.values()].map((game) => game.state.level)).toEqual([2, 2, 2]);
+    runtime.update(24_000);
+    expect([...games.values()].map((game) => game.state.level)).toEqual([3, 3, 3]);
     prepareLineClear(games.get("user-maya")!, 4);
     runtime.command("user-maya", "drop");
     for (const player of players) runtime.leave(player.userId);

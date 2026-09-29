@@ -23,7 +23,7 @@ import type { CoinTransaction, GameCoinReward, GameSettings, PlayerEconomy } fro
 import type { Position } from "./geometry.js";
 import type { SpecialPropUse } from "./special-props.js";
 export * from "./special-props.js";
-import { FALLING_BLOCKS_DEFINITION_ID, type FallingBlocksGameState, type FallingBlocksCommand, type FallingBlocksSettings, type FallingBlocksRoundState, type FallingBlocksSpecialCounts, type FallingBlocksStatistics } from "./falling-blocks.js";
+import { FALLING_BLOCKS_DEFINITION_ID, type FallingBlocksGameState, type FallingBlocksSpectatorState, type FallingBlocksCommand, type FallingBlocksSettings, type FallingBlocksRoundState, type FallingBlocksSpecialCounts, type FallingBlocksStatistics } from "./falling-blocks.js";
 import {
   TIC_TAC_TOE_DEFINITION_ID,
   type TicTacToeCommand,
@@ -440,6 +440,7 @@ export type ServerEvent =
   | { type: "game.lobby_updated"; lobby: GameLobbyState }
   | { type: "game.round_started"; round: GameRoundState }
   | { type: "game.round_updated"; round: GameRoundState }
+  | { type: "game.spectator_state"; roundId: string; boards: Array<{ userId: string; state: FallingBlocksSpectatorState }> }
   | {
     type: "game.round_completed";
     round: GameRoundState;
@@ -476,6 +477,7 @@ export type ClientCommand =
   | { type: "kidnapping.global_settings_update"; requestId: string; settings: GlobalKidnappingSettings }
   | { type: "kidnapping.player_settings_update"; requestId: string; settings: PlayerKidnappingSettings }
   | { type: "presence.set_availability"; requestId: string; availability: Availability }
+  | { type: "presence.set_idle"; requestId: string; idle: boolean }
   | { type: "proximity.set_media"; requestId: string; sessionId: string; microphone: boolean; camera: boolean }
   | { type: "proximity.leave"; requestId: string; sessionId: string }
   | { type: "proximity.signal"; requestId: string; sessionId: string; targetSessionId: string; signal: import("./media.js").MediaSignal }

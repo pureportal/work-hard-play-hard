@@ -17,6 +17,7 @@ export class FallingBlocksPrediction {
   private simulatedAt: number;
   private serverClockOffset: number | undefined;
   private oneWayMs = 0;
+  private connected = true;
 
   constructor(state: FallingBlocksGameState, mode: FallingBlocksMode, now = performance.now()) {
     this.game = new FallingBlocksGame(state.roundId, mode);
@@ -31,12 +32,20 @@ export class FallingBlocksPrediction {
     return this.game.state;
   }
 
+  setConnected(connected: boolean, now = performance.now()): void {
+    if (this.connected === connected) return;
+    this.connected = connected;
+    this.simulatedAt = now;
+  }
+
   tick(now = performance.now()): FallingBlocksGameState | undefined {
+    if (!this.connected) return undefined;
     const changed = this.advance(now);
     return changed ? this.game.state : undefined;
   }
 
   command(command: FallingBlocksCommand, send: (command: FallingBlocksCommand, sequence: number, inputSessionId: string) => boolean | void, now = performance.now()): FallingBlocksGameState | undefined {
+    if (!this.connected) return undefined;
     if (this.pending.length >= MAX_PENDING_INPUTS) return undefined;
     this.advance(now);
     if (!this.game.command(command)) return undefined;
@@ -89,6 +98,7 @@ export class FallingBlocksPrediction {
   }
 
   private advance(now: number): boolean {
+    if (!this.connected) return false;
     if (now <= this.simulatedAt) return false;
     const changed = this.game.update(now - this.simulatedAt);
     this.simulatedAt = now;

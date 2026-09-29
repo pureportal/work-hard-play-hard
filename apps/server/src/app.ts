@@ -927,6 +927,9 @@ async function initializePersistentState(database: ApplicationDatabase, approval
   const savedState = await database.loadWorkspaceState();
   if (savedState) {
     store.restoreMutableState(savedState.store);
+    for (const member of store.getMembers()) {
+      if (member.online) store.updateOnline(member.id, false);
+    }
   }
 
   const brandingLogo = new BrandingLogoStore(database);
@@ -980,7 +983,7 @@ function sendEvent(socket: RealtimeSocket, event: ServerEvent, options: { droppa
       pending.event = event;
       return;
     }
-    const delayMs = 100 - (performance.now() - (lastFallingBlocksStateAt.get(socket) ?? -Infinity));
+    const delayMs = 50 - (performance.now() - (lastFallingBlocksStateAt.get(socket) ?? -Infinity));
     if (delayMs <= 0) {
       sendEventNow(socket, event);
       lastFallingBlocksStateAt.set(socket, performance.now());

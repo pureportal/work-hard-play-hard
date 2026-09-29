@@ -112,6 +112,7 @@ const SNAPSHOT_COMMAND_TYPES = new Set<ClientCommand["type"]>([
   "kidnapping.global_settings_update",
   "kidnapping.player_settings_update",
   "presence.set_availability",
+  "presence.set_idle",
   "proximity.set_media",
   "proximity.leave",
   "player_asset.place",
@@ -157,6 +158,7 @@ interface Peer {
   id: string;
   userId: string;
   floorId: string;
+  idle: boolean;
   send: (event: ServerEvent, options?: { droppable?: boolean }) => void;
 }
 interface MovementState {
@@ -304,7 +306,6 @@ export class WorldRuntime {
     this.recentGroupReactions.clear();
     this.gongCooldowns.clear();
     this.specialProps.clear();
-    this.seatOrigins.clear();
   }
 
   publishCorporateIdentity(corporateIdentity: CorporateIdentity): void {
@@ -320,8 +321,9 @@ export class WorldRuntime {
       throw new Error("SESSION_INVALID");
     }
 
-    const peer: Peer = { id: randomUUID(), userId, floorId: floor.id, send };
+    const peer: Peer = { id: randomUUID(), userId, floorId: floor.id, idle: false, send };
     this.disconnectedFallingBlocks.delete(userId);
+    this.gameRuntime.resumeFallingBlocks(userId);
     this.addPeer(peer);
     peer.send({ type: "public_economy.updated", economy: this.store.getPublicEconomy() });
     this.dirtySnapshotFloorIds.add(peer.floorId);
@@ -331,16 +333,13 @@ export class WorldRuntime {
       this.setPlayerConnected(player, true);
       player.availability = member.availability;
       const layout = this.store.getLayout(floor.id);
-      const seat = player.seat;
-      const seatedObject = layout?.objects.find((object) => object.id === seat?.objectId);
-      const seatedInteraction = seatedObject && seat
-        ? getPlacedAssetInteraction(seatedObject, seat.interactionId)
-        : undefined;
-      const positionIsSafe = Boolean(
-        seatedInteraction
-        && seatedInteraction.center.x === player.x
-        && seatedInteraction.center.y === player.y,
-      ) || Boolean(layout && canOccupy(
+      const seatedInteraction = layout ? this.getAvailableSeatInteraction(player, layout) : undefined;
+      if (player.seat && (!seatedInteraction
+        || seatedInteraction.center.x !== player.x
+        || seatedInteraction.center.y !== player.y)) {
+        this.leaveSeat(userId);
+      }
+      const positionIsSafe = Boolean(player.seat) || Boolean(layout && canOccupy(
           layout,
           getOutdoorBounds(floor),
           userId,
@@ -378,9 +377,10 @@ export class WorldRuntime {
     if (locationChanged) {
       connectedMember = this.store.updateMemberLocation(userId, floor.id);
     }
+    const availabilityChanged = this.refreshDerivedAway(userId);
     if (!member.online) {
       this.broadcast({ type: "presence.changed", member: this.store.updateOnline(userId, true) });
-    } else if (locationChanged) {
+    } else if (locationChanged || availabilityChanged) {
       this.broadcast({ type: "presence.changed", member: connectedMember });
     }
     if (!this.movements.has(userId)) {
@@ -409,6 +409,7 @@ export class WorldRuntime {
       return;
     }
     this.removePeer(peer);
+    const availabilityChanged = this.refreshDerivedAway(peer.userId);
     this.proximitySessions.disconnect(peerId);
     this.reconcileProximityCalls();
     this.roomAccessInspections.delete(peer);
@@ -422,7 +423,6 @@ export class WorldRuntime {
       this.activeMovementUserIds.delete(peer.userId);
       const player = this.players.get(peer.userId);
       if (player) {
-        this.leaveSeat(peer.userId);
         this.setPlayerConnected(player, false);
         delete player.wavingUntil;
         delete player.proximity;
@@ -432,8 +432,9 @@ export class WorldRuntime {
       this.endCallsForUser(peer.userId);
       this.leaveActiveMeeting(peer.userId);
       this.handleKnockDisconnect(peer.userId);
-      if (this.gameRuntime.isPlayingFallingBlocks(peer.userId)) {
-        this.disconnectedFallingBlocks.set(peer.userId, 15_000);
+      if (this.gameRuntime.hasFallingBlocksRound(peer.userId)) {
+        this.gameRuntime.suspendFallingBlocks(peer.userId);
+        this.disconnectedFallingBlocks.set(peer.userId, 60_000);
       } else {
         this.dispatchGameEvents(this.gameRuntime.leave(peer.userId));
       }
@@ -444,6 +445,9 @@ export class WorldRuntime {
       this.syncGameLobbies();
       this.reconcileProximityCalls();
     } else {
+      if (availabilityChanged) {
+        this.broadcast({ type: "presence.changed", member: this.store.getMember(peer.userId)! });
+      }
       const movement = this.movements.get(peer.userId);
       if (movement?.controllerPeerId === peerId) {
         this.stopMovement(peer.userId);
@@ -487,6 +491,9 @@ export class WorldRuntime {
           break;
         case "presence.set_availability":
           this.setAvailability(peer, command.availability);
+          break;
+        case "presence.set_idle":
+          this.setIdle(peer, command.idle);
           break;
         case "proximity.set_media":
           this.setProximityMedia(peer, command.sessionId, command.microphone, command.camera);
@@ -718,7 +725,6 @@ export class WorldRuntime {
         player.x = origin.x;
         player.y = origin.y;
       }
-      delete player.seat;
       return player;
     });
   }
@@ -775,6 +781,7 @@ export class WorldRuntime {
         continue;
       }
       const layout = this.store.getLayout(saved.floorId);
+      const seatedInteraction = saved.seat && layout ? this.getAvailableSeatInteraction(saved, layout) : undefined;
       const positionIsSafe = layout && canOccupy(
         layout,
         getOutdoorBounds(floor),
@@ -788,13 +795,18 @@ export class WorldRuntime {
       );
       const player: WorldPlayer = {
         ...saved,
-        x: positionIsSafe ? saved.x : floor.spawn.x,
-        y: positionIsSafe ? saved.y : floor.spawn.y,
+        x: seatedInteraction?.center.x ?? (positionIsSafe ? saved.x : floor.spawn.x),
+        y: seatedInteraction?.center.y ?? (positionIsSafe ? saved.y : floor.spawn.y),
         connected: member.online,
       };
       delete player.proximity;
-      delete player.seat;
       delete player.carriedByUserId;
+      if (seatedInteraction) {
+        this.seatOrigins.set(player.userId, { x: saved.x, y: saved.y });
+      } else {
+        delete player.seat;
+        this.seatOrigins.delete(player.userId);
+      }
       this.setPlayer(player);
       this.dirtySnapshotFloorIds.add(player.floorId);
       this.updateRoom(player);
@@ -825,7 +837,7 @@ export class WorldRuntime {
         continue;
       }
       this.disconnectedFallingBlocks.delete(userId);
-      if (this.gameRuntime.isPlayingFallingBlocks(userId)) {
+      if (this.gameRuntime.hasFallingBlocksRound(userId)) {
         this.dispatchGameEvents(this.gameRuntime.leave(userId));
         this.syncGameLobbies();
       }
@@ -1860,8 +1872,11 @@ export class WorldRuntime {
     if (!player) {
       throw new Error("WORLD_NOT_READY");
     }
-    player.availability = availability;
+    peer.idle = false;
     const member = this.store.updateAvailability(peer.userId, availability);
+    this.refreshDerivedAway(peer.userId);
+    player.availability = this.store.getVisibleMember(peer.userId)!.availability;
+    this.dirtySnapshotFloorIds.add(player.floorId);
     this.broadcast({ type: "presence.changed", member });
     if (availability === "dnd") {
       for (const [userId, movement] of this.movements) {
@@ -1876,6 +1891,30 @@ export class WorldRuntime {
       }
     }
     this.reconcileProximityCalls();
+  }
+
+  private setIdle(peer: Peer, idle: boolean): void {
+    if (peer.idle === idle) return;
+    peer.idle = idle;
+    if (!this.refreshDerivedAway(peer.userId)) return;
+    const member = this.store.getMember(peer.userId);
+    if (member) this.broadcast({ type: "presence.changed", member });
+  }
+
+  private refreshDerivedAway(userId: string): boolean {
+    const member = this.store.getMember(userId);
+    if (!member) return false;
+    const sessions = [...this.peers.values()].filter((peer) => peer.userId === userId);
+    const away = member.availability === "available" && sessions.length > 0 && sessions.every((peer) => peer.idle);
+    const changed = this.store.setDerivedAway(userId, away);
+    if (changed) {
+      const player = this.players.get(userId);
+      if (player) {
+        player.availability = away ? "away" : member.availability;
+        this.dirtySnapshotFloorIds.add(player.floorId);
+      }
+    }
+    return changed;
   }
 
   private setProximityMedia(peer: Peer, sessionId: string, microphone: boolean, camera: boolean): void {
@@ -2678,6 +2717,24 @@ export class WorldRuntime {
     }
   }
 
+  private getAvailableSeatInteraction(player: WorldPlayer, layout: FloorLayout) {
+    const seat = player.seat;
+    if (!seat) return undefined;
+    const object = layout.objects.find((candidate) => candidate.id === seat.objectId);
+    const interaction = object && getPlacedAssetInteraction(object, seat.interactionId);
+    if (!interaction || object.floorId !== player.floorId) return undefined;
+    const room = layout.rooms.find((candidate) => isPointInRoom(interaction.center.x, interaction.center.y, candidate));
+    if (room) {
+      const occupants = [...this.connectedPlayersByFloor.get(player.floorId) ?? []]
+        .filter((candidate) => candidate.userId !== player.userId && isPointInRoom(candidate.x, candidate.y, room));
+      if (!this.userHasRoomAccess(player.userId, room) || occupants.length >= room.capacity) return undefined;
+    }
+    const occupied = [...this.players.values()].some((candidate) => candidate.userId !== player.userId
+      && candidate.connected && candidate.seat?.objectId === seat.objectId
+      && candidate.seat.interactionId === seat.interactionId);
+    return occupied ? undefined : interaction;
+  }
+
   private seatPlayer(
     player: WorldPlayer,
     objectId: string,
@@ -2863,6 +2920,7 @@ export class WorldRuntime {
 
   private evictPlayerFromRoom(player: WorldPlayer, room: Room): void {
     this.endKidnappingForUser(player.userId, "access_revoked");
+    this.leaveSeat(player.userId);
     const floor = this.store.getFloor(room.floorId);
     const layout = this.store.getLayout(room.floorId);
     const doorPositions = layout?.openings
@@ -3965,8 +4023,11 @@ export class WorldRuntime {
   }
 
   private broadcast(event: ServerEvent): void {
+    const visibleEvent = event.type === "presence.changed"
+      ? { ...event, member: this.store.getVisibleMember(event.member.id) ?? event.member }
+      : event;
     for (const peer of this.peers.values()) {
-      peer.send(event);
+      peer.send(visibleEvent);
     }
   }
 
@@ -3999,7 +4060,7 @@ export class WorldRuntime {
       PUBLIC_FUNDS_INSUFFICIENT: "This fund needs more coins. Donate coins or reduce the cost.",
       PUBLIC_FUND_FORBIDDEN: "Choose a fund for your team.",
       PUBLIC_FUND_SCOPE: "These changes affect another area. Use the workspace fund.",
-      PRIVATE_ASSET_PROTECTED: "This project changes a personal asset. Its owner must move or store it first.",
+      PRIVATE_ASSET_PROTECTED: "Personal items can only be moved. Their owner must store them.",
       PERSONAL_AREA_INVALID: "Keep personal areas inside their room, without overlaps.",
       ROOM_PRIVACY_PROTECTED: "This change would expose or divide a private room. Open its access in Room settings before changing its boundary or removing its last door.",
       PERMANENT_ASSET_PUBLIC: "Buy permanent flooring with a shared fund.",

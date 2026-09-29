@@ -41,4 +41,18 @@ describe("FallingBlocksPrediction", () => {
     prediction.reconcile(server.state, 20);
     expect(prediction.state.simulation.board).toEqual(server.snapshot.board);
   });
+
+  it("does not generate inputs or gravity while the connection is down", () => {
+    const server = new FallingBlocksGame("round-reconnect");
+    const prediction = new FallingBlocksPrediction(server.state, "classic", 0);
+    const before = prediction.state.activeCells;
+    prediction.setConnected(false, 0);
+    expect(prediction.tick(10_000)).toBeUndefined();
+    expect(prediction.command("left", () => true, 10_000)).toBeUndefined();
+    expect(prediction.state.activeCells).toEqual(before);
+    prediction.setConnected(true, 10_000);
+    expect(prediction.reconcile(server.state, 10_000)).toBeUndefined();
+    prediction.command("left", () => true, 10_001);
+    expect(prediction.state.activeCells[0]!.column).toBe(before[0]!.column - 1);
+  });
 });

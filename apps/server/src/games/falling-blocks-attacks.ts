@@ -16,6 +16,7 @@ export class FallingBlocksAttacks {
     private readonly games: ReadonlyMap<string, FallingBlocksGame>,
     private readonly targeting: FallingBlocksAttackTarget,
     private readonly random: () => number,
+    private readonly isSuspended: (userId: string) => boolean = () => false,
   ) {}
 
   enqueue(sourceUserId: string, clears: FallingBlocksClear[]): void {
@@ -29,7 +30,7 @@ export class FallingBlocksAttacks {
       }
       this.pending = this.pending.filter((attack) => attack.rows > 0);
       if (!rows) continue;
-      let candidates = [...this.games].filter(([userId, game]) => userId !== sourceUserId && !game.completed);
+      let candidates = [...this.games].filter(([userId, game]) => userId !== sourceUserId && !game.completed && !this.isSuspended(userId));
       if (candidates.length === 0) continue;
       if (this.targeting === "fewest-stones") {
         const minimum = Math.min(...candidates.map(([, game]) => game.stoneCount));

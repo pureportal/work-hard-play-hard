@@ -1,6 +1,7 @@
 import { ArrowDown, ArrowLeft, ArrowRight, ChevronsDown, Pause, Play, RotateCcw, RotateCw } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 import type { FallingBlocksCommand } from "@workhard/shared";
+import { HORIZONTAL_REPEAT_DELAY_MS, HORIZONTAL_REPEAT_INTERVAL_MS, SOFT_DROP_REPEAT_INTERVAL_MS } from "../falling-blocks-input";
 
 interface FallingBlocksControlsProps {
   id: string;
@@ -71,8 +72,8 @@ function ControlButton({ command, label, shortcut, repeat, disabled, onCommand, 
         if (repeat) {
           delay.current = window.setTimeout(() => {
             onCommandRef.current(command);
-            interval.current = window.setInterval(() => onCommandRef.current(command), command === "down" ? 36 : 32);
-          }, command === "down" ? 36 : 110);
+            interval.current = window.setInterval(() => onCommandRef.current(command), command === "down" ? SOFT_DROP_REPEAT_INTERVAL_MS : HORIZONTAL_REPEAT_INTERVAL_MS);
+          }, command === "down" ? SOFT_DROP_REPEAT_INTERVAL_MS : HORIZONTAL_REPEAT_DELAY_MS);
         }
       }}
       onPointerUp={stop} onPointerCancel={stop} onLostPointerCapture={stop}
