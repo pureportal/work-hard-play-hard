@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Farm concept</title>
+  <link rel="stylesheet" href="farm-concept.css">
+  <script src="farm-concept.js" defer></script>
+</head>
+<body>
+  <svg class="sprite-definitions" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <g id="sprout">
+        <path d="M80 87V53" stroke="#447f43" stroke-width="5" stroke-linecap="round"/>
+        <path d="M79 68Q48 66 49 47Q77 42 79 68M81 59Q84 34 108 38Q109 58 81 59" fill="#70aa52"/>
+      </g>
+      <g id="radish">
+        <path d="M80 62Q55 62 50 38Q71 36 80 62M79 60Q71 38 84 28Q95 42 79 60M81 62Q87 38 108 42Q105 61 81 62" fill="#61a048"/>
+        <path d="M62 74Q60 56 80 56Q100 57 98 74Q96 87 79 97Q65 88 62 74" fill="#e57988"/>
+        <path d="M71 89Q80 99 79 107Q90 93 91 86" fill="#fff3df"/>
+        <path d="M68 68Q71 62 77 63" fill="none" stroke="#ffc4cb" stroke-width="4" stroke-linecap="round"/>
+      </g>
+      <g id="carrot">
+        <path d="M80 58Q50 48 58 27Q79 30 80 58M81 56Q70 26 88 19Q100 36 81 56M81 57Q92 28 110 38Q103 56 81 57" fill="#579b48"/>
+        <path d="M61 66Q78 51 96 66L81 108Z" fill="#ee9948"/>
+        <path d="M67 72H77M82 84H89" stroke="#c87732" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <g id="tomato">
+        <path d="M79 94V30M79 58L54 44M79 70L108 52" fill="none" stroke="#3f814b" stroke-width="5" stroke-linecap="round"/>
+        <path d="M77 50Q57 47 62 28Q81 30 77 50M82 61Q97 35 116 39Q112 61 82 61" fill="#62a44d"/>
+        <circle cx="58" cy="65" r="18" fill="#dd7864"/>
+        <circle cx="99" cy="79" r="19" fill="#e9976b"/>
+        <path d="M50 48L57 54L66 47L61 59L54 57Z M91 62L98 68L108 61L102 74L95 71Z" fill="#498648"/>
+        <path d="M48 62Q48 57 53 57M89 75Q90 70 95 70" fill="none" stroke="#ffd2b4" stroke-width="4" stroke-linecap="round"/>
+      </g>
+      <g id="drop">
+        <path d="M0 -9Q-11 4 0 9Q11 4 0 -9" fill="#69b8d0" stroke="#fff" stroke-width="2"/>
+      </g>
+    </defs>
+  </svg>
+  <main>
+    <p class="preview-note">Design preview. Coins and time are simulated.</p>
+    <section class="farm" aria-label="Personal farm">
+      <header class="farm-header">
+        <div class="heading"><span class="farm-mark" aria-hidden="true">✿</span><h1>Farm</h1></div>
+        <div class="wallet"><span class="coin" aria-hidden="true">●</span><output id="balance" aria-label="Coin balance"></output><span>coins</span></div>
+      </header>
+      <div class="farm-content">
+        <section class="garden" aria-label="Garden beds">
+          <div class="garden-heading"><h2>Garden</h2><span id="next-harvest"></span></div>
+          <div class="bed-grid" id="beds"></div>
+          <div class="batch-actions" id="batch-actions"></div>
+        </section>
+        <aside class="bed-panel" aria-label="Selected bed">
+          <div id="bed-details"></div>
+        </aside>
+      </div>
+      <p id="feedback" role="status" aria-live="polite"></p>
+    </section>
+    <details class="preview-controls" open>
+      <summary>Preview controls</summary>
+      <div class="clock-controls"><output id="clock" aria-label="Preview time"></output><div class="clock-buttons"><button data-advance="30">+30 min</button><button data-advance="45">+45 min</button><button data-advance="60">+60 min</button><button data-advance="1440">+1 day</button></div></div>
+      <div class="reset-controls"><button id="example">Load example</button><button id="reset">Empty farm</button></div>
+    </details>
+  </main>
+</body>
+</html>
