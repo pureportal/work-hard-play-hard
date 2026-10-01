@@ -480,6 +480,7 @@ export type ClientCommand =
   | { type: "proximity.leave"; requestId: string; sessionId: string }
   | { type: "proximity.signal"; requestId: string; sessionId: string; targetSessionId: string; signal: import("./media.js").MediaSignal }
   | { type: "chat.send"; requestId: string; conversationId: string; body: string }
+  | { type: "player_asset.purchase_place"; requestId: string; baseRevision: number; assetId: string; position: Position; variantId: string; rotation: AssetRotation; draftId?: string; proposalId?: string }
   | { type: "player_asset.place"; requestId: string; baseRevision: number; ownedAssetId: string; position: Position; variantId: string; rotation: AssetRotation }
   | { type: "player_asset.move"; requestId: string; baseRevision: number; objectId: string; position: Position; variantId: string; rotation: AssetRotation }
   | { type: "player_asset.remove"; requestId: string; baseRevision: number; objectId: string }

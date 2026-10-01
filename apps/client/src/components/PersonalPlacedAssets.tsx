@@ -5,6 +5,7 @@ import type { Floor, FloorLayout, LayoutItemReference } from "@workhard/shared";
 import { AssetShape } from "./AssetShape";
 
 interface PersonalPlacedAssetsProps {
+  ownership: "personal" | "shared";
   currentUserId: string;
   layouts: FloorLayout[];
   floors: Floor[];
@@ -14,15 +15,15 @@ interface PersonalPlacedAssetsProps {
   onOpenInventory: () => void;
 }
 
-export function PersonalPlacedAssets({ currentUserId, layouts, floors, activeFloorId, selectedItem, onFocus, onOpenInventory }: PersonalPlacedAssetsProps) {
+export function PersonalPlacedAssets({ ownership, currentUserId, layouts, floors, activeFloorId, selectedItem, onFocus, onOpenInventory }: PersonalPlacedAssetsProps) {
   const groups = useMemo(() => floors.flatMap((floor) => {
     const layout = layouts.find((candidate) => candidate.floorId === floor.id);
-    const objects = layout?.objects.filter((object) => object.ownerUserId === currentUserId) ?? [];
+    const objects = layout?.objects.filter((object) => ownership === "personal" ? object.ownerUserId === currentUserId : !object.ownerUserId) ?? [];
     return layout && objects.length ? [{ floor, layout, objects }] : [];
-  }), [currentUserId, floors, layouts]);
+  }), [ownership, currentUserId, floors, layouts]);
 
   if (!groups.length) {
-    return <div className="inventory-empty placed-empty"><PackageOpen size={24} aria-hidden="true" /><span>No placed items yet.</span><button type="button" onClick={onOpenInventory}>Open Inventory</button></div>;
+    return <div className="inventory-empty placed-empty"><PackageOpen size={24} aria-hidden="true" /><span>No placed items yet.</span><button type="button" onClick={onOpenInventory}>Open catalog</button></div>;
   }
 
   return <div className="personal-placed-assets">

@@ -1,25 +1,21 @@
-import { Archive, Coins, Copy, Gift, Move, RotateCw, ShoppingBag } from "lucide-react";
-import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
-import { ASSET_CATALOG, MAX_LAYOUT_OBJECTS_PER_FLOOR, getDefaultAssetVariantId, roomAccessAllows, roomBuildAllows } from "@workhard/shared";
-import type { AssetRotation, Floor, FloorLayout, GameSettings, LayoutItemReference, LayoutTool, OrganisationState, PlayerEconomy } from "@workhard/shared";
+import { Archive, Coins, Copy, Gift, Move, RotateCw } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { ASSET_CATALOG, MAX_LAYOUT_OBJECTS_PER_FLOOR, MAX_OWNED_ASSETS, availablePublicMoney, isPermanentAsset, getDefaultAssetVariantId, roomAccessAllows, roomBuildAllows } from "@workhard/shared";
+import type { AssetRotation, Floor, FloorLayout, GameSettings, LayoutItemReference, LayoutTool, OrganisationState, PlayerEconomy, PublicEconomy } from "@workhard/shared";
 import { getAssetOrientationLabel, rotateAssetClockwise } from "../asset-orientation";
 import { AssetShape } from "./AssetShape";
 import { AssetBrowser } from "./AssetBrowser";
 import { AssetFeatureIndicators } from "./AssetFeatureIndicators";
 import { AssetVariantPicker } from "./AssetVariantPicker";
 import { SurfaceHeader } from "./SurfaceHeader";
-import { PlayerAssetShop } from "./PlayerAssetShop";
 import { AssetDispositionDialog } from "./economy/AssetDispositionDialog";
 import { PersonalPlacedAssets } from "./PersonalPlacedAssets";
 import { useContextActions, type ContextAction } from "./ContextMenu";
 import "../player-build-panel.css";
 
-type EconomyRequest =
-  | { id: string; type: "daily" }
-  | { id: string; type: "purchase"; assetId: string };
+type EconomyRequest = { id: string; type: "daily" };
 
 interface PlayerBuildPanelProps {
-  accountControls?: ReactNode;
   projectControls?: ReactNode;
   onSell?: (ownedAssetId: string) => void;
   onDonate?: (ownedAssetId: string) => void;
@@ -36,15 +32,20 @@ interface PlayerBuildPanelProps {
   assetId: string;
   assetVariantId: string;
   assetRotation: AssetRotation;
-  placingOwnedAssetId?: string | undefined;
   draftAssetIds?: string[] | undefined;
   selectedItem?: LayoutItemReference | undefined;
   movingItem?: LayoutItemReference | undefined;
   pendingEconomyRequest?: EconomyRequest | undefined;
   pendingPublicAction?: boolean;
   publicActionError?: string | undefined;
-  onPurchase: (assetId: string) => void;
-  onPlace: (ownedAssetId: string, assetId: string) => void;
+  ownership: "personal" | "shared";
+  publicEconomy: PublicEconomy;
+  draftPublicAssetIds?: string[] | undefined;
+  onOwnershipChange: (ownership: "personal" | "shared") => void;
+  onSelectAsset: (assetId: string, ownedAssetId?: string, publicAssetId?: string) => void;
+  onOpenStructure: () => void;
+  onOpenSharedTransfer: () => void;
+  onProposeSale: (publicAssetId: string) => void;
   onFocus: (floorId: string, objectId: string) => void;
   onAssetVariantChange: (variantId: string) => void;
   onAssetRotationChange: (rotation: AssetRotation) => void;
@@ -55,8 +56,9 @@ interface PlayerBuildPanelProps {
   onClose: () => void;
 }
 
+const catalogAssets = ASSET_CATALOG.assets.filter((asset) => asset.buildable && asset.shop && !isPermanentAsset(asset.id) && asset.kind !== "portal");
+
 export function PlayerBuildPanel({
-  accountControls,
   projectControls,
   onSell,
   onDonate,
@@ -73,15 +75,20 @@ export function PlayerBuildPanel({
   assetId,
   assetVariantId,
   assetRotation,
-  placingOwnedAssetId,
   draftAssetIds = [],
   selectedItem,
   movingItem,
   pendingEconomyRequest,
   pendingPublicAction = false,
   publicActionError,
-  onPurchase,
-  onPlace,
+  ownership,
+  publicEconomy,
+  draftPublicAssetIds = [],
+  onOwnershipChange,
+  onSelectAsset,
+  onOpenStructure,
+  onOpenSharedTransfer,
+  onProposeSale,
   onFocus,
   onAssetVariantChange,
   onAssetRotationChange,
@@ -91,29 +98,23 @@ export function PlayerBuildPanel({
   onRemoveSelected,
   onClose,
 }: PlayerBuildPanelProps) {
-  const tabs = ["inventory", "placed", "shop"] as const;
-  const [view, setView] = useState<typeof tabs[number]>("inventory");
   const contextActions = useContextActions();
-  const panelId = useId();
+  const [placedOpen, setPlacedOpen] = useState(false);
   const [disposition, setDisposition] = useState<{ assetId: string; action: "sell" | "donate" }>();
   const disposingAsset = economy.inventory.find((asset) => asset.id === disposition?.assetId && !asset.placement);
   useEffect(() => { if (disposition && !disposingAsset) setDisposition(undefined); }, [disposition, disposingAsset]);
   const selectedObject = selectedItem?.type === "asset"
-    ? layout.objects.find((object) => object.id === selectedItem.id && object.ownerUserId === currentUserId)
+    ? layout.objects.find((object) => object.id === selectedItem.id && (ownership === "shared" || object.ownerUserId === currentUserId))
     : undefined;
   const selectedAsset = selectedObject ? ASSET_CATALOG.assets.find((asset) => asset.id === selectedObject.assetId) : undefined;
   const editingAsset = ASSET_CATALOG.assets.find((asset) => asset.id === assetId);
   const canPlaceOnFloor = layout.rooms.some((room) => roomBuildAllows(room, currentUserId, gameSettings, organisation)
-    || roomAccessAllows(room, currentUserId, gameSettings, organisation) && room.personalAreas?.some((area) => area.ownerUserId === currentUserId));
-  const inventoryGroups = useMemo(() => ASSET_CATALOG.assets.flatMap((asset) => {
-    const instances = economy.inventory.filter((ownedAsset) => ownedAsset.assetId === asset.id);
-    return instances.length > 0 ? [{ asset, instances }] : [];
-  }), [economy.inventory]);
-  const inventoryByAssetId = useMemo(() => new Map(inventoryGroups.map((group) => [group.asset.id, group.instances])), [inventoryGroups]);
+    || ownership === "personal" && roomAccessAllows(room, currentUserId, gameSettings, organisation)
+      && room.personalAreas?.some((area) => area.ownerUserId === currentUserId));
   const floorFull = layout.objects.length >= MAX_LAYOUT_OBJECTS_PER_FLOOR;
   const viewingPlayerFloor = layout.floorId === playerFloorId;
-  const availableSelectedCopy = selectedObject && economy.inventory.some((asset) => asset.assetId === selectedObject.assetId
-    && !asset.placement && !draftAssetIds.includes(asset.id));
+  const availableSelectedCopy = selectedObject && (ownership === "shared" || economy.inventory.some((asset) => asset.assetId === selectedObject.assetId
+    && !asset.placement && !draftAssetIds.includes(asset.id)));
   const selectionControls = <>
     {!viewingPlayerFloor && <p className="personal-floor-notice">Visit this floor to edit or place items.</p>}
     {selectedObject && selectedAsset && (
@@ -125,11 +126,11 @@ export function PlayerBuildPanel({
               <Copy size={16} aria-hidden="true" />Copy
             </button>
           )}
-          <button className={`inventory-action${selectedItemMatches(selectedItem, movingItem) ? " active" : ""}`} disabled={!viewingPlayerFloor} aria-keyshortcuts="M" onClick={onMoveSelected}>
+          <button className={`inventory-action${selectedItemMatches(selectedItem, movingItem) ? " active" : ""}`} disabled={!viewingPlayerFloor || pendingPublicAction} aria-keyshortcuts="M" onClick={onMoveSelected}>
             <Move size={16} aria-hidden="true" />{selectedItemMatches(selectedItem, movingItem) ? "Cancel move" : "Move"}<kbd aria-hidden="true">M</kbd>
           </button>
-          <button className="inventory-action" disabled={!viewingPlayerFloor} aria-keyshortcuts="R" onClick={onRotateSelected}><RotateCw size={16} aria-hidden="true" />Rotate<kbd aria-hidden="true">R</kbd></button>
-          <button className="inventory-action inventory-action-store" aria-keyshortcuts="D" onClick={onRemoveSelected}><Archive size={16} aria-hidden="true" />Store<kbd aria-hidden="true">D</kbd></button>
+          <button className="inventory-action" disabled={!viewingPlayerFloor || pendingPublicAction} aria-keyshortcuts="R" onClick={onRotateSelected}><RotateCw size={16} aria-hidden="true" />Rotate<kbd aria-hidden="true">R</kbd></button>
+          {selectedAsset.kind !== "portal" && (!selectedObject.ownerUserId || selectedObject.ownerUserId === currentUserId) && <button className="inventory-action inventory-action-store" disabled={pendingPublicAction || !selectedObject.ownerUserId && !viewingPlayerFloor} aria-keyshortcuts="D" onClick={onRemoveSelected}><Archive size={16} aria-hidden="true" />{selectedObject.ownerUserId ? "Store" : "Remove"}<kbd aria-hidden="true">D</kbd></button>}
         </div>
       </section>
     )}
@@ -141,94 +142,66 @@ export function PlayerBuildPanel({
           <Coins size={15} aria-hidden="true" /><strong>{economy.coinBalance.toLocaleString()}</strong>
         </span>}
         actions={<button className="secondary-button build-access-button" onClick={onOpenRooms}>Room settings</button>} />
-      {accountControls}
-      <div className="asset-view-tabs" role="tablist" aria-label="Assets" data-guide="assets">
-        {tabs.map((tab) => <button key={tab} id={`${panelId}-${tab}-tab`} role="tab"
-          aria-selected={view === tab} aria-controls={`${panelId}-${tab}`} tabIndex={view === tab ? 0 : -1}
-          className={view === tab ? "active" : ""} onClick={() => setView(tab)} onKeyDown={(event) => {
-            if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-            event.preventDefault();
-            const next = event.key === "Home" ? tabs[0] : event.key === "End" ? tabs[tabs.length - 1]!
-              : tabs[(tabs.indexOf(tab) + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length]!;
-            setView(next);
-            document.getElementById(`${panelId}-${next}-tab`)?.focus();
-          }}>{tab === "inventory" ? "Inventory" : tab === "placed" ? "Placed" : "Shop"}</button>)}
+      <div className="furnishing-controls">
+        <label>Ownership<select value={ownership} disabled={pendingPublicAction || Boolean(pendingEconomyRequest)} onChange={(event) => onOwnershipChange(event.target.value as "personal" | "shared")}>
+          <option value="personal">Personal</option><option value="shared">Shared</option>
+        </select></label>
+        <button className="secondary-button" onClick={onOpenSharedTransfer}>Shared funds · {availablePublicMoney(publicEconomy, "workspace").toLocaleString()}</button>
+        <button className="secondary-button" onClick={onOpenStructure}>Structure</button>
       </div>
-      <div className="player-shop-view" id={`${panelId}-shop`} role="tabpanel" aria-labelledby={`${panelId}-shop-tab`} hidden={view !== "shop"}>
-        <PlayerAssetShop economy={economy} pending={Boolean(pendingEconomyRequest)}
-          purchasingAssetId={pendingEconomyRequest?.type === "purchase" ? pendingEconomyRequest.assetId : undefined} onPurchase={onPurchase} />
-      </div>
-      <div className="panel-scroll build-panel-scroll" id={`${panelId}-placed`} role="tabpanel" aria-labelledby={`${panelId}-placed-tab`} hidden={view !== "placed"}>
-        {view === "placed" && selectionControls}
-        <PersonalPlacedAssets currentUserId={currentUserId} layouts={layouts} floors={floors}
-          activeFloorId={layout.floorId} selectedItem={selectedItem} onFocus={onFocus} onOpenInventory={() => setView("inventory")} />
-      </div>
-      <div className="player-inventory-view" id={`${panelId}-inventory`} role="tabpanel" aria-labelledby={`${panelId}-inventory-tab`} hidden={view !== "inventory"}>
-        {view === "inventory" && selectionControls}
-        <section className="build-section asset-library" aria-label="Inventory">
-          <AssetBrowser assets={inventoryGroups.map(({ asset }) => asset)} categoryLabel="Inventory categories" empty={
-            <div className="inventory-empty">
-              <ShoppingBag size={22} />
-              <span>No assets yet.</span>
-              <button onClick={() => setView("shop")}>Open shop</button>
+      {selectionControls}
+      <button className="secondary-button furnishing-placed-toggle" aria-expanded={placedOpen} onClick={() => setPlacedOpen(!placedOpen)}>Placed items</button>
+      {placedOpen && <div className="panel-scroll build-panel-scroll">
+        <PersonalPlacedAssets ownership={ownership} currentUserId={currentUserId} layouts={layouts} floors={floors}
+          activeFloorId={layout.floorId} selectedItem={selectedItem} onFocus={onFocus} onOpenInventory={() => setPlacedOpen(false)} />
+      </div>}
+      {!placedOpen && <div className="player-inventory-view" data-guide="assets">
+        <section className="build-section asset-library" aria-label="Furniture">
+          <AssetBrowser assets={catalogAssets} categoryLabel="Furniture categories" renderAsset={(asset) => {
+            const personal = economy.inventory.filter((instance) => instance.assetId === asset.id && !instance.placement && !draftAssetIds.includes(instance.id));
+            const shared = publicEconomy.inventory.filter((instance) => instance.assetId === asset.id && instance.fundId === "workspace" && !draftPublicAssetIds.includes(instance.id));
+            const owned = ownership === "personal" ? personal[0] : undefined;
+            const stored = ownership === "shared" ? shared[0] : undefined;
+            const count = ownership === "personal" ? personal.length : shared.length;
+            const price = owned || stored ? 0 : asset.shop!.price;
+            const balance = ownership === "personal" ? economy.coinBalance : availablePublicMoney(publicEconomy, "workspace");
+            const sharedOnly = ownership === "personal" && !asset.shop!.available && !owned;
+            const inventoryFull = ownership === "personal" && !owned && economy.inventory.length >= MAX_OWNED_ASSETS;
+            const disabled = pendingPublicAction || Boolean(pendingEconomyRequest) || !viewingPlayerFloor || !canPlaceOnFloor || floorFull || sharedOnly || inventoryFull || ownership === "personal" && price > balance;
+            const select = () => onSelectAsset(asset.id, owned?.id, stored?.id);
+            const label = sharedOnly ? "Shared only" : inventoryFull ? "Inventory full" : floorFull ? "Floor full" : ownership === "personal" && price > balance ? `Need ${price - balance}` : "Preview";
+            const sellable = personal.find((instance) => instance.purchasePrice >= 3);
+            return <article className={`catalog-asset inventory-asset${tool === "asset" && assetId === asset.id ? " active" : ""}`} key={asset.id}
+              data-rarity={asset.rarity} aria-description={`${asset.rarity} rarity`} tabIndex={0} {...contextActions(() => {
+                const actions: ContextAction[] = [{ label: "Preview", icon: Move, onSelect: select, disabled }];
+                if (ownership === "personal" && onSell && sellable) actions.push({ label: "Sell", icon: Coins, onSelect: () => setDisposition({ assetId: sellable.id, action: "sell" }), disabled: pendingPublicAction });
+                if (ownership === "personal" && onDonate && owned) actions.push({ label: "Donate", icon: Gift, onSelect: () => setDisposition({ assetId: owned.id, action: "donate" }), disabled: pendingPublicAction });
+                if (stored && stored.paid >= 3) actions.push({ label: "Propose sale", icon: Coins, onSelect: () => onProposeSale(stored.id), disabled: pendingPublicAction });
+                return actions;
+              })}>
+              <AssetShape asset={asset} rotation={asset.id === assetId ? assetRotation : 0} variantId={asset.id === assetId ? assetVariantId : getDefaultAssetVariantId(asset)} />
+              <div className="catalog-asset-details"><strong>{asset.name}</strong><span>{count ? `${count} owned` : `${price} coins`}</span></div>
+              <span className="catalog-asset-features"><AssetFeatureIndicators asset={asset} /></span>
+              <button aria-label={`${label} ${asset.name}`} disabled={disabled} onClick={select}>{label}</button>
+              {ownership === "personal" && owned && <div className="inventory-actions">
+                {onSell && sellable && <button className="inventory-action inventory-action-sell" disabled={pendingPublicAction}
+                  aria-label={`Sell ${asset.name} for ${Math.floor(sellable.purchasePrice / 3)} coins`} onClick={() => setDisposition({ assetId: sellable.id, action: "sell" })}><Coins size={17} aria-hidden="true" />Sell</button>}
+                {onDonate && <button className="inventory-action" disabled={pendingPublicAction} aria-label={`Donate ${asset.name}`} onClick={() => setDisposition({ assetId: owned.id, action: "donate" })}><Gift size={16} aria-hidden="true" />Donate</button>}
+              </div>}
+              {stored && stored.paid >= 3 && <button className="inventory-action" disabled={pendingPublicAction} onClick={() => onProposeSale(stored.id)}>Propose sale · {Math.floor(stored.paid / 3)}</button>}
+            </article>;
+          }} footer={(tool === "asset" || movingItem?.type === "asset") && editingAsset && (
+            <div className="asset-placement-options">
+              <AssetVariantPicker asset={editingAsset} rotation={assetRotation} value={assetVariantId} onChange={onAssetVariantChange} />
+              <button className="asset-rotate" aria-label={`Rotate asset clockwise, currently facing ${getAssetOrientationLabel(assetRotation)}`}
+                onClick={() => onAssetRotationChange(rotateAssetClockwise(assetRotation))}>
+                <RotateCw size={16} /><span>Rotate · {getAssetOrientationLabel(assetRotation)}</span><kbd>R</kbd>
+              </button>
             </div>
-          } renderAsset={(asset) => {
-                const instances = inventoryByAssetId.get(asset.id)!;
-                const available = instances.filter((instance) => !instance.placement && !draftAssetIds.includes(instance.id));
-                const sellable = available.find((instance) => instance.purchasePrice >= 3);
-                const drafted = instances.filter((instance) => !instance.placement && draftAssetIds.includes(instance.id)).length;
-                const placed = instances.length - available.length - drafted;
-                const counts = [available.length && `${available.length} available`, placed && `${placed} placed`, drafted && `${drafted} in draft`]
-                  .filter(Boolean).join(" · ");
-                const placing = instances.some((instance) => instance.id === placingOwnedAssetId);
-                return (
-                  <article className={`catalog-asset inventory-asset${placing ? " active" : ""}`} key={asset.id} data-rarity={asset.rarity}
-                    aria-description={`${asset.rarity} rarity`}
-                    tabIndex={0} {...contextActions(() => {
-                      const first = available[0];
-                      const busy = pendingPublicAction || Boolean(pendingEconomyRequest);
-                      const actions: ContextAction[] = [
-                        { label: "Place", icon: Move, onSelect: () => first && onPlace(first.id, asset.id), disabled: busy || !first || !viewingPlayerFloor || !canPlaceOnFloor || floorFull },
-                      ];
-                      if (onSell && sellable) actions.push({ label: "Sell", icon: Coins, onSelect: () => setDisposition({ assetId: sellable.id, action: "sell" }), disabled: busy });
-                      if (onDonate) actions.push({ label: "Donate", icon: Gift, onSelect: () => first && setDisposition({ assetId: first.id, action: "donate" }), disabled: busy || !first });
-                      return actions;
-                    })}>
-                    <AssetShape asset={asset} rotation={asset.id === assetId ? assetRotation : 0} variantId={asset.id === assetId ? assetVariantId : getDefaultAssetVariantId(asset)} />
-                    <div className="catalog-asset-details"><strong>{asset.name}</strong><span>{counts}</span></div>
-                    <span className="catalog-asset-features"><AssetFeatureIndicators asset={asset} /></span>
-                    <button
-                      disabled={pendingPublicAction || Boolean(pendingEconomyRequest) || available.length === 0 || !viewingPlayerFloor || !canPlaceOnFloor || floorFull}
-                      onClick={() => onPlace(available[0]!.id, asset.id)}
-                    >
-                      {placing ? "Placing…" : floorFull ? "Floor full" : "Place"}
-                    </button>
-                    {available[0] && (sellable && onSell || onDonate) && <div className="inventory-actions">
-                      {onSell && sellable && <button className="inventory-action inventory-action-sell" disabled={pendingPublicAction || Boolean(pendingEconomyRequest)}
-                        aria-label={`Sell ${asset.name} for ${Math.floor(sellable.purchasePrice / 3)} coins`} onClick={() => setDisposition({ assetId: sellable.id, action: "sell" })}>
-                        <Coins size={17} aria-hidden="true" />Sell <span className="inventory-sale-value">{Math.floor(sellable.purchasePrice / 3)}</span>
-                      </button>}
-                      {onDonate && <button className="inventory-action" aria-label={`Donate ${asset.name}`} disabled={pendingPublicAction || Boolean(pendingEconomyRequest)} onClick={() => setDisposition({ assetId: available[0]!.id, action: "donate" })}>
-                        <Gift size={16} aria-hidden="true" />Donate
-                      </button>}
-                    </div>}
-                  </article>
-                );
-              }} footer={((tool === "asset" && placingOwnedAssetId) || movingItem?.type === "asset") && editingAsset && (
-              <div className="asset-placement-options">
-                <AssetVariantPicker asset={editingAsset} rotation={assetRotation} value={assetVariantId} onChange={onAssetVariantChange} />
-                <button className="asset-rotate"
-                  aria-label={`Rotate asset clockwise, currently facing ${getAssetOrientationLabel(assetRotation)}`}
-                  onClick={() => onAssetRotationChange(rotateAssetClockwise(assetRotation))}>
-                  <RotateCw size={16} /><span>Rotate · {getAssetOrientationLabel(assetRotation)}</span><kbd>R</kbd>
-                </button>
-              </div>
-            )} />
-          {!canPlaceOnFloor && inventoryGroups.length > 0 && (
-            <span className="room-validation">No rooms on this floor allow placement.</span>
-          )}
+          )} />
+          {!canPlaceOnFloor && <span className="room-validation">No rooms on this floor allow placement.</span>}
         </section>
-      </div>
+      </div>}
       {projectControls}
       {disposition && disposingAsset && <AssetDispositionDialog asset={disposingAsset} action={disposition.action} pending={pendingPublicAction}
         error={publicActionError}

@@ -1,7 +1,7 @@
 import { assertPublicReachability, assertTeleportersRetained } from "../world/public-reachability.js";
 import { randomUUID } from "node:crypto";
 import {
-  WORKSPACE_FUND_ID, approvalRateForAction, availablePublicMoney, detectLayoutRooms, getAssetDefinition, canManageUnit, permissionAllows, projectRequiredMoney, publicFundForUnit, publicFundMemberIds, rebaseProjectLayout, roomBuildAllows, validatePersonalSpaces, type BuildProject, type FloorLayout,
+  OWNER_FURNISHING_SPEND_LIMIT, WORKSPACE_FUND_ID, approvalRateForAction, availablePublicMoney, detectLayoutRooms, getAssetDefinition, canManageUnit, permissionAllows, projectRequiredMoney, publicFundForUnit, publicFundMemberIds, rebaseProjectLayout, roomBuildAllows, validatePersonalSpaces, type BuildProject, type FloorLayout,
   type ProjectEdit, type PublicAction, type ServerEvent, type SpendingProposal,
 } from "@workhard/shared";
 import type { WorkspaceStore } from "../store.js";
@@ -31,28 +31,14 @@ export class ProjectRuntime {
     broadcast: (event: ServerEvent) => void;
   }) {}
 
-  edit(peer: ProjectPeer, requestId: string, baseRevision: number, fundId: string, edit: ProjectEdit, draftId?: string, proposalId?: string): void {
+  edit(peer: ProjectPeer, requestId: string, baseRevision: number, fundId: string, edit: ProjectEdit, draftId?: string, proposalId?: string): BuildProject {
     const original = this.store.getLayout(peer.floorId);
     if (!original || original.revision !== baseRevision) throw new Error("PROJECT_STALE");
-    let existing = draftId ? this.drafts.get(peer.userId) : undefined;
-    if (proposalId && (!existing || existing.project.id !== draftId || existing.proposalId !== proposalId)) {
-      const proposal = this.store.publicEconomy.proposal(proposalId);
-      if (proposal.proposedBy !== peer.userId || !["open", "approved"].includes(proposal.status)
-        || proposal.action.kind !== "project" || proposal.action.project.id !== draftId) throw new Error("PROJECT_STALE");
-      const current = this.store.getLayout(proposal.action.project.floorId);
-      const floor = this.store.getFloor(proposal.action.project.floorId);
-      if (!current || !floor) throw new Error("PROJECT_STALE");
-      const rebased = rebaseProjectLayout(proposal.action.project, current, floor);
-      existing = { project: { ...proposal.action.project, baseRevision: current.revision, baseLayout: structuredClone(current), layout: rebased.layout,
-        quote: quoteProject(current, rebased.layout, fundId, this.store.publicEconomy.receipts, this.store.publicEconomy.inventory,
-          new Map(proposal.action.project.donatedAssets?.map(({ key, id }) => [key, id])), this.store.getFloors().length) },
-        donatedObjects: new Map(proposal.action.project.donatedAssets?.map(({ key, id }) => [key, id])), submitted: false, proposalId };
-    }
-    if (draftId && (!existing || existing.project.id !== draftId || existing.submitted)) throw new Error("PROJECT_STALE");
-    if (existing && (existing.project.floorId !== peer.floorId || existing.project.fundId !== fundId)) throw new Error("PROJECT_STALE");
+    let existing = this.editableDraft(peer, draftId, proposalId);
+    if (existing && existing.project.fundId !== fundId) throw new Error("PROJECT_STALE");
     if (existing && existing.project.baseRevision !== baseRevision) {
       const rebased = rebaseProjectLayout(existing.project, original, this.store.getFloor(peer.floorId)!);
-      existing.project = { ...existing.project, baseRevision, baseLayout: structuredClone(original), layout: rebased.layout };
+      existing = { ...existing, project: { ...existing.project, baseRevision, baseLayout: structuredClone(original), layout: rebased.layout } };
     }
     if ((existing?.project.edits ?? 0) >= 200) throw new Error("PROJECT_LIMIT");
     const fund = this.store.publicEconomy.fund(fundId);
@@ -74,45 +60,68 @@ export class ProjectRuntime {
         ? { floorCount: this.store.getFloors().length } : {}), edits: (existing?.project.edits ?? 0) + 1, ...(spawn ? { spawn } : {}) };
     assertTeleportersRetained(original, layout);
     assertPublicReachability({ ...this.store.getFloor(peer.floorId)!, ...(spawn ? { spawn } : {}) }, layout, this.store.getGameSettings());
+    project.quote.requiresApproval = !this.projectApproval(peer.userId, project).direct && this.store.publicEconomy.getApprovalRates().building > 0;
     this.drafts.set(peer.userId, { project, donatedObjects, submitted: false, ...(existing?.proposalId ? { proposalId: existing.proposalId } : {}) });
     peer.send({ type: "project.preview", requestId, project: structuredClone(project) });
+    return project;
+  }
+
+  personalAssetIds(peer: ProjectPeer, draftId?: string, proposalId?: string): string[] {
+    const draft = this.editableDraft(peer, draftId, proposalId);
+    return draft?.project.layout.objects.flatMap((object) => object.ownedAssetId ? [object.ownedAssetId] : []) ?? [];
+  }
+
+  resendPreview(peer: ProjectPeer, requestId: string, draftId: string): void {
+    const draft = this.drafts.get(peer.userId);
+    if (!draft || draft.project.id !== draftId || draft.submitted || draft.project.floorId !== peer.floorId) return;
+    if (draft.proposalId) {
+      this.store.getPublicEconomy();
+      if (!["open", "approved"].includes(this.store.publicEconomy.proposal(draft.proposalId).status)) return;
+    }
+    peer.send({ type: "project.preview", requestId, project: structuredClone(draft.project) });
   }
 
   submit(peer: ProjectPeer, requestId: string, draftId: string, title: string, proposalId?: string): void {
-    const fingerprint = `project:${draftId}:${title}`;
+    const fingerprint = JSON.stringify({ draftId, title, proposalId });
     const replay = this.store.publicEconomy.findOperation(peer.userId, requestId, fingerprint);
     if (replay !== undefined) {
-      peer.send({ type: "project.submitted", requestId, ...(replay ? { proposalId: replay } : {}) });
+      peer.send({ type: "project.submitted", requestId, ...(replay && this.store.publicEconomy.proposal(replay).status !== "applied" ? { proposalId: replay } : {}) });
       return;
     }
     const draft = this.drafts.get(peer.userId);
-    if (!draft || draft.project.id !== draftId || draft.submitted) throw new Error("PROJECT_STALE");
+    if (!draft || draft.project.id !== draftId || draft.submitted || draft.proposalId !== proposalId) throw new Error("PROJECT_STALE");
     this.store.getPublicEconomy();
     const project = this.validateProject(peer.userId, draft.project);
     const action: PublicAction = { kind: "project", project };
     const options = this.projectApproval(peer.userId, project);
     let submittedProposalId: string;
     if (proposalId) {
-      if (draft.proposalId !== proposalId) throw new Error("PROJECT_STALE");
       const proposal = this.store.publicEconomy.proposal(proposalId);
       if (proposal.proposedBy !== peer.userId || !["open", "approved"].includes(proposal.status)) throw new Error("PROJECT_STALE");
       if (!options.electorate.length && !options.direct && approvalRateForAction(this.store.publicEconomy.getApprovalRates(), action) > 0) throw new Error("PROPOSAL_NO_APPROVERS");
-      const revisedAutomaticProposal = proposal.approvalRate === 0 && !options.direct;
-      proposal.title = title;
-      proposal.action = structuredClone(action);
-      proposal.electorate = options.electorate;
-      proposal.approvalRate = options.direct ? 0 : approvalRateForAction(this.store.publicEconomy.getApprovalRates(), action);
-      proposal.ballots = [];
-      proposal.required = revisedAutomaticProposal ? 1 : Math.ceil(proposal.electorate.length * proposal.approvalRate / 100);
-      proposal.status = proposal.required === 0 ? "approved" : "open";
-      proposal.expiresAt = new Date(Date.now() + (process.env.NODE_ENV === "production" ? 7 * 86_400_000 : 10_000)).toISOString();
-      if (proposal.required === 0 && projectRequiredMoney(project) <= availablePublicMoney(this.store.publicEconomy.view(), project.fundId)) this.execute(peer, requestId, proposal.id);
-      else this.publish(requestId);
+      const checkpoint = this.store.exportMutableState();
+      const wasDirty = this.store.dirty;
+      try {
+        proposal.title = title;
+        proposal.action = structuredClone(action);
+        proposal.electorate = options.electorate;
+        proposal.approvalRate = options.direct ? 0 : approvalRateForAction(this.store.publicEconomy.getApprovalRates(), action);
+        proposal.ballots = [];
+        proposal.required = Math.ceil(proposal.electorate.length * proposal.approvalRate / 100);
+        proposal.status = proposal.required === 0 ? "approved" : "open";
+        proposal.expiresAt = new Date(Date.now() + (process.env.NODE_ENV === "production" ? 7 * 86_400_000 : 10_000)).toISOString();
+        if (proposal.required === 0 && projectRequiredMoney(project) <= availablePublicMoney(this.store.publicEconomy.view(), project.fundId)) this.execute(peer, requestId, proposal.id);
+        else this.publish(requestId);
+      } catch (error) {
+        this.store.restoreMutableState(checkpoint);
+        if (wasDirty) this.store.markDirty();
+        throw error;
+      }
       submittedProposalId = proposal.id;
     } else submittedProposalId = this.submitProposal(peer, requestId, title, action, project.fundId, options);
     draft.submitted = true;
     this.store.publicEconomy.recordOperation(peer.userId, requestId, fingerprint, submittedProposalId);
-    peer.send({ type: "project.submitted", requestId, proposalId: submittedProposalId });
+    peer.send({ type: "project.submitted", requestId, ...(this.store.publicEconomy.proposal(submittedProposalId).status !== "applied" ? { proposalId: submittedProposalId } : {}) });
   }
 
   propose(peer: ProjectPeer, requestId: string, title: string, action: Exclude<PublicAction, { kind: "project" }>): void {
@@ -148,11 +157,13 @@ export class ProjectRuntime {
       : proposal.action;
     if (action.kind !== "project") this.validateAction(proposal.proposedBy, action);
     const checkpoint = this.store.exportMutableState();
+    const wasDirty = this.store.dirty;
     try {
       proposal.status = "applied";
       this.callbacks.apply({ ...peer, userId: proposal.proposedBy }, action, requestId);
     } catch (error) {
       this.store.restoreMutableState(checkpoint);
+      if (wasDirty) this.store.markDirty();
       throw error;
     }
     this.publish(requestId);
@@ -208,8 +219,10 @@ export class ProjectRuntime {
       ? members.filter((id) => affectedRooms.some((room) => roomBuildAllows(room, id, settings, organisation)))
       : fundMembers;
     const ownerRoom = affectedRooms.length === 1 ? affectedRooms[0] : undefined;
-    const direct = Boolean(ownerRoom && ownerRoom.ownerUserId === userId && ownerRoom.ownerBuildApproval === "direct"
+    const direct = Boolean(ownerRoom?.privateEligible && ownerRoom.ownerUserId === userId && ownerRoom.ownerBuildApproval !== "vote"
       && impact.containedRoomIds.includes(ownerRoom.id) && !project.quote.structural && !project.spawn
+      && project.quote.cost <= OWNER_FURNISHING_SPEND_LIMIT
+      && !project.quote.assetChanges.some(({ object }) => getAssetDefinition(object.assetId)?.kind === "portal")
       && project.quote.assetChanges.length > 0 && JSON.stringify(layout.tiles) === JSON.stringify(project.layout.tiles)
       && roomBuildAllows(ownerRoom, userId, settings, organisation));
     return { electorate, direct };
@@ -231,6 +244,30 @@ export class ProjectRuntime {
     const fund = this.store.publicEconomy.fund(fundId);
     if (!this.store.getMember(userId) || (!publicFundMemberIds(fund, organisation, this.store.getMembers().map((member) => member.id)).includes(userId)
       && !canManageUnit(organisation, userId, fund.unitId))) throw new Error("PUBLIC_FUND_FORBIDDEN");
+  }
+
+  private editableDraft(peer: ProjectPeer, draftId?: string, proposalId?: string): Draft | undefined {
+    let draft = draftId ? this.drafts.get(peer.userId) : undefined;
+    if (proposalId) {
+      this.store.getPublicEconomy();
+      const proposal = this.store.publicEconomy.proposal(proposalId);
+      if (proposal.proposedBy !== peer.userId || !["open", "approved"].includes(proposal.status)
+        || proposal.action.kind !== "project" || proposal.action.project.id !== draftId) throw new Error("PROJECT_STALE");
+      if (!draft || draft.project.id !== draftId || draft.proposalId !== proposalId || draft.submitted) {
+        const project = proposal.action.project;
+        const current = this.store.getLayout(project.floorId);
+        const floor = this.store.getFloor(project.floorId);
+        if (!current || !floor) throw new Error("PROJECT_STALE");
+        const rebased = rebaseProjectLayout(project, current, floor);
+        const donatedObjects = new Map(project.donatedAssets?.map(({ key, id }) => [key, id]));
+        draft = { project: { ...project, baseRevision: current.revision, baseLayout: structuredClone(current), layout: rebased.layout,
+          quote: quoteProject(current, rebased.layout, project.fundId, this.store.publicEconomy.receipts,
+            this.store.publicEconomy.inventory, donatedObjects, this.store.getFloors().length) }, donatedObjects, submitted: false, proposalId };
+      }
+    }
+    if (draftId && (!draft || draft.project.id !== draftId || draft.submitted || draft.proposalId !== proposalId)) throw new Error("PROJECT_STALE");
+    if (draft && draft.project.floorId !== peer.floorId) throw new Error("PROJECT_STALE");
+    return draft;
   }
 
   private validateProject(userId: string, project: BuildProject): BuildProject {
@@ -256,9 +293,11 @@ export class ProjectRuntime {
       const owned = this.store.getOwnedAsset(object.ownerUserId, object.ownedAssetId);
       if (owned.assetId !== object.assetId || owned.placement && owned.placement.objectId !== object.id) throw new Error("ASSET_ALREADY_PLACED");
     }
-    return { ...project, baseRevision: layout.revision, baseLayout: structuredClone(layout), layout: next,
+    const validated = { ...project, baseRevision: layout.revision, baseLayout: structuredClone(layout), layout: next,
       quote: quoteProject(layout, next, project.fundId, this.store.publicEconomy.receipts, this.store.publicEconomy.inventory,
         new Map(project.donatedAssets?.map(({ key, id }) => [key, id])), this.store.getFloors().length) };
+    validated.quote.requiresApproval = !this.projectApproval(userId, validated).direct && this.store.publicEconomy.getApprovalRates().building > 0;
+    return validated;
   }
 
   private validateAction(userId: string, action: Exclude<PublicAction, { kind: "project" }>): string {

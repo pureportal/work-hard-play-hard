@@ -78,8 +78,8 @@ describe("Shared building protocol", () => {
     expect(store.getLayout("floor-studio")!.walls).toHaveLength(1);
   });
 
-  it("requires a new vote when an approved 0% draft is revised", () => {
-    const { store, send, events, jonas } = setup();
+  it("keeps a revised 0% draft approved and applies it after funding", () => {
+    const { store, send, events } = setup();
     store.publicEconomy.updateApprovalRates({ ...store.publicEconomy.getApprovalRates(), building: 0 });
     send({ type: "project.edit", requestId: "zero-preview", baseRevision: 0, fundId: "workspace",
       edit: { tool: "wall", start: { x: -256, y: -256 }, end: { x: -128, y: -256 } } });
@@ -92,15 +92,13 @@ describe("Shared building protocol", () => {
         start: { x: -256, y: -192 }, end: { x: -128, y: -192 } } });
     const revised = events.findLast((event) => event.type === "project.preview")!;
     send({ type: "project.submit", requestId: "zero-resubmit", draftId: revised.project.id, proposalId: proposal.id, title: "Revised wall" });
-    expect(store.getPublicEconomy().proposals[0]).toMatchObject({ status: "open", approvalRate: 0, required: 1, ballots: [] });
+    expect(store.getPublicEconomy().proposals[0]).toMatchObject({ status: "approved", approvalRate: 0, required: 0, ballots: [] });
     const restored = new WorkspaceStore(createTestData());
     restored.restoreMutableState(store.exportMutableState());
-    expect(restored.getPublicEconomy().proposals[0]).toMatchObject({ status: "open", required: 1 });
+    expect(restored.getPublicEconomy().proposals[0]).toMatchObject({ status: "approved", required: 0 });
     send({ type: "economy.donate", requestId: "zero-fund", fundId: "workspace", amount: 48 });
-    send({ type: "public_economy.execute", requestId: "zero-before-vote", proposalId: proposal.id });
-    expect(events).toContainEqual(expect.objectContaining({ type: "command.error", requestId: "zero-before-vote", code: "PROJECT_APPROVAL_REQUIRED" }));
-    send({ type: "public_economy.vote", requestId: "zero-vote", proposalId: proposal.id, approve: true }, jonas);
     send({ type: "public_economy.execute", requestId: "zero-apply", proposalId: proposal.id });
+    expect(events).not.toContainEqual(expect.objectContaining({ type: "command.error", requestId: "zero-apply" }));
     expect(store.getPublicEconomy().proposals[0]!.status).toBe("applied");
     expect(store.getLayout("floor-studio")!.walls[0]!.start.y).toBe(-192);
   });

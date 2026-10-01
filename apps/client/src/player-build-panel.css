@@ -2,6 +2,33 @@
   display: none;
 }
 
+.furnishing-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+  padding: 10px 14px;
+}
+
+.furnishing-controls label {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+}
+
+.furnishing-controls select {
+  min-height: 36px;
+  padding: 6px;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.furnishing-placed-toggle {
+  margin: 0 14px 8px;
+}
+
 .player-inventory-view {
   display: flex;
   flex: 1;
@@ -22,42 +49,6 @@
 
 .player-inventory-view > .asset-library > .room-validation {
   flex-shrink: 0;
-}
-
-.player-build-panel .asset-view-tabs {
-  flex-shrink: 0;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0;
-  margin: 0;
-  padding: 0 14px;
-  background: transparent;
-  border-bottom: 1px solid var(--line);
-  border-radius: 0;
-}
-
-.player-build-panel .asset-view-tabs button {
-  min-height: 46px;
-  color: var(--muted);
-  font-size: 12px;
-  background: transparent;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-}
-
-.player-build-panel .asset-view-tabs button:hover {
-  color: var(--ink);
-}
-
-.player-build-panel .asset-view-tabs button.active,
-:root[data-theme="dark"] .player-build-panel .asset-view-tabs button.active {
-  color: var(--accent-text);
-  background: transparent;
-  border-bottom-color: var(--accent);
-  box-shadow: none;
-}
-
-:root[data-theme="dark"] .player-build-panel .asset-view-tabs button.active {
-  color: #c8c1ff;
 }
 
 .player-build-panel .build-selection {
@@ -191,19 +182,6 @@
   }
 }
 
-.player-shop-view,
-.player-asset-shop {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
-  min-width: 0;
-}
-
-.player-asset-shop {
-  padding: 12px 14px 0;
-}
-
 .player-build-panel .panel-scroll.build-panel-scroll {
   padding: 12px 14px;
 }
@@ -231,8 +209,7 @@
   gap: 8px;
 }
 
-.player-build-panel .asset-browser .inventory-asset > button,
-.player-build-panel .asset-browser .shop-asset > button {
+.player-build-panel .asset-browser .inventory-asset > button {
   min-height: 38px;
   padding-inline: 6px;
   color: var(--accent-text);
@@ -242,13 +219,13 @@
   font-size: 12px;
 }
 
-.player-build-panel .asset-browser :is(.inventory-asset, .shop-asset) > button:hover:not(:disabled) {
+.player-build-panel .asset-browser .inventory-asset > button:hover:not(:disabled) {
   color: white;
   background: var(--accent);
   border-color: var(--accent);
 }
 
-.player-build-panel .asset-browser :is(.inventory-asset, .shop-asset) > button:disabled {
+.player-build-panel .asset-browser .inventory-asset > button:disabled {
   color: var(--muted);
   background: var(--panel);
   border-color: var(--line);
@@ -257,15 +234,6 @@
 }
 
 @media (max-width: 700px) {
-  .player-build-panel .asset-view-tabs {
-    padding-inline: 10px;
-  }
-
-  .player-build-panel .asset-view-tabs button {
-    min-height: 42px;
-  }
-
-  .player-asset-shop,
   .player-inventory-view > .asset-library {
     padding: 9px 10px 10px;
   }
@@ -315,8 +283,7 @@
   }
 
   .player-build-panel:has(> .project-toolbar) > .build-panel-scroll:not([hidden]),
-  .player-build-panel:has(> .project-toolbar) > .player-inventory-view:not([hidden]),
-  .player-build-panel:has(> .project-toolbar) > .player-shop-view:not([hidden]) {
+  .player-build-panel:has(> .project-toolbar) > .player-inventory-view {
     flex: 1 0 180px;
   }
 

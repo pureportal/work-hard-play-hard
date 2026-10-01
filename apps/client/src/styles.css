@@ -2588,32 +2588,6 @@ button:disabled {
   font-size: 16px;
 }
 
-.asset-view-tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  margin: 14px 16px 5px;
-  padding: 4px;
-  background: #f0ede9;
-  border-radius: 10px;
-}
-
-.asset-view-tabs button {
-  min-height: 34px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 750;
-  background: transparent;
-  border: 0;
-  border-radius: 7px;
-}
-
-.asset-view-tabs button.active {
-  color: var(--ink);
-  background: white;
-  box-shadow: 0 2px 8px #28263112;
-}
-
 .inventory-grid {
   display: grid;
   gap: 7px;
@@ -3869,7 +3843,6 @@ button:disabled {
 :root[data-theme="dark"] .auth-tabs,
 :root[data-theme="dark"] .floor-picker,
 :root[data-theme="dark"] .panel-search,
-:root[data-theme="dark"] .asset-view-tabs,
 :root[data-theme="dark"] .message-composer button.composer-attachment,
 :root[data-theme="dark"] .pending-icon {
   background: #302e38;
@@ -3886,7 +3859,6 @@ button:disabled {
 :root[data-theme="dark"] .room-fields,
 :root[data-theme="dark"] .room-fields input,
 :root[data-theme="dark"] .room-fields select,
-:root[data-theme="dark"] .asset-view-tabs button.active,
 :root[data-theme="dark"] .shop-asset > button,
 :root[data-theme="dark"] .inventory-asset > button,
 :root[data-theme="dark"] .inventory-empty button,
@@ -4347,7 +4319,6 @@ button:disabled {
   .asset-variants button,
   .asset-rotate,
   .build-selection button,
-  .asset-view-tabs button,
   .shop-asset > button,
   .inventory-asset > button,
   .inventory-empty button,

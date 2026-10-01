@@ -118,6 +118,7 @@ const SNAPSHOT_COMMAND_TYPES = new Set<ClientCommand["type"]>([
   "proximity.set_media",
   "proximity.leave",
   "player_asset.place",
+  "player_asset.purchase_place",
   "player_asset.move",
   "player_asset.remove",
   "asset.interact",
@@ -137,6 +138,7 @@ const SPATIAL_COMMAND_TYPES = new Set<ClientCommand["type"]>([
   "kidnapping.start",
   "kidnapping.stop",
   "player_asset.place",
+  "player_asset.purchase_place",
   "player_asset.move",
   "player_asset.remove",
   "asset.interact",
@@ -542,6 +544,9 @@ export class WorldRuntime {
           this.projects.publish(command.requestId);
           break;
         }
+        case "player_asset.purchase_place":
+          this.purchaseAndPlacePlayerAsset(peer, command);
+          break;
         case "player_asset.place":
           this.placePlayerAsset(peer, command.requestId, command.baseRevision, command.ownedAssetId, command.position, command.variantId, command.rotation);
           break;
@@ -2130,6 +2135,47 @@ export class WorldRuntime {
     this.store.dirty = true;
   }
 
+  private purchaseAndPlacePlayerAsset(peer: Peer, command: Extract<ClientCommand, { type: "player_asset.purchase_place" }>): void {
+    const { requestId, baseRevision, assetId, position, variantId, rotation, draftId, proposalId } = command;
+    const fingerprint = JSON.stringify({ ...command, floorId: peer.floorId });
+    const replay = this.store.publicEconomy.findOperation(peer.userId, requestId, fingerprint);
+    if (replay !== undefined) {
+      if (replay) this.projects.resendPreview(peer, requestId, replay);
+      else this.broadcastLayout(this.store.getLayout(peer.floorId)!, { userId: peer.userId, requestId });
+      this.publishEconomy(peer.userId, requestId);
+      return;
+    }
+    const layout = this.store.getLayout(peer.floorId);
+    if (!layout) throw new Error("FLOOR_NOT_FOUND");
+    if (layout.revision !== baseRevision) {
+      peer.send({ type: "layout.conflict", requestId, revision: layout.revision });
+      return;
+    }
+    const usedAssetIds = this.projects.personalAssetIds(peer, draftId, proposalId);
+    const checkpoint = this.store.exportMutableState();
+    const wasDirty = this.store.dirty;
+    try {
+      const available = this.store.getPlayerEconomy(peer.userId).inventory.find((asset) => asset.assetId === assetId && !asset.placement && !usedAssetIds.includes(asset.id));
+      const purchase = available ? undefined : this.store.purchaseAsset(peer.userId, assetId, requestId);
+      const ownedAssetId = available?.id ?? purchase!.transaction.ownedAssetId!;
+      const candidate = { ...this.createAsset(peer.floorId, assetId, variantId, rotation, snapToAssetRaster(position.x), snapToAssetRaster(position.y)), ownerUserId: peer.userId, ownedAssetId };
+      let result = "";
+      if (!draftId && isInPersonalSpace(layout, candidate, peer.userId)) {
+        this.placePlayerAsset(peer, requestId, baseRevision, ownedAssetId, position, variantId, rotation);
+      } else {
+        const project = this.projects.edit(peer, requestId, baseRevision, "workspace", { tool: "personal_asset", ownedAssetId, position, variantId, rotation }, draftId, proposalId);
+        result = project.id;
+      }
+      this.store.publicEconomy.recordOperation(peer.userId, requestId, fingerprint, result);
+      this.store.markDirty();
+      this.publishEconomy(peer.userId, requestId, purchase?.transaction);
+    } catch (error) {
+      this.store.restoreMutableState(checkpoint);
+      if (wasDirty) this.store.markDirty();
+      throw error;
+    }
+  }
+
   private placePlayerAsset(
     peer: Peer,
     requestId: string,
@@ -2229,7 +2275,9 @@ export class WorldRuntime {
   }
 
   private removePlayerAsset(peer: Peer, requestId: string, baseRevision: number, objectId: string): void {
-    const layout = this.store.getLayout(peer.floorId);
+    const ownedAsset = this.store.getPlayerEconomy(peer.userId).inventory.find((asset) => asset.placement?.objectId === objectId);
+    if (!ownedAsset?.placement) throw new Error("ASSET_NOT_OWNED");
+    const layout = this.store.getLayout(ownedAsset.placement.floorId);
     if (!layout) {
       throw new Error("FLOOR_NOT_FOUND");
     }
@@ -2241,8 +2289,7 @@ export class WorldRuntime {
     if (!object?.ownedAssetId || object.ownerUserId !== peer.userId) {
       throw new Error("ASSET_NOT_OWNED");
     }
-    const ownedAsset = this.store.getOwnedAsset(peer.userId, object.ownedAssetId);
-    if (ownedAsset.placement?.objectId !== object.id || ownedAsset.placement.floorId !== object.floorId) {
+    if (object.ownedAssetId !== ownedAsset.id || ownedAsset.placement.floorId !== object.floorId) {
       throw new Error("ASSET_OWNERSHIP_INVALID");
     }
     const next = structuredClone(layout);

@@ -373,6 +373,14 @@ describe("asset protocol", () => {
     expect(clientCommandSchema.safeParse({ ...command, edit: { ...command.edit, mode: "remove" } }).success).toBe(false);
   });
 
+  it("validates combined purchase and placement commands", () => {
+    const command = { type: "player_asset.purchase_place", requestId: "furnish", baseRevision: 1, assetId: "chair-office", position: { x: 32, y: 32 }, variantId: "white", rotation: 0 };
+    expect(clientCommandSchema.safeParse(command).success).toBe(true);
+    expect(clientCommandSchema.safeParse({ ...command, rotation: 45 }).success).toBe(false);
+    expect(clientCommandSchema.safeParse({ ...command, price: 1 }).success).toBe(false);
+    expect(clientCommandSchema.safeParse({ ...command, draftId: "invalid" }).success).toBe(false);
+  });
+
   it("accepts inventory-instance placement without a client-selected asset definition", () => {
     const command = {
       type: "player_asset.place",

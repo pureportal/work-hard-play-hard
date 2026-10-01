@@ -49,15 +49,15 @@ describe("Game guide state selection", () => {
   it("explains unavailable placement, including for a CEO", () => {
     const data = fixture();
     data.organisation = createOrganisation("player");
-    expect(createGuideSteps(data, "floor", new Set()).find(step => step.id === "items")?.content).toContain("no space where you can place items");
+    expect(createGuideSteps(data, "floor", new Set()).find(step => step.id === "items")?.content).toContain("no space where you can place furniture");
     data.gameSettings.roomBuild.mode = "open";
-    expect(createGuideSteps(data, "floor", new Set()).find(step => step.id === "items")?.content).toContain("Choose Place");
+    expect(createGuideSteps(data, "floor", new Set()).find(step => step.id === "items")?.content).toContain("Choose furniture");
   });
 
   it("recognizes a player's personal area without general building access", () => {
     const data = fixture();
     data.layouts[0]!.rooms[0]!.personalAreas = [{ id: "desk", name: "Desk", ownerUserId: "player", bounds: { x: 0, y: 0, width: 64, height: 64 } }];
-    expect(createGuideSteps(data, "floor", new Set()).find(step => step.id === "items")?.content).toContain("Choose Place");
+    expect(createGuideSteps(data, "floor", new Set()).find(step => step.id === "items")?.content).toContain("Choose furniture");
   });
 
   it("switches the daily instructions after a claim", () => {

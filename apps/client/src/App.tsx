@@ -1,4 +1,4 @@
-import { BuildEconomyNavigation, type BuildView } from "./components/economy/BuildEconomyNavigation";
+import type { BuildView } from "./components/economy/build-ownership";
 import { ProjectToolbar } from "./components/economy/ProjectToolbar";
 import { projectPreviewBounds } from "./project-preview";
 import type { BuildProject } from "@workhard/shared";
@@ -116,6 +116,7 @@ import { MeetingInvitationNotice } from "./components/MeetingInvitationNotice";
 import { MediaConnection } from "./media-connection";
 import type { MeetingInvitation } from "@workhard/shared";
 import { ConfirmationDialog } from "./components/ConfirmationDialog";
+import { FurniturePurchaseDialog } from "./components/economy/FurniturePurchaseDialog";
 import { MeetingsPanel } from "./components/MeetingsPanel";
 import { NavRail, type WorkspacePanel } from "./components/NavRail";
 import { PeoplePanel } from "./components/PeoplePanel";
@@ -173,9 +174,7 @@ type WorldSelection =
   | { type: "object"; object: WorldObject; interactionId?: string; anchor?: ContextAnchor }
   | { type: "player"; userId: string; anchor?: ContextAnchor };
 
-type PendingEconomyRequest =
-  | { id: string; type: "daily" }
-  | { id: string; type: "purchase"; assetId: string };
+type PendingEconomyRequest = { id: string; type: "daily" };
 
 type MeetingView = "full" | "small";
 
@@ -621,6 +620,9 @@ export function Workspace({
   const openContextMenu = useOpenContextMenu();
   const [data, setData] = useState(initialData);
   const [buildView, setBuildView] = useState<BuildView>("personal");
+  const [structureOpen, setStructureOpen] = useState(false);
+  const [placingPurchaseAssetId, setPlacingPurchaseAssetId] = useState<string>();
+  const [pendingPurchasePlacement, setPendingPurchasePlacement] = useState<Extract<ProjectEdit, { tool: "asset" }>>();
   const [sharedTransferOpen, setSharedTransferOpen] = useState(false);
   const publicFundId = "workspace";
   const [projectDraft, setProjectDraft] = useState<BuildProject>();
@@ -906,7 +908,7 @@ export function Workspace({
   const handleRealtimeEvent = useCallback((event: ServerEvent) => {
     const callErrorHandled = callRequest.handle(event);
     workspaceCommand.handleEvent(event);
-    publicCommand.handleEvent(event);
+    const publicCommandCompleted = publicCommand.handleEvent(event);
     transferCommand.handleEvent(event);
     lobbyRequest.handleEvent(event);
     turnRequest.handleEvent(event);
@@ -1003,13 +1005,16 @@ export function Workspace({
         pendingProjectEdit.current = undefined;
         if (event.project.id !== projectDraft?.id) setProjectTitle("");
         setProjectDraft(event.project);
+        setPendingPurchasePlacement(undefined);
+        setPlacingPurchaseAssetId(undefined);
         if (editingProposalId) setEditingReady(true);
         setMovingBuildItem(undefined);
-        if (placingOwnedAssetId || placingPublicAssetId) setEditingTool(null);
+        if (placingOwnedAssetId || placingPublicAssetId || placingPurchaseAssetId) setEditingTool(null);
         setPlacingOwnedAssetId(undefined);
         setPlacingPublicAssetId(undefined);
       }
     } else if (event.type === "project.submitted") {
+      if (!publicCommandCompleted) return;
       setProjectDraft(undefined);
       setEditingProposalId(undefined);
       setEditingReady(false);
@@ -1053,18 +1058,8 @@ export function Workspace({
       if (event.requestId && pendingEconomy?.id === event.requestId) {
         pendingEconomyRequestRef.current = undefined;
         setPendingEconomyRequest(undefined);
-        if (pendingEconomy.type === "daily") {
-          const reward = event.transaction?.kind === "daily_bonus" ? event.transaction : undefined;
-          if (reward) {
-            showToast(`Daily bonus: +${reward.amount} coins.`);
-          }
-        } else {
-          const purchasedAssetId = event.transaction?.kind === "shop_purchase" && event.transaction.assetId
-            ? event.transaction.assetId
-            : pendingEconomy.assetId;
-          const assetName = getAssetDefinition(purchasedAssetId)?.name ?? "Asset";
-          showToast(`${assetName} added to inventory.`);
-        }
+        const reward = event.transaction?.kind === "daily_bonus" ? event.transaction : undefined;
+        if (reward) showToast(`Daily bonus: +${reward.amount} coins.`);
       }
       if (event.requestId && pendingPlayerAssetRequest.current?.requestId === event.requestId) {
         const completed = pendingPlayerAssetRequest.current;
@@ -1072,6 +1067,9 @@ export function Workspace({
         pendingLayoutMove.current = undefined;
         setMovingBuildItem(undefined);
         if (completed.type === "place") {
+          setPendingPurchasePlacement(undefined);
+          setPlacingPurchaseAssetId(undefined);
+          pendingProjectEdit.current = undefined;
           setPlacingOwnedAssetId(undefined);
           setEditingTool(null);
         }
@@ -1349,6 +1347,7 @@ export function Workspace({
         setChessOpen(false);
       }
     } else if (event.type === "layout.conflict") {
+      if (event.requestId === pendingProjectEdit.current) pendingProjectEdit.current = undefined;
       if (event.requestId === pendingLayoutMove.current) {
         pendingLayoutMove.current = undefined;
         setMovingBuildItem(undefined);
@@ -1409,7 +1408,7 @@ export function Workspace({
       }
       if (!callErrorHandled) showToast(event.message);
     }
-  }, [activeCall, activeConversationId, activePanel, announceOffscreenGong, callRequest.handle, currentMeeting, currentUser.availability, data.currentUserId, data.members, displayGongRing, displayGroupReaction, displayReaction, floorId, gameOpen, handleSpotifyEvent, handleSpecialPropEvent, handleWorkEvent, onCorporateIdentityChange, showToast]);
+  }, [activeCall, activeConversationId, activePanel, announceOffscreenGong, callRequest.handle, currentMeeting, currentUser.availability, data.currentUserId, data.members, editingProposalId, placingOwnedAssetId, placingPublicAssetId, placingPurchaseAssetId, projectDraft?.id, displayGongRing, displayGroupReaction, displayReaction, floorId, gameOpen, handleSpotifyEvent, handleSpecialPropEvent, handleWorkEvent, onCorporateIdentityChange, showToast]);
 
   const { connection, snapshot, send } = useRealtime({
     floorId,
@@ -1585,6 +1584,9 @@ export function Workspace({
     transferCommand.clear();
     pendingProjectEdit.current = undefined;
     setProjectDraft(undefined);
+    setEditingProposalId(undefined);
+    setEditingReady(false);
+    setProjectTitle("");
     setReviewingProject(undefined);
     pendingPlayerAssetRequest.current = undefined;
     pendingLayoutMove.current = undefined;
@@ -1612,6 +1614,14 @@ export function Workspace({
   }, [activePanel]);
 
   useEffect(() => {
+    setPendingPurchasePlacement(undefined);
+    setPlacingPurchaseAssetId(undefined);
+    setPlacingOwnedAssetId(undefined);
+    setPlacingPublicAssetId(undefined);
+    setEditingTool(null);
+  }, [floorId, activePanel, connection]);
+
+  useEffect(() => {
     if (!placingOwnedAssetId) {
       return;
     }
@@ -1622,6 +1632,12 @@ export function Workspace({
     setPlacingOwnedAssetId(undefined);
     setEditingTool((current) => current === "asset" ? null : current);
   }, [data.economy.inventory, placingOwnedAssetId]);
+
+  useEffect(() => {
+    if (!placingPublicAssetId || data.publicEconomy.inventory.some((asset) => asset.id === placingPublicAssetId)) return;
+    setPlacingPublicAssetId(undefined);
+    setEditingTool((current) => current === "asset" ? null : current);
+  }, [data.publicEconomy.inventory, placingPublicAssetId]);
 
   useEffect(() => {
     const exists = (item?: LayoutItemReference) => !item
@@ -1696,16 +1712,6 @@ export function Workspace({
     }
   };
 
-  const purchaseAsset = (assetId: string) => {
-    if (pendingEconomyRequestRef.current) {
-      return;
-    }
-    const pending: PendingEconomyRequest = { id: requestId(), type: "purchase", assetId };
-    if (request({ type: "economy.purchase_asset", requestId: pending.id, assetId })) {
-      pendingEconomyRequestRef.current = pending;
-      setPendingEconomyRequest(pending);
-    }
-  };
 
   useEffect(() => {
     if (connection !== "online" || activePanel === "build" || meetingId) stopProximity();
@@ -2329,9 +2335,14 @@ export function Workspace({
   }), [allRooms, data.members, incomingKnocks]);
 
   const applyBuildEdit = (edit: ProjectEdit, moving = false): boolean => {
-    if (reviewingProject || publicCommand.pending || pendingProjectEdit.current) return false;
-    if (!canBuild && pendingPlayerAssetRequest.current) {
-      return false;
+    if (reviewingProject || publicCommand.pending || pendingProjectEdit.current || pendingPlayerAssetRequest.current) return false;
+    const personalRemoval = edit.tool === "item.remove" && edit.item.type === "asset"
+      && savedLayout.objects.some((object) => object.id === edit.item.id && object.ownerUserId === data.currentUserId);
+    if (!personalRemoval && floorId !== activeFloorIdRef.current) return false;
+    if (edit.tool === "asset" && placingPurchaseAssetId) {
+      publicCommand.clearError();
+      setPendingPurchasePlacement(edit);
+      return true;
     }
     const editRequestId = requestId();
     let sent: boolean;
@@ -2343,9 +2354,6 @@ export function Workspace({
         ? { ...movingObject, variantId: edit.variantId, rotation: edit.rotation, x: snapToAssetRaster(edit.position.x), y: snapToAssetRaster(edit.position.y) } : undefined;
     const personalMoveItems = personalCandidate && movingObject
       ? getMovedAssetCandidates(savedLayout, personalCandidate) : [];
-    const personalRemoval = edit.tool === "item.remove" && edit.item.type === "asset"
-      && savedLayout.objects.some((object) => object.id === edit.item.id && object.ownerUserId === data.currentUserId);
-    if (!personalRemoval && !canBuild && floorId !== activeFloorIdRef.current) return false;
     const directPersonal = !projectDraft && personalCandidate && isInPersonalSpace(savedLayout, personalCandidate, data.currentUserId)
       && (!movingObject || personalMoveItems.every((candidate) => {
         const original = savedLayout.objects.find((object) => object.id === candidate.id);
@@ -2408,6 +2416,9 @@ export function Workspace({
 
   const changeBuildView = (view: BuildView) => {
     setBuildView(view);
+    setStructureOpen(false);
+    setPlacingPurchaseAssetId(undefined);
+    setPendingPurchasePlacement(undefined);
     setReviewingProject(undefined);
     setFocusTarget(undefined);
     setEditingTool(null);
@@ -2425,9 +2436,9 @@ export function Workspace({
     openPanel("approvals");
   };
 
-  const focusPersonalAsset = (targetFloorId: string, objectId: string) => {
+  const focusPlacedAsset = (targetFloorId: string, objectId: string) => {
     const object = data.layouts.find((candidate) => candidate.floorId === targetFloorId)?.objects
-      .find((candidate) => candidate.id === objectId && candidate.ownerUserId === data.currentUserId);
+      .find((candidate) => candidate.id === objectId && (buildView === "shared" || candidate.ownerUserId === data.currentUserId));
     if (!object) return;
     setFloorId(targetFloorId);
     setSelection(undefined);
@@ -2443,6 +2454,7 @@ export function Workspace({
     setEditingTool(tool);
     setMovingBuildItem(undefined);
     if (tool !== "asset") {
+      setPlacingPurchaseAssetId(undefined);
       setPlacingOwnedAssetId(undefined);
       setPlacingPublicAssetId(undefined);
     }
@@ -2463,6 +2475,8 @@ export function Workspace({
   };
 
   const cancelBuildPlacement = () => {
+    setPlacingPurchaseAssetId(undefined);
+    setPendingPurchasePlacement(undefined);
     setMovingBuildItem(undefined);
     setEditingTool(null);
     setPlacingOwnedAssetId(undefined);
@@ -2470,7 +2484,7 @@ export function Workspace({
   };
 
   const moveSelectedBuildItem = (item = buildSelection) => {
-    if (!item || (!canBuild && floorId !== activeFloorIdRef.current)) {
+    if (!item || floorId !== activeFloorIdRef.current) {
       return;
     }
     if (movingBuildItem?.type === item.type && movingBuildItem.id === item.id) {
@@ -2492,7 +2506,7 @@ export function Workspace({
     && !asset.placement && !projectDraft?.layout.objects.some((draftObject) => draftObject.ownedAssetId === asset.id));
 
   const canCopyBuildAsset = (object: WorldObject) => canBuild
-    ? Boolean(getAssetDefinition(object.assetId)?.buildable)
+    ? floorId === activeFloorIdRef.current && Boolean(getAssetDefinition(object.assetId)?.buildable)
     : object.ownerUserId === data.currentUserId && floorId === activeFloorIdRef.current
       && layout.objects.length < MAX_LAYOUT_OBJECTS_PER_FLOOR
       && layout.rooms.some((room) => roomBuildAllows(room, data.currentUserId, data.gameSettings, data.organisation)
@@ -2501,17 +2515,21 @@ export function Workspace({
       && Boolean(availablePersonalCopy(object));
 
   const copySelectedBuildAsset = (item = buildSelection) => {
+    setPlacingPurchaseAssetId(undefined);
     if (item?.type !== "asset" || reviewingProject || publicCommand.pending || connection !== "online") return;
     const object = layout.objects.find((candidate) => candidate.id === item.id);
     if (!object || !canCopyBuildAsset(object)) return;
     if (canBuild) {
       setPlacingOwnedAssetId(undefined);
+      const available = data.publicEconomy.inventory.find((asset) => asset.assetId === object.assetId && asset.fundId === publicFundId
+        && !projectDraft?.quote.inventoryIds.includes(asset.id));
+      setPlacingPublicAssetId(available?.id);
     } else {
       const available = availablePersonalCopy(object);
       if (!available) return;
       setPlacingOwnedAssetId(available.id);
+      setPlacingPublicAssetId(undefined);
     }
-    setPlacingPublicAssetId(undefined);
     setEditingAssetId(object.assetId);
     setEditingAssetVariantId(object.variantId);
     setEditingAssetRotation(object.rotation);
@@ -3284,7 +3302,7 @@ export function Workspace({
           />
         </DeferredContent>
       )}
-      {activePanel === "build" && canBuild && !accessInspectionUserId && (
+      {activePanel === "build" && canBuild && (structureOpen || reviewingProject) && !accessInspectionUserId && (
         <DeferredContent sidebar onClose={() => openPanel(null)}>
           <BuildPanel
             currentUserId={data.currentUserId}
@@ -3292,8 +3310,8 @@ export function Workspace({
             onOpenSharedTransfer={openSharedTransfer}
             floorCount={data.floors.length + (preview?.quote.assetChanges.filter(({ object, change }) => change === "place" && getAssetDefinition(object.assetId)?.kind === "portal").length ?? 0)}
             reviewing={Boolean(reviewingProject)}
-            accountControls={<BuildEconomyNavigation view={buildView} onChange={changeBuildView} />}
-            projectControls={<ProjectToolbar economy={data.publicEconomy} organisation={data.organisation} userId={data.currentUserId}
+            accountControls={<button className="secondary-button" onClick={() => { setStructureOpen(false); changeEditingTool(null); }}>Furniture</button>}
+            projectControls={<ProjectToolbar economy={data.publicEconomy}
               title={projectTitle} onTitleChange={setProjectTitle}
               fundId={preview?.fundId ?? publicFundId} project={preview} pending={publicCommand.pending || connection !== "online"} error={publicCommand.error}
               stale={Boolean(preview?.floorCount !== undefined && preview.floorCount !== data.floors.length || editingProposalId && !editingReady)} conflicts={previewConflicts}
@@ -3310,7 +3328,7 @@ export function Workspace({
                   closeProjectReview();
                 } else { setProjectDraft(undefined); setEditingProposalId(undefined); setEditingReady(false); }
               }} />}
-            disabled={Boolean(reviewingProject) || publicCommand.pending}
+            disabled={Boolean(reviewingProject) || publicCommand.pending || connection !== "online" || floorId !== activeFloorIdRef.current}
             layout={layout}
             tool={editingTool}
             assetId={editingAssetId}
@@ -3339,11 +3357,17 @@ export function Workspace({
           />
         </DeferredContent>
       )}
-      {activePanel === "build" && buildView === "personal" && (
+      {activePanel === "build" && !structureOpen && !reviewingProject && !accessInspectionUserId && (
         <DeferredContent sidebar onClose={() => openPanel(null)}>
           <PlayerBuildPanel
-            accountControls={<BuildEconomyNavigation view={buildView} onChange={changeBuildView} />}
-            projectControls={projectDraft && <ProjectToolbar economy={data.publicEconomy} organisation={data.organisation} userId={data.currentUserId}
+            ownership={buildView}
+            publicEconomy={data.publicEconomy}
+            draftPublicAssetIds={projectDraft?.quote.inventoryIds}
+            onOwnershipChange={changeBuildView}
+            onOpenStructure={() => { changeBuildView("shared"); setStructureOpen(true); }}
+            onOpenSharedTransfer={openSharedTransfer}
+            onProposeSale={(publicAssetId) => publicCommand.run(request, { type: "public_economy.propose", requestId: requestId(), title: "Sell shared furniture", action: { kind: "asset.sell", publicAssetId } })}
+            projectControls={projectDraft && <ProjectToolbar economy={data.publicEconomy}
               title={projectTitle} onTitleChange={setProjectTitle}
               fundId={projectDraft.fundId} project={projectDraft} pending={publicCommand.pending || connection !== "online"} error={publicCommand.error}
               stale={projectDraft.floorCount !== undefined && projectDraft.floorCount !== data.floors.length || Boolean(editingProposalId && !editingReady)} conflicts={previewConflicts}
@@ -3369,15 +3393,15 @@ export function Workspace({
             assetId={editingAssetId}
             assetVariantId={editingAssetVariantId}
             assetRotation={editingAssetRotation}
-            placingOwnedAssetId={placingOwnedAssetId}
             draftAssetIds={projectDraft?.layout.objects.flatMap((object) => object.ownedAssetId ? [object.ownedAssetId] : [])}
             selectedItem={buildSelection}
             movingItem={movingBuildItem}
             pendingEconomyRequest={pendingEconomyRequest}
-            onPurchase={purchaseAsset}
-            onFocus={focusPersonalAsset}
-            onPlace={(ownedAssetId, selectedAssetId) => {
+            onFocus={focusPlacedAsset}
+            onSelectAsset={(selectedAssetId, ownedAssetId, publicAssetId) => {
               setPlacingOwnedAssetId(ownedAssetId);
+              setPlacingPublicAssetId(publicAssetId);
+              setPlacingPurchaseAssetId(buildView === "personal" && !ownedAssetId ? selectedAssetId : undefined);
               setEditingAssetId(selectedAssetId);
               const definition = getAssetDefinition(selectedAssetId);
               if (definition) {
@@ -3399,17 +3423,33 @@ export function Workspace({
         </DeferredContent>
       )}
 
+      {pendingPurchasePlacement && <FurniturePurchaseDialog
+        placement={pendingPurchasePlacement} layout={savedLayout} userId={data.currentUserId}
+        hasDraft={Boolean(projectDraft)} approvalRate={data.publicEconomy.approvalRates.building}
+        draftNeedsApproval={Boolean(projectDraft?.quote.requiresApproval)} pending={publicCommand.pending} error={publicCommand.error}
+        onCancel={() => { setPendingPurchasePlacement(undefined); publicCommand.clearError(); }}
+        onConfirm={() => {
+          if (floorId !== activeFloorIdRef.current || pendingPlayerAssetRequest.current) return;
+          const purchaseRequestId = requestId();
+          if (publicCommand.run(request, { type: "player_asset.purchase_place", requestId: purchaseRequestId, baseRevision: savedLayout.revision,
+            assetId: pendingPurchasePlacement.assetId, position: pendingPurchasePlacement.position,
+            variantId: pendingPurchasePlacement.variantId, rotation: pendingPurchasePlacement.rotation,
+            ...(projectDraft ? { draftId: projectDraft.id } : {}), ...(editingProposalId ? { proposalId: editingProposalId } : {}) })) {
+            pendingProjectEdit.current = purchaseRequestId;
+            pendingPlayerAssetRequest.current = { requestId: purchaseRequestId, type: "place" };
+          }
+        }} />}
+
       {sharedTransferOpen && <DeferredContent onClose={() => setSharedTransferOpen(false)}>
-        <DonationPanel economy={data.publicEconomy} organisation={data.organisation} balance={data.economy.coinBalance}
-          initialFundId={publicFundId} pending={transferCommand.pending} disabled={connection !== "online"} error={transferCommand.error}
-          onCommand={(command) => transferCommand.run(request, command)} onViewChange={changeBuildView} onClose={() => setSharedTransferOpen(false)} />
+        <DonationPanel economy={data.publicEconomy} balance={data.economy.coinBalance}
+          pending={transferCommand.pending} disabled={connection !== "online"} error={transferCommand.error}
+          onCommand={(command) => transferCommand.run(request, command)} onClose={() => setSharedTransferOpen(false)} />
       </DeferredContent>}
 
       {activePanel === "approvals" && <DeferredContent onClose={() => openPanel(null)}><FundsPanel economy={data.publicEconomy} organisation={data.organisation}
         rooms={allRooms} layouts={data.layouts} floors={data.floors}
         globalSettings={data.kidnapping.global} onOpenRooms={() => openPanel("rooms")}
         onOpenBuild={() => { openPanel("build"); changeBuildView("shared"); }}
-        initialFundId={publicFundId}
         error={publicCommand.error}
         members={data.members} userId={data.currentUserId} personalBalance={data.economy.coinBalance} pending={publicCommand.pending || connection !== "online"}
         onCommand={(command) => { if ("requestId" in command) publicCommand.run(request, command); }}
@@ -3437,11 +3477,7 @@ export function Workspace({
           const bounds = projectPreviewBounds(saved, project);
           setFocusTarget(bounds ? { floorId: project.floorId, bounds, requestId: requestId() } : undefined);
         }}
-        onPlace={(publicAssetId, assetId, fundId) => {
-          if (projectDraft && projectDraft.fundId !== fundId) { showToast("Discard the draft before placing this item."); return; }
-          openPanel("build"); changeBuildView("shared"); setPlacingPublicAssetId(publicAssetId);
-          changeEditingAsset(assetId); setEditingTool("asset"); }}
-        onViewChange={(view) => { openPanel("build"); changeBuildView(view); }} onClose={() => openPanel(null)} /></DeferredContent>}
+        onClose={() => openPanel(null)} /></DeferredContent>}
 
       {meetingInvitations.filter((invitation) => data.meetings.some((meeting) => meeting.id === invitation.meetingId && meeting.status !== "ended")).slice(0, 1).map((invitation) => {
         const meeting = data.meetings.find((candidate) => candidate.id === invitation.meetingId);

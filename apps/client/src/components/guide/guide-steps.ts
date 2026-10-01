@@ -25,7 +25,7 @@ export function createGuideSteps(data: GuideData, floorId: string, grantedRoomId
   steps.push(
     {
       id: "coins", target: '[data-guide="wallet"]', title: "Pocket money",
-      content: `Finish Falling Blocks rounds or play Tic-Tac-Toe against another player to earn up to ${GAME_REWARD_DAILY_CAP} coins a day. Spend them in the Shop or transfer them to Shared for construction.`,
+      content: `Finish Falling Blocks rounds or play Tic-Tac-Toe against another player to earn up to ${GAME_REWARD_DAILY_CAP} coins a day. Spend them on furniture or transfer them to Shared for construction.`,
       screen: { panel: "build" }, placement: "right",
     },
     {
@@ -36,10 +36,10 @@ export function createGuideSteps(data: GuideData, floorId: string, grantedRoomId
     {
       id: "items", target: '[data-guide="assets"]', title: "Make yourself at home",
       content: canPlace
-        ? "Shop purchases go into Inventory. Choose Place to furnish a room where you can build, or your personal area. Placed lets you find or store your items."
+        ? "Choose furniture, preview it, then place it. Find your furniture under Placed items."
         : rooms.length
-          ? "Shop purchases go into Inventory. This floor has no space where you can place items yet. Check Room settings for building access."
-          : "Shop purchases stay in Inventory until you have a room to furnish. Visit a floor with rooms to place your items.",
+          ? "This floor has no space where you can place furniture yet. Check Room settings for building access."
+          : "Visit a floor with rooms to furnish them.",
       screen: { panel: "build" }, placement: "left",
     },
     {

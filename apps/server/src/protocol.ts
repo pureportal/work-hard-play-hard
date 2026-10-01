@@ -170,6 +170,12 @@ export const clientCommandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("proximity.signal"), requestId, sessionId: z.string().uuid(), targetSessionId: z.string().uuid(), signal: mediaSignalSchema }).strict(),
   z.object({ type: z.literal("chat.send"), requestId, conversationId: z.string().min(1).max(100), body: z.string().trim().min(1).max(500) }),
   z.object({
+    type: z.literal("player_asset.purchase_place"), requestId,
+    baseRevision: z.number().int().nonnegative(), assetId: z.string().min(1).max(100),
+    position, variantId: assetVariantId, rotation: assetRotation,
+    draftId: z.string().uuid().optional(), proposalId: z.string().uuid().optional(),
+  }).strict(),
+  z.object({
     type: z.literal("player_asset.place"),
     requestId,
     baseRevision: z.number().int().nonnegative(),

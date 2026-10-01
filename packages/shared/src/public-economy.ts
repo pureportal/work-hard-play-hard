@@ -7,6 +7,7 @@ import type { OrganisationEdit, OrganisationState } from "./organisation.js";
 
 export const WORKSPACE_FUND_ID = "workspace";
 export const BUILD_PRICES = { wall: 12, door: 40, window: 60 } as const;
+export const OWNER_FURNISHING_SPEND_LIMIT = 250;
 
 export interface ApprovalRates {
   serverSettings: number;

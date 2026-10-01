@@ -1,6 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { useWorkspaceCommand } from "./useWorkspaceCommand";
+import { createPublicEconomy } from "@workhard/shared";
 
 const donation = { type: "economy.donate" as const, requestId: "donation", amount: 25, fundId: "workspace" };
 
@@ -35,5 +36,24 @@ describe("workspace command feedback", () => {
     act(() => { expect(result.current.run(() => false, donation)).toBe(false); });
     expect(result.current.pending).toBe(false);
     expect(result.current.error).toBe("Connection unavailable. Reconnect and try again.");
+  });
+
+  it("completes a project submission only on its result and ignores duplicate results", () => {
+    const send = vi.fn(() => true);
+    const { result } = renderHook(useWorkspaceCommand);
+    const submission = { type: "project.submit", requestId: "submit", draftId: "draft", title: "Furniture" } as const;
+    act(() => { result.current.run(send, submission); });
+    act(() => {
+      expect(result.current.handleEvent({ type: "public_economy.updated", requestId: submission.requestId, economy: createPublicEconomy() })).toBe(false);
+      expect(result.current.handleEvent({ type: "command.ack", requestId: submission.requestId })).toBe(false);
+      expect(result.current.run(send, { ...submission, requestId: "duplicate" })).toBe(false);
+    });
+    expect(result.current.pending).toBe(true);
+    expect(send).toHaveBeenCalledTimes(1);
+    act(() => { expect(result.current.handleEvent({ type: "project.submitted", requestId: submission.requestId })).toBe(true); });
+    expect(result.current.pending).toBe(false);
+    act(() => {
+      expect(result.current.handleEvent({ type: "project.submitted", requestId: submission.requestId })).toBe(false);
+    });
   });
 });

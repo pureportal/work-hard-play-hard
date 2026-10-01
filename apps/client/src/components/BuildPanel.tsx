@@ -66,7 +66,7 @@ const tools: { id: LayoutTool | null; label: string; icon: LucideIcon; shortcut:
   { id: "erase", label: "Erase", icon: Eraser, shortcut: "6" },
 ];
 
-const buildableAssets = ASSET_CATALOG.assets.filter((asset) => asset.buildable);
+const buildableAssets = ASSET_CATALOG.assets.filter((asset) => asset.buildable && (asset.kind === "floor-tile" || asset.kind === "portal"));
 
 export function BuildPanel({
   currentUserId,

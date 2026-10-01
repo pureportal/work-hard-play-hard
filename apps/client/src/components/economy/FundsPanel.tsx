@@ -1,26 +1,24 @@
 import { useState } from "react";
-import { Archive, Coins } from "lucide-react";
-import { WORKSPACE_FUND_ID, availablePublicMoney, canManageUnit, getAssetDefinition, getDefaultAssetVariantId, publicFundMemberIds, type BuildProject, type ClientCommand, type Floor, type FloorLayout, type Member, type OrganisationState, type PublicAction, type PublicEconomy, type SpendingProposal } from "@workhard/shared";
+import { Coins } from "lucide-react";
+import { WORKSPACE_FUND_ID, availablePublicMoney, canManageUnit, publicFundMemberIds, type BuildProject, type ClientCommand, type Floor, type FloorLayout, type Member, type OrganisationState, type PublicAction, type PublicEconomy, type SpendingProposal } from "@workhard/shared";
 import { WorkspaceDialog } from "../WorkspaceDialog";
 import { DialogTabs } from "../DialogTabs";
-import { AssetShape } from "../AssetShape";
-import type { BuildView } from "./BuildEconomyNavigation";
 import { FundSettings } from "./FundSettings";
 import { SpendingProposals } from "./SpendingProposals";
 import { GameRulesEditor } from "./GameRulesEditor";
 import type { GlobalKidnappingSettings, Room } from "@workhard/shared";
 import "../../public-economy.css";
 
-type FundsView = "votes" | "inventory" | "activity" | "settings" | "rules";
+type FundsView = "votes" | "activity" | "settings" | "rules";
 
-export function FundsPanel({ economy, organisation, members, userId, personalBalance, pending, error, globalSettings, onOpenRooms, onOpenBuild, onCommand, onReview, onEdit, onPlace, onViewChange, onClose, rooms, layouts, floors }: {
-  economy: PublicEconomy; organisation: OrganisationState; members: Member[]; userId: string; personalBalance: number; pending: boolean; initialFundId?: string;
+export function FundsPanel({ economy, organisation, members, userId, personalBalance, pending, error, globalSettings, onOpenRooms, onOpenBuild, onCommand, onReview, onEdit, onClose, rooms, layouts, floors }: {
+  economy: PublicEconomy; organisation: OrganisationState; members: Member[]; userId: string; personalBalance: number; pending: boolean;
   error?: string | undefined;
   globalSettings: GlobalKidnappingSettings; onOpenRooms: () => void;
   onOpenBuild?: () => void;
   rooms: Room[]; layouts: FloorLayout[]; floors: Floor[];
   onCommand: (command: ClientCommand) => void; onReview: (project: BuildProject) => void; onEdit: (proposal: SpendingProposal) => void;
-  onPlace: (publicAssetId: string, assetId: string, fundId: string) => void; onViewChange: (view: BuildView) => void; onClose: () => void;
+  onClose: () => void;
 }) {
   const fundId = WORKSPACE_FUND_ID;
   const [view, setView] = useState<FundsView>("votes");
@@ -32,12 +30,11 @@ export function FundsPanel({ economy, organisation, members, userId, personalBal
   };
   const proposals = [...economy.proposals].reverse();
   const waiting = proposals.filter((proposal) => ["open", "approved"].includes(proposal.status) && Date.parse(proposal.expiresAt) > Date.now()).length;
-  const inventory = economy.inventory.filter((asset) => asset.fundId === fundId);
   const transactions = economy.transactions.filter((entry) => entry.fundId === fundId).reverse();
   const transactionNames = { donation: "Donation", purchase: "Building purchase", refund: "Refund", transfer: "Transfer", asset_donation: "Item donated", asset_sale: "Item sold" };
-  return <WorkspaceDialog title="Approvals" className={`funds-dialog${view === "votes" && !proposals.some((proposal) => proposal.status === "open" || proposal.status === "approved") ? " is-empty" : ""}`} error={error} onBack={() => onViewChange("shared")} onClose={onClose}>
+  return <WorkspaceDialog title="Approvals" className={`funds-dialog${view === "votes" && !proposals.some((proposal) => proposal.status === "open" || proposal.status === "approved") ? " is-empty" : ""}`} error={error} {...(onOpenBuild && { onBack: onOpenBuild })} onClose={onClose}>
     <DialogTabs label="Approvals views" value={view} onChange={setView} tabs={[
-      { id: "votes", label: "Proposals", count: waiting }, { id: "inventory", label: "Shared items" },
+      { id: "votes", label: "Proposals", count: waiting },
       { id: "activity", label: "Activity" }, ...(canPropose ? [{ id: "settings" as const, label: "Organisation" }] : []), { id: "rules", label: "Game rules" },
     ]}>
       {view !== "votes" && view !== "rules" && <div className="fund-overview">
@@ -49,12 +46,6 @@ export function FundsPanel({ economy, organisation, members, userId, personalBal
       {view === "rules" && <GameRulesEditor settings={globalSettings} members={members} pending={pending} onOpenRooms={onOpenRooms}
         onPropose={(settings) => propose("Change carrying rules", { kind: "kidnapping.settings", settings })} />}
       {view === "votes" && <SpendingProposals proposals={proposals} economy={economy} organisation={organisation} members={members} rooms={rooms} layouts={layouts} floors={floors} userId={userId} pending={pending} onCommand={onCommand} onReview={onReview} onEdit={onEdit} {...(canPropose && onOpenBuild ? { onOpenBuild } : {})} />}
-      {view === "inventory" && <section aria-label="Shared inventory">{inventory.length ? <div className="shared-inventory">{inventory.map((asset) => {
-        const definition = getAssetDefinition(asset.assetId)!;
-        return <article className="shared-inventory-item" key={asset.id}><AssetShape asset={definition} rotation={0} variantId={getDefaultAssetVariantId(definition)} />
-          <strong>{definition.name}</strong>{canPropose && <div className="economy-actions"><button className="primary-button" disabled={pending} onClick={() => onPlace(asset.id, asset.assetId, asset.fundId)}>Place</button>
-            {asset.paid >= 3 && <button className="secondary-button" disabled={pending} onClick={() => propose(`Sell ${definition.name}`, { kind: "asset.sell", publicAssetId: asset.id })}>Propose sale · {Math.floor(asset.paid / 3)} coins</button>}</div>}</article>;
-      })}</div> : <div className="dialog-empty"><Archive size={32} /><p>No shared items in storage.</p></div>}</section>}
       {view === "settings" && canPropose && <FundSettings key={`${fund.id}-${economy.revision}`} fund={fund} economy={economy} organisation={organisation} members={members} pending={pending} onPropose={propose} />}
       {view === "activity" && <section aria-label="Transactions">{transactions.length ? <div className="fund-transactions">{transactions.map((entry) => <div className="fund-transaction" key={entry.id}>
         <div><strong>{transactionNames[entry.kind]}</strong><span>{members.find((member) => member.id === entry.userId)?.name} · {new Date(entry.createdAt).toLocaleDateString()}</span></div>
