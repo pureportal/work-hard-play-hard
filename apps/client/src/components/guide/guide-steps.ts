@@ -2,7 +2,6 @@ import { DAILY_REWARD_AMOUNTS, GAME_REWARD_DAILY_CAP, roomAccessAllows, roomBuil
 import type { Step } from "react-joyride";
 
 export type GuideScreen = { panel: "build" | "approvals" | "meetings" | null }
-  | { panel: "approvalDesk" }
   | { panel: "rooms"; floorId: string; roomId: string };
 
 export type GuideStep = Step & { screen: GuideScreen; target: string };
@@ -13,7 +12,7 @@ export function dailyGuideContent(reward: DailyRewardStatus): string {
     : "Today’s bonus is already claimed. The gift button reopens your rewards. Come back after midnight UTC to keep your streak going.";
 }
 
-export type GuideData = Pick<BootstrapData, "currentUserId" | "layouts" | "gameSettings" | "organisation" | "economy"> & { features?: BootstrapData["features"] };
+export type GuideData = Pick<BootstrapData, "currentUserId" | "layouts" | "gameSettings" | "organisation" | "economy">;
 
 export function createGuideSteps(data: GuideData, floorId: string, grantedRoomIds: Set<string>): GuideStep[] {
   const rooms = data.layouts.find(layout => layout.floorId === floorId)?.rooms ?? [];
@@ -23,10 +22,6 @@ export function createGuideSteps(data: GuideData, floorId: string, grantedRoomId
   const canPlace = rooms.some(room => roomBuildAllows(room, data.currentUserId, data.gameSettings, data.organisation)
     || roomAccessAllows(room, data.currentUserId, data.gameSettings, data.organisation) && room.personalAreas?.some(area => area.ownerUserId === data.currentUserId));
   const steps: GuideStep[] = [];
-  if (data.features?.approvalDesk) steps.push(
-    { id: "desk-stamp", target: '[data-guide="desk-stamp"]', title: "Stamp a form", content: "Stamp to add forms and shorten an active case.", screen: { panel: "approvalDesk" }, placement: "left", blockTargetInteraction: false },
-    { id: "desk-case", target: '[data-guide="desk-case"]', title: "Start a case", content: "Choose a case to process while you play.", screen: { panel: "approvalDesk" }, placement: "left", blockTargetInteraction: false },
-  );
   steps.push(
     {
       id: "coins", target: '[data-guide="wallet"]', title: "Pocket money",

@@ -159,7 +159,6 @@ const PlayerBuildPanel = lazy(() => import("./components/PlayerBuildPanel").then
 const SettingsPanel = lazy(() => import("./components/SettingsPanel").then((module) => ({ default: module.SettingsPanel })));
 const ServerAdminDialog = lazy(() => import("./components/admin/ServerAdminDialog").then((module) => ({ default: module.ServerAdminDialog })));
 const WorkObjectDialog = lazy(() => import("./components/WorkObjectDialog").then((module) => ({ default: module.WorkObjectDialog })));
-const ApprovalDeskPanel = lazy(() => import("./components/ApprovalDeskPanel").then((module) => ({ default: module.ApprovalDeskPanel })));
 const GitHubMailroom = lazy(() => import("./github/GitHubMailroom").then((module) => ({ default: module.GitHubMailroom })));
 const loadFallingBlocksGame = () => import("./components/FallingBlocksGame").then((module) => ({ default: module.FallingBlocksGame }));
 const loadChessGame = () => import("./components/ChessGame").then((module) => ({ default: module.ChessGame }));
@@ -621,7 +620,6 @@ export function Workspace({
 }) {
   const openContextMenu = useOpenContextMenu();
   const [data, setData] = useState(initialData);
-  const updateApprovalEconomy = useCallback((economy: BootstrapData["economy"]) => setData((current) => ({ ...current, economy })), []);
   const [buildView, setBuildView] = useState<BuildView>("personal");
   const [sharedTransferOpen, setSharedTransferOpen] = useState(false);
   const publicFundId = "workspace";
@@ -2612,7 +2610,6 @@ export function Workspace({
         onClaim={claimDailyReward} onClose={() => setDailyBonusOpen(false)} />}
       <NavRail
         activePanel={activePanel}
-        approvalDeskEnabled={Boolean(data.features?.approvalDesk)}
         corporateIdentity={data.corporateIdentity}
         canUseBuild
         currentUser={currentUser}
@@ -2643,7 +2640,7 @@ export function Workspace({
                 ? "Finish building before starting the guide."
                 : gameOpen || gameRound?.status === "playing" || chessOpen || currentMeeting || activeCall || proximityCallParticipants.length > 0 || workObject || avatarDialogOpen || openingMeeting || meetingSwitch
                   ? "Close your activity before starting the guide."
-                  : !guideScreen && (activePanel === "rooms" || activePanel === "settings" || activePanel === "admin" || activePanel === "organisation" || activePanel === "approvals" || activePanel === "approvalDesk" || sharedTransferOpen)
+                  : !guideScreen && (activePanel === "rooms" || activePanel === "settings" || activePanel === "admin" || activePanel === "organisation" || activePanel === "approvals" || sharedTransferOpen)
                     ? "Close this panel before starting the guide." : undefined}
             onStart={() => { guidePreviousScreen.current = { panel: activePanel, buildView }; }}
             onNavigate={(screen) => {
@@ -3185,9 +3182,6 @@ export function Workspace({
         )}
       </section>
 
-      {activePanel === "approvalDesk" && data.features?.approvalDesk && <DeferredContent onClose={() => openPanel(null)}>
-        <ApprovalDeskPanel currentUserId={data.currentUserId} guideActive={guideScreen?.panel === "approvalDesk"} onEconomyChange={updateApprovalEconomy} onClose={() => openPanel(null)} />
-      </DeferredContent>}
       {activePanel === "organisation" && <DeferredContent sidebar onClose={() => openPanel(null)}>
         <OrganisationPanel organisation={data.organisation} members={data.members} currentUserId={data.currentUserId}
           error={workspaceCommand.error}

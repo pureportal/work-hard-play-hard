@@ -7,7 +7,6 @@ import {
   Users,
   Video,
   ClipboardCheck,
-  Stamp,
   MoreHorizontal,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -17,13 +16,12 @@ import { Avatar } from "./Avatar";
 import { IconButton } from "./IconButton";
 import { BrandMark } from "./BrandMark";
 
-export type WorkspacePanel = "people" | "chat" | "meetings" | "build" | "settings" | "organisation" | "rooms" | "approvals" | "approvalDesk" | "admin" | null;
+export type WorkspacePanel = "people" | "chat" | "meetings" | "build" | "settings" | "organisation" | "rooms" | "approvals" | "admin" | null;
 
 interface NavRailProps {
   activePanel: WorkspacePanel;
   corporateIdentity: CorporateIdentity;
   canUseBuild: boolean;
-  approvalDeskEnabled?: boolean;
   currentUser: Member;
   unreadMessages: number;
   pendingApprovals?: number;
@@ -34,7 +32,6 @@ interface NavRailProps {
 
 const items: { panel: Exclude<WorkspacePanel, null>; label: string; icon: LucideIcon }[] = [
   { panel: "people", label: "People", icon: Users },
-  { panel: "approvalDesk", label: "Stampworks", icon: Stamp },
   { panel: "build", label: "Build", icon: PencilRuler },
   { panel: "approvals", label: "Approvals", icon: ClipboardCheck },
   { panel: "chat", label: "Messages", icon: MessageCircle },
@@ -43,7 +40,7 @@ const items: { panel: Exclude<WorkspacePanel, null>; label: string; icon: Lucide
   { panel: "settings", label: "Settings", icon: Settings },
 ];
 
-export function NavRail({ activePanel, corporateIdentity, canUseBuild, approvalDeskEnabled = false, currentUser, unreadMessages, pendingApprovals = 0, onChange, onAvatarClick, onSignOut }: NavRailProps) {
+export function NavRail({ activePanel, corporateIdentity, canUseBuild, currentUser, unreadMessages, pendingApprovals = 0, onChange, onAvatarClick, onSignOut }: NavRailProps) {
   const [moreOpen, setMoreOpen] = useState(false);
   const [mobile, setMobile] = useState(() => window.innerWidth <= 700);
   const mobileNavRef = useRef<HTMLDivElement>(null);
@@ -60,8 +57,8 @@ export function NavRail({ activePanel, corporateIdentity, canUseBuild, approvalD
     document.addEventListener("pointerdown", closeOutside);
     return () => { document.removeEventListener("keydown", close); document.removeEventListener("pointerdown", closeOutside); };
   }, [moreOpen]);
-  const availableItems = items.filter(({ panel }) => panel !== "approvalDesk" || approvalDeskEnabled).filter(({ panel }) => panel !== "build" || canUseBuild);
-  const mobilePrimary = availableItems.filter(({ panel }) => panel === "people" || panel === "approvalDesk" || panel === "build" || panel === "meetings");
+  const availableItems = items.filter(({ panel }) => panel !== "build" || canUseBuild);
+  const mobilePrimary = availableItems.filter(({ panel }) => panel === "people" || panel === "build" || panel === "meetings");
   const mobileMore = availableItems.filter(({ panel }) => !mobilePrimary.some((item) => item.panel === panel));
   const navigate = (panel: WorkspacePanel) => { setMoreOpen(false); onChange(activePanel === panel ? null : panel); };
   return (
@@ -91,7 +88,6 @@ export function NavRail({ activePanel, corporateIdentity, canUseBuild, approvalD
           if (panel === "build" && !canUseBuild) {
             return null;
           }
-          if (panel === "approvalDesk" && !approvalDeskEnabled) return null;
           const unread = panel === "chat" ? unreadMessages : panel === "approvals" ? pendingApprovals : 0;
           return (
             <span className="nav-item" key={panel}>

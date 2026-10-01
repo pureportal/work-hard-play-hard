@@ -95,7 +95,6 @@ export class PostgreSqlWorkspaceRepository {
         floors: settings.floors,
         organisation: settings.organisation,
         publicEconomy: settings.publicEconomy,
-        approvalDesk: settings.approvalDesk,
         members: members.map((member) => ({
           id: member.id,
           name: member.name,
@@ -399,7 +398,6 @@ export class PostgreSqlWorkspaceRepository {
         floors: state.store.floors,
         organisation: state.store.organisation,
         publicEconomy: state.store.publicEconomy,
-        approvalDesk: state.store.approvalDesk,
         gameSettings: state.store.economy.gameSettings,
         kidnappingSettings: state.store.kidnapping.global,
         playerKidnappingSettings: state.store.kidnapping.players,

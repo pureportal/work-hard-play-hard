@@ -330,7 +330,6 @@ export interface WorkspaceAccessData {
 }
 
 export interface BootstrapData extends WorkspaceAccessData {
-  features?: { approvalDesk: boolean };
   organisation: OrganisationState;
   currentUserId: string;
   corporateIdentity: CorporateIdentity;
@@ -348,8 +347,6 @@ export interface BootstrapData extends WorkspaceAccessData {
   kidnapping: KidnappingConfiguration;
   registrationSettings?: RegistrationSettings;
 }
-
-export * from "./approval-desk.js";
 
 export interface WorldPlayer {
   userId: string;

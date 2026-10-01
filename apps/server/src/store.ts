@@ -65,8 +65,6 @@ import type {
 import { createInitialData } from "./initial-data.js";
 import type { GitHubAppSettingsRecord } from "./github/github-record.js";
 import { addFallingBlocksStatistics, validFallingBlocksCounts } from "./games/falling-blocks-statistics.js";
-import { ApprovalDeskStore } from "./games/approval-desk.js";
-import type { ApprovalCaseId, ApprovalDeskState, ApprovalDeskView, ApprovalUpgradeId } from "@workhard/shared";
 import { workObjectStateSchema } from "./work/work-object-state.js";
 import { synchronizeRoomMeetings } from "./meetings/room-meetings.js";
 import {
@@ -88,7 +86,6 @@ export interface MutableStoreState {
   scores: GameScore[];
   gameStatistics: PlayerGameStatistics[];
   chessMatches: ChessMatchRecord[];
-  approvalDesk: ApprovalDeskState;
   economy: EconomyPersistenceState;
   publicEconomy: PublicEconomyState;
   kidnapping: KidnappingPersistenceState;
@@ -141,7 +138,6 @@ export class WorkspaceStore {
   private readonly derivedAwayUserIds = new Set<string>();
   private messageSequenceByConversation: Map<string, number>;
   private readonly economy: EconomyStore;
-  private readonly approvalDesk: ApprovalDeskStore;
   readonly publicEconomy: PublicEconomyStore;
   private globalKidnappingSettings: GlobalKidnappingSettings;
   private readonly playerKidnappingSettings = new Map<string, PlayerKidnappingSettings>();
@@ -160,7 +156,6 @@ export class WorkspaceStore {
     }
     this.messageSequenceByConversation = indexMessageSequences(this.data.messages);
     this.economy = new EconomyStore(this.data.members.map((member) => member.id));
-    this.approvalDesk = new ApprovalDeskStore(this.economy);
     this.economy.updateGameSettings(initialData.gameSettings);
     this.globalKidnappingSettings = structuredClone(initialData.kidnapping.global);
     validateCorporateIdentity(initialData.corporateIdentity);
@@ -532,7 +527,6 @@ export class WorkspaceStore {
       && match.reservedBlackUserId !== userId
     ));
     this.economy.removeAccount(userId);
-    this.approvalDesk.removePlayer(userId);
     this.playerKidnappingSettings.delete(userId);
     this.globalKidnappingSettings.targetPolicy.userIds = this.globalKidnappingSettings.targetPolicy.userIds.filter((id) => id !== userId);
     for (const settings of this.playerKidnappingSettings.values()) {
@@ -1045,39 +1039,6 @@ export class WorkspaceStore {
     return this.economy.getPlayerEconomy(userId);
   }
 
-  getApprovalDesk(userId: string): ApprovalDeskView {
-    if (!this.getMember(userId)) throw new Error("USER_NOT_FOUND");
-    return this.approvalDesk.view(userId, this.data.members);
-  }
-
-  startApprovalCase(userId: string, caseId: ApprovalCaseId): ApprovalDeskView {
-    if (!this.getMember(userId)) throw new Error("USER_NOT_FOUND");
-    this.approvalDesk.start(userId, caseId);
-    this.dirty = true;
-    return this.getApprovalDesk(userId);
-  }
-
-  collectApprovalCase(userId: string): { view: ApprovalDeskView; forms: number; coins: number } {
-    if (!this.getMember(userId)) throw new Error("USER_NOT_FOUND");
-    const result = this.approvalDesk.collect(userId);
-    this.dirty = true;
-    return { view: this.getApprovalDesk(userId), ...result };
-  }
-
-  stampApprovalForm(userId: string): ApprovalDeskView {
-    if (!this.getMember(userId)) throw new Error("USER_NOT_FOUND");
-    this.approvalDesk.stamp(userId);
-    this.dirty = true;
-    return this.getApprovalDesk(userId);
-  }
-
-  buyApprovalUpgrade(userId: string, upgradeId: ApprovalUpgradeId, expectedLevel: number): ApprovalDeskView {
-    if (!this.getMember(userId)) throw new Error("USER_NOT_FOUND");
-    this.approvalDesk.buy(userId, upgradeId, expectedLevel);
-    this.dirty = true;
-    return this.getApprovalDesk(userId);
-  }
-
   getPublicEconomy() {
     this.publicEconomy.invalidateLayoutProposals(this.data.layouts);
     this.publicEconomy.refresh(this.data.organisation, this.data.members.map((member) => member.id));
@@ -1218,7 +1179,6 @@ export class WorkspaceStore {
       scores: this.data.scores,
       gameStatistics: this.data.gameStatistics,
       chessMatches: this.chessMatches,
-      approvalDesk: this.approvalDesk.exportState(),
       economy: this.economy.exportState(),
       publicEconomy: this.publicEconomy.exportState(),
       kidnapping: {
@@ -1273,7 +1233,6 @@ export class WorkspaceStore {
       throw new Error("STORE_STATE_INVALID");
     }
     this.economy.restoreState(next.economy);
-    this.approvalDesk.restoreState(next.approvalDesk, memberIds);
     this.publicEconomy.restoreState(next.publicEconomy);
     this.data.members = next.members;
     this.data.organisation = next.organisation;

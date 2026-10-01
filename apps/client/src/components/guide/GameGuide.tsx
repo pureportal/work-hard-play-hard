@@ -136,41 +136,9 @@ function GuideLoading({ onClose }: { onClose: () => void }) {
 }
 
 function GuideTooltip({ backProps, closeProps, controls, index, isLastStep, primaryProps, size, step, tooltipProps }: TooltipRenderProps) {
-  const interactive = step.blockTargetInteraction === false;
-  const requiresAction = step.id === "desk-stamp" || step.id === "desk-case";
-  const [actionDone, setActionDone] = useState(false);
-  const ref = useModalFocus<HTMLDivElement>(() => controls.skip(), true, !interactive);
-  useEffect(() => {
-    if (!requiresAction) return;
-    setActionDone(step.id === "desk-case" && document.querySelector('[data-guide="desk-case"]')?.getAttribute("data-guide-case-active") === "true");
-    const eventName = step.id === "desk-stamp" ? "approval-desk:stamp" : "approval-desk:start";
-    const complete = () => setActionDone(true);
-    window.addEventListener(eventName, complete);
-    return () => window.removeEventListener(eventName, complete);
-  }, [requiresAction, step.id]);
-  useEffect(() => {
-    if (!interactive || typeof step.target !== "string") return;
-    const selector = step.target;
-    const cycleFocus = (event: KeyboardEvent) => {
-      if (event.key !== "Tab") return;
-      const target = document.querySelector(selector);
-      const buttons = [
-        ...ref.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)") ?? [],
-        ...target?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)") ?? [],
-      ].filter(button => button.getClientRects().length > 0);
-      if (!buttons.length) return;
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      const current = buttons.findIndex(button => button === document.activeElement);
-      const next = current < 0 ? (event.shiftKey ? buttons.length - 1 : 0)
-        : (current + (event.shiftKey ? -1 : 1) + buttons.length) % buttons.length;
-      buttons[next]?.focus();
-    };
-    document.addEventListener("keydown", cycleFocus, true);
-    return () => document.removeEventListener("keydown", cycleFocus, true);
-  }, [interactive, ref, step.target]);
+  const ref = useModalFocus<HTMLDivElement>(() => controls.skip());
   return <div {...tooltipProps} ref={ref} tabIndex={-1} className="game-guide-tooltip" data-guide-step={step.id}
-    aria-modal={!interactive} aria-labelledby="game-guide-title" aria-describedby="game-guide-content">
+    aria-modal="true" aria-labelledby="game-guide-title" aria-describedby="game-guide-content">
     <header className="guide-heading">
       <span className="guide-icon" aria-hidden="true"><Compass size={22} strokeWidth={1.8} /></span>
       <h2 id="game-guide-title">{step.title}</h2>
@@ -185,7 +153,7 @@ function GuideTooltip({ backProps, closeProps, controls, index, isLastStep, prim
         </div>
       </div>
       {index > 0 && <button {...backProps} className="guide-back"><ArrowLeft size={16} aria-hidden="true" />Back</button>}
-      <button {...primaryProps} disabled={requiresAction && !actionDone} className="guide-next">{isLastStep ? "Let’s play" : "Next"}
+      <button {...primaryProps} className="guide-next">{isLastStep ? "Let’s play" : "Next"}
         {isLastStep ? <Check size={17} aria-hidden="true" /> : <ArrowRight size={17} aria-hidden="true" />}
       </button>
     </footer>

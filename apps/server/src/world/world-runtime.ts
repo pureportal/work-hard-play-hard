@@ -237,7 +237,7 @@ export class WorldRuntime {
 
   constructor(
     private readonly store: WorkspaceStore,
-    private readonly options: { chessNow?: () => Date; devDummyUserIds?: ReadonlySet<string>; approvalDeskEnabled?: boolean } = {},
+    private readonly options: { chessNow?: () => Date; devDummyUserIds?: ReadonlySet<string> } = {},
   ) {
     for (const meeting of store.getMeetings()) {
       for (const userId of meeting.participantIds) store.leaveMeeting(meeting.id, userId);
@@ -396,7 +396,6 @@ export class WorldRuntime {
       type: "workspace.snapshot",
       data: {
         ...this.store.getBootstrap(userId),
-        features: { approvalDesk: this.options.approvalDeskEnabled === true },
       },
     });
     this.syncGameLobbies();

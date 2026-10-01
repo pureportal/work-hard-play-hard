@@ -6,6 +6,46 @@ const firstDay = new Date("2026-09-01T12:00:00.000Z");
 const secondDay = new Date("2026-09-02T12:00:00.000Z");
 
 describe("EconomyStore", () => {
+  it("restores balance adjustments without changing earnings, spending, or game reward limits", () => {
+    const economy = new EconomyStore(["player"], firstDay);
+    const state = economy.exportState();
+    const account = state.accounts[0]!;
+    for (const [index, amount] of [5, -35, 0].entries()) {
+      account.coinBalance += amount;
+      account.lifetimeEarned += Math.max(amount, 0);
+      account.lifetimeSpent += Math.max(-amount, 0);
+      const id = `adjustment-${index}`;
+      state.transactions.push({
+        id, userId: account.userId, kind: "balance_adjustment", amount, balanceAfter: account.coinBalance,
+        operationKey: `balance_adjustment:${id}`, operationFingerprint: `balance_adjustment:${amount}`,
+        createdAt: firstDay.toISOString(),
+      });
+    }
+
+    economy.restoreState(state);
+
+    expect(economy.exportState()).toEqual(state);
+    expect(economy.getPlayerEconomy("player", firstDay)).toMatchObject({ coinBalance: 220, lifetimeEarned: 255, lifetimeSpent: 35 });
+    expect(economy.rewardGame("player", "round-one", 20, false, firstDay).amount).toBe(80);
+    expect(economy.rewardGame("player", "round-two", 20, true, firstDay).amount).toBe(20);
+  });
+
+  it.each([
+    { operationKey: "wrong-key" },
+    { operationFingerprint: "wrong-fingerprint" },
+    { sourceId: "unexpected-source" },
+  ])("rejects malformed balance adjustments: %j", (invalidFields) => {
+    const economy = new EconomyStore(["player"], firstDay);
+    const state = economy.exportState();
+    state.transactions.push({
+      id: "adjustment", userId: "player", kind: "balance_adjustment", amount: 0, balanceAfter: 250,
+      operationKey: "balance_adjustment:adjustment", operationFingerprint: "balance_adjustment:0",
+      createdAt: firstDay.toISOString(), ...invalidFields,
+    });
+
+    expect(() => economy.restoreState(state)).toThrow("ECONOMY_STATE_INVALID");
+  });
+
   it("grants one server-timed daily bonus and advances consecutive streaks", () => {
     const economy = new EconomyStore(["player"], firstDay);
 

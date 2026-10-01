@@ -28,8 +28,8 @@ describe("NavRail", () => {
     try {
       const onChange = vi.fn();
       render(<NavRail corporateIdentity={createTestCorporateIdentity()} activePanel={null} canUseBuild currentUser={currentUser}
-        unreadMessages={0} onChange={onChange} onAvatarClick={vi.fn()} onSignOut={vi.fn()} approvalDeskEnabled />);
-      expect(screen.getByRole("button", { name: "Stampworks" })).toBeTruthy();
+        unreadMessages={0} onChange={onChange} onAvatarClick={vi.fn()} onSignOut={vi.fn()} />);
+      expect(screen.getByRole("button", { name: "Build" })).toBeTruthy();
       expect(screen.queryByRole("button", { name: "Messages" })).toBeNull();
       fireEvent.click(screen.getByRole("button", { name: "More" }));
       fireEvent.click(screen.getByRole("button", { name: "Messages" }));
@@ -38,17 +38,6 @@ describe("NavRail", () => {
       Object.defineProperty(window, "innerWidth", { configurable: true, value: previousWidth });
     }
   });
-  it("shows Stampworks only when the feature is enabled", () => {
-    const props = {
-      corporateIdentity: createTestCorporateIdentity(), activePanel: null, canUseBuild: true,
-      currentUser, unreadMessages: 0, onChange: vi.fn(), onAvatarClick: vi.fn(), onSignOut: vi.fn(),
-    } as const;
-    const { rerender } = render(<NavRail {...props} />);
-    expect(screen.queryByRole("button", { name: "Stampworks" })).toBeNull();
-    rerender(<NavRail {...props} approvalDeskEnabled />);
-    expect(screen.getByRole("button", { name: "Stampworks" })).toBeTruthy();
-  });
-
   it("associates the unread count with Messages without changing its control name", () => {
     const { container } = render(
       <NavRail

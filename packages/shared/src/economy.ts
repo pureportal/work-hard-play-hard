@@ -41,7 +41,7 @@ export interface OwnedAsset {
   placement?: OwnedAssetPlacement;
 }
 
-export type CoinTransactionKind = "welcome" | "seed_grant" | "daily_bonus" | "game_reward" | "approval_reward" | "approval_upgrade" | "shop_purchase" | "donation" | "asset_sale" | "asset_donation";
+export type CoinTransactionKind = "welcome" | "seed_grant" | "daily_bonus" | "game_reward" | "balance_adjustment" | "shop_purchase" | "donation" | "asset_sale" | "asset_donation";
 
 export interface CoinTransaction {
   id: string;
