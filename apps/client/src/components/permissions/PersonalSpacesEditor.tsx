@@ -34,12 +34,6 @@ export function PersonalSpacesEditor({ room, members, onChange }: { room: Room; 
   const rectangle = (end: { x: number; y: number }): Rect => ({ x: Math.min(start.current!.x, end.x), y: Math.min(start.current!.y, end.y),
     width: Math.max(BUILD_GRID_SIZE, Math.abs(end.x - start.current!.x)), height: Math.max(BUILD_GRID_SIZE, Math.abs(end.y - start.current!.y)) });
   return <section className="personal-spaces-editor" aria-label="Personal spaces">
-    <label>Room owner<select value={room.ownerUserId ?? ""} onChange={(event) => {
-      const next = { ...room };
-      if (event.target.value) { next.ownerUserId = event.target.value; next.personalAreas = []; }
-      else delete next.ownerUserId;
-      onChange(next);
-    }}><option value="">Shared room</option>{members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}</select></label>
     {!room.ownerUserId && <>
       <div className="personal-spaces-heading"><h4>Personal areas</h4><button type="button" className="secondary-button" disabled={areas.length >= 100}
         onClick={addArea}><Plus size={15} />Add area</button></div>

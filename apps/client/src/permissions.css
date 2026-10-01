@@ -97,3 +97,17 @@
 .personal-area-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .personal-area-dimensions { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .personal-area-fields > button { justify-self: start; }
+
+.room-advanced-settings {
+  display: grid;
+  gap: 14px;
+}
+
+.room-permission-editor form {
+  display: grid;
+  gap: 16px;
+}
+
+.room-permission-editor .permission-form-fields {
+  margin: 0;
+}

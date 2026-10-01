@@ -1,6 +1,7 @@
 import type { OrganisationEdit, OrganisationState } from "./organisation.js";
 export * from "./organisation.js";
 export * from "./room-permissions.js";
+export * from "./room-presets.js";
 import type { AssetRotation } from "./assets.js";
 import type { PlayerRoomAccessibility } from "./room-accessibility.js";
 export * from "./room-accessibility.js";
