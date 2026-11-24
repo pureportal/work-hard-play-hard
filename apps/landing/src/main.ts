@@ -1,8 +1,5 @@
 import "./styles.css";
 import "./sections.css";
-import "./motion.css";
-import "./interactions";
-import "./motion";
 
 const clientUrl = resolveClientUrl(import.meta.env.VITE_CLIENT_URL?.trim() || "/app/");
 
@@ -10,50 +7,24 @@ for (const link of document.querySelectorAll<HTMLAnchorElement>("[data-client-li
   link.href = clientUrl;
 }
 
-const dialog = document.querySelector<HTMLDialogElement>(".screenshot-dialog")!;
-const image = dialog.querySelector<HTMLImageElement>(".screenshot-full")!;
-const title = dialog.querySelector<HTMLHeadingElement>("#screenshot-title")!;
-const error = dialog.querySelector<HTMLParagraphElement>(".screenshot-error")!;
-const original = error.querySelector<HTMLAnchorElement>("a")!;
-
-for (const link of document.querySelectorAll<HTMLAnchorElement>("[data-screenshot]")) {
-  link.addEventListener("click", event => {
-    if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
-    event.preventDefault();
-    title.textContent = link.dataset.screenshot!;
-    image.alt = link.dataset.screenshotAlt ?? link.querySelector("img")?.alt ?? title.textContent;
-    error.hidden = true;
-    image.hidden = false;
-    original.href = link.href;
-    image.src = link.href;
-    dialog.showModal();
-  });
+for (const link of document.querySelectorAll<HTMLAnchorElement>("[data-language]")) {
+  link.addEventListener("click", () => localStorage.setItem("northstar-language", link.dataset.language!));
 }
 
-image.addEventListener("error", () => {
-  image.hidden = true;
-  error.hidden = false;
-});
-
-dialog.addEventListener("keydown", event => {
-  if (event.key !== "Tab") return;
-  const controls = [...dialog.querySelectorAll<HTMLElement>("button, a[href]")].filter(control => control.checkVisibility());
-  const first = controls[0]!;
-  const last = controls.at(-1)!;
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault();
-    last.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault();
-    first.focus();
+if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  const observer = new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      entry.target.classList.remove("is-waiting");
+      observer.unobserve(entry.target);
+    }
+  }, { rootMargin: "0px 0px -8% 0px" });
+  for (const element of document.querySelectorAll<HTMLElement>(".reveal")) {
+    if (element.getBoundingClientRect().top < innerHeight) continue;
+    element.classList.add("is-waiting");
+    observer.observe(element);
   }
-});
-
-dialog.addEventListener("click", event => {
-  if (event.target !== dialog) return;
-  const bounds = dialog.getBoundingClientRect();
-  if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
-});
+}
 
 function resolveClientUrl(value: string): string {
   if (value.startsWith("/") && !value.startsWith("//")) {

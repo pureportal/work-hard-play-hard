@@ -5,6 +5,7 @@ import { chromium, type Route } from "playwright-core";
 import puppeteer from "puppeteer";
 import { createOrganisation, createPublicEconomy } from "../packages/shared/src/index.js";
 import { createArcadeReviewFixture } from "./arcade-review-fixture.js";
+import { renderPage } from "../apps/landing/src/i18n/render.ts";
 
 const output = fileURLToPath(new URL("../artifacts/ui-review/", import.meta.url));
 await mkdir(output, { recursive: true });
@@ -332,8 +333,8 @@ try {
   await page.getByRole("button", { name: "Retry", exact: true }).waitFor();
   await layouts("workspace-error", "isolated component fixture");
 
-  const landing = await readFile(new URL("../apps/landing/index.html", import.meta.url), "utf8");
-  const landingCss = await readFile(new URL("../apps/landing/src/styles.css", import.meta.url), "utf8");
+  const landing = renderPage(await readFile(new URL("../apps/landing/index.html", import.meta.url), "utf8"), "en");
+  const landingCss = (await Promise.all(["styles.css", "sections.css"].map((file) => readFile(new URL(`../apps/landing/src/${file}`, import.meta.url), "utf8")))).join("");
   await context.route("**/__landing-review", (route) => route.fulfill({ contentType: "text/html", body: landing.replace('<script type="module" src="/src/main.ts"></script>', `<style>${landingCss}</style>`) }));
   await page.goto("http://127.0.0.1:5173/__landing-review");
   await layouts("landing", "isolated static landing fixture; landing service stopped");
