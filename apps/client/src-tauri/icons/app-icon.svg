@@ -1,5 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <rect width="1024" height="1024" rx="224" fill="#171923"/>
-  <path d="M256 744V280h112l288 300V280h112v464H656L368 444v300H256Z" fill="#f7f8ff"/>
-  <path d="m512 104 26 80 84 1-68 49 26 80-68-49-68 49 26-80-68-49 84-1 26-80Z" fill="#7c8cff"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="northstar-tiles" x1="40" y1="40" x2="472" y2="472" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#7b6cf2"/><stop offset="1" stop-color="#5643d8"/></linearGradient></defs><rect width="512" height="512" rx="112" fill="#171821"/><g transform="translate(71.68 71.68) scale(.72)"><path d="M104 40H212A28 28 0 0 1 240 68V90A150 150 0 0 1 90 240H68A28 28 0 0 1 40 212V104A64 64 0 0 1 104 40ZM408 40H300A28 28 0 0 0 272 68V90A150 150 0 0 0 422 240H444A28 28 0 0 0 472 212V104A64 64 0 0 0 408 40ZM104 472H212A28 28 0 0 0 240 444V422A150 150 0 0 0 90 272H68A28 28 0 0 0 40 300V408A64 64 0 0 0 104 472ZM408 472H300A28 28 0 0 1 272 444V422A150 150 0 0 1 422 272H444A28 28 0 0 1 472 300V408A64 64 0 0 1 408 472Z" fill="url(#northstar-tiles)"/><path d="M256 154Q267 245 358 256Q267 267 256 358Q245 267 154 256Q245 245 256 154Z" fill="#ee9571"/></g></svg>

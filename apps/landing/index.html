@@ -7,7 +7,7 @@
     <meta name="description" content="{{metaDescription}}" />
     <title>{{metaTitle}}</title>
     {{alternates}}
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='20' fill='%23e76345'/%3E%3Cpath d='m20 6 3.5 10.5L34 20l-10.5 3.5L20 34l-3.5-10.5L6 20l10.5-3.5z' fill='%23fff9ec'/%3E%3C/svg%3E" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath d='M104 40H212A28 28 0 0 1 240 68V90A150 150 0 0 1 90 240H68A28 28 0 0 1 40 212V104A64 64 0 0 1 104 40ZM408 40H300A28 28 0 0 0 272 68V90A150 150 0 0 0 422 240H444A28 28 0 0 0 472 212V104A64 64 0 0 0 408 40ZM104 472H212A28 28 0 0 0 240 444V422A150 150 0 0 0 90 272H68A28 28 0 0 0 40 300V408A64 64 0 0 0 104 472ZM408 472H300A28 28 0 0 1 272 444V422A150 150 0 0 1 422 272H444A28 28 0 0 1 472 300V408A64 64 0 0 1 408 472ZM256 154Q267 245 358 256Q267 267 256 358Q245 267 154 256Q245 245 256 154Z' fill='%23e76345'/%3E%3C/svg%3E" />
     <link rel="preload" href="/src/fonts/bricolage-grotesque-latin.woff2" as="font" type="font/woff2" crossorigin />
     <script>
       const preferredLanguage = localStorage.getItem("northstar-language") ?? (navigator.language.toLowerCase().startsWith("de") ? "de" : "en");
@@ -16,6 +16,7 @@
   </head>
   <body>
     <svg class="icon-library" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+      <symbol id="icon-logo" viewBox="0 0 512 512"><path d="M104 40H212A28 28 0 0 1 240 68V90A150 150 0 0 1 90 240H68A28 28 0 0 1 40 212V104A64 64 0 0 1 104 40ZM408 40H300A28 28 0 0 0 272 68V90A150 150 0 0 0 422 240H444A28 28 0 0 0 472 212V104A64 64 0 0 0 408 40ZM104 472H212A28 28 0 0 0 240 444V422A150 150 0 0 0 90 272H68A28 28 0 0 0 40 300V408A64 64 0 0 0 104 472ZM408 472H300A28 28 0 0 1 272 444V422A150 150 0 0 1 422 272H444A28 28 0 0 1 472 300V408A64 64 0 0 1 408 472ZM256 154Q267 245 358 256Q267 267 256 358Q245 267 154 256Q245 245 256 154Z" fill="currentColor" stroke="none" /></symbol>
       <symbol id="icon-star" viewBox="0 0 40 40"><path d="m20 0 5.4 14.6L40 20l-14.6 5.4L20 40l-5.4-14.6L0 20l14.6-5.4Z" fill="currentColor" stroke="none" /></symbol>
       <symbol id="icon-diagonal" viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9" /></symbol>
       <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14" /></symbol>
@@ -25,7 +26,7 @@
     </svg>
     <a class="skip-link" href="#main">{{skip}}</a>
     <header class="site-header wrap">
-      <a class="brand" href="{{homeHref}}" aria-label="{{home}}"><svg class="brand-mark" aria-hidden="true"><use href="#icon-star" /></svg>Northstar<span class="brand-period">.</span></a>
+      <a class="brand" href="{{homeHref}}" aria-label="{{home}}"><svg class="brand-mark" aria-hidden="true"><use href="#icon-logo" /></svg>Northstar<span class="brand-period">.</span></a>
       <nav class="main-nav" aria-label="{{navLabel}}"><a href="#presence">{{navPresence}}</a><a href="#together">{{navTogether}}</a><a href="#hosting">{{navHosting}}</a></nav>
       <div class="header-actions">
         <a class="language-switch" href="{{switchHref}}" hreflang="{{switchLang}}" lang="{{switchLang}}" data-language="{{switchLang}}">{{switchLanguage}}</a>
@@ -75,7 +76,7 @@
       </section>
     </main>
     <footer class="site-footer wrap">
-      <a class="brand" href="{{homeHref}}" aria-label="{{home}}"><svg class="brand-mark" aria-hidden="true"><use href="#icon-star" /></svg>Northstar<span class="brand-period">.</span></a>
+      <a class="brand" href="{{homeHref}}" aria-label="{{home}}"><svg class="brand-mark" aria-hidden="true"><use href="#icon-logo" /></svg>Northstar<span class="brand-period">.</span></a>
       <nav aria-label="{{footerLabel}}"><a href="{{imprintUrl}}">{{imprint}}</a><a href="{{privacyUrl}}">{{privacy}}</a><a href="{{termsUrl}}">{{terms}}</a><a href="{{switchHref}}" hreflang="{{switchLang}}" lang="{{switchLang}}" data-language="{{switchLang}}">{{switchLanguage}}</a></nav>
     </footer>
     <script type="module" src="/src/main.ts"></script>
